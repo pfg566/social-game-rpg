@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>공간적 분업 대작전 결과판</title>
+<title>사회 게임 RPG 결과판</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jua&family=IBM+Plex+Sans+KR:wght@400;600;700&display=swap">
 <style>
@@ -108,7 +108,7 @@ input.rename{border:2px solid var(--line);border-radius:6px;padding:2px 6px;widt
 <body>
 <div class="wrap">
   <header>
-    <div><div class="eyebrow">선생님 전용</div><h1>공간적 분업 대작전 결과판</h1></div>
+    <div><div class="eyebrow">선생님 전용</div><h1>사회 게임 RPG 결과판</h1></div>
     <div class="me" id="me" hidden><span id="meEmail"></span><a class="btn" href="index.html">게임으로</a><button class="btn" id="logout">로그아웃</button></div>
   </header>
 
@@ -549,7 +549,7 @@ $('#rsTable').addEventListener('click',async e=>{
 $('#rsPrint').addEventListener('click',()=>{
   const nums=Object.keys(RS.roster).sort((a,b)=>a-b); if (!nums.length) return;
   const url=new URL('index.html',location.href).href;
-  const cards=nums.map(n=>{ const r=RS.roster[n]; return `<div class="card"><div class="t">공간적 분업 대작전</div><div class="w">${esc(cLabel(RS.cls))} ${esc(n)}번 ${esc(r.name||'')}</div><div class="c">${esc(r.code.toUpperCase())}</div><div class="u">${esc(url)}</div><div class="h">게임 첫 화면에서 반·번호·코드를 넣으세요. 코드는 친구에게 알려 주지 마세요.</div></div>`; }).join('');
+  const cards=nums.map(n=>{ const r=RS.roster[n]; return `<div class="card"><div class="t">사회 게임 RPG</div><div class="w">${esc(cLabel(RS.cls))} ${esc(n)}번 ${esc(r.name||'')}</div><div class="c">${esc(r.code.toUpperCase())}</div><div class="u">${esc(url)}</div><div class="h">게임 첫 화면에서 반·번호·코드를 넣으세요. 코드는 친구에게 알려 주지 마세요.</div></div>`; }).join('');
   const w=window.open('','_blank'); if (!w){ rsMsg('팝업이 막혔어요. 팝업을 허용해 주세요.','err'); return; }
   w.document.write(`<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>${esc(cLabel(RS.cls))} 코드 카드</title><style>
     body{font-family:"Malgun Gothic","Apple SD Gothic Neo",sans-serif;margin:12mm}
