@@ -640,9 +640,10 @@ const WAVESETS = {
   {name:'해골 도적단', n:6, hp:90, spd:2.6, dmg:10, color:0x8b5cf6},
   {name:'해골 장군', n:3, hp:90, spd:2.5, dmg:10, color:0x8b5cf6, boss:{...BOSS_BASE}}],
  defense:[
-  {name:'해골 선봉대', n:6, hp:60, spd:2.0, dmg:8, color:0xe0434a},
-  {name:'해골 도적단', n:8, hp:80, spd:2.3, dmg:9, color:0x8b5cf6},
-  {name:'공성 해골 장군', n:6, hp:80, spd:2.2, dmg:9, color:0x8b5cf6, boss:{...BOSS_BASE, hp:800, spd:2.0, summonEvery:16}}]
+  {name:'해골 선봉대', n:0, hp:60, spd:2.1, dmg:8, color:0xe0434a, groups:[{n:5,at:0},{n:5,at:9}]},
+  {name:'해골 돌격대', n:0, hp:80, spd:2.3, dmg:9, color:0x8b5cf6, groups:[{n:5,at:0},{n:4,at:6,runner:true},{n:5,at:14}]},
+  {name:'해골 대군세', n:0, hp:90, spd:2.4, dmg:10, color:0x8b5cf6, groups:[{n:6,at:0},{n:5,at:8,runner:true},{n:6,at:16},{n:4,at:24,runner:true}]},
+  {name:'공성 해골 장군', n:0, hp:80, spd:2.3, dmg:10, color:0x8b5cf6, boss:{...BOSS_BASE, hp:800, spd:2.0, summonEvery:16}, groups:[{n:6,at:0},{n:4,at:16,runner:true},{n:5,at:28},{n:4,at:40,runner:true}]}]
 };
 let WAVES = WAVESETS.zones;
 const BOSS_RULE='<b>보스:</b> 보호막 4개는 퀴즈 정답으로만 깨지고, 오답이면 되살아나요. 내려찍기와 부하 소환을 조심하세요';
@@ -659,7 +660,7 @@ const MAPS = {
   winTitle:'마을을 지켜 냈어요!', winMsg:'이번 단원의 핵심을 잘 알고 있네요. 아래 틀린 문제를 한 번 더 읽어 보고 마무리해요.'},
  defense:{name:'성벽 디펜스 맵', need:['mc','ox'], start:[0,-1], recharge:22,
   desc:'해골 군단이 남쪽에서 성문으로 몰려와요. 퀴즈로 성벽 포탑을 깨우고, 성문이 무너지지 않게 지키세요.',
-  rules:['<b>성문:</b> 몬스터가 성문을 부숴요. 성문 체력이 0이 되면 게임 오버','<b>포탑 수정:</b> 성벽 앞 수정 3개. 맞히면 그 포탑이 25초 동안 자동으로 공격하고, 웨이브 사이에는 다음 웨이브도 열려요','<b>돌발 퀴즈:</b> 맞히면 성문 수리 +10%','<b>지식 카드:</b> 몬스터가 떨어뜨려요. 주우면 O/X 문제','<b>보스:</b> 보호막 4개는 퀴즈 정답으로만 깨져요. 내려찍기는 성문도 부숴요','성문에 붙은 몬스터는 가까이 가면 나를 쫓아와요. 끌어내서 처치하세요'],
+  rules:['<b>성문:</b> 몬스터가 성문을 부숴요. 성문 체력이 0이 되면 게임 오버','<b>포탑 수정:</b> 성벽 앞 수정 3개. 맞히면 그 포탑이 20초 동안 자동으로 공격하고, 웨이브 사이에는 다음 웨이브도 열려요','<b>웨이브 4개:</b> 몬스터가 왼쪽·가운데·오른쪽 길로 여러 무리로 나눠 와요. 주황색 돌격병은 나를 무시하고 성문으로만 달려가요','<b>돌발 퀴즈:</b> 맞히면 성문 수리 +10%','<b>지식 카드:</b> 몬스터가 떨어뜨려요. 주우면 O/X 문제','<b>보스:</b> 보호막 4개는 퀴즈 정답으로만 깨져요. 내려찍기는 성문도 부숴요','성문에 붙은 몬스터는 가까이 가면 나를 쫓아와요. 끌어내서 처치하세요'],
   gateText:'잠김 · 빛나는 포탑 수정의 퀴즈를 맞히면 다음 웨이브가 열려요', clearText:'웨이브 클리어! 포탑 수정 퀴즈로 다음 웨이브를 여세요',
   winTitle:'성문을 끝까지 지켰어요!', winMsg:'이번 단원의 핵심을 잘 알고 있네요. 아래 틀린 문제를 한 번 더 읽어 보고 마무리해요.'}
 };
@@ -983,7 +984,7 @@ function buildGeneral(){
 }
 
 /* ---------- 성벽 디펜스 맵: 포탑을 퀴즈로 깨워 성문을 지켜요 ---------- */
-const WALL_Z=-14, DOOR={x:0,z:-12.4}, DOOR_HP=500, TURRET_RANGE=24, TURRET_DMG=45, TURRET_TIME=25;
+const WALL_Z=-14, DOOR={x:0,z:-12.4}, DOOR_HP=450, TURRET_RANGE=22, TURRET_DMG=35, TURRET_TIME=20, DOOR_HIT=1.5;
 const DEF_SEGS=[], TURRETS=[];
 let bolts=[], doorG=null, doorMat=null, doorFlash=0;
 const DOOR_COL=new THREE.Color(0x7a4a26), DOOR_DARK=new THREE.Color(0x2e1c10);
@@ -1048,7 +1049,7 @@ function updateTurrets(dt){
     let best=null, bd=TURRET_RANGE;
     for (const m of mobs){ if (m.dying>=0||m.spawnT>0) continue; const d=Math.hypot(m.x-t.x,m.z-t.z); if (d<bd){ bd=d; best=m; } }
     if (!best) continue;
-    t.cd=1.0;
+    t.cd=1.25;
     const mesh=new THREE.Mesh(boltGeo,t.boltMat); mesh.position.set(t.x,t.y,t.z); scene.add(mesh);
     bolts.push({mesh,m:best,t,sx:t.x,sz:t.z}); SFX.zap(); fx.burst(t.x,t.y,t.z,t.color,5,2);
   }
@@ -1238,7 +1239,8 @@ function spawnMob(def,isBoss,at){
   const color=isBoss?def.boss.color:def.color;
   const c=makeChar(isBoss?'sk_warrior':(MOB_MODEL[color]||'sk_minion'),isBoss?2.05:1,isBoss?BOSS_MAP:SK_MAP);
   arm(c,isBoss?'axe':'blade');
-  if (!isBoss && color===0x8b5cf6) c.mats.forEach(m=>{ if (m.color) m.color.multiply(new THREE.Color(0xd9c8ff)); });
+  if (!isBoss && color===0x8b5cf6 && !def.runner) c.mats.forEach(m=>{ if (m.color) m.color.multiply(new THREE.Color(0xd9c8ff)); });
+  if (!isBoss && def.runner){ c.mats.forEach(m=>{ if (m.color) m.color.multiply(new THREE.Color(0xffa060)); }); c.root.scale.setScalar(.88); }
   const g=new THREE.Group(); g.add(c.root);
   let shieldMesh=null, slamMesh=null, eyeLight=null;
   if (isBoss){
@@ -1265,6 +1267,7 @@ function spawnMob(def,isBoss,at){
     shield:isBoss?def.boss.shield:0,shieldMax:isBoss?def.boss.shield:0,shieldMesh,slamMesh,eyeLight,def,recover:0,hop:0,
     slamCd:isBoss?4:0,slamT:0,slamX:0,slamZ:0,summonCd:isBoss?def.boss.summonEvery:0,
     atkCd:0,flash:0,kbx:0,kbz:0,phase:Math.random()*6,bar:makeBar(isBoss?2.6:1.2),barY:isBoss?5.4:2.75,shadow:blob(),dying:-1};
+  m.runner=!isBoss&&!!def.runner;
   m.onDying=()=>{ m.sink=Math.max(0,.7-m.dying)*1.6; };
   c.anim.once('spawn',2.2,true);
   if (isBoss){ m.spawnT=1.8; setTimeout(()=>{ if (m.dying<0) m.anim.once('taunt',1,true); },1700); }
@@ -1287,6 +1290,7 @@ function startWave(i){
   W.wave=i; W.nextWaveAt=-1; W.gate=false;
   const d=WAVES[i];
   for (let k=0;k<d.n;k++) spawnMob(d,false);
+  if (d.groups){ const lanes=[-20,0,20]; d.groups.forEach((g,gi)=>W.spawnQ.push({at:W.t+g.at,n:g.n,runner:!!g.runner,lane:lanes[Math.floor(Math.random()*3)],def:d,first:gi===0})); }
   if (d.boss){ spawnMob(d,true); stations.forEach(s=>s.readyAt=Math.min(s.readyAt,W.t)); }
   showBanner(`웨이브 ${i+1} · ${d.name}`); SFX.wave();
 }
@@ -1768,7 +1772,7 @@ function reset(){
   clearWorld();
   const st=MAPS[MAPK].start;
   Object.assign(P,{x:st[0],z:st[1],hp:100,fx:0,fz:-1,atkCd:0,swingT:0,combo:0,lastAtk:-9,buffer:false,pendingHit:null,lunge:0,dodgeT:0,dodgeCd:0,spinT:0,spinCd:0,spinHits:[],spinBuf:false}); hitStop=0; skKey='';
-  Object.assign(W,{won:false,door:DOOR_HP,doorMax:DOOR_HP,doorWarnAt:0,revived:false,revive:null,invuln:0,t:0,paused:false,state:'play',wave:-1,nextWaveAt:1.2,gate:false,nextQuiz:TIMED_EVERY,timedFlip:0,kills:0,correct:0,asked:0,effects:[],wrong:[],loc:null});
+  Object.assign(W,{won:false,door:DOOR_HP,doorMax:DOOR_HP,doorWarnAt:0,revived:false,revive:null,invuln:0,t:0,paused:false,state:'play',wave:-1,nextWaveAt:1.2,gate:false,nextQuiz:TIMED_EVERY,timedFlip:0,kills:0,correct:0,asked:0,effects:[],wrong:[],loc:null,spawnQ:[],runnerSeen:false});
   W.used=new Set(); stations.forEach(s=>s.readyAt=0); chipKey=''; shieldKey=''; $('#chips').innerHTML='';
   $('#locCard').hidden=true; $('#gateCard').hidden=true;
   TURRETS.forEach(t=>{ t.until=0; t.cd=0; }); bolts.forEach(b=>scene.remove(b.mesh)); bolts=[]; doorFlash=0;
@@ -2465,7 +2469,7 @@ function frame(now){
         m.flash=Math.max(0,m.flash-dt); m.mat.emissive.setHex(m.flash>0?0xffffff:0x000000); continue; }
       const pdx=P.x-m.x, pdz=P.z-m.z, pd=Math.hypot(pdx,pdz)||1;
       let dx=pdx, dz=pdz, d=pd, atDoor=false;
-      if (MAPK==='defense' && pd>(m.boss?9:7)){ dx=DOOR.x-m.x; dz=DOOR.z-m.z; d=Math.hypot(dx,dz)||1; atDoor=d<m.r+2.6; }
+      if (MAPK==='defense' && (m.runner || pd>(m.boss?9:7))){ dx=DOOR.x-m.x; dz=DOOR.z-m.z; d=Math.hypot(dx,dz)||1; atDoor=d<m.r+2.6; }
       m.atDoor=atDoor;
       if (m.boss){
         const B=m.def.boss;
@@ -2495,8 +2499,9 @@ function frame(now){
       m.atkCd=Math.max(0,m.atkCd-dt);
       if (pd<m.r+.75 && m.atkCd<=0 && W.t>W.invuln){ if (m.anim) m.anim.once('attack',1.6); P.hp-=m.dmg; m.atkCd=1; hurtT=.3; SFX.hurt(); fx.num(P.x,3,P.z,'-'+m.dmg,'#ff6b6b'); }
       if (atDoor){ m.doorCd=(m.doorCd||0)-dt;
-        if (m.doorCd<=0){ m.doorCd=1.2; W.door-=m.dmg; doorFlash=.2; SFX.door(); if (m.anim) m.anim.once('attack',1.6,true);
-          fx.burst(m.x+(DOOR.x-m.x)*.6,1.6,DOOR.z+.2,0xc9a06a,6,3); fx.num(m.x+(DOOR.x-m.x)*.6,4.4,DOOR.z+.5,'-'+m.dmg,'#ffb36b');
+        const dh=Math.round(m.dmg*DOOR_HIT);
+        if (m.doorCd<=0){ m.doorCd=1.2; W.door-=dh; doorFlash=.2; SFX.door(); if (m.anim) m.anim.once('attack',1.6,true);
+          fx.burst(m.x+(DOOR.x-m.x)*.6,1.6,DOOR.z+.2,0xc9a06a,6,3); fx.num(m.x+(DOOR.x-m.x)*.6,4.4,DOOR.z+.5,'-'+dh,'#ffb36b');
           if (W.t>=W.doorWarnAt){ W.doorWarnAt=W.t+5; flashPrompt('성문이 공격받고 있어요! 가까이 가서 몬스터를 끌어내세요',2.2); } } }
       m.flash=Math.max(0,m.flash-dt);
       m.mat.emissive.setHex(m.flash>0?0xffffff:0x000000);
@@ -2506,7 +2511,12 @@ function frame(now){
 
     // 웨이브 진행 · 잠금
     if (W.nextWaveAt>=0 && W.t>=W.nextWaveAt) startWave(W.wave+1);
-    else if (W.nextWaveAt<0 && !W.gate && W.wave>=0 && mobs.length===0){
+    if (W.spawnQ.length){ for (let i=W.spawnQ.length-1;i>=0;i--){ const q=W.spawnQ[i]; if (W.t<q.at) continue; W.spawnQ.splice(i,1);
+        const def=q.runner?{...q.def,hp:Math.round(q.def.hp*.6),spd:3.6,dmg:q.def.dmg,runner:true}:q.def;
+        for (let k=0;k<q.n;k++) spawnMob(def,false,{x:q.lane+rnd(-4,4),z:rnd(25,31)});
+        if (q.runner){ if (!W.runnerSeen){ W.runnerSeen=true; flashPrompt('주황 돌격병은 성문만 노려요! 성문에 닿기 전에 막으세요',3); } else flashPrompt('돌격병이 몰려와요!',2); }
+        else if (!q.first) flashPrompt('해골 지원군이 몰려와요!',2); } }
+    if (W.nextWaveAt<0 && !W.gate && W.wave>=0 && mobs.length===0 && !W.spawnQ.length){
       if (W.wave<WAVES.length-1){
         P.hp=Math.min(P.max,P.hp+20); W.gate=true; stations.forEach(s=>s.readyAt=W.t);
         showBanner(MAPS[MAPK].clearText);
