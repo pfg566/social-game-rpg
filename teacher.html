@@ -452,7 +452,7 @@ $('#ckAdd').addEventListener('click',async()=>{
 ['#clSch','#clYear'].forEach(s=>$(s).addEventListener('change',()=>{ clsDelArmed=''; yearDelArmed=''; renderClasses(); }));
 async function deleteClasses(cids){
   const up={};
-  for (const cid of cids){ up['classes/'+cid]=null; up['roster/'+cid]=null; up['profiles/'+cid]=null;
+  for (const cid of cids){ up['classes/'+cid]=null; up['roster/'+cid]=null; up['profiles/'+cid]=null; up['wardrobe/'+cid]=null;
     const snap=await db.ref('results').orderByChild('cid').equalTo(cid).once('value');
     snap.forEach(c=>{ const v=c.val(); if (v&&v.cid===cid) up['results/'+c.key]=null; }); }
   const keys=Object.keys(up);
