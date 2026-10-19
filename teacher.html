@@ -67,7 +67,7 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
 td.qcell{white-space:normal;min-width:240px;max-width:460px}
 tr:hover td{background:#f8fafc}
 .pill{display:inline-block;font-size:11px;font-weight:700;padding:1px 8px;border-radius:999px;border:1.5px solid}
-.pill.win{color:var(--good);border-color:var(--good)} .pill.lose{color:var(--muted);border-color:var(--line)}
+.pill.win{color:var(--good);border-color:var(--good)} .pill.lose{color:var(--muted);border-color:var(--line)} .pill.hero{color:var(--warn);border-color:var(--warn)}
 .bar{display:inline-block;width:70px;height:8px;border-radius:4px;background:#e5e9f0;vertical-align:middle;margin-left:6px;overflow:hidden}
 .bar i{display:block;height:100%}
 .empty{padding:28px;text-align:center;color:var(--muted)}
@@ -148,6 +148,12 @@ tr:hover td{background:#f8fafc}
           <p class="msg" id="adminMsg" role="status"></p>
         </div>
         <div class="card box">
+          <h3>영웅 모드</h3>
+          <p>켜면 학생 첫 화면에 '영웅 모드' 선택지가 생겨요. 몬스터가 강하고 퀴즈 시간이 짧은 대신 점수가 1.5배예요. 학생들이 게임에 익숙해진 뒤 여는 걸 추천해요.</p>
+          <div class="row"><span class="pill lose" id="heroState">불러오는 중</span><button class="btn" id="heroToggle" disabled>영웅 모드 열기</button></div>
+          <p class="msg" id="heroMsg" role="status"></p>
+        </div>
+        <div class="card box">
           <h3>기록 지우기</h3>
           <p>학기가 끝나면 학생 기록을 지워 주세요. 지우기 전에 CSV를 받아 두면 안전해요. 지운 기록은 되살릴 수 없어요.</p>
           <div class="row">
@@ -206,7 +212,7 @@ auth.onAuthStateChanged(async u=>{
   $('#meEmail').textContent=u.email;
   if (!(await isAdmin(u))){ gate(`${u.email} 계정은 선생님 권한이 없어요. 권한이 있는 선생님께 '함께 볼 선생님'에 추가해 달라고 요청하세요.`,'err'); return; }
   $('#gate').hidden=true; $('#app').hidden=false;
-  subscribe(); loadAdmins();
+  subscribe(); loadAdmins(); loadHero();
 });
 
 /* 데이터 */
@@ -270,7 +276,7 @@ function renderStudents(){
 function renderRecords(){
   const rows=VIEW.map(r=>({...r,rate:pct(r)})).sort(sorter(sortR));
   const cols=[['ts','시각'],['cls','반'],['nick','이름'],['unit','단원'],['win','결과'],['score','점수',1],['rate','정답률',1],['kills','처치',1],['timeSec','시간',1],['wrong','못 맞힌 문제']];
-  $('#tblRecords').innerHTML = rows.length ? th(cols,sortR,'r')+'<tbody>'+rows.map(r=>`<tr><td>${fmtT(r.ts)}</td><td>${esc(r.cls)}반</td><td>${esc(r.nick)}</td><td>${esc(r.unit||'')}</td><td><span class="pill ${r.win?'win':'lose'}">${r.win?'승리':'게임 오버'}</span></td><td class="num">${r.score|0}</td><td class="num">${r.correct|0}/${r.asked|0} · ${r.rate}%</td><td class="num">${r.kills|0}</td><td class="num">${fmtDur(r.timeSec|0)}</td><td class="qcell">${r.wrongList.length?r.wrongList.map(esc).join('<br>'):'-'}</td></tr>`).join('')+'</tbody>'
+  $('#tblRecords').innerHTML = rows.length ? th(cols,sortR,'r')+'<tbody>'+rows.map(r=>`<tr><td>${fmtT(r.ts)}</td><td>${esc(r.cls)}반</td><td>${esc(r.nick)}</td><td>${esc(r.unit||'')}</td><td><span class="pill ${r.win?'win':'lose'}">${r.win?'승리':'게임 오버'}</span>${r.mode==='hero'?' <span class="pill hero">영웅</span>':''}</td><td class="num">${r.score|0}</td><td class="num">${r.correct|0}/${r.asked|0} · ${r.rate}%</td><td class="num">${r.kills|0}</td><td class="num">${fmtDur(r.timeSec|0)}</td><td class="qcell">${r.wrongList.length?r.wrongList.map(esc).join('<br>'):'-'}</td></tr>`).join('')+'</tbody>'
     : '<tr><td class="empty">이 조건에 맞는 기록이 없어요.</td></tr>';
 }
 function renderMissed(){
@@ -299,8 +305,8 @@ $('#tabs').addEventListener('click',e=>{ const b=e.target.closest('[data-tab]');
 $('#csv').addEventListener('click',()=>{
   applyFilter();
   const q=v=>{ const s=String(v==null?'':v); return /[",\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s; };
-  const head=['시각','반','이름','단원','결과','점수','맞힌 문제','푼 문제','정답률(%)','처치','시간(초)','못 맞힌 문제'];
-  const lines=[head.join(',')].concat([...VIEW].sort((a,b)=>a.ts-b.ts).map(r=>[new Date(r.ts).toLocaleString('ko-KR'),r.cls+'반',r.nick,r.unit||'',r.win?'승리':'게임 오버',r.score|0,r.correct|0,r.asked|0,pct(r),r.kills|0,r.timeSec|0,r.wrongList.join(' / ')].map(q).join(',')));
+  const head=['시각','반','이름','단원','모드','결과','점수','맞힌 문제','푼 문제','정답률(%)','처치','시간(초)','못 맞힌 문제'];
+  const lines=[head.join(',')].concat([...VIEW].sort((a,b)=>a.ts-b.ts).map(r=>[new Date(r.ts).toLocaleString('ko-KR'),r.cls+'반',r.nick,r.unit||'',r.mode==='hero'?'영웅':'일반',r.win?'승리':'게임 오버',r.score|0,r.correct|0,r.asked|0,pct(r),r.kills|0,r.timeSec|0,r.wrongList.join(' / ')].map(q).join(',')));
   const blob=new Blob(['﻿'+lines.join('\r\n')],{type:'text/csv;charset=utf-8'});
   const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
   const d=new Date(); a.download=`게임결과_${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}.csv`;
@@ -324,6 +330,22 @@ $('#adminAdd').addEventListener('click',async()=>{
 $('#adminList').addEventListener('click',async e=>{
   const b=e.target.closest('[data-del-admin]'); if (!b) return;
   try{ await db.ref('admins/'+b.dataset.delAdmin).remove(); }catch(err){ $('#adminMsg').className='msg err'; $('#adminMsg').textContent='빼지 못했어요.'; }
+});
+
+/* 영웅 모드 */
+let heroOn=false;
+function loadHero(){
+  db.ref('settings/heroMode').on('value',snap=>{ heroOn=snap.val()===true;
+    $('#heroState').textContent=heroOn?'열림':'닫힘'; $('#heroState').className='pill '+(heroOn?'win':'lose');
+    $('#heroToggle').textContent=heroOn?'영웅 모드 닫기':'영웅 모드 열기'; $('#heroToggle').disabled=false; },
+    ()=>{ $('#heroState').textContent='확인 불가'; $('#heroMsg').className='msg err'; $('#heroMsg').textContent='설정을 불러오지 못했어요. 새 보안 규칙을 올렸는지 확인해 주세요.'; });
+}
+$('#heroToggle').addEventListener('click',async()=>{
+  $('#heroToggle').disabled=true;
+  const next=!heroOn;
+  try{ await db.ref('settings/heroMode').set(next); $('#heroMsg').className='msg ok'; $('#heroMsg').textContent=next?'영웅 모드를 열었어요. 학생이 게임을 새로 열면 보여요.':'영웅 모드를 닫았어요.'; }
+  catch(e){ $('#heroMsg').className='msg err'; $('#heroMsg').textContent='바꾸지 못했어요. 새 보안 규칙을 올렸는지 확인해 주세요.'; }
+  finally{ $('#heroToggle').disabled=false; }
 });
 
 /* 기록 지우기 */

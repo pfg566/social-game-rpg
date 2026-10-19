@@ -53,6 +53,7 @@ button:focus-visible{outline:3px solid var(--sun);outline-offset:2px}
 .locintro .zgrid small{display:block;font-family:var(--body);font-size:12px;font-weight:700;opacity:.95}
 .locintro .note{font-size:14px;font-weight:700;margin:0 0 12px}
 .locintro .btn{background:var(--ink);color:#fff}
+.reviveintro .panel{background:#ffd8a8}
 @media (prefers-reduced-motion:reduce){.loc{animation:none}}
 .loc-top{display:flex;justify-content:space-between;align-items:center;gap:8px}
 .loc .tag{font-size:14px;padding:2px 10px}
@@ -213,6 +214,17 @@ button:focus-visible{outline:3px solid var(--sun);outline-offset:2px}
 .atk{position:fixed;right:max(24px,env(safe-area-inset-right,0px));bottom:calc(env(safe-area-inset-bottom,0px) + 36px);width:92px;height:92px;border-radius:50%;border:3px solid var(--ink);background:var(--sun);font-family:var(--display);font-size:22px;color:var(--ink);box-shadow:4px 4px 0 var(--ink);z-index:4;touch-action:none}
 @media (max-width:520px){ .zones{grid-template-columns:1fr} .panel{padding:18px} .stack{top:calc(env(safe-area-inset-top,0px) + 112px)} }
 @media (prefers-reduced-motion:reduce){ .banner.show{animation-timing-function:steps(1)} }
+/* 모드 선택 */
+.modepick{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0 0 10px}
+.mode{display:block;cursor:pointer}
+.mode input{position:absolute;opacity:0;pointer-events:none}
+.mode span{display:grid;gap:2px;border:3px solid var(--ink);border-radius:12px;padding:8px 10px;background:#fff;height:100%;box-sizing:border-box}
+.mode b{font-family:var(--display);font-weight:400;font-size:18px}
+.mode small{font-size:12px;color:var(--muted);font-weight:600}
+.mode input:checked+span{background:#e3edff;box-shadow:inset 0 0 0 2px var(--hq)}
+.mode.hero input:checked+span{background:#fff0c2;box-shadow:inset 0 0 0 2px #c27a00}
+.mode input:focus-visible+span{outline:3px solid var(--sun);outline-offset:2px}
+body.hero .vitals{border-color:#c27a00;box-shadow:4px 4px 0 #c27a00}
 /* 반 선택 · 저장 상태 · 선생님 */
 .who-row{display:grid;grid-template-columns:110px 1fr;gap:8px}
 .who-row .nickfield select{font:inherit;font-size:18px;border:3px solid var(--ink);border-radius:12px;padding:10px 8px;background:#fff;color:var(--ink);width:100%}
@@ -292,6 +304,10 @@ button:focus-visible{outline:3px solid var(--sun);outline-offset:2px}
     </div>
     <p class="nickerr" id="nickErr" hidden>반과 이름을 입력해야 시작할 수 있어요.</p>
     <p class="netwarn" id="netWarn" hidden></p>
+    <div class="modepick" id="modePick" hidden>
+      <label class="mode"><input type="radio" name="mode" id="modeNormal" value="normal" checked><span><b>일반 모드</b><small>내 실력에 맞춰 함께 성장해요</small></span></label>
+      <label class="mode hero"><input type="radio" name="mode" id="modeHero" value="hero"><span><b>영웅 모드</b><small>몬스터가 강하고 시간이 짧아요 · 점수 1.5배</small></span></label>
+    </div>
     <label class="unitpick" id="unitPick" hidden><span>플레이할 단원</span><select id="unitSelect"></select></label>
     <p class="bankinfo" id="bankInfo"></p>
     <div class="title-actions">
@@ -303,6 +319,15 @@ button:focus-visible{outline:3px solid var(--sun);outline-offset:2px}
       <span id="teacherState">선생님이신가요?</span>
       <span><a href="teacher.html">결과 보기</a> · <a href="#" id="teacherLogin">문제 관리 로그인</a></span>
     </div>
+  </div>
+</div>
+
+<div class="screen locintro reviveintro" id="reviveIntro" hidden>
+  <div class="panel card" role="dialog" aria-labelledby="reviveTitle">
+    <p class="big" id="reviveTitle">부활 찬스!</p>
+    <p class="q">이번 판에서 틀렸던 문제 2개를 모두 맞히면<br>체력 절반으로 다시 일어나요.</p>
+    <p class="note">한 판에 한 번만 쓸 수 있어요. 하나라도 틀리면 게임이 끝나요.</p>
+    <button class="btn" id="reviveGo">부활 도전! (Enter)</button>
   </div>
 </div>
 
@@ -341,7 +366,7 @@ button:focus-visible{outline:3px solid var(--sun);outline-offset:2px}
     <p class="endwho" id="endWho"></p>
     <h1 id="endTitle">게임 오버</h1>
     <p id="endMsg"></p>
-    <div class="scorebox"><span>점수</span><b id="sScore">0</b><small>정답 100점 · 처치 10점 · 승리 500점</small></div>
+    <div class="scorebox"><span>점수</span><b id="sScore">0</b><small id="sScoreNote">정답 100점 · 처치 10점 · 승리 500점</small></div>
     <div class="stats">
       <div class="stat"><b id="sKills">0</b><span>처치한 몬스터</span></div>
       <div class="stat"><b id="sCorrect">0/0</b><span>맞힌 퀴즈</span></div>
@@ -522,7 +547,10 @@ const WAVES = [
  {name:'물류 지연 해골 도적', n:6, hp:90, spd:2.6, dmg:10, color:0x8b5cf6},
  {name:'산업 공동화 해골 장군', n:3, hp:90, spd:2.5, dmg:10, color:0x8b5cf6, boss:{hp:700, spd:2.3, dmg:22, color:0x4b5563, shield:4, slamEvery:6, slamWarn:1.2, slamR:5.5, slamDmg:15, summonEvery:14}}
 ];
-const TIMED_EVERY = 30, STATION_RECHARGE = 30, LOC_TIME = 25, CARD_CHANCE = .5;
+const TIMED_EVERY = 30, STATION_RECHARGE = 30, CARD_CHANCE = .5;
+let LOC_TIME = 25;
+const HERO={hp:1.35,dmg:1.35,spd:1.1,quiz:.75,loc:18,score:1.5};
+let MODE='normal', HERO_OPEN=false, DIFF=1;
 const TIME_BY_KIND = {mc:20, ox:10, cls:10};
 
 /* ---------- three.js 기본 (판타지 RPG판) ---------- */
@@ -937,9 +965,10 @@ function spawnMob(def,isBoss,at){
   x=Math.max(-32,Math.min(32,x)); z=Math.max(-32,Math.min(32,z));
   g.position.set(x,0,z); g.rotation.y=Math.atan2(P.x-x,P.z-z); scene.add(g);
   fx.burst(x,.4,z,isBoss?0x8a8f99:0xc9c2b0,isBoss?30:12,isBoss?6:3);
-  const hp=isBoss?def.boss.hp:def.hp;
+  const K=MODE==='hero'?{hp:HERO.hp,dmg:HERO.dmg,spd:HERO.spd}:{hp:DIFF,dmg:DIFF,spd:.9+.1*DIFF};
+  const hp=Math.round((isBoss?def.boss.hp:def.hp)*K.hp);
   const mats=c.mats; let em=-1;
-  const m={g,body:c.root,parts:{},color,boss:isBoss,r:isBoss?1.6:.8,x,z,hp,max:hp,spd:isBoss?def.boss.spd:def.spd,dmg:isBoss?def.boss.dmg:def.dmg,
+  const m={g,body:c.root,parts:{},color,boss:isBoss,r:isBoss?1.6:.8,x,z,hp,max:hp,spd:(isBoss?def.boss.spd:def.spd)*K.spd,dmg:Math.round((isBoss?def.boss.dmg:def.dmg)*K.dmg),
     mat:{emissive:{setHex(h){ if (h===em) return; em=h; mats.forEach(mt=>{ if (mt.emissive) mt.emissive.setHex(h); }); }}},
     anim:c.anim, mixer:c.mixer, sink:0, spawnT:1.6,
     shield:isBoss?def.boss.shield:0,shieldMax:isBoss?def.boss.shield:0,shieldMesh,slamMesh,eyeLight,def,recover:0,hop:0,
@@ -976,6 +1005,7 @@ const keys={};
 addEventListener('keydown',e=>{
   if (e.target.closest && e.target.closest('input,textarea,select')) return;
   if (!$('#locIntro').hidden){ if (e.key==='Enter'||e.code==='Space'){ e.preventDefault(); goLoc(); } return; }
+  if (!$('#reviveIntro').hidden){ if (e.key==='Enter'||e.code==='Space'){ e.preventDefault(); reviveStart(); } return; }
   if (!$('#quiz').hidden){
     if (Q.answered && (e.key==='Enter'||e.code==='Space')) { e.preventDefault(); closeQuiz(); }
     else if (!Q.answered && /^[1-4]$/.test(e.key) && +e.key<=Q.nOpts) answer(+e.key-1);
@@ -1044,7 +1074,7 @@ function openQuiz(item,source){
   if (item.kind==='mc'){ const order=item.o.map((_,i)=>i).sort(()=>Math.random()-.5); opts=order.map(i=>item.o[i]); correctIdx=order.indexOf(0); }
   else if (item.kind==='ox'){ opts=['O','X']; correctIdx=item.a?0:1; }
   else { opts=CLS_OPTS; correctIdx=item.a; }
-  Object.assign(Q,{item,correctIdx,nOpts:opts.length,start:performance.now(),dur:TIME_BY_KIND[item.kind],answered:false,source,resultOnly:false});
+  Object.assign(Q,{item,correctIdx,nOpts:opts.length,start:performance.now(),dur:Math.round(TIME_BY_KIND[item.kind]*(MODE==='hero'&&source.type!=='revive'?HERO.quiz:1)),answered:false,source,resultOnly:false});
   const tagName = source.type==='station'?`${ZINFO[source.station.zone].name} 퀴즈`:source.type==='card'?(item.kind==='ox'?'지식 카드 · O/X':'지식 카드 · 분류'):'돌발 퀴즈';
   const tagColor = source.type==='station'?ZINFO[source.station.zone].color:source.type==='card'?'#c28a00':'#18213a';
   $('#qtag').textContent=tagName; $('#qtag').style.background=tagColor;
@@ -1076,9 +1106,14 @@ function settle(ok,item,source){
   let entry=W.wrong.find(w=>w.item===item);
   if (entry){ entry.pending=false; if (ok) entry.fixed=true; }
   else if (!ok) W.wrong.push({item,fixed:false,pending:false});
+  const extras=[];
+  if (source && source.type==='revive'){
+    const left=W.revive?W.revive.items.length-W.revive.step-1:0;
+    if (entry && ok) entry.fixed=true;
+    return {fx:{label: ok?(left>0?`부활까지 ${left}문제 남았어요`:'부활 성공!'):'부활 실패'},extras:ok?[]:['이번 판은 여기까지예요. 결과 화면에서 틀린 문제를 복습해요.']};
+  }
   const fx=(ok?GOOD:BAD)[Math.floor(Math.random()*3)];
   applyEffect(fx);
-  const extras=[];
   if (entry && ok) extras.push('지난번에 틀린 문제를 이번엔 맞혔어요!');
   if (!entry && !ok) extras.push('이 문제는 잠시 뒤에 다시 나와요.');
   const boss=liveBoss();
@@ -1094,6 +1129,7 @@ function settle(ok,item,source){
   return {fx,extras};
 }
 function showResult(ok,timeout,item){
+  Q.ok=ok;
   const {fx,extras}=settle(ok,item,Q.source);
   const v=$('#qverdict'); v.className='verdict '+(ok?'good':'bad');
   v.textContent=(ok?'정답! ':(timeout?'시간 초과… ':'아쉬워요… '))+fx.label+(fx.dur?` (${fx.dur}초)`:'');
@@ -1109,6 +1145,7 @@ function applyEffect(fx){
 function closeQuiz(){
   $('#quiz').hidden=true;
   const s=Q.source;
+  if (s && s.type==='revive'){ reviveNext(Q.ok); return; }
   if (s && s.type==='station'){
     const quick = W.gate || !!liveBoss();
     s.station.readyAt=W.t+(quick?8:STATION_RECHARGE);
@@ -1119,6 +1156,35 @@ function closeQuiz(){
   W.paused=false; canvas.focus({preventScroll:true});
 }
 $('#qnext').addEventListener('click',closeQuiz);
+
+/* ---------- 부활 퀴즈: 이번 판에서 틀린 문제 2개를 맞히면 부활 ---------- */
+function reviveItems(){
+  const modal=w=>w.item.kind!=='loc';
+  let list=W.wrong.filter(w=>!w.fixed&&modal(w)).map(w=>w.item);
+  if (list.length<2) list=list.concat(W.wrong.filter(w=>w.fixed&&modal(w)).map(w=>w.item));
+  const pool=MC.concat(OX).filter(q=>!list.includes(q));
+  while (list.length<2 && pool.length) list.push(pool.splice(Math.floor(Math.random()*pool.length),1)[0]);
+  return list.sort(()=>Math.random()-.5).slice(0,2);
+}
+function tryRevive(){
+  if (W.revived) return false;
+  const items=reviveItems(); if (items.length<2) return false;
+  W.revived=true; W.revive={items,step:0}; W.paused=true; for (const k in keys) keys[k]=false;
+  $('#reviveIntro').hidden=false; setTimeout(()=>$('#reviveGo').focus({preventScroll:true}),50);
+  return true;
+}
+function reviveStart(){ if ($('#reviveIntro').hidden) return; $('#reviveIntro').hidden=true; openQuiz(W.revive.items[0],{type:'revive'}); }
+$('#reviveGo').addEventListener('click',reviveStart);
+function reviveNext(ok){
+  if (!ok){ W.revive=null; endGame(false); return; }
+  W.revive.step++;
+  if (W.revive.step<W.revive.items.length){ openQuiz(W.revive.items[W.revive.step],{type:'revive'}); return; }
+  W.revive=null; P.hp=Math.round(P.max*.5); W.invuln=W.t+3;
+  for (const m of mobs){ const dx=m.x-P.x, dz=m.z-P.z, d=Math.hypot(dx,dz)||1; if (d<7){ m.kbx=dx/d*14; m.kbz=dz/d*14; } }
+  fx.shock(P.x,P.z,7); fx.rise(P.x,P.z,0xffd34d,40); shake=.3;
+  showBanner('부활! 3초 동안 무적이에요');
+  W.paused=false; canvas.focus({preventScroll:true});
+}
 
 /* ---------- 위치 퀴즈 (멈추지 않고 직접 달려가서 답하기) ---------- */
 function startLoc(){
@@ -1197,7 +1263,7 @@ function clearWorld(){
 function reset(){
   clearWorld();
   Object.assign(P,{x:0,z:4,hp:100,fx:0,fz:-1,atkCd:0,swingT:0});
-  Object.assign(W,{t:0,paused:false,state:'play',wave:-1,nextWaveAt:1.2,gate:false,nextQuiz:TIMED_EVERY,timedFlip:0,kills:0,correct:0,asked:0,effects:[],wrong:[],loc:null});
+  Object.assign(W,{revived:false,revive:null,invuln:0,t:0,paused:false,state:'play',wave:-1,nextWaveAt:1.2,gate:false,nextQuiz:TIMED_EVERY,timedFlip:0,kills:0,correct:0,asked:0,effects:[],wrong:[],loc:null});
   W.used=new Set(); stations.forEach(s=>s.readyAt=0); chipKey=''; shieldKey='';
   $('#locCard').hidden=true; $('#gateCard').hidden=true;
 }
@@ -1205,12 +1271,25 @@ let NICK='', BAN='';
 for (let i=1;i<=15;i++){ const o=document.createElement('option'); o.value=String(i); o.textContent=i+'반'; $('#cls').appendChild(o); }
 try{ NICK=localStorage.getItem('gsd-nick')||''; BAN=localStorage.getItem('gsd-cls')||''; }catch(e){}
 $('#nick').value=NICK; $('#cls').value=BAN;
+function skillKey(){ return 'gsd-skill:'+BAN+'|'+NICK; }
+function loadSkill(){ try{ const v=parseFloat(localStorage.getItem(skillKey())); return isFinite(v)?Math.min(1.25,Math.max(.7,v)):1; }catch(e){ return 1; } }
+function updateSkill(win){
+  if (MODE==='hero') return;
+  let r=DIFF;
+  if (win) r+= P.hp>60 ? .1 : .05; else r-= W.revived ? .1 : .07;
+  r=Math.min(1.25,Math.max(.7,r));
+  try{ localStorage.setItem(skillKey(),String(r)); }catch(e){}
+}
 function startGame(){
   if (!assetsReady) return;
   const v=$('#nick').value.trim(), c=$('#cls').value;
   if (!v||!c){ $('#nickErr').hidden=false; (c?$('#nick'):$('#cls')).focus(); return; }
   NICK=v; BAN=c; $('#nickErr').hidden=true; $('#hudNick').textContent=`${BAN}반 ${NICK}`;
   try{ localStorage.setItem('gsd-nick',NICK); localStorage.setItem('gsd-cls',BAN); }catch(e){}
+  MODE = HERO_OPEN && $('#modeHero').checked ? 'hero' : 'normal';
+  DIFF = loadSkill();
+  LOC_TIME = MODE==='hero' ? HERO.loc : Math.round(25*(DIFF<1? 1+(1-DIFF)*.8 : 1));
+  document.body.classList.toggle('hero',MODE==='hero');
   $('#title').hidden=true; $('#end').hidden=true;
   ['#hud','#hint','#touch'].forEach(s=>$(s).hidden=false);
   reset(); canvas.focus({preventScroll:true});
@@ -1239,13 +1318,20 @@ function setPending(a){ try{ localStorage.setItem(PENDING_KEY,JSON.stringify(a.s
 function toRecord(r,uid){
   return {uid,cls:String(r.cls),nick:String(r.nick).slice(0,20),unit:String(r.unit).slice(0,80),unitId:String(r.unitId).slice(0,20),
     win:!!r.win,score:r.score|0,correct:r.correct|0,asked:r.asked|0,kills:r.kills|0,timeSec:r.timeSec|0,
-    wrong:r.wrong.join('\n').slice(0,3000),ts:firebase.database.ServerValue.TIMESTAMP};
+    wrong:r.wrong.join('\n').slice(0,3000),ts:firebase.database.ServerValue.TIMESTAMP,mode:r.mode==='hero'?'hero':'normal',diff:Math.round((r.diff||1)*100)/100};
 }
 function withTimeout(p,ms){ return Promise.race([p,new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),ms))]); }
 async function pushResult(r){
   await withTimeout(fbReady,10000);
   const u=fbAuth.currentUser; if (!u) throw new Error('no-auth');
-  await withTimeout(fbDb.ref('results').push(toRecord(r,u.uid)),10000);
+  const rec=toRecord(r,u.uid);
+  try{ await withTimeout(fbDb.ref('results').push(rec),10000); }
+  catch(e){
+    // 예전 보안 규칙(모드·난이도 칸이 없는 규칙)이면 그 두 칸을 빼고 다시 저장
+    if (!/permission|PERMISSION/i.test(String(e&&(e.code||e.message)))) throw e;
+    delete rec.mode; delete rec.diff;
+    await withTimeout(fbDb.ref('results').push(rec),10000);
+  }
 }
 async function saveResult(r){
   if (!fbDb){ setSave('err','결과를 저장할 수 없어요. 인터넷 연결을 확인하고 선생님께 알려 주세요.',false); $('#copyBtn').hidden=false; return; }
@@ -1297,7 +1383,7 @@ function initFirebase(){
     });
   });
   fbReady.then(async u=>{
-    loadBank();
+    loadBank(); loadSettings();
     isAdmin=await checkAdmin(u);
     $('#editBtn').hidden=!isAdmin;
     $('#teacherState').textContent = isAdmin ? `선생님 로그인됨 (${u.email})` : (u.isAnonymous?'선생님이신가요?':`${u.email} 은(는) 선생님 권한이 없어요`);
@@ -1312,6 +1398,10 @@ $('#teacherLogin').addEventListener('click',async e=>{
   try{ await fbAuth.signInWithPopup(new firebase.auth.GoogleAuthProvider()); location.reload(); }
   catch(err){ $('#teacherState').textContent = err&&err.code==='auth/unauthorized-domain' ? 'Firebase 인증 설정에 이 사이트 주소를 추가해야 해요' : err&&err.code==='auth/popup-blocked' ? '팝업이 막혔어요. 팝업을 허용해 주세요' : '로그인하지 못했어요'; }
 });
+function loadSettings(){
+  if (!fbDb) return;
+  fbDb.ref('settings').once('value').then(snap=>{ const v=snap.val()||{}; HERO_OPEN=v.heroMode===true; $('#modePick').hidden=!HERO_OPEN; if (!HERO_OPEN) $('#modeNormal').checked=true; }).catch(()=>{ HERO_OPEN=false; });
+}
 function loadBank(){
   if (!fbDb) return;
   fbDb.ref('bank').once('value').then(snap=>{
@@ -1329,7 +1419,7 @@ function renderHistory(){
 }
 renderHistory();
 function endGame(win){
-  W.state='end'; W.paused=true; W.loc=null; $('#locIntro').hidden=true;
+  W.state='end'; W.paused=true; W.loc=null; $('#locIntro').hidden=true; $('#reviveIntro').hidden=true;
   $('#locCard').hidden=true; $('#gateCard').hidden=true; $('#bossbar').hidden=true; $('#prompt').hidden=true;
   $('#endEyebrow').textContent=win?'승리':'게임 오버';
   $('#endTitle').textContent=win?'세 거점을 모두 지켰어요!':'체력이 모두 닳았어요';
@@ -1344,10 +1434,13 @@ function endGame(win){
       `<li><span class="badge ${w.fixed?'fixed':'todo'}">${w.fixed?'다시 맞힘':'복습 필요'}</span><p class="rq">${esc(questionText(w.item))}</p><p class="ra">정답: <b>${esc(correctText(w.item))}</b></p><p class="re">${esc(w.item.e)}</p></li>`).join('')+'</ol>';
   }
   const unit=DATA.units.find(u=>u.id===playUnit);
-  const score=W.correct*100+W.kills*10+(win?500:0);
+  const fixedN=W.wrong.filter(w=>w.fixed).length;
+  const score=Math.round((W.correct*100+fixedN*50+W.kills*10+(win?500:0))*(MODE==='hero'?HERO.score:1));
+  $('#sScoreNote').textContent=`정답 100점 · 다시 맞힘 +50점(${fixedN}개) · 처치 10점 · 승리 500점`+(MODE==='hero'?' · 영웅 모드 ×1.5':'');
+  updateSkill(win);
   const d=new Date();
   const when=`${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
-  lastResult={nick:NICK,cls:BAN,unit:unit?unit.name:'',unitId:playUnit,win,score,correct:W.correct,asked:W.asked,kills:W.kills,
+  lastResult={diff:DIFF,mode:MODE,nick:NICK,cls:BAN,unit:unit?unit.name:'',unitId:playUnit,win,score,correct:W.correct,asked:W.asked,kills:W.kills,
     time:$('#sTime').textContent,timeSec:s,when,wrong:W.wrong.filter(w=>!w.fixed).map(w=>w.item.q)};
   $('#endWho').textContent=`${BAN}반 ${NICK} · ${lastResult.unit} · ${when}`;
   saveResult(lastResult);
@@ -1660,7 +1753,7 @@ function frame(now){
           m.slamT-=dt;
           if (m.slamT<=0){
             fx.shock(m.slamX,m.slamZ,B.slamR); fx.burst(m.slamX,.3,m.slamZ,0x9aa3b5,26,7); shake=.45; m.recover=.35;
-            if (Math.hypot(P.x-m.slamX,P.z-m.slamZ)<B.slamR){ P.hp-=B.slamDmg; hurtT=.4; fx.num(P.x,3,P.z,'-'+B.slamDmg,'#ff6b6b'); flashPrompt(`내려찍기에 맞았어요! 체력 -${B.slamDmg}`,1.5); }
+            if (Math.hypot(P.x-m.slamX,P.z-m.slamZ)<B.slamR){ if (W.t>W.invuln){ const sd=Math.round(B.slamDmg*(MODE==='hero'?HERO.dmg:DIFF)); P.hp-=sd; hurtT=.4; fx.num(P.x,3,P.z,'-'+sd,'#ff6b6b'); } flashPrompt(`내려찍기에 맞았어요! 체력 -${B.slamDmg}`,1.5); }
             m.slamCd=B.slamEvery;
           }
           m.kbx*=Math.pow(.02,dt); m.kbz*=Math.pow(.02,dt);
@@ -1677,7 +1770,7 @@ function frame(now){
       resolve(m,m.r);
       m.g.rotation.y=Math.atan2(dx,dz);
       m.atkCd=Math.max(0,m.atkCd-dt);
-      if (d<m.r+.75 && m.atkCd<=0){ if (m.anim) m.anim.once('attack',1.6); P.hp-=m.dmg; m.atkCd=1; hurtT=.3; fx.num(P.x,3,P.z,'-'+m.dmg,'#ff6b6b'); }
+      if (d<m.r+.75 && m.atkCd<=0 && W.t>W.invuln){ if (m.anim) m.anim.once('attack',1.6); P.hp-=m.dmg; m.atkCd=1; hurtT=.3; fx.num(P.x,3,P.z,'-'+m.dmg,'#ff6b6b'); }
       m.flash=Math.max(0,m.flash-dt);
       m.mat.emissive.setHex(m.flash>0?0xffffff:0x000000);
     }
@@ -1705,7 +1798,7 @@ function frame(now){
       }
       let near=null;
       if (!W.loc && !W.paused) for (const s of stations){ if (W.t>=s.readyAt && Math.hypot(P.x-s.g.position.x,P.z-s.g.position.z)<2.3) near=s; }
-      if (P.hp<=0){ P.hp=0; endGame(false); }
+      if (P.hp<=0){ P.hp=0; if (!tryRevive()) endGame(false); }
       else if (W.paused){ /* 위치 퀴즈 결과 표시 중 */ }
       else if (pickedCard){
         scene.remove(pickedCard.m); fx.burst(pickedCard.x,1.2,pickedCard.z,0xffc531,14,4); cards=cards.filter(c=>c!==pickedCard);
