@@ -214,6 +214,41 @@ button:focus-visible{outline:3px solid var(--sun);outline-offset:2px}
 .atk{position:fixed;right:max(24px,env(safe-area-inset-right,0px));bottom:calc(env(safe-area-inset-bottom,0px) + 36px);width:92px;height:92px;border-radius:50%;border:3px solid var(--ink);background:var(--sun);font-family:var(--display);font-size:22px;color:var(--ink);box-shadow:4px 4px 0 var(--ink);z-index:4;touch-action:none}
 @media (max-width:520px){ .zones{grid-template-columns:1fr} .panel{padding:18px} .stack{top:calc(env(safe-area-inset-top,0px) + 112px)} }
 @media (prefers-reduced-motion:reduce){ .banner.show{animation-timing-function:steps(1)} }
+/* 학생 로그인 · 프로필 · 보상 */
+.who-row.login{grid-template-columns:90px 1fr}
+.who-row.single{grid-template-columns:1fr}
+.classpick{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0 0 6px}
+.classpick select{font:inherit;font-size:17px;border:3px solid var(--ink);border-radius:12px;padding:9px 8px;background:#fff;color:var(--ink);width:100%;min-width:0}
+.classpick.one{grid-template-columns:1fr}
+#loginBox.disabled .who-row,#loginBox.disabled #lgBtn{opacity:.45;pointer-events:none}
+.who-row.login input{font:inherit;font-size:18px;border:3px solid var(--ink);border-radius:12px;padding:10px 12px;background:#fff;color:var(--ink);width:100%;box-sizing:border-box;min-width:0}
+#lgCode{letter-spacing:.18em;font-variant-numeric:tabular-nums;text-transform:uppercase}
+.login-actions{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin:2px 0 8px}
+.login-actions .btn{width:auto;font-size:18px;padding:9px 18px}
+.login-actions .grow{flex:1;min-width:160px;margin:0}
+.link{border:none;background:none;color:var(--muted);text-decoration:underline;font-size:13px;font-weight:700;padding:4px;cursor:pointer}
+.link.inline{padding:0;font-size:inherit}
+.namehint{font-size:13px;color:#33405e;margin:4px 0 8px}
+.profilecard{border:3px solid var(--ink);border-radius:14px;padding:10px 12px;background:linear-gradient(180deg,#fff,#f4f1e6);margin:0 0 10px;display:grid;gap:6px}
+.pc-top{display:flex;align-items:center;gap:10px}
+.pc-lv{font-family:var(--display);font-size:20px;background:var(--ink);color:var(--sun);border-radius:10px;padding:2px 10px;font-variant-numeric:tabular-nums}
+.pc-id{display:grid;flex:1;min-width:0}
+.pc-id b{font-family:var(--display);font-weight:400;font-size:20px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pc-id small{font-size:12px;color:var(--muted);font-weight:700}
+.pc-coins{display:flex;align-items:center;gap:6px;font-family:var(--display);font-size:20px;font-variant-numeric:tabular-nums}
+.pc-coins i{width:18px;height:18px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#ffe58a,#e0a400);border:2px solid #8a6200}
+.xpbar{height:12px;border:2px solid var(--ink);border-radius:7px;background:#e7ebf2;overflow:hidden}
+.xpbar i{display:block;height:100%;background:linear-gradient(90deg,#6fb8ff,#3b6fd9)}
+.pc-foot{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.pc-foot small{font-size:12px;color:var(--muted);font-weight:700;font-variant-numeric:tabular-nums}
+.rewardbox{display:grid;gap:4px;margin:12px 0 0;padding:10px 14px;border:3px solid var(--ink);border-radius:14px;background:#e8f4ff}
+.rewardbox b{font-family:var(--display);font-weight:400;font-size:22px}
+.rewardbox span{font-size:13px;font-weight:700;color:#33405e}
+.rewardbox .lvup{font-family:var(--display);font-size:20px;color:#c27a00}
+.rewardbox small{font-size:12px;font-weight:700;color:var(--muted)}
+.rewardbox small.warn{color:var(--bad)}
+.rewardbox.guest{background:#f1f3f7}
+@media (max-width:520px){ .classpick{grid-template-columns:1fr} }
 /* 모드 선택 */
 .modepick{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0 0 10px}
 .mode{display:block;cursor:pointer}
@@ -298,11 +333,36 @@ body.hero .vitals{border-color:#c27a00;box-shadow:4px 4px 0 #c27a00}
       <li><b>보스:</b> 보호막 4개는 퀴즈 정답으로만 깨지고, 오답이면 되살아나요. 내려찍기와 부하 소환을 조심하세요</li>
       <li>정답은 강화, 오답은 약화 · 틀린 문제는 다시 나와요 · 체력 0이면 게임 오버</li>
     </ul>
-    <div class="who-row">
-      <label class="nickfield"><span>반</span><select id="cls"><option value="">선택</option></select></label>
-      <label class="nickfield"><span>번호와 이름 (예: 7 지우)</span><input id="nick" maxlength="12" autocomplete="off" placeholder="예: 7 지우"></label>
+    <div class="classpick" id="classPick">
+      <label class="nickfield" id="pkSchWrap"><span>학교</span><select id="pkSch"></select></label>
+      <label class="nickfield"><span>학급</span><select id="pkCls"><option value="">불러오는 중…</option></select></label>
     </div>
-    <p class="nickerr" id="nickErr" hidden>반과 이름을 입력해야 시작할 수 있어요.</p>
+    <p class="namehint" id="noClassNote" hidden>선생님이 아직 학급을 만들지 않았어요. 지금은 '코드 없이 연습하기'로 해 주세요.</p>
+    <div id="loginBox">
+      <div class="who-row login">
+        <label class="nickfield"><span>번호</span><input id="lgNum" type="number" min="1" max="60" inputmode="numeric" placeholder="7"></label>
+        <label class="nickfield"><span>내 코드 (6자리)</span><input id="lgCode" maxlength="6" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="AB12CD"></label>
+      </div>
+      <div class="login-actions"><button class="btn ghost" id="lgBtn">로그인</button><button class="link" id="guestBtn">코드 없이 연습하기</button></div>
+      <p class="nickerr" id="lgErr" hidden></p>
+    </div>
+    <div id="nameBox" hidden>
+      <p class="namehint">처음 오셨네요! 게임에서 쓸 이름(또는 별명)을 정해 주세요. 나중에 선생님만 바꿀 수 있어요.</p>
+      <div class="login-actions"><label class="nickfield grow"><span>이름</span><input id="pfName" maxlength="12" autocomplete="off" placeholder="예: 지우"></label><button class="btn ghost" id="pfSave">저장</button></div>
+      <p class="nickerr" id="pfErr" hidden></p>
+    </div>
+    <div class="profilecard" id="profileCard" hidden>
+      <div class="pc-top"><span class="pc-lv" id="pcLv">Lv.1</span><div class="pc-id"><b id="pcName"></b><small id="pcWho"></small></div><span class="pc-coins"><i></i><b id="pcCoins">0</b></span></div>
+      <div class="xpbar"><i id="pcXp" style="width:0%"></i></div>
+      <div class="pc-foot"><small id="pcXpTxt"></small><button class="link" id="pcLogout">로그아웃</button></div>
+    </div>
+    <div id="guestBox" hidden>
+      <div class="who-row single">
+        <label class="nickfield"><span>번호와 이름 (예: 7 지우)</span><input id="nick" maxlength="12" autocomplete="off" placeholder="예: 7 지우"></label>
+      </div>
+      <p class="nickerr" id="nickErr" hidden>학급을 고르고 번호와 이름을 입력해야 시작할 수 있어요.</p>
+      <p class="namehint">연습 모드에서는 결과만 저장되고 경험치·코인은 쌓이지 않아요. <button class="link inline" id="backLogin">코드로 로그인하기</button></p>
+    </div>
     <p class="netwarn" id="netWarn" hidden></p>
     <div class="modepick" id="modePick" hidden>
       <label class="mode"><input type="radio" name="mode" id="modeNormal" value="normal" checked><span><b>일반 모드</b><small>내 실력에 맞춰 함께 성장해요</small></span></label>
@@ -372,6 +432,7 @@ body.hero .vitals{border-color:#c27a00;box-shadow:4px 4px 0 #c27a00}
       <div class="stat"><b id="sCorrect">0/0</b><span>맞힌 퀴즈</span></div>
       <div class="stat"><b id="sTime">0:00</b><span>버틴 시간</span></div>
     </div>
+    <div class="rewardbox" id="rewardBox" hidden></div>
     <div class="review" id="review"></div>
     <div class="savebox wait" id="saveBox"><span id="saveMsg">결과를 저장하는 중…</span><button id="saveRetry" hidden>다시 저장</button></div>
     <div class="submit">
@@ -1267,25 +1328,77 @@ function reset(){
   W.used=new Set(); stations.forEach(s=>s.readyAt=0); chipKey=''; shieldKey='';
   $('#locCard').hidden=true; $('#gateCard').hidden=true;
 }
-let NICK='', BAN='';
-for (let i=1;i<=15;i++){ const o=document.createElement('option'); o.value=String(i); o.textContent=i+'반'; $('#cls').appendChild(o); }
-try{ NICK=localStorage.getItem('gsd-nick')||''; BAN=localStorage.getItem('gsd-cls')||''; }catch(e){}
-$('#nick').value=NICK; $('#cls').value=BAN;
+let NICK='', BAN='', CI=null;
+try{ NICK=localStorage.getItem('gsd-nick')||''; }catch(e){}
+$('#nick').value=NICK;
+/* 학교·학급 목록 (선생님이 결과판에서 만들어요) */
+let SCHOOLS={}, CLASSES={}, LEGACY=false;
+const clsLabel=c=>`${c.grade}학년 ${c.cls}반`;
+function classInfo(cid){
+  if (!cid) return null;
+  if (cid.startsWith('n:')) { const n=cid.slice(2); return {cid:'',sch:'',year:0,grade:0,cls:n,label:n+'반',legacy:true}; }
+  const c=CLASSES[cid]; if (!c) return null; const sc=SCHOOLS[c.sid]||{};
+  return {cid,sch:sc.name||'',year:c.year,grade:c.grade,cls:String(c.cls),label:`${sc.name?sc.name+' ':''}${c.grade}-${c.cls}`,short:`${c.grade}-${c.cls}`};
+}
+function fillSchools(){
+  const act=Object.entries(CLASSES).filter(([k,c])=>!c.hidden&&SCHOOLS[c.sid]);
+  LEGACY=!act.length;
+  $('#noClassNote').hidden=!LEGACY; $('#loginBox').classList.toggle('disabled',LEGACY);
+  if (LEGACY){
+    $('#pkSchWrap').hidden=true; $('#classPick').classList.add('one');
+    $('#pkCls').innerHTML='<option value="">반 선택</option>'+Array.from({length:15},(_,i)=>`<option value="n:${i+1}">${i+1}반</option>`).join('');
+    return;
+  }
+  const sids=[...new Set(act.map(([k,c])=>c.sid))].sort((a,b)=>((SCHOOLS[a].order||0)-(SCHOOLS[b].order||0))||SCHOOLS[a].name.localeCompare(SCHOOLS[b].name,'ko'));
+  $('#pkSchWrap').hidden=sids.length<2; $('#classPick').classList.toggle('one',sids.length<2);
+  $('#pkSch').innerHTML=sids.map(id=>`<option value="${id}">${esc(SCHOOLS[id].name)}</option>`).join('');
+  let saved=''; try{ saved=localStorage.getItem('gsd-sch')||''; }catch(e){}
+  if (sids.includes(saved)) $('#pkSch').value=saved;
+  fillClasses();
+}
+function fillClasses(){
+  if (LEGACY) return;
+  const sid=$('#pkSch').value;
+  const list=Object.entries(CLASSES).filter(([k,c])=>!c.hidden&&c.sid===sid).sort((a,b)=>(b[1].year-a[1].year)||(a[1].grade-b[1].grade)||(a[1].cls-b[1].cls));
+  const years=new Set(list.map(([k,c])=>c.year));
+  $('#pkCls').innerHTML='<option value="">학급 선택</option>'+list.map(([k,c])=>`<option value="${k}">${years.size>1?c.year+'년 ':''}${clsLabel(c)}</option>`).join('');
+  let saved=''; try{ saved=localStorage.getItem('gsd-cid')||''; }catch(e){}
+  if (list.some(([k])=>k===saved)) $('#pkCls').value=saved;
+}
+$('#pkSch').addEventListener('change',()=>{ try{ localStorage.setItem('gsd-sch',$('#pkSch').value); }catch(e){} fillClasses(); });
+$('#pkCls').addEventListener('change',()=>{ try{ localStorage.setItem('gsd-cid',$('#pkCls').value); }catch(e){} $('#nickErr').hidden=true; lgError(''); });
+function loadClasses(){
+  if (!fbDb){ CLASSES={}; fillSchools(); return; }
+  Promise.all([fbDb.ref('schools').once('value'),fbDb.ref('classes').once('value')])
+    .then(([a,b])=>{ SCHOOLS=a.val()||{}; CLASSES=b.val()||{}; fillSchools(); })
+    .catch(()=>{ SCHOOLS={}; CLASSES={}; fillSchools(); });
+}
 function skillKey(){ return 'gsd-skill:'+BAN+'|'+NICK; }
-function loadSkill(){ try{ const v=parseFloat(localStorage.getItem(skillKey())); return isFinite(v)?Math.min(1.25,Math.max(.7,v)):1; }catch(e){ return 1; } }
+function loadSkill(){ if (STUDENT&&PROFILE){ const v=+PROFILE.skill; return isFinite(v)&&v>0?Math.min(1.25,Math.max(.7,v)):1; } try{ const v=parseFloat(localStorage.getItem(skillKey())); return isFinite(v)?Math.min(1.25,Math.max(.7,v)):1; }catch(e){ return 1; } }
 function updateSkill(win){
-  if (MODE==='hero') return;
+  if (MODE==='hero') return DIFF;
   let r=DIFF;
   if (win) r+= P.hp>60 ? .1 : .05; else r-= W.revived ? .1 : .07;
   r=Math.min(1.25,Math.max(.7,r));
-  try{ localStorage.setItem(skillKey(),String(r)); }catch(e){}
+  if (!STUDENT){ try{ localStorage.setItem(skillKey(),String(r)); }catch(e){} }
+  return r;
 }
 function startGame(){
   if (!assetsReady) return;
-  const v=$('#nick').value.trim(), c=$('#cls').value;
-  if (!v||!c){ $('#nickErr').hidden=false; (c?$('#nick'):$('#cls')).focus(); return; }
-  NICK=v; BAN=c; $('#nickErr').hidden=true; $('#hudNick').textContent=`${BAN}반 ${NICK}`;
-  try{ localStorage.setItem('gsd-nick',NICK); localStorage.setItem('gsd-cls',BAN); }catch(e){}
+  if (AUTHMODE==='student' && STUDENT && PROFILE){
+    CI=classInfo(STUDENT.cid)||{cid:STUDENT.cid,sch:'',year:0,grade:0,cls:'',label:'',short:''};
+    NICK=`${STUDENT.num} ${PROFILE.name}`; BAN=STUDENT.cid;
+    $('#hudNick').textContent=`Lv.${levelOf(PROFILE.xp).lv} · ${CI.short||''} ${PROFILE.name}`;
+  } else if (AUTHMODE==='guest'){
+    const v=$('#nick').value.trim(), c=$('#pkCls').value;
+    if (!v||!c){ $('#nickErr').hidden=false; (c?$('#nick'):$('#pkCls')).focus(); return; }
+    CI=classInfo(c); NICK=v; BAN=CI.cid||('n'+CI.cls); $('#nickErr').hidden=true; $('#hudNick').textContent=`연습 · ${CI.short||CI.label} ${NICK}`;
+    try{ localStorage.setItem('gsd-nick',NICK); }catch(e){}
+  } else {
+    if (AUTHMODE==='name'){ $('#pfErr').hidden=false; $('#pfErr').textContent='이름을 먼저 저장해 주세요.'; $('#pfName').focus(); }
+    else { lgError('코드로 로그인하거나 "코드 없이 연습하기"를 눌러 주세요.'); $('#lgCode').focus(); }
+    return;
+  }
   MODE = HERO_OPEN && $('#modeHero').checked ? 'hero' : 'normal';
   DIFF = loadSkill();
   LOC_TIME = MODE==='hero' ? HERO.loc : Math.round(25*(DIFF<1? 1+(1-DIFF)*.8 : 1));
@@ -1316,7 +1429,8 @@ function setSave(kind,msg,retry){ const b=$('#saveBox'); b.className='savebox '+
 function pendingList(){ try{ return JSON.parse(localStorage.getItem(PENDING_KEY)||'[]'); }catch(e){ return []; } }
 function setPending(a){ try{ localStorage.setItem(PENDING_KEY,JSON.stringify(a.slice(-20))); }catch(e){} }
 function toRecord(r,uid){
-  return {uid,cls:String(r.cls),nick:String(r.nick).slice(0,20),unit:String(r.unit).slice(0,80),unitId:String(r.unitId).slice(0,20),
+  if (!r.label) r.label=(r.cls||'')+'반';
+  return {uid,cls:String(r.cls).slice(0,4),cid:String(r.cid||'').slice(0,10),sch:String(r.sch||'').slice(0,30),grade:+r.grade||0,year:+r.year||0,nick:String(r.nick).slice(0,20),unit:String(r.unit).slice(0,80),unitId:String(r.unitId).slice(0,20),
     win:!!r.win,score:r.score|0,correct:r.correct|0,asked:r.asked|0,kills:r.kills|0,timeSec:r.timeSec|0,
     wrong:r.wrong.join('\n').slice(0,3000),ts:firebase.database.ServerValue.TIMESTAMP,mode:r.mode==='hero'?'hero':'normal',diff:Math.round((r.diff||1)*100)/100};
 }
@@ -1336,7 +1450,7 @@ async function pushResult(r){
 async function saveResult(r){
   if (!fbDb){ setSave('err','결과를 저장할 수 없어요. 인터넷 연결을 확인하고 선생님께 알려 주세요.',false); $('#copyBtn').hidden=false; return; }
   setSave('wait','결과를 저장하는 중…',false);
-  try{ await pushResult(r); setSave('ok',`결과가 선생님께 저장됐어요 ✓  (${r.cls}반 ${r.nick} · ${r.score}점)`,false); $('#copyBtn').hidden=true; }
+  try{ await pushResult(r); setSave('ok',`결과가 선생님께 저장됐어요 ✓  (${r.label} ${r.nick} · ${r.score}점)`,false); $('#copyBtn').hidden=true; }
   catch(e){
     const p=pendingList(); if (!p.some(x=>x.when===r.when&&x.nick===r.nick)){ p.push(r); setPending(p); }
     setSave('err','저장하지 못했어요. 인터넷이 다시 연결되면 자동으로 저장돼요. 지금 다시 시도하려면 버튼을 누르세요.',true);
@@ -1349,7 +1463,7 @@ async function flushPending(){
   for (const r of p){ try{ await pushResult(r); }catch(e){ left.push(r); } }
   setPending(left);
   if (lastResult && !left.some(x=>x.when===lastResult.when&&x.nick===lastResult.nick) && !$('#end').hidden && $('#saveBox').classList.contains('err'))
-    setSave('ok',`결과가 선생님께 저장됐어요 ✓  (${lastResult.cls}반 ${lastResult.nick} · ${lastResult.score}점)`,false);
+    setSave('ok',`결과가 선생님께 저장됐어요 ✓  (${lastResult.label} ${lastResult.nick} · ${lastResult.score}점)`,false);
 }
 $('#saveRetry').addEventListener('click',async()=>{ if (!lastResult) return; setSave('wait','다시 저장하는 중…',false);
   await flushPending(); if ($('#saveBox').classList.contains('wait')) saveResult(lastResult); });
@@ -1366,11 +1480,14 @@ function initFirebase(){
     firebase.initializeApp(window.FIREBASE_CONFIG);
     fbAuth=firebase.auth(); fbDb=firebase.database();
   }catch(e){ $('#netWarn').hidden=false; $('#netWarn').textContent='저장 서버 설정에 문제가 있어요. 선생님께 알려 주세요.'; return; }
+  try{ fbAuth.setPersistence(firebase.auth.Auth.Persistence.SESSION).catch(()=>{}); }catch(e){}
+  loadClasses();
   fbReady=new Promise((resolve,reject)=>{
-    const off=fbAuth.onAuthStateChanged(async u=>{
-      if (u){ off(); resolve(u); return; }
+    let first=true;
+    fbAuth.onAuthStateChanged(async u=>{
+      if (u){ if (first){ first=false; resolve(u); } if (isStudentUser(u)) enterStudentFromSession(u); return; }
       try{ await fbAuth.signInAnonymously(); }catch(err){
-        off(); $('#netWarn').hidden=false;
+        if (!first) return; first=false; $('#netWarn').hidden=false;
         const c=String(err&&err.code||err&&err.message||'unknown');
         const why = (c==='auth/operation-not-allowed'||c==='auth/admin-restricted-operation') ? 'Firebase에서 익명 로그인이 꺼져 있어요. Authentication → 로그인 방법에서 익명을 켜 주세요.'
           : c==='auth/operation-not-supported-in-this-environment' ? '파일을 컴퓨터에서 바로 열었어요. GitHub에 올린 주소(https://…github.io/…)로 열어 주세요.'
@@ -1386,15 +1503,16 @@ function initFirebase(){
     loadBank(); loadSettings();
     isAdmin=await checkAdmin(u);
     $('#editBtn').hidden=!isAdmin;
-    $('#teacherState').textContent = isAdmin ? `선생님 로그인됨 (${u.email})` : (u.isAnonymous?'선생님이신가요?':`${u.email} 은(는) 선생님 권한이 없어요`);
-    $('#teacherLogin').textContent = isAdmin||!u.isAnonymous ? '로그아웃' : '문제 관리 로그인';
+    const plain=u.isAnonymous||isStudentUser(u);
+    $('#teacherState').textContent = isAdmin ? `선생님 로그인됨 (${u.email})` : (plain?'선생님이신가요?':`${u.email} 은(는) 선생님 권한이 없어요`);
+    $('#teacherLogin').textContent = isAdmin||!plain ? '로그아웃' : '문제 관리 로그인';
     flushPending();
   }).catch(()=>{ loadBank(); });
 }
 $('#teacherLogin').addEventListener('click',async e=>{
   e.preventDefault(); if (!fbAuth) return;
   const u=fbAuth.currentUser;
-  if (u && !u.isAnonymous){ await fbAuth.signOut(); location.reload(); return; }
+  if (u && !u.isAnonymous && !isStudentUser(u)){ await fbAuth.signOut(); location.reload(); return; }
   try{ await fbAuth.signInWithPopup(new firebase.auth.GoogleAuthProvider()); location.reload(); }
   catch(err){ $('#teacherState').textContent = err&&err.code==='auth/unauthorized-domain' ? 'Firebase 인증 설정에 이 사이트 주소를 추가해야 해요' : err&&err.code==='auth/popup-blocked' ? '팝업이 막혔어요. 팝업을 허용해 주세요' : '로그인하지 못했어요'; }
 });
@@ -1409,6 +1527,126 @@ function loadBank(){
   }).catch(()=>{});
 }
 
+/* ---------- 학생 계정: 반·번호·코드 로그인, 경험치·레벨·코인 ---------- */
+const STU_DOMAIN='stu.sgame.kr';
+let AUTHMODE='login', STUDENT=null, PROFILE=null, lastReward=null;
+const isStudentUser=u=>!!(u&&u.email&&u.email.endsWith('@'+STU_DOMAIN));
+const emailOf=(c,n,code)=>`${c}-${n}-${String(code).toLowerCase()}@${STU_DOMAIN}`;
+const pwOf=code=>'sg#'+String(code).toLowerCase()+'#26';
+function levelOf(xp){ let lv=1, need=150, rest=Math.max(0,xp|0); while (rest>=need){ rest-=need; lv++; need=150+50*(lv-1); } return {lv,rest,need}; }
+function profRef(){ return fbDb.ref(`profiles/${STUDENT.cid}/${STUDENT.num}`); }
+function showAuthUI(){
+  $('#classPick').hidden=AUTHMODE==='student'||AUTHMODE==='name';
+  $('#loginBox').hidden=AUTHMODE!=='login';
+  $('#guestBox').hidden=AUTHMODE!=='guest';
+  $('#nameBox').hidden=AUTHMODE!=='name';
+  $('#profileCard').hidden=AUTHMODE!=='student';
+  if (AUTHMODE==='student') renderProfileCard();
+}
+function renderProfileCard(){
+  const L=levelOf(PROFILE.xp);
+  $('#pcName').textContent=PROFILE.name||'이름 없음';
+  { const ci=classInfo(STUDENT.cid); $('#pcWho').textContent=`${ci?ci.label:''} ${STUDENT.num}번`; }
+  $('#pcLv').textContent=`Lv.${L.lv}`;
+  $('#pcXp').style.width=Math.round(L.rest/L.need*100)+'%';
+  $('#pcXpTxt').textContent=`경험치 ${L.rest} / ${L.need}`;
+  $('#pcCoins').textContent=(PROFILE.coins|0).toLocaleString('ko-KR');
+}
+function lgError(msg){ const e=$('#lgErr'); e.hidden=!msg; e.textContent=msg||''; }
+try{ $('#lgNum').value=localStorage.getItem('gsd-lgnum')||''; }catch(e){}
+$('#lgCode').addEventListener('input',e=>{ e.target.value=e.target.value.replace(/[^a-zA-Z0-9]/g,'').toUpperCase().slice(0,6); lgError(''); });
+$('#guestBtn').addEventListener('click',()=>{ AUTHMODE='guest'; showAuthUI(); $('#nick').focus(); });
+$('#backLogin').addEventListener('click',()=>{ AUTHMODE='login'; showAuthUI(); $('#lgCode').focus(); });
+$('#lgCode').addEventListener('keydown',e=>{ if (e.key==='Enter'){ e.preventDefault(); studentLogin(); } });
+$('#lgBtn').addEventListener('click',()=>studentLogin());
+$('#pcLogout').addEventListener('click',async()=>{ STUDENT=null; PROFILE=null; AUTHMODE='login'; showAuthUI(); $('#lgCode').value=''; try{ await fbAuth.signOut(); }catch(e){} });
+
+let loggingIn=false;
+async function studentLogin(){
+  if (loggingIn) return;
+  if (!fbAuth){ lgError('저장 서버에 연결되지 않아 로그인할 수 없어요. 코드 없이 연습하기를 눌러 주세요.'); return; }
+  const c=$('#pkCls').value, n=String(parseInt($('#lgNum').value,10)||''), code=$('#lgCode').value.trim().toLowerCase();
+  if (LEGACY||!c||c.startsWith('n:')){ lgError('학급을 먼저 골라 주세요.'); return; }
+  if (!n||+n<1||+n>60){ lgError('번호를 확인해 주세요.'); return; }
+  if (!/^[a-z0-9]{6}$/.test(code)){ lgError('코드는 영어와 숫자 6자리예요.'); return; }
+  loggingIn=true; $('#lgBtn').disabled=true; $('#lgBtn').textContent='확인 중…'; lgError('');
+  const email=emailOf(c,n,code), pw=pwOf(code);
+  let created=false;
+  try{
+    try{ await fbAuth.signInWithEmailAndPassword(email,pw); }
+    catch(e){
+      const k=e&&e.code;
+      if (k==='auth/invalid-credential'||k==='auth/user-not-found'||k==='auth/invalid-login-credentials'||k==='auth/wrong-password'){
+        await fbAuth.createUserWithEmailAndPassword(email,pw); created=true;
+      } else throw e;
+    }
+    STUDENT={cid:c,num:n};
+    let val;
+    try{ val=(await withTimeout(profRef().once('value'),10000)).val(); }
+    catch(e){
+      // 이 반·번호의 코드가 아니면 읽기 권한이 없어요
+      const u=fbAuth.currentUser; STUDENT=null;
+      if (created && u) { try{ await u.delete(); }catch(_){} }
+      try{ await fbAuth.signOut(); }catch(_){}
+      lgError(/timeout/.test(String(e&&e.message))?'서버가 응답하지 않아요. 잠시 뒤 다시 해 주세요.':'학급·번호·코드가 맞지 않아요. 선생님께 받은 코드 카드를 확인해 주세요.');
+      return;
+    }
+    try{ localStorage.setItem('gsd-cid',c); localStorage.setItem('gsd-lgnum',n); }catch(_){}
+    if (!val){ AUTHMODE='name'; showAuthUI(); $('#pfName').focus(); return; }
+    PROFILE=val; AUTHMODE='student'; showAuthUI();
+  }catch(e){
+    const k=e&&e.code;
+    lgError(k==='auth/operation-not-allowed'?'선생님: Firebase에서 이메일/비밀번호 로그인을 켜야 해요.'
+      : k==='auth/too-many-requests'?'로그인 시도가 너무 많아요. 잠시 뒤 다시 해 주세요.'
+      : k==='auth/network-request-failed'?'인터넷 연결을 확인해 주세요.'
+      : '로그인하지 못했어요. ('+(k||'오류')+')');
+  }finally{ loggingIn=false; $('#lgBtn').disabled=false; $('#lgBtn').textContent='로그인'; }
+}
+$('#pfSave').addEventListener('click',()=>saveName());
+$('#pfName').addEventListener('keydown',e=>{ if (e.key==='Enter'){ e.preventDefault(); saveName(); } });
+async function saveName(){
+  const nm=$('#pfName').value.trim();
+  if (!nm){ $('#pfErr').hidden=false; $('#pfErr').textContent='이름(또는 별명)을 적어 주세요.'; return; }
+  const TS=firebase.database.ServerValue.TIMESTAMP;
+  const p={name:nm.slice(0,12),xp:0,coins:0,plays:0,wins:0,best:0,skill:1,correct:0,asked:0,fixed:0,createdAt:TS,updatedAt:TS};
+  $('#pfSave').disabled=true;
+  try{ await withTimeout(profRef().set(p),10000); PROFILE={...p,createdAt:Date.now(),updatedAt:Date.now()}; AUTHMODE='student'; showAuthUI(); }
+  catch(e){ $('#pfErr').hidden=false; $('#pfErr').textContent='저장하지 못했어요. 보안 규칙이 최신인지 선생님께 알려 주세요.'; }
+  finally{ $('#pfSave').disabled=false; }
+}
+async function enterStudentFromSession(u){
+  if (STUDENT||AUTHMODE==='student') return;
+  const m=u.email.match(/^([a-z0-9]{4,10})-(\d+)-[a-z0-9]{6}@/); if (!m) return;
+  STUDENT={cid:m[1],num:m[2]};
+  try{ const val=(await withTimeout(profRef().once('value'),10000)).val();
+    if (!val){ AUTHMODE='name'; } else { PROFILE=val; AUTHMODE='student'; }
+    showAuthUI();
+  }catch(e){ STUDENT=null; try{ await fbAuth.signOut(); }catch(_){} }
+}
+
+/* 게임이 끝나면 노력에 따라 보상 */
+async function grantRewards(r,fixedN){
+  const box=$('#rewardBox');
+  if (!STUDENT||!PROFILE){ box.className='rewardbox guest'; box.innerHTML='<b>연습 모드</b><span>코드로 로그인하면 경험치와 코인이 쌓여요.</span>'; box.hidden=false; return; }
+  let xp=10*r.asked+20*r.correct+40*fixedN+5*r.kills+(r.win?100:0);
+  const newBest=(PROFILE.plays|0)>0 && r.score>(PROFILE.best|0);
+  if (newBest) xp+=80;
+  if (r.mode==='hero') xp*=1.5;
+  xp=Math.min(1800,Math.round(xp)); const coins=Math.min(900,Math.round(xp/2));
+  const before=levelOf(PROFILE.xp|0), after=levelOf((PROFILE.xp|0)+xp);
+  const upd={xp:(PROFILE.xp|0)+xp,coins:(PROFILE.coins|0)+coins,plays:(PROFILE.plays|0)+1,wins:(PROFILE.wins|0)+(r.win?1:0),
+    best:Math.max(PROFILE.best|0,r.score|0),correct:(PROFILE.correct|0)+r.correct,asked:(PROFILE.asked|0)+r.asked,fixed:(PROFILE.fixed|0)+fixedN,
+    skill:Math.round((r.newSkill??PROFILE.skill??1)*100)/100,updatedAt:firebase.database.ServerValue.TIMESTAMP};
+  const lines=[`<b>+${xp} 경험치 · +${coins} 코인</b>`];
+  const why=[]; if (r.asked) why.push(`문제 ${r.asked}개 도전`); if (fixedN) why.push(`틀린 문제 ${fixedN}개 다시 맞힘`); if (newBest) why.push('내 최고 점수 경신!'); if (r.mode==='hero') why.push('영웅 모드 ×1.5');
+  if (why.length) lines.push(`<span>${why.join(' · ')}</span>`);
+  if (after.lv>before.lv) lines.push(`<span class="lvup">레벨 업! Lv.${before.lv} → Lv.${after.lv}</span>`);
+  lines.push(`<div class="xpbar"><i style="width:${Math.round(after.rest/after.need*100)}%"></i></div><small>Lv.${after.lv} · 경험치 ${after.rest} / ${after.need} · 코인 ${upd.coins.toLocaleString('ko-KR')}</small>`);
+  box.className='rewardbox'; box.innerHTML=lines.join(''); box.hidden=false;
+  try{ await withTimeout(profRef().update(upd),10000); PROFILE={...PROFILE,...upd,updatedAt:Date.now()}; renderProfileCard(); lastReward={xp,coins}; }
+  catch(e){ box.insertAdjacentHTML('beforeend','<small class="warn">보상을 저장하지 못했어요. 너무 빨리 끝난 판은 저장되지 않아요(10초 이상 플레이).</small>'); }
+}
+
 function saveHistory(r){
   try{ const h=JSON.parse(localStorage.getItem('gsd-history')||'[]'); h.unshift({nick:r.nick,score:r.score,correct:r.correct,asked:r.asked,win:r.win,when:r.when}); localStorage.setItem('gsd-history',JSON.stringify(h.slice(0,20))); }catch(e){}
 }
@@ -1419,6 +1657,7 @@ function renderHistory(){
 }
 renderHistory();
 function endGame(win){
+  $('#rewardBox').hidden=true;
   W.state='end'; W.paused=true; W.loc=null; $('#locIntro').hidden=true; $('#reviveIntro').hidden=true;
   $('#locCard').hidden=true; $('#gateCard').hidden=true; $('#bossbar').hidden=true; $('#prompt').hidden=true;
   $('#endEyebrow').textContent=win?'승리':'게임 오버';
@@ -1437,13 +1676,14 @@ function endGame(win){
   const fixedN=W.wrong.filter(w=>w.fixed).length;
   const score=Math.round((W.correct*100+fixedN*50+W.kills*10+(win?500:0))*(MODE==='hero'?HERO.score:1));
   $('#sScoreNote').textContent=`정답 100점 · 다시 맞힘 +50점(${fixedN}개) · 처치 10점 · 승리 500점`+(MODE==='hero'?' · 영웅 모드 ×1.5':'');
-  updateSkill(win);
+  const newSkill=updateSkill(win);
   const d=new Date();
   const when=`${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
-  lastResult={diff:DIFF,mode:MODE,nick:NICK,cls:BAN,unit:unit?unit.name:'',unitId:playUnit,win,score,correct:W.correct,asked:W.asked,kills:W.kills,
+  lastResult={diff:DIFF,mode:MODE,nick:NICK,cls:CI.cls,cid:CI.cid,sch:CI.sch,grade:CI.grade,year:CI.year,label:CI.label,unit:unit?unit.name:'',unitId:playUnit,win,score,correct:W.correct,asked:W.asked,kills:W.kills,
     time:$('#sTime').textContent,timeSec:s,when,wrong:W.wrong.filter(w=>!w.fixed).map(w=>w.item.q)};
-  $('#endWho').textContent=`${BAN}반 ${NICK} · ${lastResult.unit} · ${when}`;
+  $('#endWho').textContent=`${CI.label} ${NICK} · ${lastResult.unit} · ${when}`;
   saveResult(lastResult);
+  grantRewards({...lastResult,newSkill},fixedN);
   $('#sScore').textContent=score;
   $('#copyStatus').textContent=''; $('#copyText').hidden=true;
   const url=submitUrl(lastResult), a=$('#submitLink');
@@ -1456,8 +1696,7 @@ function endGame(win){
 $('#startBtn').addEventListener('click',startGame);
 $('#nick').addEventListener('keydown',e=>{ if (e.key==='Enter'){ e.preventDefault(); startGame(); } });
 $('#nick').addEventListener('input',()=>{ $('#nickErr').hidden=true; });
-$('#cls').addEventListener('change',()=>{ $('#nickErr').hidden=true; });
-$('#homeBtn').addEventListener('click',()=>{ $('#end').hidden=true; ['#hud','#hint','#touch'].forEach(s=>$(s).hidden=true); W.state='title'; renderHistory(); $('#title').hidden=false; $('#nick').focus(); });
+$('#homeBtn').addEventListener('click',()=>{ $('#end').hidden=true; showAuthUI(); ['#hud','#hint','#touch'].forEach(s=>$(s).hidden=true); W.state='title'; renderHistory(); $('#title').hidden=false; $('#nick').focus(); });
 let lastResult=null;
 $('#copyBtn').addEventListener('click',()=>{
   if (!lastResult) return;
@@ -1517,6 +1756,7 @@ function updateBankInfo(){
 $('#unitSelect').addEventListener('change',e=>useUnit(e.target.value));
 useUnit('u1'); renderUnitPicker();
 initFirebase();
+if (!fbDb) loadClasses();
 $('#startBtn').disabled=true; $('#startBtn').textContent='불러오는 중…';
 assetsPromise.then(()=>{ buildWorld(); assetsReady=true; $('#startBtn').disabled=false; $('#startBtn').textContent='게임 시작'; })
   .catch(err=>{ $('#startBtn').textContent='불러오기 실패'; $('#netWarn').hidden=false; $('#netWarn').textContent='3D 모델을 불러오지 못했어요. 새로고침해 보세요. ('+(err&&err.message||'')+')'; });

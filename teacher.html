@@ -89,6 +89,20 @@ tr:hover td{background:#f8fafc}
 .link{border:none;background:none;color:var(--bad);font-weight:700;font-size:12px;padding:2px 4px}
 .foot{margin-top:18px;font-size:12px;color:var(--muted)}
 .foot a{color:var(--muted)}
+.rs-head{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;padding:12px 14px 0}
+.rs-head .grow{flex:1;min-width:240px}
+.rs-head textarea{border:2px solid var(--line);border-radius:8px;padding:6px 8px;font:inherit;width:100%;resize:vertical}
+.rs-btns{display:flex;gap:8px;flex-wrap:wrap}
+.rs-note{font-size:12px;color:var(--muted);margin:4px 14px 8px}
+#rsMsg{margin:6px 14px 0}
+code.code{font-family:Consolas,"Courier New",monospace;font-size:14px;font-weight:700;letter-spacing:.12em;background:#f4f1e6;border:1px solid var(--line);border-radius:6px;padding:1px 6px}
+input.rename{border:2px solid var(--line);border-radius:6px;padding:2px 6px;width:110px;font:inherit}
+.yearbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-left:auto}
+.yearbar span{font-weight:700;font-size:13px}
+.legacy{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:8px 14px 0;padding:8px 12px;border:2px dashed var(--warn);border-radius:10px;font-size:13px;font-weight:700;color:#7a4d00}
+.link.plain{color:var(--ink)}
+.empty-li{color:var(--muted);border-style:dashed!important}
+.list li small{color:var(--muted);font-weight:600}
 </style>
 </head>
 <body>
@@ -114,7 +128,7 @@ tr:hover td{background:#f8fafc}
           <option value="30">최근 30일</option>
           <option value="all">전체</option>
         </select></label>
-      <label class="f"><span>반</span><select id="fCls"><option value="">전체</option></select></label>
+      <label class="f"><span>학급</span><select id="fCls"><option value="">전체</option></select></label>
       <label class="f"><span>단원</span><select id="fUnit"><option value="">전체</option></select></label>
       <label class="f"><span>이름 검색</span><input id="fName" placeholder="예: 지우"></label>
       <button class="btn" id="csv">엑셀용 CSV 받기</button>
@@ -123,7 +137,7 @@ tr:hover td{background:#f8fafc}
 
     <div class="tiles">
       <div class="card tile"><span>플레이 수</span><b id="tPlays">0</b><small id="tPlaysSub"></small></div>
-      <div class="card tile"><span>참여 학생</span><b id="tStudents">0</b><small>반 + 이름 기준</small></div>
+      <div class="card tile"><span>참여 학생</span><b id="tStudents">0</b><small>학급 + 이름 기준</small></div>
       <div class="card tile"><span>평균 점수</span><b id="tScore">0</b><small id="tWin"></small></div>
       <div class="card tile"><span>평균 정답률</span><b id="tRate">0%</b><small id="tQ"></small></div>
     </div>
@@ -132,12 +146,56 @@ tr:hover td{background:#f8fafc}
       <button class="tab" role="tab" data-tab="students" aria-selected="true">학생별</button>
       <button class="tab" role="tab" data-tab="records" aria-selected="false">전체 기록</button>
       <button class="tab" role="tab" data-tab="missed" aria-selected="false">많이 틀린 문제</button>
+      <button class="tab" role="tab" data-tab="classes" aria-selected="false">학급 관리</button>
+      <button class="tab" role="tab" data-tab="roster" aria-selected="false">학생 명단</button>
       <button class="tab" role="tab" data-tab="manage" aria-selected="false">관리</button>
     </div>
 
     <section class="card panel" id="pStudents"><div class="tablewrap"><table id="tblStudents"></table></div></section>
     <section class="card panel" id="pRecords" hidden><div class="tablewrap"><table id="tblRecords"></table></div></section>
     <section class="card panel" id="pMissed" hidden><div class="miss" id="missList"></div></section>
+    <section id="pClasses" hidden>
+      <div class="manage">
+        <div class="card box">
+          <h3>학교</h3>
+          <p>근무하는 학교를 추가하세요. 학생은 첫 화면에서 학교와 학급을 골라 들어와요.</p>
+          <div class="row"><input id="schName" maxlength="30" placeholder="예: 한빛중학교"><button class="btn" id="schAdd">학교 추가</button></div>
+          <ul class="list" id="schList"></ul>
+        </div>
+        <div class="card box">
+          <h3>학급 추가</h3>
+          <p>학년도와 학년을 고르고 반을 "1-8"이나 "1,3,5"처럼 적으면 한꺼번에 만들어져요.</p>
+          <div class="row">
+            <label class="f"><span>학교</span><select id="ckSch"></select></label>
+            <label class="f"><span>학년도</span><input id="ckYear" type="number" min="2020" max="2100" style="width:90px"></label>
+            <label class="f"><span>학년</span><select id="ckGrade"><option value="1">1학년</option><option value="2">2학년</option><option value="3" selected>3학년</option><option value="4">4학년</option><option value="5">5학년</option><option value="6">6학년</option></select></label>
+            <label class="f"><span>반</span><input id="ckRange" placeholder="1-8" style="width:90px"></label>
+            <button class="btn primary" id="ckAdd">학급 추가</button>
+          </div>
+        </div>
+      </div>
+      <p class="msg" id="clMsg" role="status" style="margin:12px 2px 8px"></p>
+      <div class="card panel">
+        <div class="rs-head">
+          <label class="f"><span>학교</span><select id="clSch"><option value="">모든 학교</option></select></label>
+          <label class="f"><span>학년도</span><select id="clYear"><option value="">모든 학년도</option></select></label>
+          <div class="yearbar" id="clYearBar" hidden><span id="clYearLabel"></span><button class="btn" id="clYearHide">모두 숨기기</button><button class="btn danger" id="clYearDel">이 학년도 학급 모두 지우기</button></div>
+        </div>
+        <div class="legacy" id="legacyBox" hidden><span id="legacyTxt"></span><button class="btn" id="legacyDel">예전 명단 정리</button></div>
+        <p class="rs-note">새 학년도가 되면 지난 학년도 학급을 먼저 '숨기기'로 정리하고, 결과 CSV를 받아 둔 뒤 '지우기'를 하세요. 숨긴 학급은 학생 화면에 안 보이지만 기록은 남아 있어요.</p>
+        <div class="tablewrap"><table id="clTable"></table></div>
+      </div>
+    </section>
+    <section class="card panel" id="pRoster" hidden>
+      <div class="rs-head">
+        <label class="f"><span>학급</span><select id="rsCls"><option value="">선택</option></select></label>
+        <label class="f grow"><span>학생 수(예: 28) 또는 "번호 이름" 목록 — 이름은 선택이에요</span><textarea id="rsInput" rows="3" placeholder="28&#10;또는&#10;1 김민준&#10;2 이서연"></textarea></label>
+        <div class="rs-btns"><button class="btn primary" id="rsMake">코드 만들기</button><button class="btn" id="rsPrint" disabled>코드 카드 인쇄</button></div>
+      </div>
+      <p class="msg" id="rsMsg" role="status"></p>
+      <p class="rs-note">학생은 게임 첫 화면에서 학교·학급·번호·코드 6자리로 들어와요. 처음 들어올 때 게임에서 쓸 이름을 정해요. 코드를 잃어버리면 '코드 새로'를 누르세요. 기록은 그대로 남아요.</p>
+      <div class="tablewrap"><table id="rsTable"></table></div>
+    </section>
     <section id="pManage" hidden>
       <div class="manage">
         <div class="card box">
@@ -212,7 +270,7 @@ auth.onAuthStateChanged(async u=>{
   $('#meEmail').textContent=u.email;
   if (!(await isAdmin(u))){ gate(`${u.email} 계정은 선생님 권한이 없어요. 권한이 있는 선생님께 '함께 볼 선생님'에 추가해 달라고 요청하세요.`,'err'); return; }
   $('#gate').hidden=true; $('#app').hidden=false;
-  subscribe(); loadAdmins(); loadHero();
+  loadRegistry(); subscribe(); loadAdmins(); loadHero();
 });
 
 /* 데이터 */
@@ -227,18 +285,21 @@ function subscribe(){
   query=db.ref('results').orderByChild('ts').startAt(rangeStart());
   $('#live').hidden=false;
   query.on('value',snap=>{
-    ALL=[]; snap.forEach(c=>{ const r=c.val(); if (r&&typeof r==='object'){ r.id=c.key; r.wrongList=r.wrong?String(r.wrong).split('\n').filter(Boolean):[]; ALL.push(r); } });
+    ALL=[]; snap.forEach(c=>{ const r=c.val(); if (r&&typeof r==='object'){ r.id=c.key; labelOf(r); r.wrongList=r.wrong?String(r.wrong).split('\n').filter(Boolean):[]; ALL.push(r); } });
     fillFilters(); render();
   },err=>{ $('#live').hidden=true; $('#tblStudents').innerHTML=`<tr><td class="empty">결과를 불러오지 못했어요. 보안 규칙이 올라가 있는지 확인해 주세요. (${esc(err&&err.code||'')})</td></tr>`; });
 }
+function labelOf(r){ r.k=r.cid||('n'+r.cls); r.kl=r.cid?(CLS[r.cid]?cLabel(r.cid):`${r.sch?r.sch+' ':''}${r.grade?r.grade+'학년 ':''}${r.cls}반`):`${r.cls}반`; return r; }
+function relabel(){ ALL.forEach(labelOf); if ($('#app').hidden) return; fillFilters(); render(); }
 function fillFilters(){
   const keep=(sel,vals,label)=>{ const cur=sel.value; sel.innerHTML='<option value="">전체</option>'+vals.map(v=>`<option value="${esc(v)}">${esc(label(v))}</option>`).join(''); if (vals.includes(cur)) sel.value=cur; };
-  keep($('#fCls'),[...new Set(ALL.map(r=>r.cls))].sort((a,b)=>(+a)-(+b)),v=>v+'반');
+  const kl={}; ALL.forEach(r=>kl[r.k]=r.kl);
+  keep($('#fCls'),Object.keys(kl).sort((a,b)=>kl[a].localeCompare(kl[b],'ko',{numeric:true})),v=>kl[v]);
   keep($('#fUnit'),[...new Set(ALL.map(r=>r.unit||''))].filter(Boolean).sort(),v=>v);
 }
 function applyFilter(){
   const c=$('#fCls').value, u=$('#fUnit').value, n=$('#fName').value.trim();
-  VIEW=ALL.filter(r=>(!c||r.cls===c)&&(!u||r.unit===u)&&(!n||String(r.nick).includes(n)));
+  VIEW=ALL.filter(r=>(!c||r.k===c)&&(!u||r.unit===u)&&(!n||String(r.nick).includes(n)));
 }
 const pct=r=>r.asked?Math.round(r.correct/r.asked*100):0;
 const fmtT=ts=>{ const d=new Date(ts); return `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`; };
@@ -248,7 +309,7 @@ const rateBar=p=>`${p}%<span class="bar"><i style="width:${p}%;background:${rate
 
 function render(){
   applyFilter();
-  const plays=VIEW.length, studs=new Set(VIEW.map(r=>r.cls+'|'+r.nick)).size;
+  const plays=VIEW.length, studs=new Set(VIEW.map(r=>r.k+'|'+r.nick)).size;
   const sumC=VIEW.reduce((a,r)=>a+(r.correct|0),0), sumA=VIEW.reduce((a,r)=>a+(r.asked|0),0);
   $('#tPlays').textContent=plays; $('#tPlaysSub').textContent=plays?`가장 최근 ${fmtT(Math.max(...VIEW.map(r=>r.ts)))}`:'아직 기록이 없어요';
   $('#tStudents').textContent=studs;
@@ -260,30 +321,30 @@ function render(){
 function th(cols,sort,id){
   return '<thead><tr>'+cols.map(([k,l,num])=>`<th data-sort="${k}" data-t="${id}" class="${num?'num':''}">${l}${sort.k===k?(sort.d>0?' ▲':' ▼'):''}</th>`).join('')+'</tr></thead>';
 }
-function sorter(sort){ return (a,b)=>{ const x=a[sort.k], y=b[sort.k]; if (sort.k==='cls') return ((+x)-(+y)||String(a.nick).localeCompare(String(b.nick),'ko'))*sort.d; return (typeof x==='number'&&typeof y==='number'?x-y:String(x).localeCompare(String(y),'ko'))*sort.d; }; }
+function sorter(sort){ return (a,b)=>{ const x=a[sort.k], y=b[sort.k]; if (sort.k==='cls'||sort.k==='kl') return (String(x).localeCompare(String(y),'ko',{numeric:true})||String(a.nick).localeCompare(String(b.nick),'ko',{numeric:true}))*sort.d; return (typeof x==='number'&&typeof y==='number'?x-y:String(x).localeCompare(String(y),'ko'))*sort.d; }; }
 function renderStudents(){
   const m=new Map();
-  for (const r of VIEW){ const k=r.cls+'|'+r.nick; let s=m.get(k);
-    if (!s){ s={cls:r.cls,nick:r.nick,plays:0,best:0,wins:0,c:0,a:0,last:0,wrong:new Map()}; m.set(k,s); }
+  for (const r of VIEW){ const k=r.k+'|'+r.nick; let s=m.get(k);
+    if (!s){ s={cls:r.kl,nick:r.nick,plays:0,best:0,wins:0,c:0,a:0,last:0,wrong:new Map()}; m.set(k,s); }
     s.plays++; s.best=Math.max(s.best,r.score|0); if (r.win) s.wins++; s.c+=r.correct|0; s.a+=r.asked|0; s.last=Math.max(s.last,r.ts);
     r.wrongList.forEach(q=>s.wrong.set(q,(s.wrong.get(q)||0)+1)); }
   const rows=[...m.values()].map(s=>({...s,rate:s.a?Math.round(s.c/s.a*100):0,weak:[...s.wrong.entries()].sort((a,b)=>b[1]-a[1]).slice(0,2).map(x=>x[0])}));
   rows.sort(sorter(sortS));
-  const cols=[['cls','반'],['nick','이름'],['plays','플레이',1],['best','최고 점수',1],['wins','승리',1],['rate','정답률',1],['last','마지막 플레이'],['weak','아직 못 맞힌 문제']];
-  $('#tblStudents').innerHTML = rows.length ? th(cols,sortS,'s')+'<tbody>'+rows.map(s=>`<tr><td>${esc(s.cls)}반</td><td>${esc(s.nick)}</td><td class="num">${s.plays}</td><td class="num">${s.best}</td><td class="num">${s.wins}</td><td class="num">${rateBar(s.rate)}</td><td>${fmtT(s.last)}</td><td class="qcell">${s.weak.length?s.weak.map(esc).join('<br>'):'<span style="color:var(--good)">없음</span>'}</td></tr>`).join('')+'</tbody>'
+  const cols=[['cls','학급'],['nick','이름'],['plays','플레이',1],['best','최고 점수',1],['wins','승리',1],['rate','정답률',1],['last','마지막 플레이'],['weak','아직 못 맞힌 문제']];
+  $('#tblStudents').innerHTML = rows.length ? th(cols,sortS,'s')+'<tbody>'+rows.map(s=>`<tr><td>${esc(s.cls)}</td><td>${esc(s.nick)}</td><td class="num">${s.plays}</td><td class="num">${s.best}</td><td class="num">${s.wins}</td><td class="num">${rateBar(s.rate)}</td><td>${fmtT(s.last)}</td><td class="qcell">${s.weak.length?s.weak.map(esc).join('<br>'):'<span style="color:var(--good)">없음</span>'}</td></tr>`).join('')+'</tbody>'
     : '<tr><td class="empty">이 조건에 맞는 기록이 없어요. 학생이 게임을 끝내면 여기에 바로 나타나요.</td></tr>';
 }
 function renderRecords(){
   const rows=VIEW.map(r=>({...r,rate:pct(r)})).sort(sorter(sortR));
-  const cols=[['ts','시각'],['cls','반'],['nick','이름'],['unit','단원'],['win','결과'],['score','점수',1],['rate','정답률',1],['kills','처치',1],['timeSec','시간',1],['wrong','못 맞힌 문제']];
-  $('#tblRecords').innerHTML = rows.length ? th(cols,sortR,'r')+'<tbody>'+rows.map(r=>`<tr><td>${fmtT(r.ts)}</td><td>${esc(r.cls)}반</td><td>${esc(r.nick)}</td><td>${esc(r.unit||'')}</td><td><span class="pill ${r.win?'win':'lose'}">${r.win?'승리':'게임 오버'}</span>${r.mode==='hero'?' <span class="pill hero">영웅</span>':''}</td><td class="num">${r.score|0}</td><td class="num">${r.correct|0}/${r.asked|0} · ${r.rate}%</td><td class="num">${r.kills|0}</td><td class="num">${fmtDur(r.timeSec|0)}</td><td class="qcell">${r.wrongList.length?r.wrongList.map(esc).join('<br>'):'-'}</td></tr>`).join('')+'</tbody>'
+  const cols=[['ts','시각'],['kl','학급'],['nick','이름'],['unit','단원'],['win','결과'],['score','점수',1],['rate','정답률',1],['kills','처치',1],['timeSec','시간',1],['wrong','못 맞힌 문제']];
+  $('#tblRecords').innerHTML = rows.length ? th(cols,sortR,'r')+'<tbody>'+rows.map(r=>`<tr><td>${fmtT(r.ts)}</td><td>${esc(r.kl)}</td><td>${esc(r.nick)}</td><td>${esc(r.unit||'')}</td><td><span class="pill ${r.win?'win':'lose'}">${r.win?'승리':'게임 오버'}</span>${r.mode==='hero'?' <span class="pill hero">영웅</span>':''}</td><td class="num">${r.score|0}</td><td class="num">${r.correct|0}/${r.asked|0} · ${r.rate}%</td><td class="num">${r.kills|0}</td><td class="num">${fmtDur(r.timeSec|0)}</td><td class="qcell">${r.wrongList.length?r.wrongList.map(esc).join('<br>'):'-'}</td></tr>`).join('')+'</tbody>'
     : '<tr><td class="empty">이 조건에 맞는 기록이 없어요.</td></tr>';
 }
 function renderMissed(){
   const cnt=new Map(), who=new Map();
-  VIEW.forEach(r=>r.wrongList.forEach(q=>{ cnt.set(q,(cnt.get(q)||0)+1); if (!who.has(q)) who.set(q,new Set()); who.get(q).add(r.cls+'|'+r.nick); }));
+  VIEW.forEach(r=>r.wrongList.forEach(q=>{ cnt.set(q,(cnt.get(q)||0)+1); if (!who.has(q)) who.set(q,new Set()); who.get(q).add(r.k+'|'+r.nick); }));
   const list=[...cnt.entries()].sort((a,b)=>b[1]-a[1]).slice(0,20);
-  const studs=new Set(VIEW.map(r=>r.cls+'|'+r.nick)).size||1;
+  const studs=new Set(VIEW.map(r=>r.k+'|'+r.nick)).size||1;
   $('#missList').innerHTML = list.length ? '<p style="margin:0 0 4px;font-size:13px;color:var(--muted)">게임이 끝날 때까지 못 맞힌 문제예요. 막대는 그 문제를 못 맞힌 학생의 비율이에요.</p>'+
     list.map(([q,n])=>{ const s=who.get(q).size, p=Math.round(s/studs*100); return `<div class="missrow"><b>${n}</b><p>${esc(q)}</p><div title="학생 ${s}명 (${p}%)"><div class="missbar"><i style="width:${p}%"></i></div><small style="color:var(--muted)">학생 ${s}명 · ${p}%</small></div></div>`; }).join('')
     : '<div class="empty">못 맞힌 문제가 없어요.</div>';
@@ -299,18 +360,206 @@ $('#fRange').addEventListener('change',subscribe);
 $('#fName').addEventListener('input',render);
 $('#tabs').addEventListener('click',e=>{ const b=e.target.closest('[data-tab]'); if (!b) return; tab=b.dataset.tab;
   document.querySelectorAll('.tab').forEach(t=>t.setAttribute('aria-selected',String(t===b)));
+  $('#pClasses').hidden=tab!=='classes';
+  $('#pRoster').hidden=tab!=='roster'; if (tab==='roster'&&!RS.cls&&$('#rsCls').options.length>1){ $('#rsCls').selectedIndex=1; rsWatch(); }
   $('#pStudents').hidden=tab!=='students'; $('#pRecords').hidden=tab!=='records'; $('#pMissed').hidden=tab!=='missed'; $('#pManage').hidden=tab!=='manage'; });
 
 /* CSV */
 $('#csv').addEventListener('click',()=>{
   applyFilter();
   const q=v=>{ const s=String(v==null?'':v); return /[",\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s; };
-  const head=['시각','반','이름','단원','모드','결과','점수','맞힌 문제','푼 문제','정답률(%)','처치','시간(초)','못 맞힌 문제'];
-  const lines=[head.join(',')].concat([...VIEW].sort((a,b)=>a.ts-b.ts).map(r=>[new Date(r.ts).toLocaleString('ko-KR'),r.cls+'반',r.nick,r.unit||'',r.mode==='hero'?'영웅':'일반',r.win?'승리':'게임 오버',r.score|0,r.correct|0,r.asked|0,pct(r),r.kills|0,r.timeSec|0,r.wrongList.join(' / ')].map(q).join(',')));
+  const head=['시각','학급','이름','단원','모드','결과','점수','맞힌 문제','푼 문제','정답률(%)','처치','시간(초)','못 맞힌 문제'];
+  const lines=[head.join(',')].concat([...VIEW].sort((a,b)=>a.ts-b.ts).map(r=>[new Date(r.ts).toLocaleString('ko-KR'),r.kl,r.nick,r.unit||'',r.mode==='hero'?'영웅':'일반',r.win?'승리':'게임 오버',r.score|0,r.correct|0,r.asked|0,pct(r),r.kills|0,r.timeSec|0,r.wrongList.join(' / ')].map(q).join(',')));
   const blob=new Blob(['﻿'+lines.join('\r\n')],{type:'text/csv;charset=utf-8'});
   const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
   const d=new Date(); a.download=`게임결과_${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}.csv`;
   document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+});
+
+/* 학교 · 학급 관리 */
+let SCH={}, CLS={}, ROS={}, PRO={}, clsDelArmed='', yearDelArmed='';
+const rid=()=>{ const ch='abcdefghjkmnpqrstuvwxyz23456789', a=new Uint32Array(6); crypto.getRandomValues(a); return [...a].map(x=>ch[x%ch.length]).join(''); };
+const thisYear=new Date().getFullYear();
+function cLabel(cid,long){ const c=CLS[cid]; if (!c) return '삭제된 학급'; const s=SCH[c.sid]; return `${s?s.name+' ':''}${long?c.year+'학년도 ':''}${c.grade}학년 ${c.cls}반`; }
+function loadRegistry(){
+  db.ref('schools').on('value',s=>{ SCH=s.val()||{}; regChanged(); });
+  db.ref('classes').on('value',s=>{ CLS=s.val()||{}; regChanged(); });
+  db.ref('roster').on('value',s=>{ ROS=s.val()||{}; renderClasses(); },()=>{});
+  db.ref('profiles').on('value',s=>{ PRO=s.val()||{}; renderClasses(); },()=>{});
+}
+function regChanged(){ fillSchoolSelects(); renderSchools(); renderClasses(); fillRosterSelect(); relabel(); }
+function sortedSchools(){ return Object.keys(SCH).sort((a,b)=>((SCH[a].order||0)-(SCH[b].order||0))||SCH[a].name.localeCompare(SCH[b].name,'ko')); }
+function sortedClasses(sid){ return Object.keys(CLS).filter(k=>!sid||CLS[k].sid===sid).sort((a,b)=>(CLS[b].year-CLS[a].year)||(CLS[a].grade-CLS[b].grade)||(CLS[a].cls-CLS[b].cls)); }
+function fillSchoolSelects(){
+  const opts=sortedSchools().map(id=>`<option value="${id}">${esc(SCH[id].name)}</option>`).join('');
+  ['#ckSch','#clSch'].forEach(sel=>{ const el=$(sel), cur=el.value; el.innerHTML=(sel==='#clSch'?'<option value="">모든 학교</option>':'')+opts; if ([...el.options].some(o=>o.value===cur)) el.value=cur; });
+  const years=[...new Set(Object.values(CLS).map(c=>c.year))].sort((a,b)=>b-a); const ys=$('#clYear'), cy=ys.value;
+  ys.innerHTML='<option value="">모든 학년도</option>'+years.map(y=>`<option value="${y}">${y}학년도</option>`).join(''); if ([...ys.options].some(o=>o.value===cy)) ys.value=cy;
+}
+function renderSchools(){
+  const ids=sortedSchools();
+  $('#schList').innerHTML=ids.length?ids.map(id=>{ const n=Object.values(CLS).filter(c=>c.sid===id).length;
+    return `<li><span><b>${esc(SCH[id].name)}</b> <small>학급 ${n}개</small></span><span><button class="link plain" data-sch-ren="${id}">이름 바꾸기</button>${n?'':` <button class="link" data-sch-del="${id}">삭제</button>`}</span></li>`; }).join('')
+    :'<li class="empty-li">아직 학교가 없어요. 위에서 학교 이름을 넣고 추가하세요.</li>';
+}
+function renderLegacy(){
+  const keys=[...new Set([...Object.keys(ROS),...Object.keys(PRO)])].filter(k=>/^\d+$/.test(k));
+  $('#legacyBox').hidden=!keys.length; if (keys.length) $('#legacyTxt').textContent=`학교·학급 기능 이전에 만든 명단(${keys.map(k=>k+'반').join(', ')})이 남아 있어요. 새 학급에서 코드를 다시 만든 뒤 정리하세요.`;
+  return keys;
+}
+function renderClasses(){
+  renderLegacy();
+  const sid=$('#clSch').value, yr=$('#clYear').value;
+  const ids=sortedClasses(sid).filter(k=>!yr||String(CLS[k].year)===yr);
+  $('#clYearBar').hidden=!(sid&&yr&&ids.length);
+  if (sid&&yr){ $('#clYearLabel').textContent=`${SCH[sid]?SCH[sid].name:''} ${yr}학년도 학급 ${ids.length}개`; $('#clYearDel').textContent=yearDelArmed===sid+yr?'정말 모두 지울까요? 한 번 더 누르세요':'이 학년도 학급 모두 지우기'; }
+  $('#clTable').innerHTML=ids.length?'<thead><tr><th>학교</th><th>학년도</th><th>학년</th><th>반</th><th class="num">코드 발급</th><th class="num">접속한 학생</th><th>상태</th><th></th></tr></thead><tbody>'+
+    ids.map(k=>{ const c=CLS[k], rn=Object.keys(ROS[k]||{}).length, pn=Object.keys(PRO[k]||{}).length;
+      return `<tr><td>${esc(SCH[c.sid]?SCH[c.sid].name:'?')}</td><td>${c.year}</td><td>${c.grade}학년</td><td>${c.cls}반</td><td class="num">${rn}명</td><td class="num">${pn}명</td>
+      <td>${c.hidden?'<span class="pill lose">숨김</span>':'<span class="pill win">보임</span>'}</td>
+      <td><button class="link plain" data-cl-hide="${k}">${c.hidden?'다시 보이기':'숨기기'}</button> <button class="link" data-cl-del="${k}">${clsDelArmed===k?'정말 지울까요?':'삭제'}</button></td></tr>`; }).join('')+'</tbody>'
+    :'<tr><td class="empty">학급이 없어요. 위에서 학급을 추가하세요.</td></tr>';
+}
+function clMsg(t,k){ const m=$('#clMsg'); m.className='msg'+(k?' '+k:''); m.textContent=t||''; }
+$('#schAdd').addEventListener('click',async()=>{
+  const nm=$('#schName').value.trim(); if (!nm){ clMsg('학교 이름을 넣어 주세요.','err'); return; }
+  if (Object.values(SCH).some(s=>s.name===nm)){ clMsg('같은 이름의 학교가 이미 있어요.','err'); return; }
+  try{ await db.ref('schools/'+rid()).set({name:nm.slice(0,30),order:Object.keys(SCH).length}); $('#schName').value=''; clMsg(`'${nm}'을(를) 추가했어요. 이제 학급을 추가하세요.`,'ok'); }
+  catch(e){ clMsg('추가하지 못했어요. 새 보안 규칙을 올렸는지 확인해 주세요.','err'); }
+});
+$('#schList').addEventListener('click',async e=>{
+  const r=e.target.closest('[data-sch-ren]'), d=e.target.closest('[data-sch-del]');
+  if (r){ const id=r.dataset.schRen; const li=r.closest('li'); li.querySelector('span').innerHTML=`<input class="rename" maxlength="30" value="${esc(SCH[id].name)}"> <button class="link plain" data-sch-save="${id}">저장</button>`; li.querySelector('input').focus(); }
+  const sv=e.target.closest('[data-sch-save]');
+  if (sv){ const id=sv.dataset.schSave, v=sv.parentNode.querySelector('input').value.trim(); if (!v) return;
+    try{ await db.ref('schools/'+id+'/name').set(v.slice(0,30)); clMsg('학교 이름을 바꿨어요.','ok'); }catch(err){ clMsg('바꾸지 못했어요.','err'); } }
+  if (d){ try{ await db.ref('schools/'+d.dataset.schDel).remove(); clMsg('학교를 지웠어요.','ok'); }catch(err){ clMsg('지우지 못했어요.','err'); } }
+});
+$('#ckAdd').addEventListener('click',async()=>{
+  const sid=$('#ckSch').value, yr=+$('#ckYear').value, gr=+$('#ckGrade').value, raw=$('#ckRange').value.replace(/\s/g,'');
+  if (!sid){ clMsg('먼저 학교를 추가하고 고르세요.','err'); return; }
+  if (!(yr>=2020&&yr<=2100)){ clMsg('학년도를 확인해 주세요.','err'); return; }
+  const nums=new Set();
+  for (const part of raw.split(',').filter(Boolean)){ const m=part.match(/^(\d+)(?:[-~](\d+))?$/); if (!m){ clMsg('반은 "1-8"이나 "1,3,5"처럼 적어 주세요.','err'); return; }
+    const a=+m[1], b=m[2]?+m[2]:a; for (let i=Math.min(a,b);i<=Math.max(a,b);i++) if (i>=1&&i<=30) nums.add(i); }
+  if (!nums.size){ clMsg('추가할 반을 적어 주세요. 예: 1-8','err'); return; }
+  const up={}; let skip=0;
+  [...nums].forEach(n=>{ if (Object.values(CLS).some(c=>c.sid===sid&&c.year===yr&&c.grade===gr&&c.cls===n)){ skip++; return; } up['classes/'+rid()]={sid,year:yr,grade:gr,cls:n}; });
+  if (!Object.keys(up).length){ clMsg('이미 모두 있는 학급이에요.'); return; }
+  try{ await db.ref().update(up); $('#ckRange').value=''; clMsg(`${SCH[sid].name} ${yr}학년도 ${gr}학년 ${Object.keys(up).length}개 반을 추가했어요${skip?` (이미 있는 ${skip}개는 건너뜀)`:''}. '학생 명단' 탭에서 코드를 만드세요.`,'ok'); }
+  catch(e){ clMsg('추가하지 못했어요. 새 보안 규칙을 올렸는지 확인해 주세요.','err'); }
+});
+['#clSch','#clYear'].forEach(s=>$(s).addEventListener('change',()=>{ clsDelArmed=''; yearDelArmed=''; renderClasses(); }));
+async function deleteClasses(cids){
+  const up={};
+  for (const cid of cids){ up['classes/'+cid]=null; up['roster/'+cid]=null; up['profiles/'+cid]=null;
+    const snap=await db.ref('results').orderByChild('cid').equalTo(cid).once('value');
+    snap.forEach(c=>{ const v=c.val(); if (v&&v.cid===cid) up['results/'+c.key]=null; }); }
+  const keys=Object.keys(up);
+  for (let i=0;i<keys.length;i+=400){ const part={}; keys.slice(i,i+400).forEach(k=>part[k]=null); await db.ref().update(part); }
+  return keys.filter(k=>k.startsWith('results/')).length;
+}
+$('#clTable').addEventListener('click',async e=>{
+  const h=e.target.closest('[data-cl-hide]'), d=e.target.closest('[data-cl-del]');
+  if (h){ const k=h.dataset.clHide, hide=!CLS[k].hidden, nm=cLabel(k); try{ await db.ref('classes/'+k+'/hidden').set(hide?true:null); clMsg(hide?`${nm}을(를) 학생 화면에서 숨겼어요. 기록은 그대로예요.`:`${nm}을(를) 다시 보이게 했어요.`,'ok'); }catch(err){ clMsg('바꾸지 못했어요.','err'); } }
+  if (d){ const k=d.dataset.clDel;
+    if (clsDelArmed!==k){ clsDelArmed=k; renderClasses(); clMsg(`${cLabel(k,true)}의 학급, 학생 명단·코드, 학생 기록(레벨·코인), 게임 결과가 모두 지워져요. 되살릴 수 없어요. 한 번 더 누르세요.`,'err'); return; }
+    clsDelArmed=''; clMsg('지우는 중…');
+    try{ const nm=cLabel(k,true); const n=await deleteClasses([k]); clMsg(`${nm}을(를) 지웠어요 (게임 결과 ${n}개 포함).`,'ok'); }catch(err){ clMsg('지우지 못했어요. 잠시 뒤 다시 해 주세요.','err'); } }
+});
+$('#clYearHide').addEventListener('click',async()=>{
+  const sid=$('#clSch').value, yr=$('#clYear').value; const ids=sortedClasses(sid).filter(k=>String(CLS[k].year)===yr); const up={};
+  ids.forEach(k=>up['classes/'+k+'/hidden']=true);
+  try{ await db.ref().update(up); clMsg(`${ids.length}개 학급을 숨겼어요. 학생 화면에서 안 보이지만 기록은 남아 있어요.`,'ok'); }catch(e){ clMsg('바꾸지 못했어요.','err'); }
+});
+$('#clYearDel').addEventListener('click',async()=>{
+  const sid=$('#clSch').value, yr=$('#clYear').value; const ids=sortedClasses(sid).filter(k=>String(CLS[k].year)===yr);
+  if (yearDelArmed!==sid+yr){ yearDelArmed=sid+yr; renderClasses(); clMsg(`${SCH[sid].name} ${yr}학년도 학급 ${ids.length}개와 그 학생 명단·기록·게임 결과가 모두 지워져요. 지우기 전에 '전체 기록'에서 CSV를 받아 두세요. 한 번 더 누르면 지워져요.`,'err'); return; }
+  yearDelArmed=''; clMsg('지우는 중…');
+  try{ const n=await deleteClasses(ids); clMsg(`${yr}학년도 학급 ${ids.length}개를 지웠어요 (게임 결과 ${n}개 포함).`,'ok'); }catch(e){ clMsg('지우지 못했어요. 잠시 뒤 다시 해 주세요.','err'); }
+});
+$('#ckYear').value=thisYear;
+$('#legacyDel').addEventListener('click',async()=>{ const keys=renderLegacy(); const up={}; keys.forEach(k=>{ up['roster/'+k]=null; up['profiles/'+k]=null; });
+  try{ await db.ref().update(up); clMsg('예전 명단을 정리했어요.','ok'); }catch(e){ clMsg('정리하지 못했어요.','err'); } });
+
+/* 학생 명단 · 코드 */
+const CODE_CH='abcdefghjkmnpqrstuvwxyz23456789';
+function newCode(){ const a=new Uint32Array(6); crypto.getRandomValues(a); return [...a].map(x=>CODE_CH[x%CODE_CH.length]).join(''); }
+const lvOf=xp=>{ let lv=1,need=150,rest=Math.max(0,xp|0); while(rest>=need){ rest-=need; lv++; need=150+50*(lv-1);} return lv; };
+let RS={cls:'',roster:{},profiles:{},refs:[]}, regenArmed='';
+function fillRosterSelect(){
+  const el=$('#rsCls'), cur=el.value;
+  el.innerHTML='<option value="">학급 선택</option>'+sortedSchools().map(sid=>{ const ks=sortedClasses(sid); if (!ks.length) return '';
+    return `<optgroup label="${esc(SCH[sid].name)}">`+ks.map(k=>`<option value="${k}">${CLS[k].year}학년도 ${CLS[k].grade}학년 ${CLS[k].cls}반${CLS[k].hidden?' (숨김)':''}</option>`).join('')+'</optgroup>'; }).join('');
+  if ([...el.options].some(o=>o.value===cur)) el.value=cur; else if (cur){ el.value=''; RS.cls=''; rsWatch(); }
+}
+function rsWatch(){
+  RS.refs.forEach(r=>r.off()); RS.refs=[]; RS.roster={}; RS.profiles={};
+  const c=$('#rsCls').value; RS.cls=c; if (!c){ renderRoster(); return; }
+  const r1=db.ref('roster/'+c), r2=db.ref('profiles/'+c); RS.refs=[r1,r2];
+  r1.on('value',s=>{ RS.roster=s.val()||{}; renderRoster(); },e=>rsMsg('명단을 불러오지 못했어요. 새 보안 규칙을 올렸는지 확인해 주세요.','err'));
+  r2.on('value',s=>{ RS.profiles=s.val()||{}; renderRoster(); },()=>{});
+}
+function rsMsg(t,k){ const m=$('#rsMsg'); m.className='msg'+(k?' '+k:''); m.textContent=t||''; }
+function renderRoster(){
+  const c=RS.cls, nums=[...new Set([...Object.keys(RS.roster),...Object.keys(RS.profiles)])].sort((a,b)=>a-b);
+  $('#rsPrint').disabled=!nums.length;
+  if (!c){ $('#rsTable').innerHTML=`<tr><td class="empty">${Object.keys(CLS).length?'학급을 고르세요.':'먼저 \'학급 관리\' 탭에서 학교와 학급을 추가하세요.'}</td></tr>`; return; }
+  if (!nums.length){ $('#rsTable').innerHTML='<tr><td class="empty">아직 이 반의 명단이 없어요. 위에 학생 수나 명단을 넣고 코드를 만들어 주세요.</td></tr>'; return; }
+  $('#rsTable').innerHTML='<thead><tr><th>번호</th><th>명단 이름</th><th>게임 이름</th><th>코드</th><th class="num">레벨</th><th class="num">코인</th><th class="num">플레이</th><th>누적 정답률</th><th>마지막 플레이</th><th></th></tr></thead><tbody>'+
+    nums.map(n=>{ const r=RS.roster[n]||{}, p=RS.profiles[n]; const rate=p&&p.asked?Math.round(p.correct/p.asked*100):null;
+      return `<tr><td>${esc(n)}번</td><td>${esc(r.name||'')}</td><td>${p?esc(p.name):'<span style="color:var(--muted)">아직 접속 안 함</span>'}</td>
+      <td><code class="code">${r.code?esc(r.code.toUpperCase()):'-'}</code></td>
+      <td class="num">${p?'Lv.'+lvOf(p.xp):'-'}</td><td class="num">${p?(p.coins|0).toLocaleString('ko-KR'):'-'}</td><td class="num">${p?p.plays|0:'-'}</td>
+      <td class="num">${rate==null?'-':rateBar(rate)}</td><td>${p&&p.plays?fmtT(p.updatedAt):'-'}</td>
+      <td><button class="link" data-regen="${esc(n)}">${regenArmed===n?'정말 새 코드로?':'코드 새로'}</button>${p?` <button class="link" data-rename="${esc(n)}">이름 고치기</button>`:''}</td></tr>`; }).join('')+'</tbody>';
+}
+$('#rsCls').addEventListener('change',()=>{ regenArmed=''; rsMsg(''); rsWatch(); });
+$('#rsMake').addEventListener('click',async()=>{
+  const c=$('#rsCls').value; if (!c){ rsMsg('먼저 학급을 고르세요.','err'); return; }
+  const raw=$('#rsInput').value.trim(); const up={}; let made=0, named=0;
+  if (/^\d+$/.test(raw)){ const n=+raw; if (n<1||n>60){ rsMsg('학생 수는 1~60이에요.','err'); return; }
+    for (let i=1;i<=n;i++){ if (!RS.roster[i]){ up[`roster/${c}/${i}`]={code:newCode(),issuedAt:Date.now()}; made++; } } }
+  else {
+    const lines=raw.split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
+    if (!lines.length){ rsMsg('학생 수(예: 28)나 "번호 이름" 목록을 넣어 주세요.','err'); return; }
+    for (const l of lines){ const m=l.match(/^(\d{1,2})\s*[.)번\t ,]*\s*(.*)$/); if (!m){ rsMsg(`"${l}" 줄을 읽지 못했어요. "7 김지우"처럼 번호 다음 이름을 적어 주세요.`,'err'); return; }
+      const n=String(+m[1]), nm=m[2].trim().slice(0,20); const cur=RS.roster[n];
+      if (!cur){ up[`roster/${c}/${n}`]={code:newCode(),issuedAt:Date.now(),...(nm?{name:nm}:{})}; made++; }
+      else if (nm && nm!==cur.name){ up[`roster/${c}/${n}/name`]=nm; named++; } }
+  }
+  if (!Object.keys(up).length){ rsMsg('새로 만들 학생이 없어요. 이미 코드가 있는 번호는 그대로 둬요.'); return; }
+  try{ await db.ref().update(up); $('#rsInput').value=''; rsMsg(`코드 ${made}개를 만들었어요${named?`, 이름 ${named}개를 고쳤어요`:''}. '코드 카드 인쇄'로 나눠 주세요.`,'ok'); }
+  catch(e){ rsMsg('저장하지 못했어요. 새 보안 규칙을 올렸는지 확인해 주세요.','err'); }
+});
+$('#rsTable').addEventListener('click',async e=>{
+  const g=e.target.closest('[data-regen]'), rn=e.target.closest('[data-rename]');
+  if (g){ const n=g.dataset.regen;
+    if (regenArmed!==n){ regenArmed=n; renderRoster(); rsMsg(`${n}번의 코드를 새로 만들면 예전 코드로는 들어올 수 없어요. 기록은 그대로 남아요. 한 번 더 누르면 바뀌어요.`); return; }
+    regenArmed='';
+    try{ await db.ref(`roster/${RS.cls}/${n}`).update({code:newCode(),issuedAt:Date.now()}); rsMsg(`${n}번의 코드를 새로 만들었어요.`,'ok'); }
+    catch(err){ rsMsg('바꾸지 못했어요.','err'); } }
+  if (rn){ const n=rn.dataset.rename, p=RS.profiles[n]; const cell=rn.closest('tr').children[2];
+    cell.innerHTML=`<input class="rename" maxlength="12" value="${esc(p.name)}"> <button class="link" data-save-name="${esc(n)}">저장</button>`; cell.querySelector('input').focus(); }
+  const sv=e.target.closest('[data-save-name]');
+  if (sv){ const n=sv.dataset.saveName, v=sv.parentNode.querySelector('input').value.trim().slice(0,12); if (!v) return;
+    try{ await db.ref(`profiles/${RS.cls}/${n}`).update({name:v,updatedAt:firebase.database.ServerValue.TIMESTAMP}); rsMsg(`${n}번 이름을 "${v}"(으)로 바꿨어요.`,'ok'); }
+    catch(err){ rsMsg('이름을 바꾸지 못했어요.','err'); } }
+});
+$('#rsPrint').addEventListener('click',()=>{
+  const nums=Object.keys(RS.roster).sort((a,b)=>a-b); if (!nums.length) return;
+  const url=new URL('index.html',location.href).href;
+  const cards=nums.map(n=>{ const r=RS.roster[n]; return `<div class="card"><div class="t">공간적 분업 대작전</div><div class="w">${esc(cLabel(RS.cls))} ${esc(n)}번 ${esc(r.name||'')}</div><div class="c">${esc(r.code.toUpperCase())}</div><div class="u">${esc(url)}</div><div class="h">게임 첫 화면에서 반·번호·코드를 넣으세요. 코드는 친구에게 알려 주지 마세요.</div></div>`; }).join('');
+  const w=window.open('','_blank'); if (!w){ rsMsg('팝업이 막혔어요. 팝업을 허용해 주세요.','err'); return; }
+  w.document.write(`<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>${esc(cLabel(RS.cls))} 코드 카드</title><style>
+    body{font-family:"Malgun Gothic","Apple SD Gothic Neo",sans-serif;margin:12mm}
+    .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:4mm}
+    .card{border:1.5px dashed #555;border-radius:3mm;padding:4mm;break-inside:avoid}
+    .t{font-size:9pt;color:#555}.w{font-size:13pt;font-weight:700;margin:1mm 0}
+    .c{font-size:22pt;font-weight:700;letter-spacing:3pt;font-family:Consolas,monospace;margin:2mm 0}
+    .u{font-size:7.5pt;color:#333;word-break:break-all}.h{font-size:7.5pt;color:#555;margin-top:1.5mm}
+    @media print{body{margin:8mm}}</style></head><body><div class="grid">${cards}</div><script>setTimeout(()=>print(),300)<\/script></body></html>`);
+  w.document.close();
 });
 
 /* 함께 볼 선생님 */
