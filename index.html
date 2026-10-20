@@ -107,6 +107,9 @@ button:focus-visible{outline:3px solid var(--sun);outline-offset:2px}
 .timer i{display:block;height:100%;background:var(--sun)}
 #qtext{font-family:var(--display);font-weight:400;font-size:clamp(20px,4.4vw,26px);line-height:1.35;margin:0 0 14px;text-wrap:balance}
 .opts{display:grid;gap:8px}
+.opts.locked .opt{opacity:.45;pointer-events:none}
+.opts .opt{transition:opacity .25s}
+#qnext:disabled{opacity:.5}
 .opts.two{grid-template-columns:1fr 1fr}
 .opt{display:flex;gap:10px;align-items:center;text-align:left;padding:12px;border:2px solid var(--ink);border-radius:12px;background:#fff;color:var(--ink);font-size:15px;line-height:1.4;min-width:0}
 .opts.two .opt{justify-content:center;font-family:var(--display);font-size:20px;padding:16px 10px}
@@ -484,7 +487,7 @@ body.hero .vitals{border-color:#c27a00;box-shadow:4px 4px 0 #c27a00}
       <p class="verdict" id="qverdict"></p>
       <p class="extra" id="qextra" hidden></p>
       <p class="exp" id="qexp"></p>
-      <button class="btn" id="qnext">계속하기</button>
+      <button class="btn" id="qnext">계속하기 (Enter)</button>
     </div>
   </div>
 </div>
@@ -1491,14 +1494,21 @@ function startWave(i){
 
 /* ---------- 입력 ---------- */
 const keys={};
+let UI_LOCK=0; const QUIZ_LOCK_MS=800;
+function blurAll(){ const a=document.activeElement; if (a&&a!==document.body&&a.blur) a.blur(); }
 addEventListener('keydown',e=>{
   if (e.target.closest && e.target.closest('input,textarea,select')) return;
-  if (!$('#locIntro').hidden){ if (e.key==='Enter'||e.code==='Space'){ e.preventDefault(); goLoc(); } return; }
-  if (!$('#reviveIntro').hidden){ if (e.key==='Enter'||e.code==='Space'){ e.preventDefault(); reviveStart(); } return; }
+  // 퀴즈·안내 창이 떠 있을 때 스페이스바(공격 키)는 무시해요. 공격하다가 실수로 답이 눌리지 않게요.
+  const overlay=!$('#locIntro').hidden||!$('#reviveIntro').hidden||!$('#quiz').hidden;
+  if (overlay){ if (e.code==='Space'||e.code==='KeyJ'||e.code==='KeyE'||e.code==='KeyL'||e.key==='Shift'){ e.preventDefault(); return; } for (const k in keys) keys[k]=false; }
+  const nowMs=performance.now();
+  if (!$('#locIntro').hidden){ if (e.key==='Enter' && nowMs>=UI_LOCK){ e.preventDefault(); goLoc(); } return; }
+  if (!$('#reviveIntro').hidden){ if (e.key==='Enter' && nowMs>=UI_LOCK){ e.preventDefault(); reviveStart(); } return; }
   if (!$('#quiz').hidden){
-    if (Q.answered && (e.key==='Enter'||e.code==='Space')) { e.preventDefault(); closeQuiz(); }
-    else if (!Q.answered && /^[1-4]$/.test(e.key) && +e.key<=Q.nOpts) answer(+e.key-1);
-    else if (!Q.answered && Q.item && Q.item.kind==='ox' && /^[oOxX]$/.test(e.key)) answer(/[oO]/.test(e.key)?0:1);
+    if (Q.answered){ if (e.key==='Enter' && nowMs>=Q.closeAt){ e.preventDefault(); closeQuiz(); } }
+    else if (nowMs<Q.lockUntil) {}
+    else if (/^[1-4]$/.test(e.key) && +e.key<=Q.nOpts) answer(+e.key-1);
+    else if (Q.item && Q.item.kind==='ox' && /^[oOxX]$/.test(e.key)) answer(/[oO]/.test(e.key)?0:1);
     return;
   }
   keys[e.code]=true;
@@ -1776,10 +1786,11 @@ function openQuiz(item,source){
     b.addEventListener('click',()=>answer(i)); box.appendChild(b); });
   $('#qtimer').hidden=false; $('#qtime').hidden=false;
   $('#qres').hidden=true; $('#quiz').hidden=false; $('#prompt').hidden=true;
-  setTimeout(()=>{ const f=$('#opt0'); if (f) f.focus({preventScroll:true}); },50);
+  // 처음 0.8초는 답을 고를 수 없어요(문제를 읽을 시간 + 실수로 누르기 방지)
+  blurAll(); Q.lockUntil=performance.now()+QUIZ_LOCK_MS; box.classList.add('locked'); setTimeout(()=>box.classList.remove('locked'),QUIZ_LOCK_MS);
 }
 function answer(i){
-  if (Q.answered) return; Q.answered=true;
+  if (Q.answered) return; if (i>=0 && performance.now()<(Q.lockUntil||0)) return; Q.answered=true;
   const ok=i===Q.correctIdx;
   [...document.querySelectorAll('.opt')].forEach((b,j)=>{ b.disabled=true; if (j===Q.correctIdx) b.classList.add('right'); else if (j===i) b.classList.add('wrong'); });
   showResult(ok, i<0, Q.item);
@@ -1832,7 +1843,7 @@ function showResult(ok,timeout,item){
   v.textContent=(ok?'정답! ':(timeout?'시간 초과… ':'아쉬워요… '))+fx.label+(fx.dur?` (${fx.dur}초)`:'');
   const ex=$('#qextra'); ex.hidden=!extras.length; ex.textContent=extras.join(' ');
   $('#qexp').textContent=(ok?'':`정답: ${correctText(item)}. `)+item.e;
-  $('#qres').hidden=false; setTimeout(()=>$('#qnext').focus({preventScroll:true}),30);
+  $('#qres').hidden=false; blurAll(); Q.closeAt=performance.now()+800; const qn=$('#qnext'); qn.disabled=true; setTimeout(()=>{ qn.disabled=false; },800);
 }
 function applyEffect(fx){
   if (fx.k==='heal') P.hp=Math.min(P.max,P.hp+fx.amount);
@@ -1868,10 +1879,10 @@ function tryRevive(){
   const items=reviveItems(); if (items.length<2) return false;
   W.revived=true; W.revive={items,step:0}; W.paused=true; for (const k in keys) keys[k]=false;
   $('#reviveIntro .q').innerHTML = MAPK==='defense'&&W.door<=0 ? '이번 판에서 틀렸던 문제 2개를 모두 맞히면<br>무너진 성문이 다시 세워져요.' : '이번 판에서 틀렸던 문제 2개를 모두 맞히면<br>체력 절반으로 다시 일어나요.';
-  $('#reviveIntro').hidden=false; setTimeout(()=>$('#reviveGo').focus({preventScroll:true}),50);
+  $('#reviveIntro').hidden=false; blurAll(); UI_LOCK=performance.now()+QUIZ_LOCK_MS;
   return true;
 }
-function reviveStart(){ if ($('#reviveIntro').hidden) return; $('#reviveIntro').hidden=true; openQuiz(W.revive.items[0],{type:'revive'}); }
+function reviveStart(){ if ($('#reviveIntro').hidden || performance.now()<UI_LOCK) return; $('#reviveIntro').hidden=true; openQuiz(W.revive.items[0],{type:'revive'}); }
 $('#reviveGo').addEventListener('click',reviveStart);
 function reviveNext(ok){
   if (!ok){ W.revive=null; endGame(false); return; }
@@ -1896,12 +1907,12 @@ function startLoc(){
   const dirName=k=>{ const Z=ZONES[k], dx=Z.x-P.x, dz=Z.z-P.z; if (Math.hypot(dx,dz)<Z.r) return '지금 여기'; const a=Math.atan2(dx,-dz)*180/Math.PI; const n=['위쪽','오른쪽 위','오른쪽','오른쪽 아래','아래쪽','왼쪽 아래','왼쪽','왼쪽 위']; return n[Math.round(((a+360)%360)/45)%8]; };
   $('#dirHq').textContent=dirName('hq'); $('#dirLab').textContent=dirName('lab'); $('#dirFac').textContent=dirName('fac');
   W.paused=true; for (const k in keys) keys[k]=false;
-  $('#locIntro').hidden=false; setTimeout(()=>$('#locGo').focus({preventScroll:true}),50);
+  $('#locIntro').hidden=false; blurAll(); UI_LOCK=performance.now()+QUIZ_LOCK_MS;
   $('#locHelp').textContent = W.loc.startZone ? '지금 서 있는 거점은 일단 벗어났다가, 정답 거점 바닥으로 들어가세요' : '맞다고 생각하는 거점의 바닥으로 달려가세요';
   $('#locCard').hidden=false;
 }
 function goLoc(){
-  if ($('#locIntro').hidden) return;
+  if ($('#locIntro').hidden || performance.now()<UI_LOCK) return;
   $('#locIntro').hidden=true;
   if (W.loc) W.loc.until=W.t+LOC_TIME;
   W.paused=false; canvas.focus({preventScroll:true});
