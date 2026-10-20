@@ -66,6 +66,15 @@ th[data-sort]:hover{color:var(--ink)}
 td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
 td.qcell{white-space:normal;min-width:240px;max-width:460px}
 tr:hover td{background:#f8fafc}
+.playbar{padding:14px 16px;margin-bottom:14px;display:grid;gap:10px;border-color:#1f7a4c;box-shadow:4px 4px 0 #1f7a4c}
+.pb-head h3{font-family:var(--display);font-weight:400;font-size:21px;margin:0 0 2px}
+.pb-head p{margin:0;font-size:13px;color:#33405e}
+.pb-row{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end}
+.pb-dur{display:grid;gap:4px} .pb-dur>span{font-size:12px;font-weight:700;color:var(--muted)} .pb-dur>div{display:flex;flex-wrap:wrap;gap:6px}
+#pbList li.open{background:#e3f6ea;flex-wrap:wrap;gap:6px}
+#pbList .done{flex-basis:100%;display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:12px;color:#33405e}
+#pbList .done .chip{display:inline-flex;align-items:center;gap:4px;border:1.5px solid var(--line);border-radius:999px;padding:2px 4px 2px 9px;background:#fff}
+#pbList .done .chip button{font-size:11px} #pbList li b.t{font-variant-numeric:tabular-nums;color:#1f7a4c}
 .pill{display:inline-block;font-size:11px;font-weight:700;padding:1px 8px;border-radius:999px;border:1.5px solid}
 .pill.win{color:var(--good);border-color:var(--good)} .pill.lose{color:var(--muted);border-color:var(--line)} .pill.hero{color:var(--warn);border-color:var(--warn)}
 .bar{display:inline-block;width:70px;height:8px;border-radius:4px;background:#e5e9f0;vertical-align:middle;margin-left:6px;overflow:hidden}
@@ -135,6 +144,16 @@ input.rename{border:2px solid var(--line);border-radius:6px;padding:2px 6px;widt
       <span class="live" id="live"><i></i>실시간으로 들어와요</span>
     </div>
 
+    <section class="card playbar" id="playBar">
+      <div class="pb-head"><h3>🎮 게임 열기</h3><p>학생은 선생님이 연 동안, 정한 판 수만큼만 게임을 시작할 수 있어요. 판을 다 한 학생에게는 아래에서 '한 판 더'를 줄 수 있어요. 시간이 끝나도 하던 판은 마칠 수 있고 보상도 저장돼요(15분 여유).</p></div>
+      <div class="pb-row">
+        <label class="f"><span>어느 반을 열까요?</span><select id="pbCls"></select></label>
+        <label class="f"><span>한 사람당</span><select id="pbPlays"><option value="1" selected>1판</option><option value="2">2판</option><option value="3">3판</option><option value="999">제한 없음</option></select></label>
+        <div class="pb-dur"><span>열어 둘 시간</span><div><button class="btn" data-pmin="10">10분</button><button class="btn" data-pmin="15">15분</button><button class="btn primary" data-pmin="20">20분</button><button class="btn" data-pmin="30">30분</button><button class="btn" data-pmin="50">50분</button></div></div>
+      </div>
+      <ul class="list" id="pbList"></ul>
+      <p class="msg" id="pbMsg" role="status"></p>
+    </section>
     <div class="tiles">
       <div class="card tile"><span>플레이 수</span><b id="tPlays">0</b><small id="tPlaysSub"></small></div>
       <div class="card tile"><span>참여 학생</span><b id="tStudents">0</b><small>학급 + 이름 기준</small></div>
@@ -270,7 +289,7 @@ auth.onAuthStateChanged(async u=>{
   $('#meEmail').textContent=u.email;
   if (!(await isAdmin(u))){ gate(`${u.email} 계정은 선생님 권한이 없어요. 권한이 있는 선생님께 '함께 볼 선생님'에 추가해 달라고 요청하세요.`,'err'); return; }
   $('#gate').hidden=true; $('#app').hidden=false;
-  loadRegistry(); subscribe(); loadAdmins(); loadHero();
+  loadRegistry(); subscribe(); loadAdmins(); loadHero(); watchPlay();
 });
 
 /* 데이터 */
@@ -381,13 +400,68 @@ let SCH={}, CLS={}, ROS={}, PRO={}, clsDelArmed='', yearDelArmed='';
 const rid=()=>{ const ch='abcdefghjkmnpqrstuvwxyz23456789', a=new Uint32Array(6); crypto.getRandomValues(a); return [...a].map(x=>ch[x%ch.length]).join(''); };
 const thisYear=new Date().getFullYear();
 function cLabel(cid,long){ const c=CLS[cid]; if (!c) return '삭제된 학급'; const s=SCH[c.sid]; return `${s?s.name+' ':''}${long?c.year+'학년도 ':''}${c.grade}학년 ${c.cls}반`; }
+/* 게임 열기 */
+let PG={}, PSOFF=0, PLA={};
+const pNow=()=>Date.now()+PSOFF;
+function watchPlay(){
+  db.ref('.info/serverTimeOffset').on('value',s=>{ PSOFF=+s.val()||0; });
+  db.ref('playgate').on('value',s=>{ PG=s.val()||{}; pbKey=''; renderPlay(); },err=>{ $('#pbMsg').className='msg err'; $('#pbMsg').textContent='게임 열기 정보를 불러오지 못했어요. 새 보안 규칙을 올렸는지 확인해 주세요.'; });
+  db.ref('playlog').on('value',s=>{ PLA=s.val()||{}; pbKey=''; renderPlay(); },()=>{});
+  setInterval(renderPlay,1000);
+}
+function playLabel(k){ return k==='all'?'모든 반 (연습 모드 포함)':cLabel(k); }
+function fillPlaySelect(){
+  const el=$('#pbCls'), cur=el.value||(()=>{ try{ return localStorage.getItem('gsd-pb')||''; }catch(e){ return ''; } })();
+  const ks=Object.keys(CLS).filter(k=>!CLS[k].hidden).sort((a,b)=>(CLS[b].year-CLS[a].year)||((SCH[CLS[a].sid]||{}).name||'').localeCompare((SCH[CLS[b].sid]||{}).name||'','ko')||(CLS[a].grade-CLS[b].grade)||(CLS[a].cls-CLS[b].cls));
+  el.innerHTML=ks.map(k=>`<option value="${k}">${esc(cLabel(k))}</option>`).join('')+'<option value="all">모든 반 한꺼번에 (연습 모드 포함)</option>';
+  if ([...el.options].some(o=>o.value===cur)) el.value=cur;
+}
+let pbKey='';
+function usedOf(k,num,sid){ return +(((PLA[k]||{})[num]||{})[sid])||0; }
+function doneList(k){
+  const g=PG[k]; if (!g||!g.sid||!(+g.plays)||+g.plays>=999) return '';
+  if (k==='all'){ const out=[]; Object.keys(PLA).forEach(c=>Object.keys(PLA[c]||{}).forEach(n=>{ if (usedOf(c,n,g.sid)>=+g.plays) out.push([c,n]); })); return chips(out,g,'',true); }
+  const ros=ROS[k]||{}, nums=Object.keys(ros).sort((a,b)=>a-b);
+  const played=nums.filter(n=>usedOf(k,n,g.sid)>0).length;
+  const done=nums.filter(n=>usedOf(k,n,g.sid)>=+g.plays).map(n=>[k,n]);
+  return chips(done,g,`시작한 학생 ${played}명 / ${nums.length}명`);
+}
+function chips(list,g,head,showCls){
+  const name=(c,n)=>{ const r=(ROS[c]||{})[n]||{}, p=(PRO[c]||{})[n]||{}; return (r.name||p.name||'')||''; };
+  return `<div class="done">${head?`<span>${head}</span> · `:''}<span>판을 다 한 학생 ${list.length}명${list.length?':':''}</span>${list.map(([c,n])=>`<span class="chip">${showCls?esc(cLabel(c))+' ':''}${esc(n)}번 ${esc(name(c,n))} <button class="link plain" data-pone="${c}|${n}">한 판 더</button></span>`).join('')}</div>`;
+}
+function renderPlay(){
+  const now=pNow(), open=Object.keys(PG).filter(k=>(+PG[k].until||0)>now).sort((a,b)=>PG[a].until-PG[b].until);
+  const key=open.map(k=>k+Math.ceil((PG[k].until-now)/1000)).join('|')+JSON.stringify(PLA).length; if (key===pbKey) return; pbKey=key;
+  $('#pbList').innerHTML=open.length?open.map(k=>{ const g=PG[k], s=Math.ceil((g.until-now)/1000), m=Math.floor(s/60), pl=+g.plays||0;
+    const plTxt=!pl||pl>=999?'판 수 제한 없음':`한 사람당 ${pl}판`;
+    return `<li class="open"><span><b>${esc(playLabel(k))}</b> · 열림 <b class="t">${m}:${String(s%60).padStart(2,'0')}</b> 남음 · ${plTxt}</span><span>${pl&&pl<999?`<button class="link plain" data-pall="${k}">모두에게 한 판 더</button> `:''}<button class="link plain" data-padd="${k}">+10분</button> <button class="link" data-pclose="${k}">지금 닫기</button></span>${doneList(k)}</li>`; }).join('')
+    :'<li class="empty-li">지금은 모든 반이 닫혀 있어요. 학생은 게임을 시작할 수 없어요.</li>';
+}
+const okMsg=m=>{ $('#pbMsg').className='msg ok'; $('#pbMsg').textContent=m; pbKey=''; renderPlay(); };
+const errMsg=()=>{ $('#pbMsg').className='msg err'; $('#pbMsg').textContent='바꾸지 못했어요. 새 보안 규칙을 올렸는지 확인해 주세요.'; };
+document.querySelector('.pb-dur').addEventListener('click',async e=>{ const b=e.target.closest('[data-pmin]'); if (!b) return; const k=$('#pbCls').value; if (!k) return;
+  try{ localStorage.setItem('gsd-pb',k); }catch(_){}
+  const min=+b.dataset.pmin, plays=+$('#pbPlays').value;
+  try{ await db.ref('playgate/'+k).set({until:Math.round(pNow()+min*60000),sid:'g'+Date.now().toString(36),plays,by:String((auth.currentUser||{}).email||'').slice(0,80)});
+    okMsg(`${playLabel(k)}에 게임을 ${min}분 동안 열었어요. ${plays>=999?'판 수 제한은 없어요.':`한 사람당 ${plays}판씩 할 수 있어요.`}`); }catch(err){ errMsg(); } });
+$('#pbList').addEventListener('click',async e=>{
+  const a=e.target.closest('[data-padd]'), c=e.target.closest('[data-pclose]'), al=e.target.closest('[data-pall]'), one=e.target.closest('[data-pone]');
+  try{
+    if (a){ const k=a.dataset.padd; await db.ref('playgate/'+k).update({until:Math.round(Math.max(pNow(),+PG[k].until||0)+600000)}); okMsg(`${playLabel(k)} 게임 시간을 10분 늘렸어요.`); }
+    if (c){ const k=c.dataset.pclose; await db.ref('playgate/'+k).update({until:Math.round(pNow())}); okMsg(`${playLabel(k)} 게임을 닫았어요. 하던 판은 마칠 수 있어요.`); }
+    if (al){ const k=al.dataset.pall; const p=(+PG[k].plays||1)+1; await db.ref('playgate/'+k).update({plays:p}); okMsg(`${playLabel(k)} 모든 학생이 한 판씩 더 할 수 있어요. (한 사람당 ${p}판)`); }
+    if (one){ const [cid,n]=one.dataset.pone.split('|'), g=PG[cid]&&+PG[cid].until>pNow()?PG[cid]:PG.all, used=usedOf(cid,n,g.sid);
+      await db.ref(`playlog/${cid}/${n}/${g.sid}`).set(Math.max(0,used-1)); okMsg(`${cLabel(cid)} ${n}번 학생에게 한 판 더 줬어요.`); }
+  }catch(err){ errMsg(); }
+});
 function loadRegistry(){
   db.ref('schools').on('value',s=>{ SCH=s.val()||{}; regChanged(); });
   db.ref('classes').on('value',s=>{ CLS=s.val()||{}; regChanged(); });
   db.ref('roster').on('value',s=>{ ROS=s.val()||{}; renderClasses(); },()=>{});
   db.ref('profiles').on('value',s=>{ PRO=s.val()||{}; renderClasses(); },()=>{});
 }
-function regChanged(){ fillSchoolSelects(); renderSchools(); renderClasses(); fillRosterSelect(); relabel(); }
+function regChanged(){ fillPlaySelect(); renderPlay(); fillSchoolSelects(); renderSchools(); renderClasses(); fillRosterSelect(); relabel(); }
 function sortedSchools(){ return Object.keys(SCH).sort((a,b)=>((SCH[a].order||0)-(SCH[b].order||0))||SCH[a].name.localeCompare(SCH[b].name,'ko')); }
 function sortedClasses(sid){ return Object.keys(CLS).filter(k=>!sid||CLS[k].sid===sid).sort((a,b)=>(CLS[b].year-CLS[a].year)||(CLS[a].grade-CLS[b].grade)||(CLS[a].cls-CLS[b].cls)); }
 function fillSchoolSelects(){
@@ -452,7 +526,7 @@ $('#ckAdd').addEventListener('click',async()=>{
 ['#clSch','#clYear'].forEach(s=>$(s).addEventListener('change',()=>{ clsDelArmed=''; yearDelArmed=''; renderClasses(); }));
 async function deleteClasses(cids){
   const up={};
-  for (const cid of cids){ up['classes/'+cid]=null; up['roster/'+cid]=null; up['profiles/'+cid]=null; up['wardrobe/'+cid]=null;
+  for (const cid of cids){ up['classes/'+cid]=null; up['roster/'+cid]=null; up['profiles/'+cid]=null; up['wardrobe/'+cid]=null; up['playgate/'+cid]=null; up['playlog/'+cid]=null;
     const snap=await db.ref('results').orderByChild('cid').equalTo(cid).once('value');
     snap.forEach(c=>{ const v=c.val(); if (v&&v.cid===cid) up['results/'+c.key]=null; }); }
   const keys=Object.keys(up);

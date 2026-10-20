@@ -225,6 +225,11 @@ button:focus-visible{outline:3px solid var(--sun);outline-offset:2px}
 #spinBtn{right:calc(max(24px,env(safe-area-inset-right,0px)) + 14px);bottom:calc(env(safe-area-inset-bottom,0px) + 144px)}
 @media (pointer:coarse){ .skillbar{display:none} }
 .shopbtn{margin-top:8px;width:100%}
+.gatenote{margin:8px 0 0;padding:8px 12px;border-radius:10px;font-size:13px;font-weight:700;text-align:center}
+.gatenote.open{background:#e3f6ea;color:#1f7a4c}
+.gatenote.shut{background:#fff1d6;color:#8a5a00}
+.gatenote.teacher{background:#e8eefc;color:#33405e}
+#startBtn:disabled{background:#e4e7ee;color:#5d6780;box-shadow:none;cursor:default}
 .screen.shop{place-items:center end;background:linear-gradient(90deg,rgba(24,33,58,0) 0%,rgba(24,33,58,0) 45%,rgba(24,33,58,.4) 100%)}
 .shop-panel{width:min(470px,100%);max-height:calc(100vh - 32px);overflow:auto;padding:18px;display:grid;gap:10px;align-content:start}
 .shop-top{display:flex;align-items:center;gap:12px}
@@ -430,6 +435,7 @@ body.hero .vitals{border-color:#c27a00;box-shadow:4px 4px 0 #c27a00}
     <p class="bankinfo" id="bankInfo"></p>
     <div class="title-actions">
       <button class="btn" id="startBtn">게임 시작</button>
+      <p class="gatenote" id="gateNote" hidden></p>
       <button class="btn ghost shopbtn" id="shopBtn" disabled>🎒 상점 · 꾸미기</button>
       <button class="btn ghost" id="editBtn" hidden>문제 관리</button>
     </div>
@@ -1962,7 +1968,7 @@ function fillClasses(){
   if (list.some(([k])=>k===saved)) $('#pkCls').value=saved;
 }
 $('#pkSch').addEventListener('change',()=>{ try{ localStorage.setItem('gsd-sch',$('#pkSch').value); }catch(e){} fillClasses(); });
-$('#pkCls').addEventListener('change',()=>{ try{ localStorage.setItem('gsd-cid',$('#pkCls').value); }catch(e){} $('#nickErr').hidden=true; lgError(''); });
+$('#pkCls').addEventListener('change',()=>{ try{ localStorage.setItem('gsd-cid',$('#pkCls').value); }catch(e){} $('#nickErr').hidden=true; lgError(''); updateGateUI(); });
 function loadClasses(){
   if (!fbDb){ CLASSES={}; fillSchools(); return; }
   Promise.all([fbDb.ref('schools').once('value'),fbDb.ref('classes').once('value')])
@@ -2101,7 +2107,7 @@ function initFirebase(){
   fbReady.then(async u=>{
     loadBank(); loadSettings();
     isAdmin=await checkAdmin(u);
-    $('#editBtn').hidden=!isAdmin;
+    $('#editBtn').hidden=!isAdmin; watchGate(); updateGateUI();
     const plain=u.isAnonymous||isStudentUser(u);
     $('#teacherState').textContent = isAdmin ? `선생님 로그인됨 (${u.email})` : (plain?'선생님이신가요?':`${u.email} 은(는) 선생님 권한이 없어요`);
     $('#teacherLogin').textContent = isAdmin||!plain ? '로그아웃' : '문제 관리 로그인';
@@ -2141,6 +2147,7 @@ function showAuthUI(){
   $('#nameBox').hidden=AUTHMODE!=='name';
   $('#profileCard').hidden=AUTHMODE!=='student';
   if (AUTHMODE==='student') renderProfileCard();
+  watchPlog(); updateGateUI();
 }
 function renderProfileCard(){
   const L=levelOf(PROFILE.xp);
@@ -2243,7 +2250,7 @@ async function grantRewards(r,fixedN){
   lines.push(`<div class="xpbar"><i style="width:${Math.round(after.rest/after.need*100)}%"></i></div><small>Lv.${after.lv} · 경험치 ${after.rest} / ${after.need} · 코인 ${Math.max(0,upd.coins-((WARDROBE&&WARDROBE.spent)|0)).toLocaleString('ko-KR')}</small>`);
   box.className='rewardbox'; box.innerHTML=lines.join(''); box.hidden=false;
   try{ await withTimeout(profRef().update(upd),10000); PROFILE={...PROFILE,...upd,updatedAt:Date.now()}; renderProfileCard(); lastReward={xp,coins}; }
-  catch(e){ box.insertAdjacentHTML('beforeend','<small class="warn">보상을 저장하지 못했어요. 너무 빨리 끝난 판은 저장되지 않아요(10초 이상 플레이).</small>'); }
+  catch(e){ box.insertAdjacentHTML('beforeend','<small class="warn">보상을 저장하지 못했어요. 너무 빨리 끝난 판(10초 미만)이나 게임 시간이 끝나고 15분이 지난 판은 저장되지 않아요.</small>'); }
 }
 
 /* ---------- 상점 · 꾸미기 ---------- */
@@ -2437,6 +2444,70 @@ function shopCamera(real){
   return true;
 }
 
+/* ---------- 게임 열기: 선생님이 연 동안만, 정한 판 수만큼 시작할 수 있어요 ---------- */
+let GATE={}, GATE_OK=null, SOFF=0, PLOG={}, plogRef=null, starting=false;
+function gateKey(){ if (AUTHMODE==='student'&&STUDENT) return STUDENT.cid; const c=$('#pkCls').value; return c&&!c.startsWith('n:')?c:''; }
+function activeGate(){
+  const now=Date.now()+SOFF, k=gateKey();
+  for (const key of [k,'all']){ if (!key) continue; const g=GATE[key]; if (g && +g.until>now) return {key,sid:g.sid||'',plays:+g.plays||0,until:+g.until,left:+g.until-now}; }
+  return null;
+}
+function playsUsed(g){
+  if (!g||!g.sid) return 0;
+  if (AUTHMODE==='student'&&STUDENT) return +PLOG[g.sid]||0;
+  try{ return +localStorage.getItem('gsd-pl-'+g.sid)||0; }catch(e){ return 0; }
+}
+function playsLeft(g){ if (!g) return 0; if (!g.sid||!g.plays||g.plays>=999) return Infinity; return Math.max(0,g.plays-playsUsed(g)); }
+function gateOpen(){ if (isAdmin || !fbDb || GATE_OK===false) return true; const g=activeGate(); return !!g && playsLeft(g)>0; }
+function watchPlog(){
+  if (plogRef){ plogRef.off(); plogRef=null; } PLOG={};
+  if (!(AUTHMODE==='student'&&STUDENT&&fbDb)) return;
+  plogRef=fbDb.ref(`playlog/${STUDENT.cid}/${STUDENT.num}`);
+  plogRef.on('value',s=>{ PLOG=s.val()||{}; updateGateUI(); },()=>{ PLOG={}; });
+}
+function updateGateUI(){
+  const b=$('#startBtn'), note=$('#gateNote'); if (!note) return;
+  if (!assetsReady){ note.hidden=true; return; }
+  if (starting){ b.disabled=true; b.textContent='확인 중…'; return; }
+  if (isAdmin){ b.disabled=false; b.textContent='게임 시작'; note.hidden=false; note.className='gatenote teacher'; note.textContent='선생님 계정이라 언제든, 몇 판이든 시작할 수 있어요.'; return; }
+  if (!fbDb || GATE_OK===false){ b.disabled=false; b.textContent='게임 시작'; note.hidden=true; return; }
+  if (GATE_OK===null){ b.disabled=true; b.textContent='확인 중…'; note.hidden=true; return; }
+  const g=activeGate(); note.hidden=false;
+  if (!g){ b.disabled=true; b.textContent='🔒 선생님이 열면 시작할 수 있어요'; note.className='gatenote shut';
+    note.textContent=AUTHMODE==='guest'&&!gateKey()?'학급을 고르면 열렸는지 확인할 수 있어요.':'지금은 수업 시간이에요. 선생님이 게임을 열면 이 버튼이 켜져요. 상점 구경은 언제든 할 수 있어요.'; return; }
+  const m=Math.ceil(g.left/60000), left=playsLeft(g);
+  if (left<=0){ b.disabled=true; b.textContent='이번 시간에 할 판을 다 했어요'; note.className='gatenote shut';
+    note.textContent=`🎉 오늘 정해진 ${g.plays}판을 모두 했어요. 더 하고 싶으면 선생님께 '한 판 더'를 부탁하세요. (게임 시간 ${m}분 남음)`; return; }
+  b.disabled=false; b.textContent=left===Infinity?'게임 시작':`게임 시작 · 남은 판 ${left}`; note.className='gatenote open';
+  note.textContent=left===Infinity?`🔓 게임 시간이에요 · ${m}분 남았어요`:`🔓 게임 시간이에요 · ${m}분 남음 · 이번 시간에 ${g.plays}판 중 ${g.plays-left}판 했어요`;
+}
+function watchGate(){
+  if (!fbDb) return;
+  try{ fbDb.ref('.info/serverTimeOffset').on('value',s=>{ SOFF=+s.val()||0; }); }catch(e){}
+  fbDb.ref('playgate').on('value',s=>{ GATE=s.val()||{}; GATE_OK=true; updateGateUI(); },()=>{ GATE_OK=false; updateGateUI(); });
+}
+/* 판 하나를 쓰고 시작 */
+async function tryStart(){
+  if (!assetsReady || starting) return;
+  if (isAdmin || !fbDb || GATE_OK===false){ startGame(); return; }
+  const g=activeGate();
+  if (!g || playsLeft(g)<=0){ if (!$('#end').hidden) $('#homeBtn').click(); updateGateUI(); return; }
+  if (!g.sid || playsLeft(g)===Infinity){ startGame(); return; }
+  if (AUTHMODE==='student'&&STUDENT){
+    starting=true; updateGateUI();
+    const ref=fbDb.ref(`playlog/${STUDENT.cid}/${STUDENT.num}/${g.sid}`);
+    try{ const cur=+((await withTimeout(ref.once('value'),8000)).val())||0;
+      if (cur>=g.plays){ PLOG[g.sid]=cur; starting=false; if (!$('#end').hidden) $('#homeBtn').click(); updateGateUI(); return; }
+      await withTimeout(ref.set(cur+1),8000); PLOG[g.sid]=cur+1; }
+    catch(e){ starting=false; updateGateUI(); lgError(''); $('#gateNote').hidden=false; $('#gateNote').className='gatenote shut'; $('#gateNote').textContent='시작하지 못했어요. 인터넷을 확인하고 다시 눌러 주세요. (판 수를 다 썼거나 시간이 끝났을 수도 있어요)'; return; }
+    starting=false; startGame(); return;
+  }
+  // 연습 모드: 이 기기에서만 셉니다
+  if (AUTHMODE==='guest'){ const v=$('#nick').value.trim(), c=$('#pkCls').value; if (v&&c){ try{ localStorage.setItem('gsd-pl-'+g.sid,String(playsUsed(g)+1)); }catch(e){} } }
+  startGame();
+}
+setInterval(()=>{ if (W.state!=='play') updateGateUI(); },2000);
+
 function saveHistory(r){
   try{ const h=JSON.parse(localStorage.getItem('gsd-history')||'[]'); h.unshift({nick:r.nick,score:r.score,correct:r.correct,asked:r.asked,win:r.win,when:r.when}); localStorage.setItem('gsd-history',JSON.stringify(h.slice(0,20))); }catch(e){}
 }
@@ -2484,8 +2555,8 @@ function endGame(win){
   $('#end .panel').scrollTop=0;
   setTimeout(()=>$('#againBtn').focus({preventScroll:true}),30);
 }
-$('#startBtn').addEventListener('click',startGame);
-$('#nick').addEventListener('keydown',e=>{ if (e.key==='Enter'){ e.preventDefault(); startGame(); } });
+$('#startBtn').addEventListener('click',tryStart);
+$('#nick').addEventListener('keydown',e=>{ if (e.key==='Enter'){ e.preventDefault(); tryStart(); } });
 $('#nick').addEventListener('input',()=>{ $('#nickErr').hidden=true; });
 $('#homeBtn').addEventListener('click',()=>{ $('#end').hidden=true; showAuthUI(); ['#hud','#hint','#touch','#skillbar'].forEach(s=>$(s).hidden=true); W.state='title'; renderHistory(); $('#title').hidden=false; $('#nick').focus(); });
 let lastResult=null;
@@ -2495,7 +2566,7 @@ $('#copyBtn').addEventListener('click',()=>{
   const fallback=()=>{ ta.hidden=false; ta.value=text; ta.focus(); ta.select(); $('#copyStatus').className='ed-status ok'; $('#copyStatus').textContent='아래 글을 길게 누르거나 Ctrl+C로 복사하세요.'; };
   try{ navigator.clipboard.writeText(text).then(()=>{ $('#copyStatus').className='ed-status ok'; $('#copyStatus').textContent='복사했어요. 선생님이 알려준 곳에 붙여넣으세요.'; },fallback); }catch(e){ fallback(); }
 });
-$('#againBtn').addEventListener('click',startGame);
+$('#againBtn').addEventListener('click',tryStart);
 
 /* ---------- 문제은행(단원별) 불러오기 · 문제 관리 ---------- */
 const TYPES={
@@ -2565,7 +2636,7 @@ useUnit('u1'); renderUnitPicker();
 initFirebase();
 if (!fbDb) loadClasses();
 $('#startBtn').disabled=true; $('#startBtn').textContent='불러오는 중…';
-assetsPromise.then(()=>{ buildWorld(); applyLook(WARDROBE?LOOK:guestLook()); $('#shopBtn').disabled=false; buildAllGrass(); makeMotes(); applyQuality(QSET==='auto'?autoQ():QSET); $('#qSel').value=QSET; assetsReady=true; $('#startBtn').disabled=false; $('#startBtn').textContent='게임 시작'; })
+assetsPromise.then(()=>{ buildWorld(); applyLook(WARDROBE?LOOK:guestLook()); $('#shopBtn').disabled=false; buildAllGrass(); makeMotes(); applyQuality(QSET==='auto'?autoQ():QSET); $('#qSel').value=QSET; assetsReady=true; $('#startBtn').disabled=false; $('#startBtn').textContent='게임 시작'; updateGateUI(); })
   .catch(err=>{ $('#startBtn').textContent='불러오기 실패'; $('#netWarn').hidden=false; $('#netWarn').textContent='3D 모델을 불러오지 못했어요. 새로고침해 보세요. ('+(err&&err.message||'')+')'; });
 
 
