@@ -746,6 +746,9 @@ const TIMED_EVERY = 30, STATION_RECHARGE = 30, CARD_CHANCE = .5;
 let LOC_TIME = 25;
 const HERO={hp:1.35,dmg:1.35,spd:1.1,quiz:.75,loc:18,score:1.5};
 let MODE='normal', HERO_OPEN=false, DIFF=1;
+/* 학교별 난이도: 0 보통 · 1 쉬움 · 2 아주 쉬움 (영웅 모드에는 적용 안 해요) */
+const EASES=[{hp:1,dmg:1,spd:1,quiz:1,loc:0},{hp:.8,dmg:.75,spd:.92,quiz:1.25,loc:5},{hp:.65,dmg:.6,spd:.85,quiz:1.5,loc:10}];
+let EASEF=EASES[0];
 const TIME_BY_KIND = {mc:20, ox:10, cls:10};
 
 /* ---------- three.js 기본 (판타지 RPG판) ---------- */
@@ -1449,7 +1452,7 @@ function spawnMob(def,isBoss,at){
   x=Math.max(-32,Math.min(32,x)); z=Math.max(-32,Math.min(32,z));
   g.position.set(x,0,z); g.rotation.y=Math.atan2(P.x-x,P.z-z); scene.add(g);
   fx.burst(x,.4,z,isBoss?0x8a8f99:0xc9c2b0,isBoss?30:12,isBoss?6:3);
-  const K=MODE==='hero'?{hp:HERO.hp,dmg:HERO.dmg,spd:HERO.spd}:{hp:DIFF,dmg:DIFF,spd:.9+.1*DIFF};
+  const K=MODE==='hero'?{hp:HERO.hp,dmg:HERO.dmg,spd:HERO.spd}:{hp:DIFF*EASEF.hp,dmg:DIFF*EASEF.dmg,spd:(.9+.1*DIFF)*EASEF.spd};
   const hp=Math.round((isBoss?def.boss.hp:def.hp)*K.hp*MOB_HP);
   const mats=c.mats; let em=-1;
   const m={g,body:c.root,parts:{},color,boss:isBoss,r:isBoss?1.6:.8,x,z,hp,max:hp,spd:(isBoss?def.boss.spd:def.spd)*K.spd,dmg:Math.round((isBoss?def.boss.dmg:def.dmg)*K.dmg),
@@ -1762,7 +1765,7 @@ function openQuiz(item,source){
   if (item.kind==='mc'){ const order=item.o.map((_,i)=>i).sort(()=>Math.random()-.5); opts=order.map(i=>item.o[i]); correctIdx=order.indexOf(0); }
   else if (item.kind==='ox'){ opts=['O','X']; correctIdx=item.a?0:1; }
   else { opts=CLS_OPTS; correctIdx=item.a; }
-  Object.assign(Q,{item,correctIdx,nOpts:opts.length,start:performance.now(),dur:Math.round(TIME_BY_KIND[item.kind]*(MODE==='hero'&&source.type!=='revive'?HERO.quiz:1)),answered:false,source,resultOnly:false});
+  Object.assign(Q,{item,correctIdx,nOpts:opts.length,start:performance.now(),dur:Math.round(TIME_BY_KIND[item.kind]*(MODE==='hero'&&source.type!=='revive'?HERO.quiz:1)*(MODE==='hero'?1:EASEF.quiz)),answered:false,source,resultOnly:false});
   const tagName = source.type==='station'?(source.station.title||`${ZINFO[source.station.zone].name} 퀴즈`):source.type==='card'?(item.kind==='ox'?'지식 카드 · O/X':'지식 카드 · 분류'):'돌발 퀴즈';
   const tagColor = source.type==='station'?(source.station.hex||ZINFO[source.station.zone].color):source.type==='card'?'#c28a00':'#18213a';
   $('#qtag').textContent=tagName; $('#qtag').style.background=tagColor;
@@ -1979,7 +1982,7 @@ function classInfo(cid){
   if (!cid) return null;
   if (cid.startsWith('n:')) { const n=cid.slice(2); return {cid:'',sch:'',year:0,grade:0,cls:n,label:n+'반',legacy:true}; }
   const c=CLASSES[cid]; if (!c) return null; const sc=SCHOOLS[c.sid]||{};
-  return {cid,sch:sc.name||'',year:c.year,grade:c.grade,cls:String(c.cls),label:`${sc.name?sc.name+' ':''}${c.grade}-${c.cls}`,short:`${c.grade}-${c.cls}`};
+  return {cid,ease:+sc.ease||0,sch:sc.name||'',year:c.year,grade:c.grade,cls:String(c.cls),label:`${sc.name?sc.name+' ':''}${c.grade}-${c.cls}`,short:`${c.grade}-${c.cls}`};
 }
 function fillSchools(){
   const act=Object.entries(CLASSES).filter(([k,c])=>!c.hidden&&SCHOOLS[c.sid]);
@@ -2043,7 +2046,8 @@ function startGame(){
   }
   MODE = HERO_OPEN && $('#modeHero').checked ? 'hero' : 'normal';
   DIFF = loadSkill();
-  LOC_TIME = MODE==='hero' ? HERO.loc : Math.round(25*(DIFF<1? 1+(1-DIFF)*.8 : 1));
+  EASEF = EASES[MODE==='hero'?0:Math.min(2,Math.max(0,(CI&&CI.ease)|0))];
+  LOC_TIME = MODE==='hero' ? HERO.loc : Math.round(25*(DIFF<1? 1+(1-DIFF)*.8 : 1))+EASEF.loc;
   document.body.classList.toggle('hero',MODE==='hero');
   { const pu=DATA.units.find(u=>u.id===playUnit); applyZoneCfg(zcfgOf(pu)); setMap(mapOf(pu)); }
   startQualityMonitor();
@@ -2944,7 +2948,7 @@ function frame(now){
           m.slamT-=dt;
           if (m.slamT<=0){
             fx.shock(m.slamX,m.slamZ,B.slamR); fx.burst(m.slamX,.3,m.slamZ,0x9aa3b5,26,7); shake=.45; m.recover=.35;
-            if (Math.hypot(P.x-m.slamX,P.z-m.slamZ)<B.slamR){ if (W.t>W.invuln){ const sd=Math.round(B.slamDmg*(MODE==='hero'?HERO.dmg:DIFF)); P.hp-=sd; hurtT=.4; SFX.hurt(); fx.num(P.x,3,P.z,'-'+sd,'#ff6b6b'); } flashPrompt(`내려찍기에 맞았어요! 체력 -${B.slamDmg}`,1.5); }
+            if (Math.hypot(P.x-m.slamX,P.z-m.slamZ)<B.slamR){ if (W.t>W.invuln){ const sd=Math.round(B.slamDmg*(MODE==='hero'?HERO.dmg:DIFF*EASEF.dmg)); P.hp-=sd; hurtT=.4; SFX.hurt(); fx.num(P.x,3,P.z,'-'+sd,'#ff6b6b'); } flashPrompt(`내려찍기에 맞았어요! 체력 -${B.slamDmg}`,1.5); }
             if (MAPK==='defense' && Math.hypot(DOOR.x-m.slamX,DOOR.z-m.slamZ)<B.slamR+1){ const dd=B.slamDmg*2; W.door-=dd; doorFlash=.35; fx.num(DOOR.x,5.6,DOOR.z+.6,'-'+dd,'#ffb36b'); flashPrompt(`내려찍기가 성문을 부쉈어요! 성문 -${dd}`,1.8); }
             m.slamCd=B.slamEvery;
           }

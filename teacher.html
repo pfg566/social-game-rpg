@@ -75,6 +75,7 @@ tr:hover td{background:#f8fafc}
 #pbList .done{flex-basis:100%;display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:12px;color:#33405e}
 #pbList .done .chip{display:inline-flex;align-items:center;gap:4px;border:1.5px solid var(--line);border-radius:999px;padding:2px 4px 2px 9px;background:#fff}
 #pbList .done .chip button{font-size:11px} #pbList li b.t{font-variant-numeric:tabular-nums;color:#1f7a4c}
+.ezsel{font:inherit;font-size:12px;border:1.5px solid var(--line);border-radius:8px;padding:2px 4px;background:#fff}
 .pill{display:inline-block;font-size:11px;font-weight:700;padding:1px 8px;border-radius:999px;border:1.5px solid}
 .pill.win{color:var(--good);border-color:var(--good)} .pill.lose{color:var(--muted);border-color:var(--line)} .pill.hero{color:var(--warn);border-color:var(--warn)}
 .bar{display:inline-block;width:70px;height:8px;border-radius:4px;background:#e5e9f0;vertical-align:middle;margin-left:6px;overflow:hidden}
@@ -470,10 +471,14 @@ function fillSchoolSelects(){
   const years=[...new Set(Object.values(CLS).map(c=>c.year))].sort((a,b)=>b-a); const ys=$('#clYear'), cy=ys.value;
   ys.innerHTML='<option value="">모든 학년도</option>'+years.map(y=>`<option value="${y}">${y}학년도</option>`).join(''); if ([...ys.options].some(o=>o.value===cy)) ys.value=cy;
 }
+$('#schList').addEventListener('change',async e=>{ const el=e.target.closest('[data-sch-ease]'); if (!el) return; const id=el.dataset.schEase, v=+el.value;
+  try{ await db.ref('schools/'+id+'/ease').set(v?v:null); clMsg(`${SCH[id].name} 학생들의 게임 난이도를 '${['보통','쉬움','아주 쉬움'][v]}'으로 바꿨어요. 영웅 모드는 그대로 어려워요.`,'ok'); }
+  catch(err){ clMsg('바꾸지 못했어요. 새 보안 규칙을 올렸는지 확인해 주세요.','err'); renderSchools(); } });
 function renderSchools(){
   const ids=sortedSchools();
   $('#schList').innerHTML=ids.length?ids.map(id=>{ const n=Object.values(CLS).filter(c=>c.sid===id).length;
-    return `<li><span><b>${esc(SCH[id].name)}</b> <small>학급 ${n}개</small></span><span><button class="link plain" data-sch-ren="${id}">이름 바꾸기</button>${n?'':` <button class="link" data-sch-del="${id}">삭제</button>`}</span></li>`; }).join('')
+    const ez=+SCH[id].ease||0;
+    return `<li><span><b>${esc(SCH[id].name)}</b> <small>학급 ${n}개</small></span><span><select class="ezsel" data-sch-ease="${id}" title="이 학교 학생들의 게임 난이도">${['보통','쉬움','아주 쉬움'].map((l,i)=>`<option value="${i}"${i===ez?' selected':''}>난이도: ${l}</option>`).join('')}</select> <button class="link plain" data-sch-ren="${id}">이름 바꾸기</button>${n?'':` <button class="link" data-sch-del="${id}">삭제</button>`}</span></li>`; }).join('')
     :'<li class="empty-li">아직 학교가 없어요. 위에서 학교 이름을 넣고 추가하세요.</li>';
 }
 function renderLegacy(){
