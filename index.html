@@ -180,6 +180,10 @@ button:focus-visible{outline:3px solid var(--sun);outline-offset:2px}
 .unit-actions .btn.small{font-size:15px;padding:6px 12px}
 .rename{display:flex;gap:8px;align-items:flex-end}
 .rename .fld{flex:1}
+.zcfgbox{border:2px dashed #9aa6c2;border-radius:10px;padding:10px;display:grid;gap:8px;background:#fff}
+.zc-head{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:13px} .zc-head b{font-family:var(--display);font-weight:400;font-size:16px}
+.zc-grid{display:grid;grid-template-columns:1fr 1.6fr;gap:6px 10px} .zc-grid .wide{grid-column:1/-1}
+@media (max-width:600px){ .zc-grid{grid-template-columns:1fr} }
 .unit-note{margin:0;font-size:13px;font-weight:600;color:#33405e}
 .unit-note b{color:var(--good)} .unit-note i{font-style:normal;color:var(--bad)}
 .filebtn{position:relative;overflow:hidden;cursor:pointer}
@@ -529,7 +533,17 @@ body.hero .vitals{border-color:#c27a00;box-shadow:4px 4px 0 #c27a00}
         <button class="btn small ghost" id="edUnitRename">이름 바꾸기</button>
         <button class="btn small ghost" id="edUnitActive">수업 단원으로 지정</button>
       </div>
-      <label class="fld"><span>맵</span><select id="edMap"><option value="zones">세 거점 맵 · 공간적 분업 전용 (4가지 유형 모두 필요)</option><option value="general">들판 마을 맵 · 어느 단원이든 (4지선다 + O/X만 있으면 돼요)</option><option value="defense">성벽 디펜스 맵 · 어느 단원이든 (4지선다 + O/X만 있으면 돼요)</option></select></label>
+      <label class="fld"><span>맵</span><select id="edMap"><option value="zones">세 거점 맵 · 거점 이름을 단원에 맞게 바꿔요 (4가지 유형 모두 필요)</option><option value="general">들판 마을 맵 · 어느 단원이든 (4지선다 + O/X만 있으면 돼요)</option><option value="defense">성벽 디펜스 맵 · 어느 단원이든 (4지선다 + O/X만 있으면 돼요)</option></select></label>
+      <div class="zcfgbox" id="edZcfg" hidden>
+        <div class="zc-head"><b>세 거점 이름</b><span>빠른 설정:</span><span id="edZPresets"></span></div>
+        <div class="zc-grid">
+          <label class="fld"><span>북쪽 거점 (파랑)</span><input data-zc="n0" maxlength="10"></label><label class="fld"><span>설명</span><input data-zc="s0" maxlength="22"></label>
+          <label class="fld"><span>서쪽 거점 (초록)</span><input data-zc="n1" maxlength="10"></label><label class="fld"><span>설명</span><input data-zc="s1" maxlength="22"></label>
+          <label class="fld"><span>동쪽 거점 (주황)</span><input data-zc="n2" maxlength="10"></label><label class="fld"><span>설명</span><input data-zc="s2" maxlength="22"></label>
+          <label class="fld"><span>분류 퀴즈 선택지 1</span><input data-zc="c0" maxlength="14"></label><label class="fld"><span>분류 퀴즈 선택지 2</span><input data-zc="c1" maxlength="14"></label>
+          <label class="fld wide"><span>분류 퀴즈 질문 (문장 뒤에 붙어요)</span><input data-zc="q" maxlength="30"></label>
+        </div>
+      </div>
       <div class="rename" id="edRenameBox" hidden>
         <label class="fld"><span>단원 이름</span><input id="edRenameInput" placeholder="예: 중3 사회2 · IX-3 서비스업의 세계화"></label>
         <button class="btn small" id="edRenameOk">확인</button>
@@ -667,6 +681,29 @@ function looksLikeBank(d){ return d && ['mc','ox','cls','loc'].every(k=>Array.is
 applyBank({mc:DEF_MC,ox:DEF_OX,cls:DEF_CLS,loc:DEF_LOC});
 const ZINFO = {hq:{name:'본사',color:'#3b6fd9'}, lab:{name:'연구소',color:'#21966f'}, fac:{name:'생산 공장',color:'#ea7d1f'}};
 const CLS_OPTS = ['공장이 들어선 지역','공장이 빠져나간 지역'];
+/* 세 거점 맵: 단원마다 거점 이름·설명·분류 이름을 바꿀 수 있어요 */
+const ZCFG_DEFAULT={n:['본사','연구소','생산 공장'],s:['선진국 대도시 · 경영·관리','고급 인력 · 기술 개발','낮은 임금 · 넓은 땅'],c:['공장이 들어선 지역','공장이 빠져나간 지역'],q:'이런 변화는 어느 지역에서 나타날까?'};
+const ZCFG_PRESETS={
+  spatial:{label:'공간적 분업 (기본)',cfg:ZCFG_DEFAULT},
+  welfare:{label:'사회 복지 제도',cfg:{n:['사회 보험','공공 부조','사회 서비스'],s:['고용 보험 · 국민연금 · 건강 보험','기초 생활 보장 · 기초 연금','노인 돌봄 · 가사·간병'],c:['금전적 지원','비금전적 지원'],q:'이 제도는 어떤 지원일까?'}}
+};
+function zcfgOf(u){ const z=(u&&u.zcfg)||{}; const pick=(a,d,n,max)=>Array.from({length:n},(_,i)=>{ const arr=Array.isArray(a)?a:(a&&typeof a==='object'?Object.values(a):null); const v=arr?String(arr[i]??'').trim().slice(0,max):''; return v||d[i]; });
+  return {n:pick(z.n,ZCFG_DEFAULT.n,3,10),s:pick(z.s,ZCFG_DEFAULT.s,3,22),c:pick(z.c,ZCFG_DEFAULT.c,2,14),q:(typeof z.q==='string'&&z.q.trim().slice(0,30))||(z.n?'어느 쪽에 해당할까?':ZCFG_DEFAULT.q)}; }
+const isDefaultZ=c=>c.n.join()===ZCFG_DEFAULT.n.join()&&c.c.join()===ZCFG_DEFAULT.c.join();
+let ZCFG=ZCFG_DEFAULT, ZLAB={};
+const ZDIR=['북쪽','서쪽','동쪽'], ZK=['hq','lab','fac'];
+function applyZoneCfg(c){
+  ZCFG=c;
+  ZK.forEach((k,i)=>{ ZINFO[k].name=c.n[i]; if (ZLAB[k]) ZLAB[k].set(c.n[i],c.s[i]); });
+  CLS_OPTS[0]=c.c[0]; CLS_OPTS[1]=c.c[1];
+  document.querySelectorAll('#mapZones .zone').forEach((el,i)=>{ el.querySelector('b').textContent=`${c.n[i]} · ${ZDIR[i]}`; el.querySelector('span').textContent=c.s[i]; });
+  document.querySelectorAll('#locCard .legend span').forEach((el,i)=>{ el.textContent=`${c.n[i]} · ${ZDIR[i]}`; });
+  ['#dirHq','#dirLab','#dirFac'].forEach((id,i)=>{ const el=$(id); if (el&&el.parentNode.firstChild.nodeType===3) el.parentNode.firstChild.nodeValue=c.n[i]; });
+  const def=isDefaultZ(c);
+  MAPS.zones.desc=def?'다국적 기업의 세 거점을 지키세요. 퀴즈를 맞혀야 강해지고, 웨이브가 열리고, 보스의 보호막이 깨져요.':`${c.n.join(', ')} 세 거점을 지키세요. 퀴즈를 맞혀야 강해지고, 웨이브가 열리고, 보스의 보호막이 깨져요.`;
+  MAPS.zones.winMsg=def?'공간적 분업의 핵심을 잘 알고 있네요. 아래 틀린 문제를 한 번 더 읽어 보고 마무리해요.':'이번 단원의 핵심을 잘 알고 있네요. 아래 틀린 문제를 한 번 더 읽어 보고 마무리해요.';
+  MAPS.zones.waves=def?'zones':'general';
+}
 const GOOD = [{k:'atk',label:'공격력 1.6배',mult:1.6,dur:20},{k:'spd',label:'이동속도 1.4배',mult:1.4,dur:20},{k:'heal',label:'체력 +25',amount:25}];
 const BAD  = [{k:'atk',label:'공격력 0.6배',mult:0.6,dur:15},{k:'spd',label:'이동속도 0.6배',mult:0.6,dur:15},{k:'dmg',label:'체력 -15',amount:15}];
 const BOSS_BASE={hp:700, spd:2.3, dmg:22, color:0x4b5563, shield:4, slamEvery:6, slamWarn:1.2, slamR:5.5, slamDmg:15, summonEvery:14};
@@ -999,13 +1036,15 @@ function label(title, sub, color, x, y, z){
     g.fillStyle='rgba(232,200,120,.95)'; g.font='600 26px "IBM Plex Sans KR", "Malgun Gothic", sans-serif'; g.fillText(sub,262,114);
     tex.needsUpdate=true; };
   draw(); labels.push(draw);
+  const api={set(t,s2){ title=t; sub=s2; draw(); }};
   const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,fog:false,toneMapped:false})); sp.scale.set(8.2,2.4,1); sp.position.set(x,y,z); scene.add(sp);
+  return api;
 }
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(()=>labels.forEach(d=>d()));
 within('zones',()=>{
-label('본사','선진국 대도시 · 경영·관리','#3b6fd9',0,24,-31);
-label('연구소','고급 인력 · 기술 개발','#21966f',-27,16,16);
-label('생산 공장','낮은 임금 · 넓은 땅','#ea7d1f',27,14,16);
+ZLAB.hq=label(ZCFG.n[0],ZCFG.s[0],'#3b6fd9',0,24,-31);
+ZLAB.lab=label(ZCFG.n[1],ZCFG.s[1],'#21966f',-27,16,16);
+ZLAB.fac=label(ZCFG.n[2],ZCFG.s[2],'#ea7d1f',27,14,16);
 });
 
 /* ---------- 3D 모델 불러오기 ---------- */
@@ -1727,7 +1766,7 @@ function openQuiz(item,source){
   const tagName = source.type==='station'?(source.station.title||`${ZINFO[source.station.zone].name} 퀴즈`):source.type==='card'?(item.kind==='ox'?'지식 카드 · O/X':'지식 카드 · 분류'):'돌발 퀴즈';
   const tagColor = source.type==='station'?(source.station.hex||ZINFO[source.station.zone].color):source.type==='card'?'#c28a00':'#18213a';
   $('#qtag').textContent=tagName; $('#qtag').style.background=tagColor;
-  $('#qtext').textContent = item.kind==='cls' ? `“${item.q}” 이런 변화는 어느 지역에서 나타날까?` : item.q;
+  $('#qtext').textContent = item.kind==='cls' ? `“${item.q}” ${ZCFG.q}` : item.q;
   const box=$('#qopts'); box.innerHTML=''; box.className='opts'+(opts.length===2?' two':''); box.hidden=false;
   opts.forEach((t,i)=>{ const b=document.createElement('button'); b.className='opt'; b.id='opt'+i;
     b.innerHTML=`<span class="n">${i+1}</span><span></span>`; b.lastChild.textContent=t;
@@ -2006,14 +2045,14 @@ function startGame(){
   DIFF = loadSkill();
   LOC_TIME = MODE==='hero' ? HERO.loc : Math.round(25*(DIFF<1? 1+(1-DIFF)*.8 : 1));
   document.body.classList.toggle('hero',MODE==='hero');
-  setMap(mapOf(DATA.units.find(u=>u.id===playUnit)));
+  { const pu=DATA.units.find(u=>u.id===playUnit); applyZoneCfg(zcfgOf(pu)); setMap(mapOf(pu)); }
   startQualityMonitor();
   $('#title').hidden=true; $('#end').hidden=true;
   ['#hud','#hint','#touch','#skillbar'].forEach(s=>$(s).hidden=false);
   reset(); canvas.focus({preventScroll:true});
 }
 function esc(s){ return s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
-function questionText(item){ return item.kind==='cls' ? `“${item.q}” 어느 지역의 변화일까?` : item.kind==='ox' ? `[O/X] ${item.q}` : item.q; }
+function questionText(item){ return item.kind==='cls' ? `“${item.q}” ${ZCFG.q}` : item.kind==='ox' ? `[O/X] ${item.q}` : item.q; }
 function pct(r){ return r.asked?Math.round(r.correct/r.asked*100):0; }
 function resultText(r){
   return `[사회 게임 RPG 결과]\n닉네임: ${r.nick}\n단원: ${r.unit}\n결과: ${r.win?'승리':'게임 오버'} · 점수 ${r.score}점\n정답: ${r.correct}/${r.asked} (${pct(r)}%) · 처치 ${r.kills} · 시간 ${r.time}\n`+
@@ -2580,6 +2619,7 @@ const TYPES={
       cols:['변화 문장','정답(들어선/빠져나간)','해설']}
 };
 const ZOPTS=[['hq','본사'],['lab','연구소'],['fac','생산 공장'],['any','공통']];
+function zopts(){ const c=zcfgOf(curU()); return [['hq',c.n[0]],['lab',c.n[1]],['fac',c.n[2]],['any','공통']]; }
 const DEFAULT_UNIT_NAME='중3 사회2 · IX-2 다국적 기업의 공간적 분업';
 const defaultBank=()=>JSON.parse(JSON.stringify({mc:DEF_MC,ox:DEF_OX,cls:DEF_CLS,loc:DEF_LOC}));
 const emptyBank=()=>({mc:[],ox:[],cls:[],loc:[]});
@@ -2591,7 +2631,7 @@ function normalize(d){
   if (looksLikeBank(d)) return {version:2,active:'u1',units:[{id:'u1',name:DEFAULT_UNIT_NAME,map:'zones',bank:d}],settings:{submitUrl:''}};
   if (d && d.units && typeof d.units==='object'){
     const arr=x=>Array.isArray(x)?x.filter(Boolean):(x&&typeof x==='object'?Object.values(x):[]);
-    const units=arr(d.units).filter(u=>u&&typeof u.id==='string').map(u=>{ const b=u.bank||{}; return {id:u.id,name:String(u.name||'이름 없는 단원'),map:MAPS[u.map]?u.map:(u.id==='u1'?'zones':'general'),
+    const units=arr(d.units).filter(u=>u&&typeof u.id==='string').map(u=>{ const b=u.bank||{}; return {id:u.id,name:String(u.name||'이름 없는 단원'),map:MAPS[u.map]?u.map:(u.id==='u1'?'zones':'general'),...(u.zcfg&&typeof u.zcfg==='object'?{zcfg:zcfgOf(u)}:{}),
       bank:{mc:arr(b.mc).map(x=>({...x,o:arr(x.o)})),ox:arr(b.ox),cls:arr(b.cls),loc:arr(b.loc)}}; });
     if (units.length){ const active=units.some(u=>u.id===d.active&&isReady(u))?d.active:(units.find(isReady)||units[0]).id; const su=d.settings&&typeof d.settings.submitUrl==='string'&&/^https:\/\//.test(d.settings.submitUrl)?d.settings.submitUrl:''; return {version:2,active,units,settings:{submitUrl:su}}; }
   }
@@ -2603,7 +2643,7 @@ let ED=null, edUnit='u1', edTab='mc', resetArmed=false, delArmed=false;
 
 function useUnit(id){
   const u=DATA.units.find(x=>x.id===id&&isReady(x)) || DATA.units.find(x=>x.id===DATA.active) || DATA.units[0];
-  playUnit=u.id; applyBank(u.bank);
+  playUnit=u.id; applyBank(u.bank); applyZoneCfg(zcfgOf(u));
   $('#unitEyebrow').innerHTML=`${esc(u.name)}<span class="mapname">${MAPS[mapOf(u)].name}</span>`;
   if (W.state!=='play') setMap(mapOf(u));
   updateBankInfo();
@@ -2614,7 +2654,7 @@ function setMap(k){
   MAPK=k;
   for (const g in mapGroups) mapGroups[g].visible=g===k;
   colliders=MAPSTATE[k].colliders; stations=MAPSTATE[k].stations; npcs=MAPSTATE[k].npcs;
-  WAVES=WAVESETS[k];
+  WAVES=WAVESETS[k==='zones'?(MAPS.zones.waves||'zones'):k];
   const M=MAPS[k];
   $('#mapDesc').textContent=M.desc; $('#mapZones').hidden=k!=='zones';
   $('#mapRules').innerHTML=M.rules.concat(['<b>조작:</b> 스페이스 연타 = 3단 콤보(마지막 타가 가장 세요) · Shift = 구르기(잠깐 무적) · E = 회전 베기(8초마다)']).map(r=>`<li>${r}</li>`).join('');
@@ -2648,17 +2688,21 @@ function fieldHTML(t,item,i){
   const inp=(f,label,val,cls='',sub)=>`<label class="fld ${cls}"><span${sub===0?' class="ans"':''}>${label}</span><input data-i="${i}" data-f="${f}"${sub!==undefined?` data-s="${sub}"`:''} value="${esc(String(val))}"></label>`;
   const area=(label,val)=>`<label class="fld wide"><span>${label}</span><textarea data-i="${i}" data-f="q" rows="2">${esc(val)}</textarea></label>`;
   const sel=(f,label,val,opts)=>`<label class="fld"><span class="ans">${label}</span><select data-i="${i}" data-f="${f}">${opts.map(([v,l])=>`<option value="${v}"${String(v)===String(val)?' selected':''}>${l}</option>`).join('')}</select></label>`;
-  if (t==='mc') return `<label class="fld"><span>거점</span><select data-i="${i}" data-f="z">${ZOPTS.map(([v,l])=>`<option value="${v}"${v===item.z?' selected':''}>${l}</option>`).join('')}</select></label><div></div>`+
+  if (t==='mc') return `<label class="fld"><span>거점</span><select data-i="${i}" data-f="z">${zopts().map(([v,l])=>`<option value="${v}"${v===item.z?' selected':''}>${l}</option>`).join('')}</select></label><div></div>`+
     area('문제',item.q)+inp('o','정답',item.o[0]||'','',0)+inp('o','오답 1',item.o[1]||'','',1)+inp('o','오답 2',item.o[2]||'','',2)+inp('o','오답 3',item.o[3]||'','',3)+inp('e','해설 (답한 뒤 보여줘요)',item.e,'wide');
-  if (t==='loc') return area('상황',item.q)+sel('a','정답 거점',item.a,ZOPTS.slice(0,3))+'<div></div>'+inp('e','해설',item.e,'wide');
+  if (t==='loc') return area('상황',item.q)+sel('a','정답 거점',item.a,zopts().slice(0,3))+'<div></div>'+inp('e','해설',item.e,'wide');
   if (t==='ox') return area('문장',item.q)+sel('a','정답',item.a,[[true,'O (맞다)'],[false,'X (틀리다)']])+'<div></div>'+inp('e','해설',item.e,'wide');
-  return area('변화 문장',item.q)+sel('a','정답',item.a,[[0,'공장이 들어선 지역'],[1,'공장이 빠져나간 지역']])+'<div></div>'+inp('e','해설',item.e,'wide');
+  return area('문장',item.q)+sel('a','정답',item.a,[[0,zcfgOf(curU()).c[0]],[1,zcfgOf(curU()).c[1]]])+'<div></div>'+inp('e','해설',item.e,'wide');
 }
 function renderUnitBar(){
   $('#edUnit').innerHTML=ED.units.map(u=>`<option value="${esc(u.id)}"${u.id===edUnit?' selected':''}>${esc(u.name)}${u.id===ED.active?' · 수업 단원':''}</option>`).join('');
   const u=curU(), ready=isReady(u);
   const missing=MAPS[mapOf(u)].need.filter(k=>!u.bank[k].length).map(k=>TYPES[k].label);
   $('#edMap').value=mapOf(u);
+  $('#edZcfg').hidden=mapOf(u)!=='zones';
+  if (mapOf(u)==='zones'){ const c=zcfgOf(u);
+    $('#edZPresets').innerHTML=Object.entries(ZCFG_PRESETS).map(([k,p])=>`<button class="btn small ghost" data-zpre="${k}">${p.label}</button>`).join(' ');
+    document.querySelectorAll('[data-zc]').forEach(el=>{ const f=el.dataset.zc; el.value=f==='q'?c.q:c[f[0]][+f[1]]; }); }
   $('#edUnitNote').innerHTML = (u.id===ED.active?'<b>지금 수업 단원이에요.</b> ':'')+
     (ready?`문제 ${countOf(u.bank)}개 · 수업에 쓸 수 있어요.`:`<i>준비 중</i> · ${missing.join(', ')} 문제를 1개 이상 넣으면 수업에 쓸 수 있어요.`);
   const act=$('#edUnitActive'); act.disabled=u.id===ED.active||!ready; act.textContent=u.id===ED.active?'수업 단원 ✓':'수업 단원으로 지정';
@@ -2670,7 +2714,11 @@ function renderEditor(){
   $('#edTabs').innerHTML=Object.keys(TYPES).map(k=>`<button class="tab" role="tab" data-tab="${k}" aria-selected="${k===edTab}">${TYPES[k].label} ${b[k].length}</button>`).join('');
   const um=mapOf(curU());
   $('#edDesc').textContent=(um!=='zones'&&(edTab==='loc'||edTab==='cls')?`이 단원은 ${MAPS[um].name}이라 이 유형은 게임에 나오지 않아요. `:'')+(um!=='zones'&&edTab==='mc'?'4지선다는 수정 기둥과 돌발 퀴즈에 나와요. 거점 칸은 세 거점 맵에서만 쓰여요.':TYPES[edTab].desc);
-  $('#edCols').textContent=TYPES[edTab].cols.join('  |  ');
+  { const zc=zcfgOf(curU()), cols=[...TYPES[edTab].cols];
+    if (edTab==='mc') cols[0]=`거점(${zc.n.join('/')}/공통)`; if (edTab==='loc') cols[1]=`정답 거점(${zc.n.join('/')})`; if (edTab==='cls'){ cols[0]='문장'; cols[1]=`정답(${zc.c.join('/')})`; }
+    $('#edCols').textContent=cols.join('  |  ');
+    if (um==='zones'&&edTab==='cls') $('#edDesc').textContent=`제시된 문장이 "${zc.c[0]}"과 "${zc.c[1]}" 중 어디에 해당하는지 고르는 문제예요. 지식 카드에서 나와요.`;
+    if (um==='zones'&&edTab==='loc') $('#edDesc').textContent=`상황을 읽고 알맞은 거점(${zc.n.join(', ')}) 바닥으로 직접 달려가는 문제예요. 돌발 퀴즈 시간에 번갈아 나와요.`; }
   $('#edList').innerHTML=b[edTab].map((it,i)=>`<div class="qrow" data-row="${i}"><div class="qrow-top"><span class="qnum">${i+1}번</span><button class="del" data-del="${i}">삭제</button></div><div class="fields">${fieldHTML(edTab,it,i)}</div></div>`).join('')
     || '<p class="ed-desc">아직 문제가 없어요. 아래 버튼으로 추가하거나 시트에서 붙여넣으세요.</p>';
 }
@@ -2699,6 +2747,9 @@ $('#edAdd').addEventListener('click',()=>{ B()[edTab].push(blankItem[edTab]()); 
   const rows=document.querySelectorAll('.qrow'); const lastRow=rows[rows.length-1]; if (lastRow){ lastRow.scrollIntoView({block:'nearest'}); const t=lastRow.querySelector('textarea'); if (t) t.focus({preventScroll:true}); } });
 
 /* 단원 관리 */
+$('#edZcfg').addEventListener('click',e=>{ const b=e.target.closest('[data-zpre]'); if (!b) return; const p=ZCFG_PRESETS[b.dataset.zpre]; curU().zcfg=JSON.parse(JSON.stringify(p.cfg)); renderEditor(); setStatus('#edStatus',`거점 이름을 '${p.label}'(으)로 바꿨어요. '저장하기'를 눌러야 반영돼요.`,'ok'); });
+$('#edZcfg').addEventListener('change',e=>{ const el=e.target.closest('[data-zc]'); if (!el) return; const u=curU(), c=zcfgOf(u), f=el.dataset.zc, v=el.value.trim();
+  if (f==='q') c.q=v||c.q; else if (v) c[f[0]][+f[1]]=v; u.zcfg=c; renderEditor(); });
 $('#edMap').addEventListener('change',e=>{ curU().map=e.target.value; renderEditor(); setStatus('#edStatus',"맵을 바꿨어요. '저장하기'를 눌러야 반영돼요.",'ok'); });
 $('#edUnit').addEventListener('change',e=>{ edUnit=e.target.value; edTab='mc'; disarm(); $('#edRenameBox').hidden=true; renderEditor(); });
 $('#edUnitAdd').addEventListener('click',()=>{
@@ -2724,15 +2775,18 @@ $('#edUnitDel').addEventListener('click',()=>{
 });
 
 /* 시트 붙여넣기 · 복사 */
-function parseZone(s){ s=s||''; if (s.includes('본사')) return 'hq'; if (s.includes('연구')) return 'lab'; if (s.includes('공장')||s.includes('생산')) return 'fac'; return 'any'; }
+function parseZone(s){ s=(s||'').trim(); const zc=zcfgOf(curU()); const order=[0,1,2].sort((a,b)=>zc.n[b].length-zc.n[a].length);
+  for (const i of order){ if (s&&(s===zc.n[i]||s.includes(zc.n[i])||(s.length>=2&&zc.n[i].includes(s)))) return ZK[i]; }
+  if (!isDefaultZ(zc)) return 'any';
+  if (s.includes('본사')) return 'hq'; if (s.includes('연구')) return 'lab'; if (s.includes('공장')||s.includes('생산')) return 'fac'; return 'any'; }
 function parseRows(t,text){
   const out=[];
   for (const line of text.split(/\r?\n/)){
     if (!line.trim()) continue;
     const c=line.split('\t').map(x=>x.trim());
     if (t==='mc'){ if (!c[1]||/^문제$/.test(c[1])) continue; out.push({z:parseZone(c[0]),q:c[1],o:[c[2]||'',c[3]||'',c[4]||'',c[5]||''],e:c[6]||''}); }
-    else { if (!c[0]||/^(상황|문장|변화|변화 문장)$/.test(c[0])) continue;
-      const a = t==='loc' ? (parseZone(c[1])==='any'?'hq':parseZone(c[1])) : t==='ox' ? /^(o|ㅇ|맞|참|true)/i.test(c[1]||'') : ((c[1]||'').includes('빠져')?1:0);
+    else { if (!c[0]||/^(상황|문장|변화|변화 문장|제도)$/.test(c[0])) continue;
+      const a = t==='loc' ? (parseZone(c[1])==='any'?'hq':parseZone(c[1])) : t==='ox' ? /^(o|ㅇ|맞|참|true)/i.test(c[1]||'') : (()=>{ const v=(c[1]||'').trim(), zc=zcfgOf(curU()); if (v&&(v===zc.c[1]||v.includes(zc.c[1]))) return 1; if (v&&(v===zc.c[0]||v.includes(zc.c[0]))) return 0; if (v==='1'||v==='2') return +v-1; return v.includes('빠져')?1:0; })();
       out.push({q:c[0],a,e:c[2]||''}); }
   }
   return out;
@@ -2740,10 +2794,11 @@ function parseRows(t,text){
 function toTSV(t){
   const rows=[TYPES[t].cols];
   for (const it of B()[t]){
-    if (t==='mc') rows.push([ZINFO[it.z]?ZINFO[it.z].name:'공통',it.q,...it.o,it.e]);
-    else if (t==='loc') rows.push([it.q,ZINFO[it.a].name,it.e]);
+    const zc=zcfgOf(curU()), zn=k=>zc.n[ZK.indexOf(k)];
+    if (t==='mc') rows.push([ZK.includes(it.z)?zn(it.z):'공통',it.q,...it.o,it.e]);
+    else if (t==='loc') rows.push([it.q,zn(it.a),it.e]);
     else if (t==='ox') rows.push([it.q,it.a?'O':'X',it.e]);
-    else rows.push([it.q,it.a?'빠져나간':'들어선',it.e]);
+    else rows.push([it.q,zc.c[it.a?1:0],it.e]);
   }
   return rows.map(r=>r.map(x=>String(x).replace(/[\t\n]/g,' ')).join('\t')).join('\n');
 }
@@ -2768,7 +2823,7 @@ $('#edReset').addEventListener('click',()=>{
 function cleanData(){
   const tr=s=>String(s).trim();
   const su=($('#edSubmitUrl').value||'').trim();
-  return {version:2,active:ED.active,settings:{submitUrl:/^https:\/\//.test(su)?su:''},units:ED.units.map(u=>({id:u.id,name:u.name.trim()||'이름 없는 단원',map:mapOf(u),bank:{
+  return {version:2,active:ED.active,settings:{submitUrl:/^https:\/\//.test(su)?su:''},units:ED.units.map(u=>({id:u.id,name:u.name.trim()||'이름 없는 단원',map:mapOf(u),...(u.zcfg?{zcfg:zcfgOf(u)}:{}),bank:{
     mc:u.bank.mc.map(x=>({z:x.z,q:tr(x.q),o:x.o.map(tr),e:tr(x.e)})),
     loc:u.bank.loc.map(x=>({q:tr(x.q),a:x.a,e:tr(x.e)})),
     ox:u.bank.ox.map(x=>({q:tr(x.q),a:!!x.a,e:tr(x.e)})),
