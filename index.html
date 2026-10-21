@@ -1085,7 +1085,7 @@ ZLAB.fac=label(ZCFG.n[2],ZCFG.s[2],'#ea7d1f',27,14,16);
 
 /* ---------- 3D 모델 불러오기 ---------- */
 const MODEL_FILES={
-  knight:'models/knight.glb', mage:'models/mage.glb', barbarian:'models/barbarian.glb', rogue:'models/rogue.glb',
+  knight:'models/knight.glb?v=3', mage:'models/mage.glb', barbarian:'models/barbarian.glb', rogue:'models/rogue.glb',
   sk_minion:'models/sk_minion.glb', sk_rogue:'models/sk_rogue.glb', sk_warrior:'models/sk_warrior.glb',
   blade:'models/Skeleton_Blade.gltf', axe:'models/Skeleton_Axe.gltf'
 };
@@ -1574,15 +1574,15 @@ const ATK_KEYS=['slashH','slashD','chop','shoot','cast'];
 function partClip(clip,upper,name){ return new THREE.AnimationClip(name,clip.duration,clip.tracks.filter(t=>UPPER_BONES.has(t.name.split('.')[0])===upper)); }
 function setupKnightLayers(k){
   const clips=GL.knight.animations, A=k.anim, by=n=>clips.find(c=>c.name===n);
-  A.actions.runLow=k.mixer.clipAction(partClip(by('Running_A'),false,'runLow'));
-  A.actions.idleLow=k.mixer.clipAction(partClip(by('Idle'),false,'idleLow'));
+  if (by('Running_A')) A.actions.runLow=k.mixer.clipAction(partClip(by('Running_A'),false,'runLow'));
+  if (by('Idle')) A.actions.idleLow=k.mixer.clipAction(partClip(by('Idle'),false,'idleLow'));
   const src={slashH:'1H_Melee_Attack_Slice_Horizontal',slashD:'1H_Melee_Attack_Slice_Diagonal',chop:'1H_Melee_Attack_Chop',shoot:'2H_Ranged_Shoot',cast:'Spellcast_Shoot'};
   k.upper={acts:{},cur:null,left:0};
-  for (const key in src){ const c=partClip(by(src[key]),true,'up_'+key); k.upper.acts[key]=k.mixer.clipAction(c); k.upper.acts[key].dur=c.duration; }
+  for (const key in src){ const c0=by(src[key]); if (!c0) continue; const c=partClip(c0,true,'up_'+key); k.upper.acts[key]=k.mixer.clipAction(c); k.upper.acts[key].dur=c.duration; }
   k.runScale=1;
 }
 function playUpper(key,speed,from){
-  const U=knight.upper, a=U.acts[key];
+  const U=knight.upper, a=U.acts[key]; if (!a) return;
   if (U.cur && U.cur!==a) U.cur.fadeOut(.06);
   a.reset(); a.setLoop(THREE.LoopOnce,1); a.clampWhenFinished=true; a.timeScale=speed; a.setEffectiveWeight(1); a.fadeIn(from?.1:.05); a.play();
   if (from) a.time=from;
@@ -1590,7 +1590,7 @@ function playUpper(key,speed,from){
 }
 function knightAttackAnim(key,speed){
   if (!knight) return;
-  if (inputDir()) playUpper(key,speed); else knight.anim.once(key,speed,true);
+  if (inputDir() && knight.upper.acts[key]) playUpper(key,speed); else knight.anim.once(key,speed,true);
 }
 function setBaseSynced(A,key,scale){
   if (A.baseKey===key){ A.setBase(key,scale); return; }
@@ -2708,7 +2708,7 @@ const priceOf=id=>{ const m=/_p(\d+)$/.exec(id||''); return m?+m[1]:0; };
 const DEFAULT_LOOK={outfit:'knight_p0',hat:'khelm_p0',cape:'kcape_p0',weapon:'sword_p0',shield:'rshield_p0',trail:'gold_p0'};
 const KBASE=['1H_Sword_Offhand','Badge_Shield','Rectangle_Shield','Round_Shield','Spike_Shield','1H_Sword','2H_Sword','Knight_Helmet','Knight_Cape'];
 const KBODY=['ArmLeft','ArmRight','Body','Head','LegLeft','LegRight'];
-const PARTS_FILES={barb:'models/parts_barbarian.glb',mage:'models/parts_mage.glb',rogue:'models/parts_rogue.glb',hood:'models/parts_rogueh.glb'};
+const PARTS_FILES={barb:'models/parts_barbarian.glb',mage:'models/parts_mage.glb',rogue:'models/parts_rogue.glb?v=3',hood:'models/parts_rogueh.glb'};
 const partsLoader=new THREE.GLTFLoader(), partsP={}, partToon=new WeakMap();
 const loadParts=k=>partsP[k]||(partsP[k]=new Promise((res,rej)=>partsLoader.load(PARTS_FILES[k],res,undefined,e=>{ delete partsP[k]; rej(e); })));
 let LOOK={...DEFAULT_LOOK}, lookToken=0, TRAIL=CAT.gold_p0, WARDROBE=null;
