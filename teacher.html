@@ -161,6 +161,8 @@ input.rename{border:2px solid var(--line);border-radius:6px;padding:2px 6px;widt
       <div class="pb-head"><h3>🎮 게임 열기</h3><p>학생은 선생님이 연 동안, 정한 판 수만큼만 게임을 시작할 수 있어요. 판을 다 한 학생에게는 아래에서 '한 판 더'를 줄 수 있어요. 시간이 끝나도 하던 판은 마칠 수 있고 보상도 저장돼요(15분 여유).</p></div>
       <div class="pb-row">
         <label class="f"><span>어느 반을 열까요?</span><select id="pbCls"></select></label>
+        <label class="f"><span>단원</span><select id="pbUnit"><option value="">불러오는 중…</option></select></label>
+        <label class="f"><span>맵</span><select id="pbMap"></select></label>
         <label class="f"><span>한 사람당</span><select id="pbPlays"><option value="1" selected>1판</option><option value="2">2판</option><option value="3">3판</option><option value="999">제한 없음</option></select></label>
         <div class="pb-dur"><span>열어 둘 시간</span><div><button class="btn" data-pmin="10">10분</button><button class="btn" data-pmin="15">15분</button><button class="btn primary" data-pmin="20">20분</button><button class="btn" data-pmin="30">30분</button><button class="btn" data-pmin="50">50분</button></div></div>
       </div>
@@ -255,6 +257,12 @@ input.rename{border:2px solid var(--line);border-radius:6px;padding:2px 6px;widt
           <p class="msg" id="adminMsg" role="status"></p>
         </div>
         <div class="card box">
+          <h3>자유 플레이</h3>
+          <p>평소에는 '게임 열기'에서 정한 단원과 맵으로만 플레이해요. 자유 플레이를 켜면 학생이 단원과 맵을 직접 골라요. 시험 전 복습 기간에 켜 두는 걸 추천해요. 게임을 열어야 시작할 수 있는 건 그대로예요.</p>
+          <div class="row"><span class="pill lose" id="freeState">불러오는 중</span><button class="btn" id="freeToggle" disabled>자유 플레이 켜기</button></div>
+          <p class="msg" id="freeMsg" role="status"></p>
+        </div>
+        <div class="card box">
           <h3>영웅 모드</h3>
           <p>켜면 학생 첫 화면에 '영웅 모드' 선택지가 생겨요. 몬스터가 강하고 퀴즈 시간이 짧은 대신 점수가 1.5배예요. 학생들이 게임에 익숙해진 뒤 여는 걸 추천해요.</p>
           <div class="row"><span class="pill lose" id="heroState">불러오는 중</span><button class="btn" id="heroToggle" disabled>영웅 모드 열기</button></div>
@@ -319,7 +327,7 @@ auth.onAuthStateChanged(async u=>{
   $('#meEmail').textContent=u.email;
   if (!(await isAdmin(u))){ gate(`${u.email} 계정은 선생님 권한이 없어요. 권한이 있는 선생님께 '함께 볼 선생님'에 추가해 달라고 요청하세요.`,'err'); return; }
   $('#gate').hidden=true; $('#app').hidden=false;
-  loadRegistry(); subscribe(); loadAdmins(); loadHero(); watchPlay();
+  loadRegistry(); subscribe(); loadAdmins(); loadHero(); loadFree(); watchPlay(); watchUnits();
 });
 
 /* 데이터 */
@@ -503,7 +511,7 @@ function renderPlay(){
   const key=open.map(k=>k+Math.ceil((PG[k].until-now)/1000)).join('|')+JSON.stringify(PLA).length; if (key===pbKey) return; pbKey=key;
   $('#pbList').innerHTML=open.length?open.map(k=>{ const g=PG[k], s=Math.ceil((g.until-now)/1000), m=Math.floor(s/60), pl=+g.plays||0;
     const plTxt=!pl||pl>=999?'판 수 제한 없음':`한 사람당 ${pl}판`;
-    return `<li class="open"><span><b>${esc(playLabel(k))}</b> · 열림 <b class="t">${m}:${String(s%60).padStart(2,'0')}</b> 남음 · ${plTxt}</span><span>${pl&&pl<999?`<button class="link plain" data-pall="${k}">모두에게 한 판 더</button> `:''}<button class="link plain" data-padd="${k}">+10분</button> <button class="link" data-pclose="${k}">지금 닫기</button></span>${doneList(k)}</li>`; }).join('')
+    return `<li class="open"><span><b>${esc(playLabel(k))}</b> · 열림 <b class="t">${m}:${String(s%60).padStart(2,'0')}</b> 남음 · ${plTxt} · 🗺️ ${gateWhat(g)}</span><span><button class="link plain" data-pset="${k}">위에서 고른 단원·맵으로 바꾸기</button> ${pl&&pl<999?`<button class="link plain" data-pall="${k}">모두에게 한 판 더</button> `:''}<button class="link plain" data-padd="${k}">+10분</button> <button class="link" data-pclose="${k}">지금 닫기</button></span>${doneList(k)}</li>`; }).join('')
     :'<li class="empty-li">지금은 모든 반이 닫혀 있어요. 학생은 게임을 시작할 수 없어요.</li>';
 }
 const okMsg=m=>{ $('#pbMsg').className='msg ok'; $('#pbMsg').textContent=m; pbKey=''; renderPlay(); };
@@ -511,9 +519,12 @@ const errMsg=()=>{ $('#pbMsg').className='msg err'; $('#pbMsg').textContent='바
 document.querySelector('.pb-dur').addEventListener('click',async e=>{ const b=e.target.closest('[data-pmin]'); if (!b) return; const k=$('#pbCls').value; if (!k) return;
   try{ localStorage.setItem('gsd-pb',k); }catch(_){}
   const min=+b.dataset.pmin, plays=+$('#pbPlays').value;
-  try{ await db.ref('playgate/'+k).set({until:Math.round(pNow()+min*60000),sid:'g'+Date.now().toString(36),plays,by:String((auth.currentUser||{}).email||'').slice(0,80)});
-    okMsg(`${playLabel(k)}에 게임을 ${min}분 동안 열었어요. ${plays>=999?'판 수 제한은 없어요.':`한 사람당 ${plays}판씩 할 수 있어요.`}`); }catch(err){ errMsg(); } });
+  const unit=$('#pbUnit').value, map=$('#pbMap').value;
+  try{ await db.ref('playgate/'+k).set({until:Math.round(pNow()+min*60000),sid:'g'+Date.now().toString(36),plays,by:String((auth.currentUser||{}).email||'').slice(0,80),...(unit&&map?{unit,map}:{})});
+    okMsg(`${playLabel(k)}에 게임을 ${min}분 동안 열었어요. (${gateWhat({unit,map})}) ${plays>=999?'판 수 제한은 없어요.':`한 사람당 ${plays}판씩 할 수 있어요.`}`); }catch(err){ errMsg(); } });
 $('#pbList').addEventListener('click',async e=>{
+  const ps=e.target.closest('[data-pset]');
+  if (ps){ const k=ps.dataset.pset, unit=$('#pbUnit').value, map=$('#pbMap').value; if (!unit||!map) return; try{ await db.ref('playgate/'+k).update({unit,map}); okMsg(`${playLabel(k)}의 단원·맵을 바꿨어요. (${gateWhat({unit,map})}) 이미 시작한 판은 그대로예요.`); }catch(err){ errMsg(); } return; }
   const a=e.target.closest('[data-padd]'), c=e.target.closest('[data-pclose]'), al=e.target.closest('[data-pall]'), one=e.target.closest('[data-pone]');
   try{
     if (a){ const k=a.dataset.padd; await db.ref('playgate/'+k).update({until:Math.round(Math.max(pNow(),+PG[k].until||0)+600000)}); okMsg(`${playLabel(k)} 게임 시간을 10분 늘렸어요.`); }
@@ -726,6 +737,50 @@ $('#adminList').addEventListener('click',async e=>{
   const b=e.target.closest('[data-del-admin]'); if (!b) return;
   try{ await db.ref('admins/'+b.dataset.delAdmin).remove(); }catch(err){ $('#adminMsg').className='msg err'; $('#adminMsg').textContent='빼지 못했어요.'; }
 });
+
+/* 자유 플레이 */
+let freeOn=false;
+function loadFree(){
+  db.ref('settings/freePlay').on('value',snap=>{ freeOn=snap.val()===true;
+    $('#freeState').textContent=freeOn?'켜짐':'꺼짐'; $('#freeState').className='pill '+(freeOn?'win':'lose');
+    $('#freeToggle').textContent=freeOn?'자유 플레이 끄기':'자유 플레이 켜기'; $('#freeToggle').disabled=false; },
+    ()=>{ $('#freeState').textContent='확인 불가'; $('#freeMsg').className='msg err'; $('#freeMsg').textContent='설정을 불러오지 못했어요. 새 보안 규칙을 올렸는지 확인해 주세요.'; });
+}
+$('#freeToggle').addEventListener('click',async()=>{
+  $('#freeToggle').disabled=true; const next=!freeOn;
+  try{ await db.ref('settings/freePlay').set(next); $('#freeMsg').className='msg ok'; $('#freeMsg').textContent=next?'자유 플레이를 켰어요. 학생이 단원과 맵을 직접 골라요.':'자유 플레이를 껐어요. 게임 열기에서 정한 단원과 맵으로만 플레이해요.'; }
+  catch(e){ $('#freeMsg').className='msg err'; $('#freeMsg').textContent='바꾸지 못했어요. 새 보안 규칙을 올렸는지 확인해 주세요.'; }
+  finally{ $('#freeToggle').disabled=false; }
+});
+
+/* 게임 열기: 단원과 맵 고르기 */
+const MAPINFO={zones:{n:'세 거점 맵',need:['mc','ox','cls','loc']},general:{n:'들판 마을 맵',need:['mc','ox']},defense:{n:'성벽 디펜스 맵',need:['mc','ox']},island:{n:'서비스업 섬 맵',need:['mc','ox']}};
+let UNITS=[], UACTIVE='';
+const arrOf=x=>Array.isArray(x)?x.filter(Boolean):(x&&typeof x==='object'?Object.values(x):[]);
+function watchUnits(){
+  db.ref('bank').on('value',snap=>{ const v=snap.val();
+    if (v && v.units){ UNITS=arrOf(v.units).filter(u=>u&&u.id).map(u=>{ const b=u.bank||{}; return {id:u.id,name:String(u.name||'이름 없는 단원'),map:MAPINFO[u.map]?u.map:'zones',cnt:{mc:arrOf(b.mc).length,ox:arrOf(b.ox).length,cls:arrOf(b.cls).length,loc:arrOf(b.loc).length}}; }); UACTIVE=v.active||''; }
+    else if (v && v.mc){ UNITS=[{id:'u1',name:'기본 단원',map:'zones',cnt:{mc:arrOf(v.mc).length,ox:arrOf(v.ox).length,cls:arrOf(v.cls).length,loc:arrOf(v.loc).length}}]; UACTIVE='u1'; }
+    else { UNITS=[]; }
+    fillUnitSelect(); pbKey=''; renderPlay(); },()=>{});
+}
+const mapOkT=(u,k)=>!!(u&&MAPINFO[k]&&MAPINFO[k].need.every(t=>u.cnt[t]>0));
+const unitById=id=>UNITS.find(u=>u.id===id);
+function fillUnitSelect(){
+  const el=$('#pbUnit'), cur=el.value||UACTIVE;
+  const ok=UNITS.filter(u=>mapOkT(u,u.map)||Object.keys(MAPINFO).some(k=>mapOkT(u,k)));
+  el.innerHTML=ok.length?ok.map(u=>`<option value="${esc(u.id)}">${esc(u.name)}${u.id===UACTIVE?' (수업 단원)':''}</option>`).join(''):'<option value="">문제가 있는 단원이 없어요</option>';
+  if ([...el.options].some(o=>o.value===cur)) el.value=cur;
+  fillMapSelect(true);
+}
+function fillMapSelect(reset){
+  const u=unitById($('#pbUnit').value), el=$('#pbMap'), cur=reset?(u?u.map:''):el.value;
+  const ks=Object.keys(MAPINFO).filter(k=>mapOkT(u,k));
+  el.innerHTML=ks.map(k=>`<option value="${k}">${MAPINFO[k].n}${u&&k===u.map?' (기본)':''}</option>`).join('');
+  if (ks.includes(cur)) el.value=cur;
+}
+$('#pbUnit').addEventListener('change',()=>fillMapSelect(true));
+const gateWhat=g=>{ const u=unitById(g.unit); return g.unit?`${u?esc(u.name):'삭제된 단원'} · ${MAPINFO[g.map]?MAPINFO[g.map].n:''}`:'수업 단원'; };
 
 /* 영웅 모드 */
 let heroOn=false;

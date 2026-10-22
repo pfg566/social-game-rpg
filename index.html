@@ -355,12 +355,45 @@ body.hero .vitals{border-color:#c27a00;box-shadow:4px 4px 0 #c27a00}
 .howto summary{cursor:pointer;font-weight:700;font-size:14px;padding:4px 0}
 .howto .rules{margin:6px 0 8px}
 .guestcard .pc-lv{background:#e6e1d3}
-#title:not(.step-login){place-items:center end;background:linear-gradient(90deg,rgba(24,33,58,0) 0%,rgba(24,33,58,0) 42%,rgba(24,33,58,.42) 100%)}
 #title .panel{box-sizing:border-box}
+/* 로비 배치: 왼쪽 위 내 정보 · 오른쪽 위 설정 · 오른쪽 '이번 판' · 가운데 캐릭터 · 아래 가운데 직업 · 왼쪽 아래 상점 */
+#title{--pw:340px}
+#title:not(.step-login){display:block;background:radial-gradient(ellipse at 50% 45%,rgba(24,33,58,0) 40%,rgba(24,33,58,.28) 100%)}
+#title:not(.step-login) .panel{position:absolute;right:max(16px,env(safe-area-inset-right,0px));top:calc(env(safe-area-inset-top,0px) + 78px);width:var(--pw);max-width:none;max-height:calc(100dvh - 96px - env(safe-area-inset-top,0px));padding:16px 18px}
+.lobby-stage{position:absolute;inset:0;pointer-events:none}
+.lobby-tl{position:absolute;left:max(16px,env(safe-area-inset-left,0px));top:calc(env(safe-area-inset-top,0px) + 16px);width:min(300px,calc(100% - 100px));display:grid;gap:8px}
+.lobby-tl .profilecard{margin:0;box-shadow:4px 4px 0 var(--ink);background:linear-gradient(180deg,#fff,#f4f1e6)}
+.lobby-tl .mini-logo{margin:0}
+.gearbtn{position:absolute;right:max(16px,env(safe-area-inset-right,0px));top:calc(env(safe-area-inset-top,0px) + 16px);width:52px;height:52px;border-radius:50%;border:3px solid var(--ink);background:var(--paper);color:var(--ink);display:grid;place-items:center;box-shadow:3px 3px 0 var(--ink);z-index:3}
+.gearbtn[aria-expanded="true"]{background:var(--sun)}
+.gearbtn svg{transition:transform .3s}
+.gearbtn:hover svg{transform:rotate(40deg)}
+.setpop{position:absolute;right:max(16px,env(safe-area-inset-right,0px));top:calc(env(safe-area-inset-top,0px) + 76px);width:min(320px,calc(100% - 32px));padding:14px 16px;display:grid;gap:10px;z-index:4;box-shadow:5px 5px 0 var(--ink)}
+.setpop-h{margin:0;font-family:var(--display);font-size:22px}
+.setpop .teacher-row{margin-top:0;padding-top:10px;border-top:2px dashed #d5d0c2}
+.setpop .unitpick{margin:0}
+.round-h{margin:0;font-family:var(--display);font-weight:400;font-size:24px}
+.playpick{display:grid;gap:6px;margin:6px 0}
+.pp-lock{margin:0!important;font-size:12.5px;font-weight:700;color:var(--muted);background:#f1ede1;border-radius:8px;padding:5px 9px}
+.jobbar{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 16px);width:min(540px,calc(100vw - 2*var(--pw) - 72px));min-width:300px;padding:10px 12px;box-shadow:5px 5px 0 var(--ink);box-sizing:border-box}
+.jobbar .jobpick{margin:0;gap:6px}
+.jobbar .jobpick .jobs button{padding:6px 4px}
+.shopcorner{position:absolute;left:max(16px,env(safe-area-inset-left,0px));bottom:calc(env(safe-area-inset-bottom,0px) + 16px);width:auto;margin:0;padding:12px 20px;font-size:20px;background:var(--paper)}
+.shopcorner:not(:disabled):hover{background:var(--sun)}
+@media (max-width:1040px){ #title{--pw:300px} }
+@media (max-width:760px){
+  #title:not(.step-login){display:flex;flex-direction:column;gap:10px;overflow-y:auto;place-items:stretch;padding-top:calc(env(safe-area-inset-top,0px) + 12px)}
+  #title:not(.step-login) > *{position:static;transform:none}
+  .lobby-tl{width:calc(100% - 64px)}
+  .lobby-stage{flex:0 0 34dvh;min-height:200px;order:1;pointer-events:none}
+  .lobby-tl{order:0} .jobbar{order:2;width:auto;min-width:0} #title:not(.step-login) .panel{order:3;width:auto;max-height:none;overflow:visible} .shopcorner{order:4;width:100%}
+  .gearbtn{position:absolute!important;top:calc(env(safe-area-inset-top,0px) + 12px)} .setpop{position:fixed!important;top:calc(env(safe-area-inset-top,0px) + 70px)}
+  .lobby-tl .mini-logo{display:none}
+  #title:not(.step-login) .panel{position:static}
+}
+#title .panel .zone b{font-size:15px} #title .panel .zone span{font-size:11.5px}
 .mini-logo{flex-wrap:nowrap} .mini-logo span{width:clamp(30px,8.4vw,38px);height:clamp(30px,8.4vw,38px);font-size:clamp(19px,5.2vw,24px)}
-#title:not(.step-login) .panel{max-width:470px}
 .jobtip{font-weight:400;color:var(--muted);font-size:12px;margin-left:6px}
-@media (max-width:760px){ #title:not(.step-login){place-items:end stretch;align-content:end;grid-template-columns:minmax(0,1fr);background:linear-gradient(180deg,rgba(24,33,58,0) 0%,rgba(24,33,58,0) 38%,rgba(24,33,58,.35) 100%)} #title:not(.step-login) .panel{max-width:none;max-height:56dvh} }
 .teacher-row{margin-top:14px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;font-size:13px;color:var(--muted)}
 .teacher-row a{color:var(--muted)}
 .netwarn{font-size:13px;font-weight:700;color:#8f1d22;margin:0 0 8px}
@@ -434,24 +467,26 @@ body.hero .vitals{border-color:#c27a00;box-shadow:4px 4px 0 #c27a00}
 
 <div class="screen step-login" id="title">
   <div class="logo loginonly" role="img" aria-label="사회 게임 RPG"><span style="--c:#e5484d;--r:-4deg;--d:0ms">사</span><span style="--c:#f08c28;--r:3deg;--d:70ms">회</span><span style="--c:#f2b705;--r:-2deg;--d:140ms">게</span><span style="--c:#38a85a;--r:4deg;--d:210ms">임</span><span style="--c:#2f86e8;--r:-3deg;--d:280ms">R</span><span style="--c:#4f52d9;--r:2deg;--d:350ms">P</span><span style="--c:#9450d8;--r:-4deg;--d:420ms">G</span></div>
-  <div class="panel card">
-    <div class="eyebrow lobby" id="unitEyebrow">중3 사회2 · IX-2 다국적 기업의 공간적 분업</div>
-    <h1 class="lobby mini-logo" aria-label="사회 게임 RPG"><span style="--c:#e5484d;--r:-4deg;--d:0ms">사</span><span style="--c:#f08c28;--r:3deg;--d:70ms">회</span><span style="--c:#f2b705;--r:-2deg;--d:140ms">게</span><span style="--c:#38a85a;--r:4deg;--d:210ms">임</span><span style="--c:#2f86e8;--r:-3deg;--d:280ms">R</span><span style="--c:#4f52d9;--r:2deg;--d:350ms">P</span><span style="--c:#9450d8;--r:-4deg;--d:420ms">G</span></h1>
-    <p class="lobby" id="mapDesc">다국적 기업의 세 거점을 지키세요. 퀴즈를 맞혀야 강해지고, 웨이브가 열리고, 보스의 보호막이 깨져요.</p>
-    <div class="zones lobby" id="mapZones">
-      <div class="zone z-hq"><b>본사 · 북쪽</b><span>선진국 대도시 · 경영과 관리</span></div>
-      <div class="zone z-lab"><b>연구소 · 서쪽</b><span>고급 인력 · 기술 개발</span></div>
-      <div class="zone z-fac"><b>생산 공장 · 동쪽</b><span>낮은 임금 · 넓은 땅</span></div>
+  <div class="lobby-stage lobby" id="lobbyStage" aria-hidden="true"></div>
+  <div class="lobby-tl lobby">
+    <div class="mini-logo" role="img" aria-label="사회 게임 RPG"><span style="--c:#e5484d;--r:-4deg;--d:0ms">사</span><span style="--c:#f08c28;--r:3deg;--d:70ms">회</span><span style="--c:#f2b705;--r:-2deg;--d:140ms">게</span><span style="--c:#38a85a;--r:4deg;--d:210ms">임</span><span style="--c:#2f86e8;--r:-3deg;--d:280ms">R</span><span style="--c:#4f52d9;--r:2deg;--d:350ms">P</span><span style="--c:#9450d8;--r:-4deg;--d:420ms">G</span></div>
+    <div class="profilecard lobby" id="profileCard" hidden>
+      <div class="pc-top"><span class="pc-lv" id="pcLv">Lv.1</span><div class="pc-id"><b id="pcName"></b><small id="pcWho"></small></div><span class="pc-coins"><i></i><b id="pcCoins">0</b></span></div>
+      <div class="xpbar"><i id="pcXp" style="width:0%"></i></div>
+      <div class="pc-foot"><small id="pcXpTxt"></small><button class="link" id="pcLogout">로그아웃</button></div>
     </div>
-    <details class="howto lobby"><summary>게임 방법 보기</summary>
-    <ul class="rules" id="mapRules">
-      <li><b>위치 퀴즈:</b> 상황을 읽고 알맞은 거점 바닥으로 직접 달려가요</li>
-      <li><b>거점 기둥:</b> 맞히면 다음 웨이브가 열려요</li>
-      <li><b>지식 카드:</b> 몬스터가 떨어뜨려요. 주우면 O/X 문제</li>
-      <li><b>보스:</b> 보호막 4개는 퀴즈 정답으로만 깨지고, 오답이면 되살아나요. 내려찍기와 부하 소환을 조심하세요</li>
-      <li>정답은 강화, 오답은 약화 · 틀린 문제는 다시 나와요 · 체력 0이면 게임 오버</li>
-    </ul>
-    </details>
+    <div class="profilecard guestcard lobby" id="guestCard" hidden>
+      <div class="pc-top"><span class="pc-lv">테스트</span><div class="pc-id"><b id="gcName"></b><small id="gcWho"></small></div></div>
+      <div class="pc-foot"><small>선생님 테스트 모드 · 경험치·코인은 쌓이지 않아요.</small><button class="link" id="gcBack">처음 화면으로</button></div>
+    </div>
+  </div>
+  <button class="gearbtn lobby" id="gearBtn" aria-label="설정" aria-expanded="false" aria-controls="setPop"><svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><path fill="currentColor" d="M19.4 13a7.6 7.6 0 0 0 0-2l2.1-1.6a.5.5 0 0 0 .1-.6l-2-3.5a.5.5 0 0 0-.6-.2l-2.5 1a7.4 7.4 0 0 0-1.7-1l-.4-2.6a.5.5 0 0 0-.5-.4h-4a.5.5 0 0 0-.5.4l-.4 2.6a7.4 7.4 0 0 0-1.7 1l-2.5-1a.5.5 0 0 0-.6.2l-2 3.5a.5.5 0 0 0 .1.6L4.6 11a7.6 7.6 0 0 0 0 2l-2.1 1.6a.5.5 0 0 0-.1.6l2 3.5a.5.5 0 0 0 .6.2l2.5-1a7.4 7.4 0 0 0 1.7 1l.4 2.6a.5.5 0 0 0 .5.4h4a.5.5 0 0 0 .5-.4l.4-2.6a7.4 7.4 0 0 0 1.7-1l2.5 1a.5.5 0 0 0 .6-.2l2-3.5a.5.5 0 0 0-.1-.6zM12 15.5A3.5 3.5 0 1 1 12 8.5a3.5 3.5 0 0 1 0 7z"/></svg></button>
+  <div class="setpop card" id="setPop" role="dialog" aria-label="설정" hidden>
+    <p class="setpop-h">설정</p>
+    <label class="unitpick" id="qPick"><span>화질</span><select id="qSel"><option value="auto">자동 (추천 · 컴퓨터에 맞춰 조절)</option><option value="high">고화질 (풀밭·빛 효과 모두)</option><option value="medium">보통</option><option value="low">가벼움 (느린 컴퓨터)</option></select></label>
+    <button class="btn ghost" id="editBtn" hidden>문제 관리</button>
+  </div>
+  <div class="panel card">
     <p class="login-title loginonly">로그인</p>
     <div class="classpick loginonly" id="classPick">
       <label class="nickfield" id="pkSchWrap"><span>학교</span><select id="pkSch"></select></label>
@@ -471,15 +506,6 @@ body.hero .vitals{border-color:#c27a00;box-shadow:4px 4px 0 #c27a00}
       <div class="login-actions"><label class="nickfield grow"><span>이름</span><input id="pfName" maxlength="12" autocomplete="off" placeholder="예: 지우"></label><button class="btn ghost" id="pfSave">저장</button></div>
       <p class="nickerr" id="pfErr" hidden></p>
     </div>
-    <div class="profilecard lobby" id="profileCard" hidden>
-      <div class="pc-top"><span class="pc-lv" id="pcLv">Lv.1</span><div class="pc-id"><b id="pcName"></b><small id="pcWho"></small></div><span class="pc-coins"><i></i><b id="pcCoins">0</b></span></div>
-      <div class="xpbar"><i id="pcXp" style="width:0%"></i></div>
-      <div class="pc-foot"><small id="pcXpTxt"></small><button class="link" id="pcLogout">로그아웃</button></div>
-    </div>
-    <div class="profilecard guestcard lobby" id="guestCard" hidden>
-      <div class="pc-top"><span class="pc-lv">테스트</span><div class="pc-id"><b id="gcName"></b><small id="gcWho"></small></div></div>
-      <div class="pc-foot"><small>선생님 테스트 모드 · 경험치·코인은 쌓이지 않아요.</small><button class="link" id="gcBack">처음 화면으로</button></div>
-    </div>
     <div class="loginonly" id="guestBox" hidden>
       <div class="login-actions">
         <label class="nickfield grow"><span>번호와 이름 (예: 7 지우)</span><input id="nick" maxlength="12" autocomplete="off" placeholder="예: 7 지우"></label>
@@ -488,13 +514,47 @@ body.hero .vitals{border-color:#c27a00;box-shadow:4px 4px 0 #c27a00}
       <p class="nickerr" id="nickErr" hidden>학급을 고르고 번호와 이름을 입력해야 시작할 수 있어요.</p>
       <p class="namehint">선생님 테스트 모드예요. 결과만 저장되고 경험치·코인은 쌓이지 않아요. <button class="link inline" id="backLogin">코드로 로그인하기</button></p>
     </div>
-    <p class="netwarn" id="netWarn" hidden></p>
+    <h2 class="round-h lobby">이번 판</h2>
+    <div class="eyebrow lobby" id="unitEyebrow">중3 사회2 · IX-2 다국적 기업의 공간적 분업</div>
+    <div class="playpick lobby" id="playPick">
+      <p class="pp-lock" id="ppLock"></p>
+      <label class="unitpick" id="unitPick" hidden><span>단원</span><select id="unitSelect"></select></label>
+      <label class="unitpick" id="mapPick" hidden><span>맵</span><select id="mapSelect"></select></label>
+    </div>
+    <p class="lobby" id="mapDesc">다국적 기업의 세 거점을 지키세요. 퀴즈를 맞혀야 강해지고, 웨이브가 열리고, 보스의 보호막이 깨져요.</p>
+    <div class="zones lobby" id="mapZones">
+      <div class="zone z-hq"><b>본사 · 북쪽</b><span>선진국 대도시 · 경영과 관리</span></div>
+      <div class="zone z-lab"><b>연구소 · 서쪽</b><span>고급 인력 · 기술 개발</span></div>
+      <div class="zone z-fac"><b>생산 공장 · 동쪽</b><span>낮은 임금 · 넓은 땅</span></div>
+    </div>
+    <details class="howto lobby"><summary>게임 방법 보기</summary>
+    <ul class="rules" id="mapRules">
+      <li><b>위치 퀴즈:</b> 상황을 읽고 알맞은 거점 바닥으로 직접 달려가요</li>
+      <li><b>거점 기둥:</b> 맞히면 다음 웨이브가 열려요</li>
+      <li><b>지식 카드:</b> 몬스터가 떨어뜨려요. 주우면 O/X 문제</li>
+      <li><b>보스:</b> 보호막 4개는 퀴즈 정답으로만 깨지고, 오답이면 되살아나요. 내려찍기와 부하 소환을 조심하세요</li>
+      <li>정답은 강화, 오답은 약화 · 틀린 문제는 다시 나와요 · 체력 0이면 게임 오버</li>
+    </ul>
+    </details>
     <div class="modepick lobby" id="modePick" hidden>
       <label class="mode"><input type="radio" name="mode" id="modeNormal" value="normal" checked><span><b>일반 모드</b><small>내 실력에 맞춰 함께 성장해요</small></span></label>
       <label class="mode hero"><input type="radio" name="mode" id="modeHero" value="hero"><span><b>영웅 모드</b><small>몬스터가 강하고 시간이 짧아요 · 점수 1.5배</small></span></label>
     </div>
-    <div class="jobpick lobby" id="jobPick">
-      <p class="jobtitle">이번 판 직업 <small class="jobtip">화면을 끌면 캐릭터를 돌려 볼 수 있어요</small></p>
+    <p class="bankinfo lobby" id="bankInfo"></p>
+    <div class="title-actions lobby">
+      <button class="btn" id="startBtn">게임 시작</button>
+      <p class="gatenote" id="gateNote" hidden></p>
+    </div>
+    <div class="history lobby" id="history" hidden></div>
+    <p class="netwarn" id="netWarn" hidden></p>
+    <div class="teacher-row">
+      <span id="teacherState">선생님이신가요?</span>
+      <span><a href="teacher.html">결과 보기</a> · <a href="#" id="teacherLogin">문제 관리 로그인</a></span>
+    </div>
+  </div>
+  <div class="jobbar card lobby">
+    <div class="jobpick" id="jobPick">
+      <p class="jobtitle">직업 고르기 <small class="jobtip">화면을 끌면 캐릭터가 돌아가요</small></p>
       <div class="jobs" role="group" aria-label="직업 고르기">
         <button data-job="knight" aria-pressed="true"><i>🛡️</i><b>기사</b><small>틀려도 버틴다</small></button>
         <button data-job="archer" aria-pressed="false"><i>🏹</i><b>궁수</b><small>연달아 맞히면 강해진다</small></button>
@@ -505,21 +565,8 @@ body.hero .vitals{border-color:#c27a00;box-shadow:4px 4px 0 #c27a00}
       </div>
       <p class="jobdesc" id="jobDesc"></p>
     </div>
-    <label class="unitpick lobby" id="unitPick" hidden><span>플레이할 단원</span><select id="unitSelect"></select></label>
-    <label class="unitpick lobby" id="qPick"><span>화질</span><select id="qSel"><option value="auto">자동 (추천 · 컴퓨터에 맞춰 조절)</option><option value="high">고화질 (풀밭·빛 효과 모두)</option><option value="medium">보통</option><option value="low">가벼움 (느린 컴퓨터)</option></select></label>
-    <p class="bankinfo lobby" id="bankInfo"></p>
-    <div class="title-actions lobby">
-      <button class="btn" id="startBtn">게임 시작</button>
-      <p class="gatenote" id="gateNote" hidden></p>
-      <button class="btn ghost shopbtn" id="shopBtn" disabled>🎒 상점 · 꾸미기</button>
-      <button class="btn ghost" id="editBtn" hidden>문제 관리</button>
-    </div>
-    <div class="history lobby" id="history" hidden></div>
-    <div class="teacher-row">
-      <span id="teacherState">선생님이신가요?</span>
-      <span><a href="teacher.html">결과 보기</a> · <a href="#" id="teacherLogin">문제 관리 로그인</a></span>
-    </div>
   </div>
+  <button class="btn ghost shopbtn shopcorner lobby" id="shopBtn" disabled>🎒 상점 · 꾸미기</button>
 </div>
 
 <div class="screen locintro reviveintro" id="reviveIntro" hidden>
@@ -2761,7 +2808,7 @@ function startGame(){
   EASEF = EASES[MODE==='hero'?0:Math.min(2,Math.max(0,(CI&&CI.ease)|0))];
   LOC_TIME = MODE==='hero' ? HERO.loc : Math.round(25*(DIFF<1? 1+(1-DIFF)*.8 : 1))+EASEF.loc;
   document.body.classList.toggle('hero',MODE==='hero');
-  { const pu=DATA.units.find(u=>u.id===playUnit); applyZoneCfg(zcfgOf(pu)); setMap(mapOf(pu)); }
+  { applyPlay(); const pu=DATA.units.find(u=>u.id===playUnit); applyZoneCfg(zcfgOf(pu)); setMap(PLAYMAP||mapOf(pu)); }
   startQualityMonitor();
   applyLook(jobLook()); applyJobHUD(); loadParts('rogue').catch(()=>{});
   $('#title').hidden=true; $('#end').hidden=true;
@@ -2873,7 +2920,7 @@ function initFirebase(){
   fbReady.then(async u=>{
     loadBank(); loadSettings();
     isAdmin=await checkAdmin(u);
-    $('#editBtn').hidden=!isAdmin; $('#guestBtn').hidden=!isAdmin; if (!isAdmin && AUTHMODE==='guest'){ AUTHMODE='login'; showAuthUI(); } watchGate(); updateGateUI();
+    $('#editBtn').hidden=!isAdmin; $('#guestBtn').hidden=!isAdmin; applyPlay(); if (!isAdmin && AUTHMODE==='guest'){ AUTHMODE='login'; showAuthUI(); } watchGate(); updateGateUI();
     const plain=u.isAnonymous||isStudentUser(u);
     $('#teacherState').textContent = isAdmin ? `선생님 로그인됨 (${u.email})` : (plain?'선생님이신가요?':`${u.email} 은(는) 선생님 권한이 없어요`);
     $('#teacherLogin').textContent = isAdmin||!plain ? '로그아웃' : '문제 관리 로그인';
@@ -2889,12 +2936,12 @@ $('#teacherLogin').addEventListener('click',async e=>{
 });
 function loadSettings(){
   if (!fbDb) return;
-  fbDb.ref('settings').once('value').then(snap=>{ const v=snap.val()||{}; HERO_OPEN=v.heroMode===true; $('#modePick').hidden=!HERO_OPEN; if (!HERO_OPEN) $('#modeNormal').checked=true; }).catch(()=>{ HERO_OPEN=false; });
+  fbDb.ref('settings').once('value').then(snap=>{ const v=snap.val()||{}; HERO_OPEN=v.heroMode===true; FREE_PLAY=v.freePlay===true; applyPlay(); $('#modePick').hidden=!HERO_OPEN; if (!HERO_OPEN) $('#modeNormal').checked=true; }).catch(()=>{ HERO_OPEN=false; });
 }
 function loadBank(){
   if (!fbDb) return;
   fbDb.ref('bank').once('value').then(snap=>{
-    const n=normalize(snap.val()); if (n){ DATA=n; useUnit(DATA.active); renderUnitPicker(); }
+    const n=normalize(snap.val()); if (n){ DATA=n; useUnit(DATA.active); applyPlay(); }
   }).catch(()=>{});
 }
 
@@ -2915,10 +2962,11 @@ function showAuthUI(){
   if (AUTHMODE!=='guest') GUEST_IN=false;
   const lobby=AUTHMODE==='student'||(AUTHMODE==='guest'&&GUEST_IN);
   $('#title').classList.toggle('step-login',!lobby);
+  { const tr=document.querySelector('.teacher-row'); (lobby?$('#setPop'):$('#title .panel')).appendChild(tr); if (!lobby) setPopOpen(false); }
   $('#guestCard').hidden=!(AUTHMODE==='guest'&&GUEST_IN);
   if (AUTHMODE==='guest'&&GUEST_IN){ const ci=classInfo($('#pkCls').value); $('#gcName').textContent=$('#nick').value.trim(); $('#gcWho').textContent=ci?ci.label:''; }
   if (AUTHMODE==='student') renderProfileCard();
-  watchPlog(); updateGateUI();
+  watchPlog(); updateGateUI(); try{ applyPlay(); }catch(e){}
 }
 function renderProfileCard(){
   const L=levelOf(PROFILE.xp);
@@ -3277,7 +3325,7 @@ function updateGateUI(){
 function watchGate(){
   if (!fbDb) return;
   try{ fbDb.ref('.info/serverTimeOffset').on('value',s=>{ SOFF=+s.val()||0; }); }catch(e){}
-  fbDb.ref('playgate').on('value',s=>{ GATE=s.val()||{}; GATE_OK=true; updateGateUI(); },()=>{ GATE_OK=false; updateGateUI(); });
+  fbDb.ref('playgate').on('value',s=>{ GATE=s.val()||{}; GATE_OK=true; updateGateUI(); applyPlay(); },()=>{ GATE_OK=false; updateGateUI(); });
 }
 /* 판 하나를 쓰고 시작 */
 async function tryStart(){
@@ -3299,7 +3347,7 @@ async function tryStart(){
   if (AUTHMODE==='guest'){ const v=$('#nick').value.trim(), c=$('#pkCls').value; if (v&&c){ try{ localStorage.setItem('gsd-pl-'+g.sid,String(playsUsed(g)+1)); }catch(e){} } }
   startGame();
 }
-setInterval(()=>{ if (W.state!=='play') updateGateUI(); },2000);
+setInterval(()=>{ if (W.state!=='play'){ updateGateUI(); const c=DATA&&DATA.units&&DATA.units.length?playChoice():null; if (c&&c.u&&(c.u.id!==playUnit||c.m!==PLAYMAP)) applyPlay(); } },2000);
 
 function saveHistory(r){
   try{ const h=JSON.parse(localStorage.getItem('gsd-history')||'[]'); h.unshift({nick:r.nick,score:r.score,correct:r.correct,asked:r.asked,win:r.win,when:r.when}); localStorage.setItem('gsd-history',JSON.stringify(h.slice(0,20))); }catch(e){}
@@ -3419,7 +3467,36 @@ function setMap(k){
   $('#bossName').textContent=WAVES[WAVES.length-1].name;
   if (W.state!=='play'){ P.x=M.start[0]; P.z=M.start[1]; }
 }
-function renderUnitPicker(){
+let FREE_PLAY=false, PLAYMAP=null, PICK={};
+try{ PICK=JSON.parse(localStorage.getItem('gsd-pick')||'{}')||{}; }catch(e){ PICK={}; }
+const MAP_ORDER=['zones','general','defense','island'];
+const mapOK=(u,k)=>!!(u&&MAPS[k]&&MAPS[k].need.every(t=>u.bank[t]&&u.bank[t].length>0));
+function playChoice(){
+  const byId=id=>DATA.units.find(u=>u.id===id), ready=DATA.units.filter(isReady);
+  const def=()=>{ const u=byId(DATA.active)&&isReady(byId(DATA.active))?byId(DATA.active):ready[0]||DATA.units[0]; return u; };
+  if (isAdmin || FREE_PLAY){ let u=byId(PICK.unit); if (!u||!isReady(u)) u=def(); return {u,m:mapOK(u,PICK.map)?PICK.map:mapOf(u),free:true,src:FREE_PLAY?'free':'admin'}; }
+  const g=activeGate(), raw=g&&GATE[g.key];
+  if (raw && raw.unit){ const u=byId(raw.unit); if (u&&isReady(u)) return {u,m:mapOK(u,raw.map)?raw.map:mapOf(u),free:false,src:'gate'}; }
+  const u=def(); return {u,m:mapOf(u),free:false,src:'default'};
+}
+function applyPlay(){
+  if (!DATA||!DATA.units||!DATA.units.length) return;
+  const c=playChoice(); if (!c.u) return;
+  if (c.u.id!==playUnit) useUnit(c.u.id);
+  PLAYMAP=c.m; if (W.state!=='play' && MAPK!==c.m) setMap(c.m);
+  $('#unitEyebrow').innerHTML=`${esc(c.u.name)}<span class="mapname">${MAPS[c.m].name}</span>`;
+  renderUnitPicker(c); updateBankInfo();
+}
+function renderUnitPicker(c){
+  c=c||playChoice(); if (!c||!c.u) return;
+  const ready=DATA.units.filter(isReady);
+  $('#unitPick').hidden=!c.free||ready.length<2; $('#mapPick').hidden=!c.free;
+  $('#unitSelect').innerHTML=ready.map(u=>`<option value="${esc(u.id)}"${u.id===c.u.id?' selected':''}>${esc(u.name)}${u.id===DATA.active?' (수업 단원)':''}</option>`).join('');
+  $('#mapSelect').innerHTML=MAP_ORDER.filter(k=>mapOK(c.u,k)).map(k=>`<option value="${k}"${k===c.m?' selected':''}>${MAPS[k].name}</option>`).join('');
+  $('#ppLock').textContent=c.src==='gate'?'🔒 선생님이 정한 단원과 맵이에요':c.src==='default'?'🔒 선생님이 정한 수업 단원이에요':c.src==='admin'?'⚙️ 선생님 계정이라 단원과 맵을 바꿀 수 있어요':'🗺️ 자유 플레이: 단원과 맵을 골라 보세요';
+}
+$('#mapSelect').addEventListener('change',e=>{ PICK.map=e.target.value; try{ localStorage.setItem('gsd-pick',JSON.stringify(PICK)); }catch(_){} applyPlay(); });
+function renderUnitPickerOld(){
   const ready=DATA.units.filter(isReady);
   $('#unitPick').hidden=ready.length<2;
   $('#unitSelect').innerHTML=ready.map(u=>`<option value="${esc(u.id)}"${u.id===playUnit?' selected':''}>${esc(u.name)} · ${MAPS[mapOf(u)].name}${u.id===DATA.active?' (수업 단원)':''}</option>`).join('');
@@ -3427,7 +3504,11 @@ function renderUnitPicker(){
 function updateBankInfo(){
   $('#bankInfo').textContent= MAPK==='zones' ? `문제 ${MC.length+LOC.length+OX.length+CLS.length}개 · 4지선다 ${MC.length} · 위치 ${LOC.length} · O/X ${OX.length} · 분류 ${CLS.length}` : `문제 ${MC.length+OX.length}개 · 4지선다 ${MC.length} · O/X ${OX.length}`;
 }
-$('#unitSelect').addEventListener('change',e=>useUnit(e.target.value));
+$('#unitSelect').addEventListener('change',e=>{ PICK={unit:e.target.value,map:''}; try{ localStorage.setItem('gsd-pick',JSON.stringify(PICK)); }catch(_){} applyPlay(); });
+function setPopOpen(on){ $('#setPop').hidden=!on; $('#gearBtn').setAttribute('aria-expanded',String(on)); }
+$('#gearBtn').addEventListener('click',e=>{ e.stopPropagation(); setPopOpen($('#setPop').hidden); });
+document.addEventListener('pointerdown',e=>{ if (!$('#setPop').hidden && !e.target.closest('#setPop,#gearBtn')) setPopOpen(false); });
+addEventListener('keydown',e=>{ if (e.key==='Escape' && !$('#setPop').hidden) setPopOpen(false); });
 $('#qSel').addEventListener('change',e=>{ QSET=e.target.value; try{ localStorage.setItem('gsd-q',QSET); }catch(_){} applyQuality(QSET==='auto'?autoQ():QSET); });
 useUnit('u1'); renderUnitPicker();
 initFirebase();
@@ -3639,7 +3720,7 @@ $('#edSave').addEventListener('click',async()=>{
   try{
     await withTimeout(fbDb.ref('bank').set(data),15000);
     DATA=data; ED=JSON.parse(JSON.stringify(DATA));
-    useUnit(isReady(DATA.units.find(u=>u.id===edUnit))?edUnit:DATA.active); renderUnitPicker(); renderEditor();
+    useUnit(isReady(DATA.units.find(u=>u.id===edUnit))?edUnit:DATA.active); if (isReady(DATA.units.find(u=>u.id===edUnit))){ PICK={unit:edUnit,map:''}; } applyPlay(); renderEditor();
     setStatus('#edStatus','저장했어요. 이제 게임을 새로 여는 학생들은 이 문제로 시작해요.','ok');
   }catch(err){
     const c=String(err&&err.code||err&&err.message||'');
@@ -3650,19 +3731,24 @@ $('#edSave').addEventListener('click',async()=>{
 });
 
 /* ---------- 로비: 로그인하면 기사 · 궁수 · 마법사가 지금 꾸민 모습으로 서 있어요 ---------- */
-const LOBBY={g:null,chars:{},tok:0,last:null}, LOBBY_JOBS=['archer','knight','mage'];
+const LOBBY={g:null,chars:{},tok:0,last:null}, LOBBY_JOBS=['archer','knight','mage'], LOBBY_AT={x:0,z:96}, STAGE_Y=.32;
 function ensureLobby(){
   if (LOBBY.g || !knight) return;
   const g=new THREE.Group(); scene.add(g); LOBBY.g=g; g.visible=false;
   const ringGeo=new THREE.RingGeometry(.62,.9,40);
+  { const stone=toonMat({map:stoneTex('#a39d90','#6c665a','#b3ad9f')}); const top=cs(new THREE.Mesh(new THREE.CylinderGeometry(2.1,2.3,STAGE_Y,48),stone)); top.position.y=STAGE_Y/2; g.add(top);
+    const rim=cs(new THREE.Mesh(new THREE.TorusGeometry(2.1,.12,8,64),std(0x8d8577))); rim.rotation.x=Math.PI/2; rim.position.y=STAGE_Y; g.add(rim);
+    const lawn=new THREE.Mesh(new THREE.CircleGeometry(9,48),toonMat({color:0x6f9a46})); lawn.rotation.x=-Math.PI/2; lawn.position.y=.08; lawn.receiveShadow=true; g.add(lawn);
+    for (let i=0;i<9;i++){ const a=i/9*Math.PI*2+.3, r=rnd(5.5,8); const t=GL.tree_single_A&&GL.tree_single_A.scene.clone(true); if (!t||Math.sin(a)>.35) continue; prepMesh(t); t.scale.setScalar(rnd(3,4)); t.position.set(Math.cos(a)*r,0,Math.sin(a)*r); g.add(t); }
+    const sp=new THREE.PointLight(0xfff1c8,.8,9,2); sp.position.set(0,4,2.5); g.add(sp); }
   LOBBY_JOBS.forEach((j,i)=>{
     const c=makeChar('knight',1,{idle:'Idle',cheer:'Cheer'}); c.lookParts=[]; c.job=j;
     c.root.position.x=(i-1)*1.85; g.add(c.root); c.anim.setBase('idle');
     c.mixer.setTime(i*.37);
     const ring=new THREE.Mesh(ringGeo,new THREE.MeshBasicMaterial({color:0xffc531,transparent:true,opacity:0,side:THREE.DoubleSide,depthWrite:false,toneMapped:false}));
-    ring.rotation.x=-Math.PI/2; ring.position.set((i-1)*1.85,.06,0); g.add(ring); c.ring=ring;
+    ring.rotation.x=-Math.PI/2; g.add(ring); c.ring=ring;
     const glow=new THREE.Mesh(new THREE.CircleGeometry(.62,32),new THREE.MeshBasicMaterial({color:0xffe9a0,transparent:true,opacity:0,depthWrite:false,toneMapped:false}));
-    glow.rotation.x=-Math.PI/2; glow.position.set((i-1)*1.85,.055,0); g.add(glow); c.glow=glow;
+    glow.rotation.x=-Math.PI/2; g.add(glow); c.glow=glow;
     LOBBY.chars[j]=c;
   });
   dressLobby();
@@ -3682,15 +3768,17 @@ function lobbyTick(real,dt){
   if (LOBBY.g) LOBBY.g.visible=on;
   pg.visible=!on;
   if (!on || !LOBBY.g) return false;
-  LOBBY.g.position.set(P.x,0,P.z);
+  const LX=LOBBY_AT.x, LZ=LOBBY_AT.z;
+  LOBBY.g.position.set(LX,0,LZ);
+  sun.position.set(LX+22,38,LZ+14); sun.target.position.set(LX,0,LZ); sun.target.updateMatrixWorld();
   // 고른 직업 캐릭터 하나만 가운데에. 바꾸면 '뿅' 하고 나타나며 만세해요
-  if (LOBBY.last!==JOB){ const c=LOBBY.chars[JOB]; if (c){ LOBBY.popT=0; c.root.scale.setScalar(.01); if (LOBBY.last){ c.anim.once('cheer',1.5,true); fx.burst(P.x,1.2,P.z,0xffd34d,22,4); fx.rise(P.x,P.z,0xffe9a0,16); } } LOBBY.last=JOB; }
+  if (LOBBY.last!==JOB){ const c=LOBBY.chars[JOB]; if (c){ LOBBY.popT=0; c.root.scale.setScalar(.01); if (LOBBY.last){ c.anim.once('cheer',1.5,true); fx.burst(LX,1.5,LZ,0xffd34d,22,4); fx.rise(LX,LZ,0xffe9a0,16); } } LOBBY.last=JOB; }
   LOBBY.popT=Math.min(1,(LOBBY.popT??1)+dt*3.2);
   const t=LOBBY.popT, u=t-1, pop=t<1?1+2.70158*u*u*u+1.70158*u*u:1;
   LOBBY_JOBS.forEach(j=>{
     const c=LOBBY.chars[j], sel=j===JOB;
     c.root.visible=sel; c.ring.visible=c.glow.visible=sel;
-    c.root.position.set(0,0,0); c.ring.position.set(0,.06,0); c.glow.position.set(0,.055,0);
+    c.root.position.set(0,STAGE_Y,0); c.ring.position.set(0,STAGE_Y+.02,0); c.glow.position.set(0,STAGE_Y+.015,0);
     if (!sel) return;
     c.root.scale.setScalar(Math.max(.01,pop*1.15));
     c.root.rotation.y=LOBBY.rot+(LOBBY.drag||reduceMotion()?0:Math.sin(real*.6)*.35)+(t<1?(1-t)*Math.PI*2:0);
@@ -3698,13 +3786,13 @@ function lobbyTick(real,dt){
     c.ring.scale.setScalar(1.25+Math.sin(real*3)*.06); c.glow.scale.setScalar(1.25);
     c.mixer.update(dt);
   });
-  // 패널이 가리지 않는 빈 곳 한가운데에 캐릭터가 오도록 카메라를 옮겨요
-  const narrow=innerWidth<760;
-  const pr=$('#title .panel').getBoundingClientRect(), W0=innerWidth, H0=innerHeight, tn=Math.tan(camera.fov*Math.PI/360), asp=camera.aspect;
-  if (narrow){ const freeH=Math.max(140,pr.top), d=Math.max(6,2.5/(tn*Math.max(.2,freeH/H0))), offU=(H0/2-freeH/2)/(H0/2)*d*tn;
-    camera.position.set(P.x,2.1,P.z+d); camera.lookAt(P.x,1.35-offU,P.z); }
-  else { const d=8.8, offU=(W0/2-Math.max(200,pr.left)/2)/(W0/2)*d*tn*asp;
-    camera.position.set(P.x+offU,2.4,P.z+d); camera.lookAt(P.x+offU,1.25,P.z); }
+  // 캐릭터가 직업 고르기 막대 바로 위 가운데(휴대폰은 위쪽 빈칸)에 오도록 카메라를 옮겨요
+  const W0=innerWidth, H0=innerHeight, tn=Math.tan(camera.fov*Math.PI/360);
+  let cx, cy, h;
+  if (W0<760){ const r=$('#lobbyStage').getBoundingClientRect(); cx=r.left+r.width/2; cy=r.top+r.height/2; h=Math.max(120,r.height); }
+  else { const jb=document.querySelector('.jobbar').getBoundingClientRect(); const top=60, bot=jb.top-6; cx=jb.left+jb.width/2; cy=(top+bot)/2; h=Math.max(160,bot-top); }
+  const dd=Math.max(5,Math.min(18,2.5*H0/(h*tn))), k=2*dd*tn/H0, ox=(cx-W0/2)*k, oy=(H0/2-cy)*k;
+  camera.position.set(LX-ox,1.75-oy+.9,LZ+dd); camera.lookAt(LX-ox,1.75-oy,LZ);
   return true;
 }
 /* 화면을 좌우로 끌면 캐릭터를 돌려 볼 수 있어요 */
