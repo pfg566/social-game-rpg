@@ -39,7 +39,7 @@ function jobLook(){ return jobLookFor(JOB); }
 
 /* 마우스 조준 (PC): 커서가 가리키는 땅 쪽으로 쏴요. 커서 방향 앞 20도 안의 적에게는 살짝 휘어서 맞아요 */
 const MOUSE={x:0,y:0,on:false,held:false}, aimRay=new THREE.Raycaster(), aimPlane=new THREE.Plane(new THREE.Vector3(0,1,0),0), aimHit=new THREE.Vector3();
-const AIM_ASSIST=Math.cos(20*Math.PI/180);
+const AIM_ASSIST=Math.cos(10*Math.PI/180), ARROW_RANGE=11, ORB_RANGE=9, MAGE_AIM=8;
 function mouseAimDir(){
   if (!MOUSE.on) return null;
   const r=canvas.getBoundingClientRect(), v=new THREE.Vector2((MOUSE.x-r.left)/r.width*2-1,-(MOUSE.y-r.top)/r.height*2+1);
@@ -65,11 +65,17 @@ const aimMark=new THREE.Group();
 { const m1=new THREE.Mesh(new THREE.RingGeometry(.42,.56,32),new THREE.MeshBasicMaterial({color:0xffd34d,transparent:true,opacity:.9,side:THREE.DoubleSide,depthWrite:false,toneMapped:false}));
   const m2=new THREE.Mesh(new THREE.CircleGeometry(.12,16),new THREE.MeshBasicMaterial({color:0xffd34d,transparent:true,opacity:.95,side:THREE.DoubleSide,depthWrite:false,toneMapped:false}));
   [m1,m2].forEach(m=>{ m.rotation.x=-Math.PI/2; m.renderOrder=4; aimMark.add(m); }); aimMark.position.y=.08; aimMark.visible=false; scene.add(aimMark); }
+const aimLine=new THREE.Mesh(new THREE.PlaneGeometry(1,1).translate(0,.5,0),new THREE.MeshBasicMaterial({color:0xffd34d,transparent:true,opacity:.45,side:THREE.DoubleSide,depthWrite:false,toneMapped:false}));
+aimLine.rotation.order='YXZ'; aimLine.visible=false; aimLine.renderOrder=4; scene.add(aimLine);
 function aimTick(real){
   const on=W.state==='play' && !W.paused && JOB==='archer' && !PEACE_RUN && MOUSE.on;
-  aimMark.visible=false; if (!on) return;
+  aimMark.visible=false; aimLine.visible=false; if (!on) return;
   const d=mouseAimDir(); if (!d) return;
+  if (P.dodgeT<=0 && !(P.dashT>0)){ P.fx=d.x; P.fz=d.z; }
+  const far=Math.min(ARROW_RANGE,Math.hypot(d.px-P.x,d.pz-P.z));
+  aimLine.position.set(P.x+d.x*.7,.09,P.z+d.z*.7); aimLine.rotation.set(Math.PI/2,Math.atan2(d.x,d.z),0); aimLine.scale.set(.14,Math.max(.1,far-.7),1); aimLine.visible=true;
   aimMark.visible=true; aimMark.position.set(d.px,.08,d.pz); aimMark.rotation.y=real*1.5;
+  aimMark.children[0].material.color.setHex(Math.hypot(d.px-P.x,d.pz-P.z)>ARROW_RANGE?0x9aa3b5:0xffd34d);
   if (MOUSE.held && W.t>=0) attack();
 }
 
@@ -123,13 +129,13 @@ function shootArrow(ang,o){
   const dx=Math.sin(ang), dz=Math.cos(ang);
   const crit=Math.random()<archerCrit(), pierce=!!o.pierce||W.streak>=5;
   const mesh=makeArrow(pierce?0xffe08a:(crit?0xffd34d:0)); mesh.rotation.y=ang;
-  PROJ.push({kind:'arrow',mesh,x:P.x+dx*.6,z:P.z+dz*.6,y:1.25,vx:dx*30,vz:dz*30,life:.62,dmg:o.dmg,crit,pierce,hit:new Set()});
+  PROJ.push({kind:'arrow',mesh,x:P.x+dx*.6,z:P.z+dz*.6,y:1.25,vx:dx*30,vz:dz*30,life:ARROW_RANGE/30,dmg:o.dmg,crit,pierce,hit:new Set()});
 }
 function archerCrit(){ return Math.min(.6,CRIT_CHANCE+.08*Math.min(6,W.streak||0)); }
 function castOrb(ang){
   const dx=Math.sin(ang), dz=Math.cos(ang), big=W.orbBoost>0; if (big) W.orbBoost--;
   const col=ELEM[MELEM].color, mesh=makeOrb(col,big);
-  PROJ.push({kind:'orb',mesh,x:P.x+dx*.7,z:P.z+dz*.7,y:1.35,vx:dx*15,vz:dz*15,life:.95,dmg:big?50:32,r:big?3.1:2.1,big,el:MELEM});
+  PROJ.push({kind:'orb',mesh,x:P.x+dx*.7,z:P.z+dz*.7,y:1.35,vx:dx*15,vz:dz*15,life:ORB_RANGE/15,dmg:big?50:32,r:big?3.1:2.1,big,el:MELEM});
 }
 function orbBurst(p){
   const E=ELEM[p.el], hit=mobsNear(p.x,p.z,p.r);
@@ -201,10 +207,10 @@ function jobAttack(){
   if (P.atkCd>0){ if (P.atkCd<.18) P.buffer=true; return; }
   P.buffer=false; P.lastAtk=W.t;
   if (JOB==='archer'){
-    P.atkCd=.3; archerAim(18); const ang=Math.atan2(P.fx,P.fz);
+    P.atkCd=.3; archerAim(ARROW_RANGE); const ang=Math.atan2(P.fx,P.fz);
     knightAttackAnim('shoot',2.4); SFX.zap(); shootArrow(ang,{dmg:22});
   } else {
-    P.atkCd=.8; aimAt(12); const ang=Math.atan2(P.fx,P.fz);
+    P.atkCd=.8; P.castT=.3; aimAt(MAGE_AIM); const ang=Math.atan2(P.fx,P.fz);
     knightAttackAnim('cast',2.2); SFX.zap(); castOrb(ang);
   }
 }
@@ -241,7 +247,7 @@ function dashTick(dt){
   if (n){ hitStop=Math.max(hitStop,.05); SFX.hit(true); }
 }
 function archerVolley(){
-  P.spinCd=JOBS.archer.skillCd; archerAim(18);
+  P.spinCd=JOBS.archer.skillCd; archerAim(ARROW_RANGE);
   P.ddx=-P.fx; P.ddz=-P.fz; P.dodgeT=.2; W.invuln=Math.max(W.invuln||0,W.t+.3); P.backstep=true;
   const ang=Math.atan2(P.fx,P.fz);
   if (knight) knight.anim.once('shoot',2.4,true);
@@ -330,8 +336,8 @@ function renderJobPick(){
   $('#elemNote').textContent=own.length>=3?'모든 원소를 각성했어요!':`레벨업할 때마다 ${Math.round(AWAKE_CHANCE*100)}% 확률로 새 원소가 각성해요 · 3번 놓치면 다음 레벨업엔 확정`;
   const J=JOBS[JOB];
   $('#jobDesc').textContent=JOB==='knight'?'보통 · 붙어서 싸워요 · 체력 150% · 막기와 반격 · 오답 너프 절반, 정답이면 방어막'
-    :JOB==='archer'?'어려움 · 마우스로 직접 조준(커서 앞 20도는 살짝 보정) · 빠른 연사 · 체력 75% · 연속 정답마다 치명타, 5연속이면 관통'
-    :`쉬움 · 가까운 적 자동 조준 · 느리지만 ${ELEM[MELEM].name} 구슬이 터져 주변까지 · 체력 80% · 퀴즈 효과 1.5배`;
+    :JOB==='archer'?'어려움 · 마우스로 직접 조준(커서 쪽을 늘 바라봐요) · 빠른 연사 · 쏘는 동안 느려져요 · 체력 75% · 연속 정답마다 치명타'
+    :`쉬움 · 가까운 적 자동 조준(짧은 거리) · 쏠 때 잠깐 멈춰요 · ${ELEM[MELEM].name} 구슬이 터져 주변까지 · 체력 80% · 퀴즈 효과 1.5배`;
 }
 function setJob(j,el){
   if (j && JOBS[j]) JOB=j; if (el && ELEM[el] && ownedElems().includes(el)) MELEM=el;

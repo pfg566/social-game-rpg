@@ -40,6 +40,7 @@ function spawnMob(def,isBoss,at){
   if (def.ranged) armXbow(c); else if (!PEACE_RUN) arm(c,isBoss?'axe':'blade');
   if (!isBoss && def.ranged) c.mats.forEach(m=>{ if (m.color) m.color.multiply(new THREE.Color(0xb8f0c0)); });
   if (!isBoss && color===0x8b5cf6 && !def.runner && !def.ranged) c.mats.forEach(m=>{ if (m.color) m.color.multiply(new THREE.Color(0xd9c8ff)); });
+  if (!isBoss && def.leaper){ c.mats.forEach(m=>{ if (m.color) m.color.multiply(new THREE.Color(0xffe27a)); }); c.root.scale.setScalar(.92); }
   if (!isBoss && def.runner){ c.mats.forEach(m=>{ if (m.color) m.color.multiply(new THREE.Color(0xffa060)); }); c.root.scale.setScalar(.88); }
   const g=new THREE.Group(); g.add(c.root);
   let shieldMesh=null, slamMesh=null, eyeLight=null;
@@ -68,7 +69,7 @@ function spawnMob(def,isBoss,at){
     shield:isBoss?def.boss.shield:0,shieldMax:isBoss?def.boss.shield:0,shieldMesh,slamMesh,eyeLight,def,recover:0,hop:0,
     slamCd:isBoss?4:0,slamT:0,slamX:0,slamZ:0,summonCd:isBoss?def.boss.summonEvery:0,
     atkCd:0,flash:0,kbx:0,kbz:0,phase:Math.random()*6,bar:makeBar(isBoss?2.6:1.2),barY:isBoss?5.4:2.75,shadow:blob(),dying:-1};
-  m.runner=!isBoss&&!!def.runner;
+  m.runner=!isBoss&&!!def.runner; m.leaper=!isBoss&&!!def.leaper; if (m.leaper){ m.leapCd=1.5; m.leapS=0; }
   if (!isBoss && def.ranged){ m.ranged=true; m.aimLine=makeAimLine(); }
   m.onDying=()=>{ m.sink=Math.max(0,.7-m.dying)*1.6; };
   if (PEACE_RUN){ c.mats.forEach(mt=>{ if (mt.color) mt.color.lerp(new THREE.Color(0xa9d4ff),.82); mt.transparent=true; mt.opacity=.72; }); m.onDying=()=>{ m.sink=-(1.6-m.dying)*1.8; const o=Math.max(0,m.dying/1.6)*.72; mats.forEach(mt=>{ mt.opacity=o; }); }; }
@@ -86,7 +87,7 @@ function animMob(m,real,dt){
     m.anim.setBase(m.atDoor?'idle':'run',Math.max(.6,m.spd*(W.loc?.5:1)/RUN_SPEED.boss));
   } else m.anim.setBase(m.atDoor||m.stun>0||(m.ranged&&!m.moving)?'idle':'run',Math.max(.6,m.spd*(W.loc?.5:1)/RUN_SPEED.minion));
 }
-function removeMob(m){ if (m.aimLine) scene.remove(m.aimLine); scene.remove(m.g); scene.remove(m.bar.g); if (m.slamMesh) scene.remove(m.slamMesh); if (m.mixer) m.mixer.stopAllAction(); }
+function removeMob(m){ if (m.leapRing) scene.remove(m.leapRing); if (m.aimLine) scene.remove(m.aimLine); scene.remove(m.g); scene.remove(m.bar.g); if (m.slamMesh) scene.remove(m.slamMesh); if (m.mixer) m.mixer.stopAllAction(); }
 function liveBoss(){ return mobs.find(m=>m.boss&&m.dying<0); }
 
 function startWave(i){
@@ -97,9 +98,36 @@ function startWave(i){
   if (d.groups){ const lanes=[-20,0,20]; d.groups.forEach((g,gi)=>W.spawnQ.push({at:W.t+g.at,n:g.n,runner:!!g.runner,lane:lanes[Math.floor(Math.random()*3)],def:d,first:gi===0})); }
   if (d.boss){ spawnMob(d,true); stations.forEach(s=>s.readyAt=Math.min(s.readyAt,W.t)); }
   const nr=rangedCount(i); for (let k=0;k<nr;k++) spawnRanged(d);
+  const nl=leapCount(i); for (let k=0;k<nl;k++) spawnMob({...d,leaper:true,hp:Math.round(d.hp*.8)},false);
+  if (nl && !W.leapSeen){ W.leapSeen=true; setTimeout(()=>flashPrompt('노란 도약 해골은 가까이 오면 뛰어들어요! 빨간 원이 보이면 구르기로 피하세요',3.5),nr?5200:1800); }
   if (MAPK==='island') islWaveStart(d);
   showBanner(`웨이브 ${i+1} · ${d.name}`); SFX.wave();
   if (nr && !W.rangedSeen){ W.rangedSeen=true; setTimeout(()=>flashPrompt('석궁 든 해골은 멀리서 쏴요! 빨간 조준선이 보이면 옆으로 피하세요',3.5),1800); }
+}
+
+/* 도약 해골: 6칸 안에 들어오면 0.55초 동안 웅크린 뒤(빨간 원) 그 자리로 훌쩍 뛰어들어요 */
+const LEAP={range:6.5,warn:.55,fly:.45,cd:4,r:1.7};
+function leapCount(i){ if (PEACE_RUN || i<1) return 0; let n=i>=2?2:1; const e=easeIdx(); if (e<0) n++; else if (e===2) n=Math.max(0,n-1); return n; }
+const leapRingGeo=new THREE.RingGeometry(LEAP.r-.25,LEAP.r,40);
+function leapAI(m,dt){
+  m.leapCd-=dt;
+  if (m.leapS===0){
+    const pd=Math.hypot(P.x-m.x,P.z-m.z);
+    if (m.leapCd>0 || pd>LEAP.range || (MAPK==='defense' && pd>7)) return false;
+    m.leapS=1; m.leapT=LEAP.warn; m.lx=m.x; m.lz=m.z; m.tx=P.x; m.tz=P.z;
+    if (!m.leapRing){ m.leapRing=new THREE.Mesh(leapRingGeo,new THREE.MeshBasicMaterial({color:0xe0434a,transparent:true,opacity:.8,side:THREE.DoubleSide,depthWrite:false,toneMapped:false})); m.leapRing.rotation.x=-Math.PI/2; scene.add(m.leapRing); }
+    m.leapRing.position.set(m.tx,.07,m.tz); m.leapRing.visible=true; if (m.anim) m.anim.once('hit',1,true);
+  }
+  m.g.rotation.y=Math.atan2(m.tx-m.x,m.tz-m.z);
+  if (m.leapS===1){ m.leapT-=dt; m.leapRing.material.opacity=.45+.4*Math.abs(Math.sin(W.t*18)); m.leapRing.scale.setScalar(1+(1-m.leapT/LEAP.warn)*.15);
+    if (m.leapT<=0){ m.leapS=2; m.leapT=LEAP.fly; if (m.anim) m.anim.once('attack',1.2,true); } return true; }
+  if (m.leapS===2){ m.leapT-=dt; const k=1-Math.max(0,m.leapT)/LEAP.fly;
+    m.x=m.lx+(m.tx-m.lx)*k; m.z=m.lz+(m.tz-m.lz)*k; m.ay=Math.sin(k*Math.PI)*2.2;
+    if (m.leapT<=0){ m.ay=0; m.leapS=0; m.leapCd=LEAP.cd; m.leapRing.visible=false; resolve(m,m.r);
+      fx.shock(m.x,m.z,LEAP.r+.3); fx.burst(m.x,.3,m.z,0xc9b48a,14,4); shake=Math.max(shake,.15);
+      if (Math.hypot(P.x-m.x,P.z-m.z)<LEAP.r && W.t>W.invuln) hurtPlayer(Math.round(m.dmg*1.4),{x:m.x,z:m.z,mob:m}); }
+    return true; }
+  return false;
 }
 
 /* ---------- 입력 ---------- */

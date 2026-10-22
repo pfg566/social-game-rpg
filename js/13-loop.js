@@ -24,11 +24,12 @@ function frame(now){
     const L=Math.hypot(ix,iz);
     if (P.dashT>0){ dashTick(dt); }
     else if (P.dodgeT>0){ P.dodgeT-=dt; if (P.dodgeT<1e-4) P.dodgeT=0; P.x+=P.ddx*16*dt; P.z+=P.ddz*16*dt; if (Math.random()<.6) fx.burst(P.x,.15,P.z,0xd8c9a8,2,1.4); }
-    else if (L>.12){ if (L>1){ix/=L;iz/=L;} const sp=7*spdMult()*jobInfo().spd*(P.blockT>0?.35:1)*(P.ultT>0?.7:1)*(P.spinT>0?.5:P.atkCd>0?(JOB==='knight'?.6:.85):1); P.x+=ix*sp*dt; P.z+=iz*sp*dt; if (P.atkCd<=0){ const n=Math.hypot(ix,iz); P.fx=ix/n; P.fz=iz/n; } }
+    else if (L>.12){ if (L>1){ix/=L;iz/=L;} const sp=7*spdMult()*jobInfo().spd*(P.blockT>0?.35:1)*(P.ultT>0?.7:1)*(P.spinT>0?.5:P.castT>0?.12:P.atkCd>0?(JOB==='knight'?.6:JOB==='archer'?.5:.85):1); P.x+=ix*sp*dt; P.z+=iz*sp*dt; if (P.atkCd<=0){ const n=Math.hypot(ix,iz); P.fx=ix/n; P.fz=iz/n; } }
     if (P.lunge>0){ P.lunge-=dt; P.x+=P.fx*6*dt; P.z+=P.fz*6*dt; }
     resolve(P,.6);
     P.atkCd=Math.max(0,P.atkCd-dt); P.dodgeCd=Math.max(0,P.dodgeCd-dt); P.spinCd=Math.max(0,P.spinCd-dt); if (P.spinT>0){ P.spinT-=dt; if (P.spinT<1e-4) P.spinT=0; }
     if (P.blockT>0){ P.blockT-=dt; if (P.blockT<1e-4) P.blockT=0; }
+    if (P.castT>0) P.castT=Math.max(0,P.castT-dt);
     if (P.ultT>0) ultTick(dt);
     updateProj(dt); updateEBolts(dt);
     if (P.spinBuf && P.dodgeT<=0){ P.spinBuf=false; spinSkill(); }
@@ -37,7 +38,7 @@ function frame(now){
     if (P.buffer && P.atkCd<=0 && P.dodgeT<=0 && P.spinT<=0 && !(P.dashT>0) && !(P.ultT>0)) attack();
 
     for (const m of mobs){
-      if (m.dying>=0){ if (m.aimLine) m.aimLine.visible=false; m.dying=Math.max(0,m.dying-dt); if (m.onDying) m.onDying();
+      if (m.dying>=0){ if (m.aimLine) m.aimLine.visible=false; if (m.leapRing) m.leapRing.visible=false; m.dying=Math.max(0,m.dying-dt); if (m.onDying) m.onDying();
         m.x+=m.kbx*dt; m.z+=m.kbz*dt; m.kbx*=Math.pow(.03,dt); m.kbz*=Math.pow(.03,dt);
         if (m.avy||m.ay>0){ m.avy=(m.avy||0)-22*dt; m.ay=Math.max(0,(m.ay||0)+m.avy*dt); if (m.ay===0) m.avy=0; }
         m.x=Math.max(-34,Math.min(34,m.x)); m.z=Math.max(-34,Math.min(34,m.z)); continue; }
@@ -47,6 +48,7 @@ function frame(now){
       if (m.stun>0){ if (m.aimT>0){ m.aimT=0; if (m.aimLine) m.aimLine.visible=false; } m.stun-=dt; m.x+=m.kbx*dt; m.z+=m.kbz*dt; m.kbx*=Math.pow(.02,dt); m.kbz*=Math.pow(.02,dt); resolve(m,m.r);
         m.flash=Math.max(0,m.flash-dt); m.mat.emissive.setHex(m.flash>0?0xffffff:0x000000); continue; }
       if (MAPK==='island' && m.def && m.def.thief && thiefAI(m,dt)) continue;
+      if (m.leaper && leapAI(m,dt)) continue;
       const pdx=P.x-m.x, pdz=P.z-m.z, pd=Math.hypot(pdx,pdz)||1;
       let dx=pdx, dz=pdz, d=pd, atDoor=false;
       if (MAPK==='defense' && (m.runner || PEACE_RUN || pd>(m.boss?9:7))){ dx=DOOR.x-m.x; dz=DOOR.z-m.z; d=Math.hypot(dx,dz)||1; atDoor=d<m.r+2.6; }
