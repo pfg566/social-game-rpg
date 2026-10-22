@@ -181,10 +181,10 @@ const UPPER_BONES=new Set(['spine','chest','upperarml','lowerarml','wristl','han
 const ATK_KEYS=['slashH','slashD','chop','shoot','cast'];
 function partClip(clip,upper,name){ return new THREE.AnimationClip(name,clip.duration,clip.tracks.filter(t=>UPPER_BONES.has(t.name.split('.')[0])===upper)); }
 function setupKnightLayers(k){
-  const clips=GL.knight.animations, A=k.anim, by=n=>clips.find(c=>c.name===n);
-  if (by('Running_A')) A.actions.runLow=k.mixer.clipAction(partClip(by('Running_A'),false,'runLow'));
-  if (by('Idle')) A.actions.idleLow=k.mixer.clipAction(partClip(by('Idle'),false,'idleLow'));
-  const src={slashH:'1H_Melee_Attack_Slice_Horizontal',slashD:'1H_Melee_Attack_Slice_Diagonal',chop:'1H_Melee_Attack_Chop',shoot:'2H_Ranged_Shoot',cast:'Spellcast_Shoot'};
+  const clips=GL.pclips.animations, A=k.anim, by=n=>clips.find(c=>c.name===n), M=P2[k.job||'knight'].map;
+  if (by(M.run)) A.actions.runLow=k.mixer.clipAction(partClip(by(M.run),false,'runLow'));
+  if (by(M.idle)) A.actions.idleLow=k.mixer.clipAction(partClip(by(M.idle),false,'idleLow'));
+  const src={}; ATK_KEYS.forEach(key=>{ if (M[key]) src[key]=M[key]; });
   k.upper={acts:{},cur:null,left:0};
   for (const key in src){ const c0=by(src[key]); if (!c0) continue; const c=partClip(c0,true,'up_'+key); k.upper.acts[key]=k.mixer.clipAction(c); k.upper.acts[key].dur=c.duration; }
   k.runScale=1;

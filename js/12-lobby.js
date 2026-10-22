@@ -12,7 +12,7 @@ function ensureLobby(){
     for (let i=0;i<9;i++){ const a=i/9*Math.PI*2+.3, r=rnd(5.5,8); const t=GL.tree_single_A&&GL.tree_single_A.scene.clone(true); if (!t||Math.sin(a)>.35) continue; prepMesh(t); t.scale.setScalar(rnd(3,4)); t.position.set(Math.cos(a)*r,0,Math.sin(a)*r); g.add(t); }
     const sp=new THREE.PointLight(0xfff1c8,.8,9,2); sp.position.set(0,4,2.5); g.add(sp); }
   LOBBY_JOBS.forEach((j,i)=>{
-    const c=makeChar('knight',1,{idle:'Idle',cheer:'Cheer'}); c.lookParts=[]; c.job=j;
+    const c=makePlayerChar(j); setCharColor(c,colorSuf());
     c.root.position.x=(i-1)*1.85; g.add(c.root); c.anim.setBase('idle');
     c.mixer.setTime(i*.37);
     const ring=new THREE.Mesh(ringGeo,new THREE.MeshBasicMaterial({color:0xffc531,transparent:true,opacity:0,side:THREE.DoubleSide,depthWrite:false,toneMapped:false}));
@@ -25,12 +25,12 @@ function ensureLobby(){
 }
 async function dressLobby(){
   if (!LOBBY.g) return; const t=++LOBBY.tok;
-  for (const j of LOBBY_JOBS){
-    const L=lookOf(jobLookFor(j)); let G;
-    try{ G=await loadLookParts(L); }catch(e){ return; }
-    if (t!==LOBBY.tok) return;
-    dressChar(LOBBY.chars[j],L,G);
-  }
+  // 상점 옷은 기사만 입어요. 색은 셋 다 바뀌어요
+  const L=lookOf(jobLookFor('knight')); let G;
+  try{ G=await loadLookParts(L); }catch(e){ return; }
+  if (t!==LOBBY.tok) return;
+  dressChar(LOBBY.chars.knight,L,G);
+  const suf=colorSuf(L); LOBBY_JOBS.forEach(j=>setCharColor(LOBBY.chars[j],suf));
 }
 function lobbyActive(){ return W.state!=='play' && !$('#title').hidden && !$('#title').classList.contains('step-login') && !SHOP.open; }
 function lobbyTick(real,dt){

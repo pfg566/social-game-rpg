@@ -2,7 +2,10 @@
    파일은 01 → 13 순서로 불러와요. 모든 파일이 같은 전역 공간을 함께 써요. */
 /* ---------- 3D 모델 불러오기 ---------- */
 const MODEL_FILES={
-  knight:'models/knight.glb?v=3', mage:'models/mage.glb', barbarian:'models/barbarian.glb', rogue:'models/rogue.glb',
+  pclips:'models/pclips.glb?v=2', p_knight:'models/p2/Knight.glb', p_ranger:'models/p2/Ranger.glb', p_mage:'models/p2/Mage.glb',
+  w_sword1:'models/p2/sword_1handed.glb', w_sword2:'models/p2/sword_2handed.glb', w_shround:'models/p2/shield_round.glb', w_shbadge:'models/p2/shield_badge.glb',
+  w_shsquare:'models/p2/shield_square.glb', w_shspike:'models/p2/shield_spikes.glb', w_bow:'models/p2/bow_withString.glb', w_staff:'models/p2/staff.glb',
+  mage:'models/mage.glb', barbarian:'models/barbarian.glb', rogue:'models/rogue.glb',
   sk_minion:'models/sk_minion.glb', sk_rogue:'models/sk_rogue.glb?v=3', sk_warrior:'models/sk_warrior.glb',
   blade:'models/Skeleton_Blade.gltf', axe:'models/Skeleton_Axe.gltf'
 };
@@ -85,9 +88,7 @@ function buildWorld(){
   for (let i=0;i<8;i++){ const c=GL.cloud_big.scene.clone(true); c.traverse(o=>{ if (o.isMesh){ o.material=o.material.clone(); o.material.emissive=new THREE.Color(0xffffff); o.material.emissiveIntensity=.35; o.material.fog=false; } });
     c.scale.setScalar(rnd(5,8)); c.position.set(rnd(-120,120),rnd(36,48),rnd(-110,30)); c.userData.v=rnd(.6,1.4); scene.add(c); clouds.push(c); }
   /* 주인공 */
-  const k=makeChar('knight',1,{idle:'Idle',run:'Running_A',slashH:'1H_Melee_Attack_Slice_Horizontal',slashD:'1H_Melee_Attack_Slice_Diagonal',chop:'1H_Melee_Attack_Chop',spin:'2H_Melee_Attack_Spin',dodge:'Dodge_Forward',hit:'Hit_A',death:'Death_A',cheer:'Cheer',block:'Block',blocking:'Blocking',blockAtk:'Block_Attack',shoot:'2H_Ranged_Shoot',cast:'Spellcast_Shoot',castBig:'Spellcast_Long',stab:'1H_Melee_Attack_Stab',whirl:'2H_Melee_Attack_Spinning',dodgeB:'Dodge_Backward'});
-  pg.add(k.root); knight=k; k.anim.setBase('idle');
-  setupKnightLayers(k);
+  /* 주인공 모델은 직업을 고르면 붙여요 (06p-player.js · usePlayer) */
   const sh=new THREE.Mesh(new THREE.CircleGeometry(.75,24),new THREE.MeshBasicMaterial({map:glowTex,color:0x000000,transparent:true,opacity:.32,depthWrite:false}));
   sh.rotation.x=-Math.PI/2; sh.position.y=.04; sh.renderOrder=1; pg.add(sh);
 }

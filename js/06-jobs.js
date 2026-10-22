@@ -30,11 +30,8 @@ const ultLabel=()=>JOB==='mage'?ELEM[MELEM].ult:JOBS[JOB].ultName;
 const skillLabel=()=>JOB==='mage'?ELEM[MELEM].skill:JOBS[JOB].skillName;
 
 /* 직업별 기본 차림 (2단계에서 직업별 상점으로 바뀌어요) */
-function jobLookFor(j){
-  if (j==='archer'){ const L=equippedLook(); return {...L,outfit:'jarcher_p0',hat:'nohat_p0',cape:'jrcape_p0',weapon:'jxbow_p0',shield:'noshield_p0'}; }
-  if (j==='mage'){ const L=equippedLook(); return {...L,outfit:'jmage_p0',hat:'jmhat_p0',cape:'jmcape_p0',weapon:'jstaff_p0',shield:'noshield_p0'}; }
-  return equippedLook();
-}
+// 궁수 · 마법사는 각자 모델(레인저 · 마법사)이 따로 있어요. 상점 옷은 기사가 입고, 색 · 칼 궤적은 모두 함께 써요
+function jobLookFor(j){ return equippedLook(); }
 function jobLook(){ return jobLookFor(JOB); }
 
 /* 마우스 조준 (PC): 커서가 가리키는 땅 쪽으로 쏴요. 커서 방향 앞 20도 안의 적에게는 살짝 휘어서 맞아요 */
@@ -208,7 +205,7 @@ function jobAttack(){
   P.buffer=false; P.lastAtk=W.t;
   if (JOB==='archer'){
     P.atkCd=.3; archerAim(ARROW_RANGE); const ang=Math.atan2(P.fx,P.fz);
-    knightAttackAnim('shoot',2.4); SFX.zap(); shootArrow(ang,{dmg:22});
+    knightAttackAnim('shoot',3.4); SFX.zap(); shootArrow(ang,{dmg:22});
   } else {
     P.atkCd=.8; P.castT=.3; aimAt(MAGE_AIM); const ang=Math.atan2(P.fx,P.fz);
     knightAttackAnim('cast',2.2); SFX.zap(); castOrb(ang);
@@ -235,7 +232,7 @@ function knightDash(){
   P.spinCd=JOBS.knight.skillCd; aimAt(7);
   P.dashT=.3; P.dashHit=new Set(); P.atkCd=.38; P.combo=0; P.buffer=false; P.pendingHit=null;
   W.invuln=Math.max(W.invuln||0,W.t+.35);
-  if (knight) knight.anim.once('stab',2.2,true);
+  if (knight) knight.anim.once('stab',2.3,true);
   SFX.spin(); slashFx(2);
 }
 function dashTick(dt){
@@ -250,12 +247,13 @@ function archerVolley(){
   P.spinCd=JOBS.archer.skillCd; archerAim(ARROW_RANGE);
   P.ddx=-P.fx; P.ddz=-P.fz; P.dodgeT=.2; W.invuln=Math.max(W.invuln||0,W.t+.3); P.backstep=true;
   const ang=Math.atan2(P.fx,P.fz);
-  if (knight) knight.anim.once('shoot',2.4,true);
+  if (knight) knight.anim.once('dodgeB',1.1,true);
+  setTimeout(()=>{ if (knight && W.state==='play') knight.anim.once('shoot',3.4,true); },180);
   SFX.dodge(); [-.26,0,.26].forEach(a=>shootArrow(ang+a,{dmg:30,pierce:true}));
 }
 function mageSkill(){
   P.spinCd=JOBS.mage.skillCd; const E=ELEM[MELEM];
-  if (knight) knight.anim.once('castBig',2.4,true);
+  if (knight) knight.anim.once('castBig',2.6,true);
   SFX.spin();
   if (MELEM==='fire'){ const t=crowdSpot(12,5); setTimeout(()=>{ if (W.state!=='play') return;
       fx.shock(t.x,t.z,3.6); impactFx(t.x,1.2,t.z,E.color,4.4); fx.burst(t.x,.8,t.z,E.color,30,7); shake=Math.max(shake,.25);
@@ -272,12 +270,12 @@ function ultimate(){
   W.ult=0; if (W.stats) W.stats.ults++; showBanner(`${ultLabel()}!`); SFX.wave();
   if (JOB==='knight'){ P.ultT=1.8; P.ultTick=0; P.atkCd=1.8; P.combo=0; P.pendingHit=null; P.buffer=false;
     if (knight) knight.anim.once('whirl',1.2,true); slashFx(3); fx.shock(P.x,P.z,5.5); }
-  else if (JOB==='archer'){ const t=crowdSpot(18,7); if (knight) knight.anim.once('shoot',1.6,true);
+  else if (JOB==='archer'){ const t=crowdSpot(18,7); if (knight) knight.anim.once('ult',1.5,true);
     for (let k=0;k<16;k++){ const a=Math.random()*6.283, r=Math.sqrt(Math.random())*4.2, x=t.x+Math.cos(a)*r, z=t.z+Math.sin(a)*r;
       const mesh=makeArrow(0xffe08a); mesh.rotation.x=Math.PI/2; mesh.visible=false; PROJ.push({kind:'rain',mesh,x,z,y:13,delay:.25+k*.08,dmg:32,life:9}); }
     const ring=new THREE.Mesh(new THREE.RingGeometry(3.8,4.3,48),new THREE.MeshBasicMaterial({color:0xffe08a,transparent:true,opacity:.7,side:THREE.DoubleSide,depthWrite:false}));
     ring.rotation.x=-Math.PI/2; ring.position.set(t.x,.08,t.z); scene.add(ring); ZONEFX.push({kind:'fade',mesh:ring,t:0,life:1.8}); }
-  else { if (knight) knight.anim.once('castBig',1.4,true);
+  else { if (knight) knight.anim.once('ult',2.4,true);
     if (MELEM==='fire'){ const t=crowdSpot(16,7);
       const ring=new THREE.Mesh(new THREE.CircleGeometry(6,48),new THREE.MeshBasicMaterial({color:0xff5a2a,transparent:true,opacity:.3,side:THREE.DoubleSide,depthWrite:false})); ring.rotation.x=-Math.PI/2; ring.position.set(t.x,.07,t.z); scene.add(ring);
       const rock=new THREE.Mesh(new THREE.IcosahedronGeometry(1.3,0),new THREE.MeshBasicMaterial({color:0xff7a2f,toneMapped:false})); rock.position.set(t.x-6,18,t.z); scene.add(rock);
@@ -342,7 +340,7 @@ function renderJobPick(){
 function setJob(j,el){
   if (j && JOBS[j]) JOB=j; if (el && ELEM[el] && ownedElems().includes(el)) MELEM=el;
   try{ localStorage.setItem('gsd-job',JOB); localStorage.setItem('gsd-elem',MELEM); }catch(e){}
-  renderJobPick(); if (knight && W.state!=='play') applyLook(jobLook());
+  renderJobPick(); if (WORLD_READY && W.state!=='play') applyLook(jobLook());
 }
 function applyJobHUD(){
   const J=jobInfo();

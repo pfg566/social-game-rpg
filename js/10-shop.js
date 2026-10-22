@@ -1,8 +1,8 @@
 /* 사회 게임 RPG · 상점 · 꾸미기
    파일은 01 → 13 순서로 불러와요. 모든 파일이 같은 전역 공간을 함께 써요. */
 /* ---------- 상점 · 꾸미기 ---------- */
-const SLOTS=['outfit','hat','cape','weapon','shield','trail'];
-const SLOT_INFO={outfit:{label:'옷',icon:'👕'},hat:{label:'머리',icon:'⛑️'},cape:{label:'망토',icon:'🧣'},weapon:{label:'무기',icon:'⚔️'},shield:{label:'왼손',icon:'🛡️'},trail:{label:'칼 궤적',icon:'✨'}};
+const SLOTS=['outfit','hat','cape','weapon','shield','color','trail'];
+const SLOT_INFO={outfit:{label:'옷',icon:'👕'},hat:{label:'머리',icon:'⛑️'},cape:{label:'망토',icon:'🧣'},weapon:{label:'무기',icon:'⚔️'},shield:{label:'왼손',icon:'🛡️'},color:{label:'색',icon:'🎨'},trail:{label:'칼 궤적',icon:'✨'}};
 const CATALOG=[
   {id:'knight_p0',slot:'outfit',name:'기사 갑옷',desc:'처음 받은 튼튼한 갑옷'},
   {id:'rogue_p800',slot:'outfit',name:'도적 옷',src:'rogue',parts:'Rogue',desc:'날렵한 가죽 옷'},
@@ -43,6 +43,10 @@ const CATALOG=[
   {id:'jmcape_p0',slot:'cape',name:'마법사 망토',src:'mage',mesh:'Mage_Cape',hidden:true},
   {id:'jxbow_p0',slot:'weapon',name:'석궁',src:'rogue',mesh:'2H_Crossbow',hidden:true},
   {id:'jstaff_p0',slot:'weapon',name:'마법 지팡이',src:'mage',mesh:'2H_Staff',hidden:true},
+  {id:'coldef_p0',slot:'color',name:'기본 색',desc:'기사 · 궁수 · 마법사의 처음 색'},
+  {id:'cola_p300',slot:'color',name:'햇살 색',alt:'_alt_A',sw:'linear-gradient(90deg,#e6e9ee 33%,#e8c25a 33% 66%,#f08a3a 66%)',desc:'기사는 하얀 갑옷, 궁수는 노란 옷, 마법사는 주황 로브 (얼굴도 바뀌어요)'},
+  {id:'colb_p400',slot:'color',name:'숲 색',alt:'_alt_B',sw:'linear-gradient(90deg,#d6c7ae 33%,#8fb33a 33% 66%,#a9b833 66%)',desc:'기사는 모래색 갑옷, 궁수는 초록 옷, 마법사는 연두 로브 (얼굴도 바뀌어요)'},
+  {id:'colc_p500',slot:'color',name:'진홍 색',alt:'_alt_C',sw:'linear-gradient(90deg,#c8202e 33%,#d98a4a 33% 66%,#5a86b8 66%)',desc:'기사는 빨간 갑옷, 궁수는 갈색 옷, 마법사는 파란 로브 (얼굴도 바뀌어요)'},
   {id:'gold_p0',slot:'trail',name:'금빛 궤적',color:0xfff1c4},
   {id:'ice_p200',slot:'trail',name:'얼음 궤적',color:0x8fe3ff},
   {id:'leaf_p250',slot:'trail',name:'바람 궤적',color:0x9dff9a},
@@ -52,7 +56,7 @@ const CATALOG=[
 ];
 const CAT={}; CATALOG.forEach(it=>CAT[it.id]=it);
 const priceOf=id=>{ const m=/_p(\d+)$/.exec(id||''); return m?+m[1]:0; };
-const DEFAULT_LOOK={outfit:'knight_p0',hat:'khelm_p0',cape:'kcape_p0',weapon:'sword_p0',shield:'rshield_p0',trail:'gold_p0'};
+const DEFAULT_LOOK={outfit:'knight_p0',hat:'khelm_p0',cape:'kcape_p0',weapon:'sword_p0',shield:'rshield_p0',color:'coldef_p0',trail:'gold_p0'};
 const KBASE=['1H_Sword_Offhand','Badge_Shield','Rectangle_Shield','Round_Shield','Spike_Shield','1H_Sword','2H_Sword','Knight_Helmet','Knight_Cape'];
 const KBODY=['ArmLeft','ArmRight','Body','Head','LegLeft','LegRight'];
 const PARTS_FILES={barb:'models/parts_barbarian.glb',mage:'models/parts_mage.glb',rogue:'models/parts_rogue.glb?v=3',hood:'models/parts_rogueh.glb'};
@@ -97,15 +101,19 @@ function dressChar(ch,L,G){
       const m=src.clone(true); m.traverse(x=>{ if (x.isMesh){ x.material=partMat(x.material,.4); x.castShadow=true; ch.mats.push(x.material); } });
       bone.add(m); ch.lookParts.push(m); }
   }
+  // 2.0 기사 투구는 얼굴 가리개가 따로 있어요: 투구와 함께 보이고 숨어요
+  const hv=root.getObjectByName('Knight_HelmetVisor'), hm=root.getObjectByName('Knight_Helmet'); if (hv) hv.visible=!!(hm&&hm.visible);
 }
 async function applyLook(look){
   const L=lookOf(look); LOOK=L; TRAIL=CAT[L.trail]; const t=++lookToken;
-  if (!knight) return;
+  if (!WORLD_READY) return;
+  usePlayer(SHOP.open?'knight':JOB);
+  const suf=colorSuf(L); for (const j in PCH) setCharColor(PCH[j],suf); for (const j in LOBBY.chars) setCharColor(LOBBY.chars[j],suf);
   let G;
   try{ G=await loadLookParts(L); }
   catch(e){ if (t===lookToken && !$('#shop').hidden) shopMsg('꾸미기 파일을 불러오지 못했어요. 인터넷을 확인해 주세요.','err'); return; }
-  if (t!==lookToken || !knight) return;
-  dressChar(knight,L,G);
+  if (t!==lookToken) return;
+  dressChar(playerFor('knight'),L,G);
   if (!SHOP.open) dressLobby();
 }
 function trailColor(type){
@@ -145,7 +153,7 @@ function renderShop(){
   $('#shopGrid').innerHTML=CATALOG.filter(it=>it.slot===SHOP.tab&&!it.hidden).map(it=>{
     const pr=priceOf(it.id), own=owns(it.id), on=eq[it.slot]===it.id;
     const st=on?'착용 중':own?(pr?'보유':'기본'):`${pr.toLocaleString('ko-KR')} 코인`;
-    const sw=it.slot==='trail'?`<span class="sw" style="background:${it.rainbow?'linear-gradient(90deg,#ff6b6b,#ffd34d,#7be38a,#5cc8f0,#b38cff)':'#'+it.color.toString(16).padStart(6,'0')}"></span>`:'';
+    const sw=it.sw?`<span class="sw" style="background:${it.sw}"></span>`:it.slot==='trail'?`<span class="sw" style="background:${it.rainbow?'linear-gradient(90deg,#ff6b6b,#ffd34d,#7be38a,#5cc8f0,#b38cff)':'#'+it.color.toString(16).padStart(6,'0')}"></span>`:'';
     return `<button class="item${it.id===SHOP.sel?' sel':''}${on?' on':''}${own?' own':''}" data-item="${it.id}">${sw}<b>${esc(it.name)}</b><span class="pr">${st}</span></button>`; }).join('');
   const it=CAT[SHOP.sel], btn=$('#shopBuy');
   if (!it || it.slot!==SHOP.tab){ $('#shopSel').innerHTML='<small>아이템을 눌러 미리 입어 보세요.</small>'; btn.hidden=true; return; }
