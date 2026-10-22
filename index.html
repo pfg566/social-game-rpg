@@ -335,6 +335,32 @@ body.hero .vitals{border-color:#c27a00;box-shadow:4px 4px 0 #c27a00}
 .savebox.wait{background:#eef2f8;color:#33405e}
 .savebox.err{background:#fadadb;border-color:var(--bad);color:#8f1d22}
 .savebox button{font:inherit;font-size:13px;border:2px solid currentColor;background:#fff;color:inherit;border-radius:8px;padding:4px 10px}
+/* 시작 화면 두 단계: 로그인(글자판 + 로그인 창만) → 로비(직업·시작) */
+#title{grid-auto-flow:row;align-content:center;gap:22px}
+#title.step-login .lobby,#title:not(.step-login) .loginonly{display:none!important}
+#title.step-login .panel{max-width:440px}
+.logo{display:flex;flex-wrap:nowrap;justify-content:center;gap:clamp(4px,1.2vw,10px);max-width:100%}
+.logo span,.mini-logo span{display:grid;place-items:center;background:var(--c);color:#fff;border:3px solid var(--ink);border-radius:14px;box-shadow:4px 4px 0 var(--ink);font-family:var(--display);font-weight:400;line-height:1;
+  text-shadow:0 2px 0 rgba(24,33,58,.55),2px 0 0 rgba(24,33,58,.35),-1px 0 0 rgba(24,33,58,.35);transform:rotate(var(--r))}
+.logo span{width:clamp(34px,10.2vw,68px);height:clamp(34px,10.2vw,68px);font-size:clamp(22px,6.4vw,42px);animation:tileIn .5s cubic-bezier(.3,1.6,.5,1) both;animation-delay:var(--d)}
+.logo span:nth-child(5){margin-left:clamp(4px,1.6vw,16px)}
+@keyframes tileIn{from{opacity:0;transform:translateY(-26px) rotate(var(--r)) scale(.7)}to{opacity:1;transform:rotate(var(--r))}}
+@media (prefers-reduced-motion:reduce){ .logo span{animation:none} }
+.mini-logo{display:flex;flex-wrap:wrap;gap:5px;margin:6px 0 4px}
+.mini-logo span{width:38px;height:38px;font-size:24px;border-width:2px;border-radius:10px;box-shadow:2px 2px 0 var(--ink)}
+.mini-logo span:nth-child(5){margin-left:6px}
+.login-title{font-family:var(--display);font-size:24px;margin:0 0 10px!important}
+#title.step-login #lgBtn,#title.step-login #guestGo{background:var(--sun)}
+.howto{margin:6px 0 12px;border:2px solid var(--ink);border-radius:12px;padding:6px 12px;background:#fff}
+.howto summary{cursor:pointer;font-weight:700;font-size:14px;padding:4px 0}
+.howto .rules{margin:6px 0 8px}
+.guestcard .pc-lv{background:#e6e1d3}
+#title:not(.step-login){place-items:center end;background:linear-gradient(90deg,rgba(24,33,58,0) 0%,rgba(24,33,58,0) 42%,rgba(24,33,58,.42) 100%)}
+#title .panel{box-sizing:border-box}
+.mini-logo{flex-wrap:nowrap} .mini-logo span{width:clamp(30px,8.4vw,38px);height:clamp(30px,8.4vw,38px);font-size:clamp(19px,5.2vw,24px)}
+#title:not(.step-login) .panel{max-width:470px}
+.jobtip{font-weight:400;color:var(--muted);font-size:12px;margin-left:6px}
+@media (max-width:760px){ #title:not(.step-login){place-items:end stretch;align-content:end;grid-template-columns:minmax(0,1fr);background:linear-gradient(180deg,rgba(24,33,58,0) 0%,rgba(24,33,58,0) 38%,rgba(24,33,58,.35) 100%)} #title:not(.step-login) .panel{max-width:none;max-height:56dvh} }
 .teacher-row{margin-top:14px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;font-size:13px;color:var(--muted)}
 .teacher-row a{color:var(--muted)}
 .netwarn{font-size:13px;font-weight:700;color:#8f1d22;margin:0 0 8px}
@@ -406,16 +432,18 @@ body.hero .vitals{border-color:#c27a00;box-shadow:4px 4px 0 #c27a00}
   </div>
 </div>
 
-<div class="screen" id="title">
+<div class="screen step-login" id="title">
+  <div class="logo loginonly" role="img" aria-label="사회 게임 RPG"><span style="--c:#e5484d;--r:-4deg;--d:0ms">사</span><span style="--c:#f08c28;--r:3deg;--d:70ms">회</span><span style="--c:#f2b705;--r:-2deg;--d:140ms">게</span><span style="--c:#38a85a;--r:4deg;--d:210ms">임</span><span style="--c:#2f86e8;--r:-3deg;--d:280ms">R</span><span style="--c:#4f52d9;--r:2deg;--d:350ms">P</span><span style="--c:#9450d8;--r:-4deg;--d:420ms">G</span></div>
   <div class="panel card">
-    <div class="eyebrow" id="unitEyebrow">중3 사회2 · IX-2 다국적 기업의 공간적 분업</div>
-    <h1>사회 게임 RPG</h1>
-    <p id="mapDesc">다국적 기업의 세 거점을 지키세요. 퀴즈를 맞혀야 강해지고, 웨이브가 열리고, 보스의 보호막이 깨져요.</p>
-    <div class="zones" id="mapZones">
+    <div class="eyebrow lobby" id="unitEyebrow">중3 사회2 · IX-2 다국적 기업의 공간적 분업</div>
+    <h1 class="lobby mini-logo" aria-label="사회 게임 RPG"><span style="--c:#e5484d;--r:-4deg;--d:0ms">사</span><span style="--c:#f08c28;--r:3deg;--d:70ms">회</span><span style="--c:#f2b705;--r:-2deg;--d:140ms">게</span><span style="--c:#38a85a;--r:4deg;--d:210ms">임</span><span style="--c:#2f86e8;--r:-3deg;--d:280ms">R</span><span style="--c:#4f52d9;--r:2deg;--d:350ms">P</span><span style="--c:#9450d8;--r:-4deg;--d:420ms">G</span></h1>
+    <p class="lobby" id="mapDesc">다국적 기업의 세 거점을 지키세요. 퀴즈를 맞혀야 강해지고, 웨이브가 열리고, 보스의 보호막이 깨져요.</p>
+    <div class="zones lobby" id="mapZones">
       <div class="zone z-hq"><b>본사 · 북쪽</b><span>선진국 대도시 · 경영과 관리</span></div>
       <div class="zone z-lab"><b>연구소 · 서쪽</b><span>고급 인력 · 기술 개발</span></div>
       <div class="zone z-fac"><b>생산 공장 · 동쪽</b><span>낮은 임금 · 넓은 땅</span></div>
     </div>
+    <details class="howto lobby"><summary>게임 방법 보기</summary>
     <ul class="rules" id="mapRules">
       <li><b>위치 퀴즈:</b> 상황을 읽고 알맞은 거점 바닥으로 직접 달려가요</li>
       <li><b>거점 기둥:</b> 맞히면 다음 웨이브가 열려요</li>
@@ -423,43 +451,50 @@ body.hero .vitals{border-color:#c27a00;box-shadow:4px 4px 0 #c27a00}
       <li><b>보스:</b> 보호막 4개는 퀴즈 정답으로만 깨지고, 오답이면 되살아나요. 내려찍기와 부하 소환을 조심하세요</li>
       <li>정답은 강화, 오답은 약화 · 틀린 문제는 다시 나와요 · 체력 0이면 게임 오버</li>
     </ul>
-    <div class="classpick" id="classPick">
+    </details>
+    <p class="login-title loginonly">로그인</p>
+    <div class="classpick loginonly" id="classPick">
       <label class="nickfield" id="pkSchWrap"><span>학교</span><select id="pkSch"></select></label>
       <label class="nickfield"><span>학급</span><select id="pkCls"><option value="">불러오는 중…</option></select></label>
     </div>
-    <p class="namehint" id="noClassNote" hidden>선생님이 아직 학급을 만들지 않았어요. 지금은 '코드 없이 연습하기'로 해 주세요.</p>
-    <div id="loginBox">
+    <p class="namehint loginonly" id="noClassNote" hidden>선생님이 아직 학급을 만들지 않았어요. 학급이 만들어지면 로그인할 수 있어요.</p>
+    <div class="loginonly" id="loginBox">
       <div class="who-row login">
         <label class="nickfield"><span>번호</span><input id="lgNum" type="number" min="1" max="60" inputmode="numeric" placeholder="7"></label>
         <label class="nickfield"><span>내 코드 (6자리)</span><input id="lgCode" maxlength="6" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="AB12CD"></label>
       </div>
-      <div class="login-actions"><button class="btn ghost" id="lgBtn">로그인</button><button class="link" id="guestBtn">코드 없이 연습하기</button></div>
+      <div class="login-actions"><button class="btn ghost" id="lgBtn">로그인</button><button class="link" id="guestBtn" hidden>테스트 모드 (선생님 전용)</button></div>
       <p class="nickerr" id="lgErr" hidden></p>
     </div>
-    <div id="nameBox" hidden>
+    <div class="loginonly" id="nameBox" hidden>
       <p class="namehint">처음 오셨네요! 게임에서 쓸 이름(또는 별명)을 정해 주세요. 나중에 선생님만 바꿀 수 있어요.</p>
       <div class="login-actions"><label class="nickfield grow"><span>이름</span><input id="pfName" maxlength="12" autocomplete="off" placeholder="예: 지우"></label><button class="btn ghost" id="pfSave">저장</button></div>
       <p class="nickerr" id="pfErr" hidden></p>
     </div>
-    <div class="profilecard" id="profileCard" hidden>
+    <div class="profilecard lobby" id="profileCard" hidden>
       <div class="pc-top"><span class="pc-lv" id="pcLv">Lv.1</span><div class="pc-id"><b id="pcName"></b><small id="pcWho"></small></div><span class="pc-coins"><i></i><b id="pcCoins">0</b></span></div>
       <div class="xpbar"><i id="pcXp" style="width:0%"></i></div>
       <div class="pc-foot"><small id="pcXpTxt"></small><button class="link" id="pcLogout">로그아웃</button></div>
     </div>
-    <div id="guestBox" hidden>
-      <div class="who-row single">
-        <label class="nickfield"><span>번호와 이름 (예: 7 지우)</span><input id="nick" maxlength="12" autocomplete="off" placeholder="예: 7 지우"></label>
+    <div class="profilecard guestcard lobby" id="guestCard" hidden>
+      <div class="pc-top"><span class="pc-lv">테스트</span><div class="pc-id"><b id="gcName"></b><small id="gcWho"></small></div></div>
+      <div class="pc-foot"><small>선생님 테스트 모드 · 경험치·코인은 쌓이지 않아요.</small><button class="link" id="gcBack">처음 화면으로</button></div>
+    </div>
+    <div class="loginonly" id="guestBox" hidden>
+      <div class="login-actions">
+        <label class="nickfield grow"><span>번호와 이름 (예: 7 지우)</span><input id="nick" maxlength="12" autocomplete="off" placeholder="예: 7 지우"></label>
+        <button class="btn ghost" id="guestGo">들어가기</button>
       </div>
       <p class="nickerr" id="nickErr" hidden>학급을 고르고 번호와 이름을 입력해야 시작할 수 있어요.</p>
-      <p class="namehint">연습 모드에서는 결과만 저장되고 경험치·코인은 쌓이지 않아요. <button class="link inline" id="backLogin">코드로 로그인하기</button></p>
+      <p class="namehint">선생님 테스트 모드예요. 결과만 저장되고 경험치·코인은 쌓이지 않아요. <button class="link inline" id="backLogin">코드로 로그인하기</button></p>
     </div>
     <p class="netwarn" id="netWarn" hidden></p>
-    <div class="modepick" id="modePick" hidden>
+    <div class="modepick lobby" id="modePick" hidden>
       <label class="mode"><input type="radio" name="mode" id="modeNormal" value="normal" checked><span><b>일반 모드</b><small>내 실력에 맞춰 함께 성장해요</small></span></label>
       <label class="mode hero"><input type="radio" name="mode" id="modeHero" value="hero"><span><b>영웅 모드</b><small>몬스터가 강하고 시간이 짧아요 · 점수 1.5배</small></span></label>
     </div>
-    <div class="jobpick" id="jobPick">
-      <p class="jobtitle">이번 판 직업</p>
+    <div class="jobpick lobby" id="jobPick">
+      <p class="jobtitle">이번 판 직업 <small class="jobtip">화면을 끌면 캐릭터를 돌려 볼 수 있어요</small></p>
       <div class="jobs" role="group" aria-label="직업 고르기">
         <button data-job="knight" aria-pressed="true"><i>🛡️</i><b>기사</b><small>틀려도 버틴다</small></button>
         <button data-job="archer" aria-pressed="false"><i>🏹</i><b>궁수</b><small>연달아 맞히면 강해진다</small></button>
@@ -470,16 +505,16 @@ body.hero .vitals{border-color:#c27a00;box-shadow:4px 4px 0 #c27a00}
       </div>
       <p class="jobdesc" id="jobDesc"></p>
     </div>
-    <label class="unitpick" id="unitPick" hidden><span>플레이할 단원</span><select id="unitSelect"></select></label>
-    <label class="unitpick" id="qPick"><span>화질</span><select id="qSel"><option value="auto">자동 (추천 · 컴퓨터에 맞춰 조절)</option><option value="high">고화질 (풀밭·빛 효과 모두)</option><option value="medium">보통</option><option value="low">가벼움 (느린 컴퓨터)</option></select></label>
-    <p class="bankinfo" id="bankInfo"></p>
-    <div class="title-actions">
+    <label class="unitpick lobby" id="unitPick" hidden><span>플레이할 단원</span><select id="unitSelect"></select></label>
+    <label class="unitpick lobby" id="qPick"><span>화질</span><select id="qSel"><option value="auto">자동 (추천 · 컴퓨터에 맞춰 조절)</option><option value="high">고화질 (풀밭·빛 효과 모두)</option><option value="medium">보통</option><option value="low">가벼움 (느린 컴퓨터)</option></select></label>
+    <p class="bankinfo lobby" id="bankInfo"></p>
+    <div class="title-actions lobby">
       <button class="btn" id="startBtn">게임 시작</button>
       <p class="gatenote" id="gateNote" hidden></p>
       <button class="btn ghost shopbtn" id="shopBtn" disabled>🎒 상점 · 꾸미기</button>
       <button class="btn ghost" id="editBtn" hidden>문제 관리</button>
     </div>
-    <div class="history" id="history" hidden></div>
+    <div class="history lobby" id="history" hidden></div>
     <div class="teacher-row">
       <span id="teacherState">선생님이신가요?</span>
       <span><a href="teacher.html">결과 보기</a> · <a href="#" id="teacherLogin">문제 관리 로그인</a></span>
@@ -2024,11 +2059,12 @@ const ultLabel=()=>JOB==='mage'?ELEM[MELEM].ult:JOBS[JOB].ultName;
 const skillLabel=()=>JOB==='mage'?ELEM[MELEM].skill:JOBS[JOB].skillName;
 
 /* 직업별 기본 차림 (2단계에서 직업별 상점으로 바뀌어요) */
-function jobLook(){
-  if (JOB==='archer'){ const L=equippedLook(); return {...L,outfit:'jarcher_p0',hat:'nohat_p0',cape:'jrcape_p0',weapon:'jxbow_p0',shield:'noshield_p0'}; }
-  if (JOB==='mage'){ const L=equippedLook(); return {...L,outfit:'jmage_p0',hat:'jmhat_p0',cape:'jmcape_p0',weapon:'jstaff_p0',shield:'noshield_p0'}; }
+function jobLookFor(j){
+  if (j==='archer'){ const L=equippedLook(); return {...L,outfit:'jarcher_p0',hat:'nohat_p0',cape:'jrcape_p0',weapon:'jxbow_p0',shield:'noshield_p0'}; }
+  if (j==='mage'){ const L=equippedLook(); return {...L,outfit:'jmage_p0',hat:'jmhat_p0',cape:'jmcape_p0',weapon:'jstaff_p0',shield:'noshield_p0'}; }
   return equippedLook();
 }
+function jobLook(){ return jobLookFor(JOB); }
 
 /* 가까운 적 자동 조준 (앞쪽에 있는 적을 조금 더 골라요) */
 function aimAt(range){
@@ -2717,7 +2753,7 @@ function startGame(){
     try{ localStorage.setItem('gsd-nick',NICK); }catch(e){}
   } else {
     if (AUTHMODE==='name'){ $('#pfErr').hidden=false; $('#pfErr').textContent='이름을 먼저 저장해 주세요.'; $('#pfName').focus(); }
-    else { lgError('코드로 로그인하거나 "코드 없이 연습하기"를 눌러 주세요.'); $('#lgCode').focus(); }
+    else { lgError('번호와 코드로 로그인해 주세요.'); $('#lgCode').focus(); }
     return;
   }
   MODE = HERO_OPEN && $('#modeHero').checked ? 'hero' : 'normal';
@@ -2837,7 +2873,7 @@ function initFirebase(){
   fbReady.then(async u=>{
     loadBank(); loadSettings();
     isAdmin=await checkAdmin(u);
-    $('#editBtn').hidden=!isAdmin; watchGate(); updateGateUI();
+    $('#editBtn').hidden=!isAdmin; $('#guestBtn').hidden=!isAdmin; if (!isAdmin && AUTHMODE==='guest'){ AUTHMODE='login'; showAuthUI(); } watchGate(); updateGateUI();
     const plain=u.isAnonymous||isStudentUser(u);
     $('#teacherState').textContent = isAdmin ? `선생님 로그인됨 (${u.email})` : (plain?'선생님이신가요?':`${u.email} 은(는) 선생님 권한이 없어요`);
     $('#teacherLogin').textContent = isAdmin||!plain ? '로그아웃' : '문제 관리 로그인';
@@ -2864,7 +2900,7 @@ function loadBank(){
 
 /* ---------- 학생 계정: 반·번호·코드 로그인, 경험치·레벨·코인 ---------- */
 const STU_DOMAIN='stu.sgame.kr';
-let AUTHMODE='login', STUDENT=null, PROFILE=null, lastReward=null;
+let AUTHMODE='login', STUDENT=null, PROFILE=null, lastReward=null, GUEST_IN=false;
 const isStudentUser=u=>!!(u&&u.email&&u.email.endsWith('@'+STU_DOMAIN));
 const emailOf=(c,n,code)=>`${c}-${n}-${String(code).toLowerCase()}@${STU_DOMAIN}`;
 const pwOf=code=>'sg#'+String(code).toLowerCase()+'#26';
@@ -2876,6 +2912,11 @@ function showAuthUI(){
   $('#guestBox').hidden=AUTHMODE!=='guest';
   $('#nameBox').hidden=AUTHMODE!=='name';
   $('#profileCard').hidden=AUTHMODE!=='student';
+  if (AUTHMODE!=='guest') GUEST_IN=false;
+  const lobby=AUTHMODE==='student'||(AUTHMODE==='guest'&&GUEST_IN);
+  $('#title').classList.toggle('step-login',!lobby);
+  $('#guestCard').hidden=!(AUTHMODE==='guest'&&GUEST_IN);
+  if (AUTHMODE==='guest'&&GUEST_IN){ const ci=classInfo($('#pkCls').value); $('#gcName').textContent=$('#nick').value.trim(); $('#gcWho').textContent=ci?ci.label:''; }
   if (AUTHMODE==='student') renderProfileCard();
   watchPlog(); updateGateUI();
 }
@@ -2891,8 +2932,16 @@ function renderProfileCard(){
 function lgError(msg){ const e=$('#lgErr'); e.hidden=!msg; e.textContent=msg||''; }
 try{ $('#lgNum').value=localStorage.getItem('gsd-lgnum')||''; }catch(e){}
 $('#lgCode').addEventListener('input',e=>{ e.target.value=e.target.value.replace(/[^a-zA-Z0-9]/g,'').toUpperCase().slice(0,6); lgError(''); });
-$('#guestBtn').addEventListener('click',()=>{ AUTHMODE='guest'; showAuthUI(); $('#nick').focus(); });
+$('#guestBtn').addEventListener('click',()=>{ if (!isAdmin) return; AUTHMODE='guest'; showAuthUI(); $('#nick').focus(); });
 $('#backLogin').addEventListener('click',()=>{ AUTHMODE='login'; showAuthUI(); $('#lgCode').focus(); });
+function guestEnter(){
+  const v=$('#nick').value.trim(), c=$('#pkCls').value;
+  if (!v||!c){ $('#nickErr').hidden=false; (c?$('#nick'):$('#pkCls')).focus(); return; }
+  $('#nickErr').hidden=true; GUEST_IN=true; showAuthUI();
+}
+$('#guestGo').addEventListener('click',guestEnter);
+$('#nick').addEventListener('keydown',e=>{ if (e.key==='Enter'){ e.preventDefault(); guestEnter(); } });
+$('#gcBack').addEventListener('click',()=>{ GUEST_IN=false; AUTHMODE='guest'; showAuthUI(); $('#nick').focus(); });
 $('#lgCode').addEventListener('keydown',e=>{ if (e.key==='Enter'){ e.preventDefault(); studentLogin(); } });
 $('#lgBtn').addEventListener('click',()=>studentLogin());
 $('#pcLogout').addEventListener('click',async()=>{ STUDENT=null; PROFILE=null; WARDROBE=null; applyLook(guestLook()); AUTHMODE='login'; showAuthUI(); $('#lgCode').value=''; try{ await fbAuth.signOut(); }catch(e){} });
@@ -2900,7 +2949,7 @@ $('#pcLogout').addEventListener('click',async()=>{ STUDENT=null; PROFILE=null; W
 let loggingIn=false;
 async function studentLogin(){
   if (loggingIn) return;
-  if (!fbAuth){ lgError('저장 서버에 연결되지 않아 로그인할 수 없어요. 코드 없이 연습하기를 눌러 주세요.'); return; }
+  if (!fbAuth){ lgError('저장 서버에 연결되지 않아 로그인할 수 없어요. 잠시 뒤 다시 해 보고, 계속 안 되면 선생님께 알려 주세요.'); return; }
   const c=$('#pkCls').value, n=String(parseInt($('#lgNum').value,10)||''), code=$('#lgCode').value.trim().toLowerCase();
   if (LEGACY||!c||c.startsWith('n:')){ lgError('학급을 먼저 골라 주세요.'); return; }
   if (!n||+n<1||+n>60){ lgError('번호를 확인해 주세요.'); return; }
@@ -3048,17 +3097,14 @@ function equippedLook(){ return STUDENT&&WARDROBE ? lookOf(WARDROBE.equip) : gue
 function owns(id){ return priceOf(id)===0 || !!(WARDROBE&&WARDROBE.inv&&WARDROBE.inv[id]); }
 function availCoins(){ return PROFILE ? Math.max(0,(PROFILE.coins|0)-((WARDROBE&&WARDROBE.spent)|0)) : 0; }
 function partMat(m,rim){ let t=partToon.get(m); if (!t){ t=toToon(m,rim,0xfff2dc); partToon.set(m,t); } return t; }
-async function applyLook(look){
-  const L=lookOf(look); LOOK=L; TRAIL=CAT[L.trail]; const t=++lookToken;
-  if (!knight) return;
+async function loadLookParts(L){
   const need=new Set(); SLOTS.forEach(s=>{ const it=CAT[L[s]]; if (it.src) need.add(it.src); if (it.head) need.add(it.head); });
-  const G={};
-  try{ await Promise.all([...need].map(async f=>{ G[f]=await loadParts(f); })); }
-  catch(e){ if (t===lookToken && !$('#shop').hidden) shopMsg('꾸미기 파일을 불러오지 못했어요. 인터넷을 확인해 주세요.','err'); return; }
-  if (t!==lookToken || !knight) return;
-  const root=knight.root;
-  (knight.lookParts||[]).forEach(o=>{ if (o.parent) o.parent.remove(o); o.traverse(x=>{ if (x.isMesh){ const i=knight.mats.indexOf(x.material); if (i>=0) knight.mats.splice(i,1); } }); });
-  knight.lookParts=[];
+  const G={}; await Promise.all([...need].map(async f=>{ G[f]=await loadParts(f); })); return G;
+}
+function dressChar(ch,L,G){
+  const root=ch.root; ch.lookParts=ch.lookParts||[];
+  (ch.lookParts||[]).forEach(o=>{ if (o.parent) o.parent.remove(o); o.traverse(x=>{ if (x.isMesh){ const i=ch.mats.indexOf(x.material); if (i>=0) ch.mats.splice(i,1); } }); });
+  ch.lookParts=[];
   const show=(n,v)=>{ const o=root.getObjectByName(n); if (o) o.visible=v; };
   KBASE.forEach(n=>show(n,false));
   const o=CAT[L.outfit];
@@ -3071,7 +3117,7 @@ async function applyLook(look){
       if (!src) continue;
       src.traverse(x=>{ if (!x.isSkinnedMesh) return;
         const m=x.clone(); m.bind(skel,x.bindMatrix); m.material=partMat(x.material,.5); m.frustumCulled=false; m.castShadow=true; m.receiveShadow=true;
-        holder.add(m); knight.lookParts.push(m); knight.mats.push(m.material); });
+        holder.add(m); ch.lookParts.push(m); ch.mats.push(m.material); });
     }
   }
   for (const slot of ['hat','cape','weapon','shield']){
@@ -3080,9 +3126,19 @@ async function applyLook(look){
     if (it.base) show(it.base,true);
     else if (it.mesh){ const src=G[it.src].scene.getObjectByName(it.mesh); if (!src||!src.parent) continue;
       const bone=root.getObjectByName(src.parent.name); if (!bone) continue;
-      const m=src.clone(true); m.traverse(x=>{ if (x.isMesh){ x.material=partMat(x.material,.4); x.castShadow=true; knight.mats.push(x.material); } });
-      bone.add(m); knight.lookParts.push(m); }
+      const m=src.clone(true); m.traverse(x=>{ if (x.isMesh){ x.material=partMat(x.material,.4); x.castShadow=true; ch.mats.push(x.material); } });
+      bone.add(m); ch.lookParts.push(m); }
   }
+}
+async function applyLook(look){
+  const L=lookOf(look); LOOK=L; TRAIL=CAT[L.trail]; const t=++lookToken;
+  if (!knight) return;
+  let G;
+  try{ G=await loadLookParts(L); }
+  catch(e){ if (t===lookToken && !$('#shop').hidden) shopMsg('꾸미기 파일을 불러오지 못했어요. 인터넷을 확인해 주세요.','err'); return; }
+  if (t!==lookToken || !knight) return;
+  dressChar(knight,L,G);
+  if (!SHOP.open) dressLobby();
 }
 function trailColor(type){
   const t=TRAIL||CAT.gold_p0;
@@ -3111,7 +3167,7 @@ function openShop(){
   applyLook(SHOP.try);
   $('#title').hidden=true; $('#shop').hidden=false; shopMsg(''); renderShop();
 }
-function closeShop(){ SHOP.open=false; $('#shop').hidden=true; $('#title').hidden=false; applyLook(jobLook()); if (AUTHMODE==='student'&&PROFILE) renderProfileCard(); }
+function closeShop(){ SHOP.open=false; $('#shop').hidden=true; $('#title').hidden=false; applyLook(jobLook()); dressLobby(); if (AUTHMODE==='student'&&PROFILE) renderProfileCard(); }
 function renderShop(){
   const coins=availCoins();
   $('#shopCoins').textContent=STUDENT&&PROFILE?coins.toLocaleString('ko-KR'):'-';
@@ -3296,7 +3352,6 @@ function endGame(win){
   setTimeout(()=>$('#againBtn').focus({preventScroll:true}),30);
 }
 $('#startBtn').addEventListener('click',tryStart);
-$('#nick').addEventListener('keydown',e=>{ if (e.key==='Enter'){ e.preventDefault(); tryStart(); } });
 $('#nick').addEventListener('input',()=>{ $('#nickErr').hidden=true; });
 $('#homeBtn').addEventListener('click',()=>{ $('#end').hidden=true; showAuthUI(); ['#hud','#hint','#touch','#skillbar'].forEach(s=>$(s).hidden=true); W.state='title'; renderHistory(); $('#title').hidden=false; $('#nick').focus(); });
 let lastResult=null;
@@ -3594,6 +3649,71 @@ $('#edSave').addEventListener('click',async()=>{
   }finally{ btn.disabled=false; }
 });
 
+/* ---------- 로비: 로그인하면 기사 · 궁수 · 마법사가 지금 꾸민 모습으로 서 있어요 ---------- */
+const LOBBY={g:null,chars:{},tok:0,last:null}, LOBBY_JOBS=['archer','knight','mage'];
+function ensureLobby(){
+  if (LOBBY.g || !knight) return;
+  const g=new THREE.Group(); scene.add(g); LOBBY.g=g; g.visible=false;
+  const ringGeo=new THREE.RingGeometry(.62,.9,40);
+  LOBBY_JOBS.forEach((j,i)=>{
+    const c=makeChar('knight',1,{idle:'Idle',cheer:'Cheer'}); c.lookParts=[]; c.job=j;
+    c.root.position.x=(i-1)*1.85; g.add(c.root); c.anim.setBase('idle');
+    c.mixer.setTime(i*.37);
+    const ring=new THREE.Mesh(ringGeo,new THREE.MeshBasicMaterial({color:0xffc531,transparent:true,opacity:0,side:THREE.DoubleSide,depthWrite:false,toneMapped:false}));
+    ring.rotation.x=-Math.PI/2; ring.position.set((i-1)*1.85,.06,0); g.add(ring); c.ring=ring;
+    const glow=new THREE.Mesh(new THREE.CircleGeometry(.62,32),new THREE.MeshBasicMaterial({color:0xffe9a0,transparent:true,opacity:0,depthWrite:false,toneMapped:false}));
+    glow.rotation.x=-Math.PI/2; glow.position.set((i-1)*1.85,.055,0); g.add(glow); c.glow=glow;
+    LOBBY.chars[j]=c;
+  });
+  dressLobby();
+}
+async function dressLobby(){
+  if (!LOBBY.g) return; const t=++LOBBY.tok;
+  for (const j of LOBBY_JOBS){
+    const L=lookOf(jobLookFor(j)); let G;
+    try{ G=await loadLookParts(L); }catch(e){ return; }
+    if (t!==LOBBY.tok) return;
+    dressChar(LOBBY.chars[j],L,G);
+  }
+}
+function lobbyActive(){ return W.state!=='play' && !$('#title').hidden && !$('#title').classList.contains('step-login') && !SHOP.open; }
+function lobbyTick(real,dt){
+  const on=lobbyActive(); if (on) ensureLobby();
+  if (LOBBY.g) LOBBY.g.visible=on;
+  pg.visible=!on;
+  if (!on || !LOBBY.g) return false;
+  LOBBY.g.position.set(P.x,0,P.z);
+  // 고른 직업 캐릭터 하나만 가운데에. 바꾸면 '뿅' 하고 나타나며 만세해요
+  if (LOBBY.last!==JOB){ const c=LOBBY.chars[JOB]; if (c){ LOBBY.popT=0; c.root.scale.setScalar(.01); if (LOBBY.last){ c.anim.once('cheer',1.5,true); fx.burst(P.x,1.2,P.z,0xffd34d,22,4); fx.rise(P.x,P.z,0xffe9a0,16); } } LOBBY.last=JOB; }
+  LOBBY.popT=Math.min(1,(LOBBY.popT??1)+dt*3.2);
+  const t=LOBBY.popT, u=t-1, pop=t<1?1+2.70158*u*u*u+1.70158*u*u:1;
+  LOBBY_JOBS.forEach(j=>{
+    const c=LOBBY.chars[j], sel=j===JOB;
+    c.root.visible=sel; c.ring.visible=c.glow.visible=sel;
+    c.root.position.set(0,0,0); c.ring.position.set(0,.06,0); c.glow.position.set(0,.055,0);
+    if (!sel) return;
+    c.root.scale.setScalar(Math.max(.01,pop*1.15));
+    c.root.rotation.y=LOBBY.rot+(LOBBY.drag||reduceMotion()?0:Math.sin(real*.6)*.35)+(t<1?(1-t)*Math.PI*2:0);
+    c.ring.material.opacity=.7+Math.sin(real*4)*.25; c.glow.material.opacity=.3;
+    c.ring.scale.setScalar(1.25+Math.sin(real*3)*.06); c.glow.scale.setScalar(1.25);
+    c.mixer.update(dt);
+  });
+  // 패널이 가리지 않는 빈 곳 한가운데에 캐릭터가 오도록 카메라를 옮겨요
+  const narrow=innerWidth<760;
+  const pr=$('#title .panel').getBoundingClientRect(), W0=innerWidth, H0=innerHeight, tn=Math.tan(camera.fov*Math.PI/360), asp=camera.aspect;
+  if (narrow){ const freeH=Math.max(140,pr.top), d=Math.max(6,2.5/(tn*Math.max(.2,freeH/H0))), offU=(H0/2-freeH/2)/(H0/2)*d*tn;
+    camera.position.set(P.x,2.1,P.z+d); camera.lookAt(P.x,1.35-offU,P.z); }
+  else { const d=8.8, offU=(W0/2-Math.max(200,pr.left)/2)/(W0/2)*d*tn*asp;
+    camera.position.set(P.x+offU,2.4,P.z+d); camera.lookAt(P.x+offU,1.25,P.z); }
+  return true;
+}
+/* 화면을 좌우로 끌면 캐릭터를 돌려 볼 수 있어요 */
+const reduceMotion=()=>matchMedia('(prefers-reduced-motion: reduce)').matches;
+LOBBY.rot=0; LOBBY.drag=null;
+$('#title').addEventListener('pointerdown',e=>{ if (e.target!==$('#title') || !LOBBY.g || !LOBBY.g.visible) return; LOBBY.drag={x:e.clientX,r:LOBBY.rot}; });
+addEventListener('pointermove',e=>{ if (LOBBY.drag) LOBBY.rot=LOBBY.drag.r+(e.clientX-LOBBY.drag.x)*.01; });
+addEventListener('pointerup',()=>{ LOBBY.drag=null; });
+
 /* ---------- 루프 ---------- */
 let last=performance.now(), hurtT=0;
 const camOff=new THREE.Vector3(0,13.5,14.5);
@@ -3819,7 +3939,8 @@ function frame(now){
 
   // 해 · 카메라
   sun.position.set(P.x+22,38,P.z+14); sun.target.position.set(P.x,0,P.z); sun.target.updateMatrixWorld();
-  if (!shopCamera(real)){
+  const inLobby=lobbyTick(real,dt);
+  if (!shopCamera(real) && !inLobby){
     const target=new THREE.Vector3(P.x,0,P.z);
     camera.position.lerp(target.clone().add(camOff), W.state==='play'?.12:1);
     camera.lookAt(P.x,1.4,P.z);
