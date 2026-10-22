@@ -377,7 +377,7 @@ function render(){
 }
 /* 난이도 분석: 게임이 판마다 남기는 전투 기록(cs)으로 직업별 난이도를 봐요 */
 const JOBNAME={knight:'기사',archer:'궁수',mage:'마법사'}, ELNAME={fire:'불',ice:'얼음',bolt:'번개'};
-const jobLabel=j=>{ const [a,b]=String(j||'').split(':'); return (JOBNAME[a]||a||'?')+(b?` (${ELNAME[b]||b})`:''); };
+const jobLabel=j=>{ if (j==='peace') return '🕊️ 평화 모드'; const [a,b]=String(j||'').split(':'); return (JOBNAME[a]||a||'?')+(b?` (${ELNAME[b]||b})`:''); };
 const SRC=[['melee','근접 몹','#8b5cf6'],['ranged','석궁병','#e0434a'],['boss','보스','#4b5563'],['quiz','오답 너프','#c27a00']];
 function renderBalance(){
   const mp=$('#bMap').value, ez=$('#bEase').value;
@@ -385,8 +385,8 @@ function renderBalance(){
   const rows=withCs.filter(r=>(!mp||r.map===mp)&&(ez===''||String(r.ease)===ez));
   const old=VIEW.length-withCs.length;
   $('#bNote').textContent=`전투 기록이 있는 판 ${rows.length}개를 분석해요.`+(old?` (업데이트 전 기록 ${old}판은 전투 기록이 없어 빠져요.)`:'');
-  const by=new Map(); rows.forEach(r=>{ const k=String(r.job).split(':')[0]; if (!by.has(k)) by.set(k,[]); by.get(k).push(r); if (r.job.includes(':')){ if (!by.has(r.job)) by.set(r.job,[]); by.get(r.job).push(r); } });
-  const order=['knight','archer','mage','mage:fire','mage:ice','mage:bolt'].filter(k=>by.has(k));
+  const by=new Map(); rows.forEach(r=>{ const pc=r.cs&&+r.cs.pc===1, k=pc?'peace':String(r.job).split(':')[0]; if (!by.has(k)) by.set(k,[]); by.get(k).push(r); if (!pc && r.job.includes(':')){ if (!by.has(r.job)) by.set(r.job,[]); by.get(r.job).push(r); } });
+  const order=['knight','archer','mage','mage:fire','mage:ice','mage:bolt','peace'].filter(k=>by.has(k));
   const avg=(a,f)=>a.length?a.reduce((s,r)=>s+(+f(r)||0),0)/a.length:0;
   const cols=['직업','판 수','승률','평균 받은 피해','최저 체력 평균','부활한 판','평균 시간(승리)','평균 처치','분당 준 피해','정답률','판정'];
   if (!order.length){ $('#bJobs').innerHTML='<tr><td class="empty">아직 전투 기록이 있는 판이 없어요. 업데이트한 게임으로 학생들이 플레이하면 여기에 쌓여요.</td></tr>'; $('#bSrc').innerHTML=''; $('#bWave').innerHTML=''; $('#bSkill').innerHTML=''; return; }

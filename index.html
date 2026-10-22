@@ -391,7 +391,13 @@ body.hero .vitals{border-color:#c27a00;box-shadow:4px 4px 0 #c27a00}
   .lobby-tl .mini-logo{display:none}
   #title:not(.step-login) .panel{position:static}
 }
-#title .panel .zone b{font-size:15px} #title .panel .zone span{font-size:11.5px}
+#title .panel .zone b{font-size:15px}
+.stylepick{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.stylepick button{font:inherit;border:2px solid var(--ink);border-radius:10px;background:#fff;color:var(--ink);padding:6px 8px;display:grid;gap:1px;justify-items:center;cursor:pointer}
+.stylepick button b{font-family:var(--display);font-weight:400;font-size:17px}
+.stylepick button small{font-size:11.5px;color:var(--muted);font-weight:700}
+.stylepick button[aria-pressed="true"]{background:#e3f6ea;box-shadow:inset 0 0 0 2px #1f8a57}
+body.peace .hprow-main,body.peace .hpbar-main,body.peace #skSpin,body.peace #skUlt,body.peace #atkBtn,body.peace #spinBtn,body.peace #ultBtn{display:none!important} #title .panel .zone span{font-size:11.5px}
 .mini-logo{flex-wrap:nowrap} .mini-logo span{width:clamp(30px,8.4vw,38px);height:clamp(30px,8.4vw,38px);font-size:clamp(19px,5.2vw,24px)}
 .jobtip{font-weight:400;color:var(--muted);font-size:12px;margin-left:6px}
 .teacher-row{margin-top:14px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;font-size:13px;color:var(--muted)}
@@ -406,8 +412,8 @@ body.hero .vitals{border-color:#c27a00;box-shadow:4px 4px 0 #c27a00}
 <div class="hud" id="hud" hidden>
   <div class="card vitals">
     <div class="who" id="hudNick"></div>
-    <div class="hp-row"><span>체력</span><b id="hpTxt">100 / 100</b></div>
-    <div class="hpbar"><i id="hpBar" style="width:100%"></i></div>
+    <div class="hp-row hprow-main"><span>체력</span><b id="hpTxt">100 / 100</b></div>
+    <div class="hpbar hpbar-main"><i id="hpBar" style="width:100%"></i></div>
     <div class="door-row" id="parcelRow" hidden><div class="hp-row"><span>택배 배달</span><b id="parcelTxt">0 / 0</b></div><div class="hpbar parcel"><i id="parcelBar" style="width:0%"></i></div></div>
     <div class="door-row" id="doorRow" hidden><div class="hp-row"><span>성문</span><b id="doorTxt">500 / 500</b></div><div class="hpbar door"><i id="doorBar" style="width:100%"></i></div></div>
     <div class="meta"><span>웨이브 <b id="waveTxt">1/3</b></span><span>처치 <b id="killTxt">0</b></span><span>정답 <b id="corTxt">0/0</b></span></div>
@@ -520,6 +526,10 @@ body.hero .vitals{border-color:#c27a00;box-shadow:4px 4px 0 #c27a00}
       <p class="pp-lock" id="ppLock"></p>
       <label class="unitpick" id="unitPick" hidden><span>단원</span><select id="unitSelect"></select></label>
       <label class="unitpick" id="mapPick" hidden><span>맵</span><select id="mapSelect"></select></label>
+      <div class="stylepick" id="stylePick" hidden role="group" aria-label="플레이 방식">
+        <button data-style="battle" aria-pressed="true"><b>⚔️ 일반</b><small>몬스터와 싸워요</small></button>
+        <button data-style="peace" aria-pressed="false"><b>🕊️ 평화</b><small>싸우지 않아요</small></button>
+      </div>
     </div>
     <p class="lobby" id="mapDesc">다국적 기업의 세 거점을 지키세요. 퀴즈를 맞혀야 강해지고, 웨이브가 열리고, 보스의 보호막이 깨져요.</p>
     <div class="zones lobby" id="mapZones">
@@ -834,6 +844,16 @@ const WAVESETS = {
   {name:'해골 병사', n:4, hp:60, spd:2.2, dmg:8, color:0xe0434a},
   {name:'해골 도적단', n:6, hp:90, spd:2.6, dmg:10, color:0x8b5cf6},
   {name:'해골 장군', n:3, hp:90, spd:2.5, dmg:10, color:0x8b5cf6, boss:{...BOSS_BASE}}],
+ island_peace:[
+  {name:'1단계 · 아침 배송', n:0, hp:60, spd:2, dmg:0, color:0xe0434a, parcels:3},
+  {name:'2단계 · 점심 배송', n:0, hp:60, spd:2, dmg:0, color:0xe0434a, parcels:4},
+  {name:'3단계 · 저녁 배송', n:0, hp:60, spd:2, dmg:0, color:0xe0434a, parcels:5},
+  {name:'마지막 단계 · 급행 배송', n:0, hp:60, spd:2, dmg:0, color:0xe0434a, parcels:4}],
+ defense_peace:[
+  {name:'안개 정령 선발대', n:0, hp:55, spd:1.9, dmg:8, color:0xe0434a, groups:[{n:4,at:0},{n:4,at:12}]},
+  {name:'안개 정령 무리', n:0, hp:70, spd:2.0, dmg:9, color:0x8b5cf6, groups:[{n:5,at:0},{n:4,at:14}]},
+  {name:'짙은 안개 정령 무리', n:0, hp:80, spd:2.1, dmg:10, color:0x8b5cf6, groups:[{n:5,at:0},{n:4,at:10},{n:5,at:22}]},
+  {name:'거대한 안개 정령', n:0, hp:75, spd:2.0, dmg:10, color:0x8b5cf6, boss:{...BOSS_BASE, hp:700, spd:1.8, summonEvery:18}, groups:[{n:5,at:0},{n:4,at:20}]}],
  island:[
   {name:'배송 방해 해골', n:3, hp:60, spd:2.2, dmg:8, color:0xe0434a, parcels:3},
   {name:'상자 도둑 해골단', n:3, hp:80, spd:2.4, dmg:9, color:0x8b5cf6, parcels:4, thieves:[{at:5,n:1},{at:16,n:2}]},
@@ -871,6 +891,20 @@ const MAPS = {
 };
 const mapOf=u=>u&&MAPS[u.map]?u.map:'zones';
 const TIMED_EVERY = 30, STATION_RECHARGE = 30, CARD_CHANCE = .5;
+/* 평화 모드: 직접 싸우지 않고 퀴즈와 맵의 일(배달 · 포탑 지휘)로 진행해요 */
+let PEACE=false, PEACE_RUN=false;
+try{ PEACE=localStorage.getItem('gsd-peace')==='1'; }catch(e){}
+const PEACE_MAPS=['island','defense'], PARCEL_TIME=30, PEACE_TURRET=26, PEACE_RECHARGE=14;
+const PEACE_TXT={
+ island:{short:'몬스터 없이 택배 배달만 해요. 제한 시간 안에 배달하면 별을 받아요.',
+  desc:'몬스터 없는 평화로운 섬이에요. 물류 센터의 택배를 마을로 배달하세요. 상자를 집으면 퀴즈가 나오고, 30초 안에 배달하면 별을 받아요.',
+  rules:['<b>택배:</b> 북쪽 부두 물류 센터에 상자가 와요. 다가가면 집어 들고 4지선다나 O/X 문제가 나와요. 맞히면 빨리 달려요','<b>제한 시간:</b> 상자를 든 뒤 30초 안에 배달 깔개에 서면 ★ 별을 받아요. 늦어도 배달은 돼요','<b>단계 4개:</b> 단계마다 배달할 상자가 늘어나요. 다 배달하면 지식의 수정 퀴즈로 다음 단계를 열어요','<b>점수:</b> 정답 · 배달 · 별이 많을수록 높아요. 게임 오버는 없어요'],
+  winTitle:'오늘 배송 끝!',winMsg:'섬 마을 사람들이 택배를 모두 받았어요. 아래 틀린 문제를 한 번 더 읽어 보고 마무리해요.'},
+ defense:{short:'직접 싸우지 않아요. 퀴즈로 포탑을 깨워 안개 정령을 막는 지휘관이 돼요.',
+  desc:'나는 성의 지휘관! 직접 싸우지 않아요. 성벽 앞 수정의 퀴즈를 맞혀 포탑을 깨우면, 포탑이 다가오는 안개 정령을 정화해요.',
+  rules:['<b>지휘관:</b> 공격 대신 수정 3개를 오가며 퀴즈를 풀어요. 맞히면 그 포탑이 26초 동안 빛을 쏴요','<b>안개 정령:</b> 나는 공격하지 않고 성문으로만 가요. 성문 체력이 0이 되면 끝나요','<b>돌발 퀴즈:</b> 맞히면 성문 수리 +10%','<b>지식 카드:</b> 정화된 정령이 떨어뜨려요. 주우면 O/X 문제','<b>마지막 단계:</b> 거대한 안개 정령의 보호막 4개는 퀴즈 정답으로만 깨져요'],
+  winTitle:'안개를 모두 걷어 냈어요!',winMsg:'퀴즈로 포탑을 지휘해 성을 지켰어요. 아래 틀린 문제를 한 번 더 읽어 보고 마무리해요.'}
+};
 let LOC_TIME = 25;
 const HERO={hp:1.35,dmg:1.35,spd:1.1,quiz:.75,loc:18,score:1.5};
 let MODE='normal', HERO_OPEN=false, DIFF=1;
@@ -1557,6 +1591,7 @@ function removeParcel(p){ if (p.mesh.parent) p.mesh.parent.remove(p.mesh); scene
 function pickParcel(p){
   const S=W.isl; S.carry=p; p.state='carried'; scene.remove(p.g); pg.add(p.mesh); p.mesh.position.set(0,2.85,0); p.mesh.rotation.set(0,.4,0); p.mesh.scale.setScalar(1.15);
   SFX.card(); fx.burst(P.x,1.4,P.z,PARCEL_COL,12,3);
+  if (PEACE_RUN) p.due=W.t+PARCEL_TIME;
   const h=ISL_HOUSES[p.dest]; flashPrompt(`${h.name}(으)로 배달해요! 주황 화살표를 따라가세요`,3);
   const useOX=OX.length&&Math.random()<.45;
   openQuiz(pick(useOX?['ox','mc']:['mc','ox'],useOX?OX:MC),{type:'parcel'});
@@ -1566,7 +1601,8 @@ function deliverParcel(p){
   removeParcel(p); S.delivered++; S.done++;
   SFX.correct(); fx.rise(h.x,h.z,PARCEL_COL,24); fx.burst(h.x,1.2,h.z,0xffffff,12,4); fx.num(h.x,3.2,h.z,'배달 완료!','#ffd34d',1.3);
   P.hp=Math.min(P.max,P.hp+5);
-  showBanner(`${h.name} 배달 완료!`);
+  if (PEACE_RUN && p.due && W.t<=p.due){ S.stars=(S.stars||0)+1; showBanner(`${h.name} 제시간 배달! ★`); fx.num(h.x,4.2,h.z,'★','#ffd34d',1.6); }
+  else showBanner(`${h.name} 배달 완료!`);
   if (W.stats) W.stats.dl=(W.stats.dl||0)+1;
 }
 function thiefSpawn(def){
@@ -1608,7 +1644,7 @@ function islandTick(dt){
     else { for (const p of parcels){ if (p.state==='ground' && W.t-p.born>.6 && Math.hypot(P.x-p.x,P.z-p.z)<1.5){ pickParcel(p); break; } } }
   }
   // 남은 택배 안내
-  if (!mobs.length && !W.gate && (parcels.length || S.spawned<S.quota) && W.t>=S.waitHint){ S.waitHint=W.t+9; flashPrompt('남은 택배를 모두 배달하면 웨이브가 끝나요',2.5); }
+  if (!PEACE_RUN && !mobs.length && !W.gate && (parcels.length || S.spawned<S.quota) && W.t>=S.waitHint){ S.waitHint=W.t+9; flashPrompt('남은 택배를 모두 배달하면 웨이브가 끝나요',2.5); }
 }
 function islandLook(real,dt){
   if (islWater) islWater.uniforms.uTime.value=real;
@@ -1779,7 +1815,7 @@ function arm(c,key,scale){ const hand=c.root.getObjectByName('handslotr')||c.roo
 function spawnMob(def,isBoss,at){
   const color=isBoss?def.boss.color:def.color;
   const c=makeChar(isBoss?'sk_warrior':def.ranged?'sk_rogue':(MOB_MODEL[color]||'sk_minion'),isBoss?2.05:1,isBoss?BOSS_MAP:def.ranged?SKR_MAP:SK_MAP);
-  if (def.ranged) armXbow(c); else arm(c,isBoss?'axe':'blade');
+  if (def.ranged) armXbow(c); else if (!PEACE_RUN) arm(c,isBoss?'axe':'blade');
   if (!isBoss && def.ranged) c.mats.forEach(m=>{ if (m.color) m.color.multiply(new THREE.Color(0xb8f0c0)); });
   if (!isBoss && color===0x8b5cf6 && !def.runner && !def.ranged) c.mats.forEach(m=>{ if (m.color) m.color.multiply(new THREE.Color(0xd9c8ff)); });
   if (!isBoss && def.runner){ c.mats.forEach(m=>{ if (m.color) m.color.multiply(new THREE.Color(0xffa060)); }); c.root.scale.setScalar(.88); }
@@ -1813,6 +1849,7 @@ function spawnMob(def,isBoss,at){
   m.runner=!isBoss&&!!def.runner;
   if (!isBoss && def.ranged){ m.ranged=true; m.aimLine=makeAimLine(); }
   m.onDying=()=>{ m.sink=Math.max(0,.7-m.dying)*1.6; };
+  if (PEACE_RUN){ c.mats.forEach(mt=>{ if (mt.color) mt.color.lerp(new THREE.Color(0xa9d4ff),.82); mt.transparent=true; mt.opacity=.72; }); m.onDying=()=>{ m.sink=-(1.6-m.dying)*1.8; const o=Math.max(0,m.dying/1.6)*.72; mats.forEach(mt=>{ mt.opacity=o; }); }; }
   c.anim.once('spawn',2.2,true);
   if (isBoss){ m.spawnT=1.8; setTimeout(()=>{ if (m.dying<0) m.anim.once('taunt',1,true); },1700); }
   mobs.push(m);
@@ -2020,7 +2057,7 @@ function aimAssist(){
   if (best){ const dx=best.x-P.x, dz=best.z-P.z, d=Math.hypot(dx,dz)||1; P.fx=dx/d; P.fz=dz/d; }
 }
 function attack(){
-  if (W.paused || W.state!=='play') return;
+  if (W.paused || W.state!=='play' || PEACE_RUN) return;
   if (P.dodgeT>0 || P.spinT>0 || P.dashT>0 || P.ultT>0){ P.buffer=true; return; }
   if (JOB!=='knight'){ jobAttack(); return; }
   P.blockT=0;
@@ -2062,6 +2099,7 @@ function dodge(){
   SFX.dodge(); fx.burst(P.x,.2,P.z,0xd8c9a8,8,2.5);
 }
 function spinSkill(){
+  if (PEACE_RUN) return;
   if (W.paused || W.state!=='play' || P.spinCd>0 || P.ultT>0 || P.dashT>0) return;
   if (P.dodgeT>0){ P.spinBuf=true; return; }
   P.blockT=0;
@@ -2301,7 +2339,7 @@ function mageSkill(){
 }
 /* Q 필살기: 퀴즈 3문제를 맞히면 가득 차요 */
 function ultimate(){
-  if (W.paused || W.state!=='play') return;
+  if (W.paused || W.state!=='play' || PEACE_RUN) return;
   if ((W.ult||0)<ULT_NEED){ flashPrompt(`필살기는 퀴즈를 ${ULT_NEED-(W.ult||0)}문제 더 맞히면 쓸 수 있어요`,1.6); return; }
   W.ult=0; if (W.stats) W.stats.ults++; showBanner(`${ultLabel()}!`); SFX.wave();
   if (JOB==='knight'){ P.ultT=1.8; P.ultTick=0; P.atkCd=1.8; P.combo=0; P.pendingHit=null; P.buffer=false;
@@ -2329,7 +2367,7 @@ function ultTick(dt){
 
 /* 주인공이 맞을 때: 막기 · 방어막 · 직업 체력 */
 function hurtPlayer(amount,src){
-  if (W.t<=W.invuln) return 0;
+  if (W.t<=W.invuln || PEACE_RUN) return 0;
   let dmg=amount;
   if (JOB==='knight' && P.blockT>0 && src){
     const dx=src.x-P.x, dz=src.z-P.z, d=Math.hypot(dx,dz)||1;
@@ -2391,6 +2429,7 @@ const SKR_MAP={...SK_MAP, aim:'1H_Ranged_Aiming', shoot:'1H_Ranged_Shoot'};
 let EBOLTS=[];
 function easeIdx(){ return MODE==='hero'?-1:Math.max(0,EASES.indexOf(EASEF)); }
 function rangedCount(i){
+  if (PEACE_RUN) return 0;
   if (i<1) return 0;
   let n=MAPK==='island'?Math.min(i,2):1+i;           // 웨이브 2: 2명, 웨이브 3: 3명 (디펜스는 웨이브 4: 4명)
   const e=easeIdx(); if (e<0) n+=1; else if (e===2) n=Math.max(1,n-1); else if (e===1) n=Math.max(1,n-1+(i>=2?0:0));
@@ -2483,7 +2522,7 @@ function hitMob(m,dmg,sx,sz,kbk,col,byPlayer,o){
   if (!o.quiet) impactFx(m.x-dx/d*.35,hy,m.z-dz/d*.35,o.crit?0xffd34d:0xfff2d6,o.crit?3.4:(o.fin?2.8:2));
   fx.num(m.x,m.boss?5.2:2.5,m.z,o.crit?Math.round(dmg)+'!':String(Math.round(dmg)),o.crit?'#ffcf3a':col,o.crit?1.4:1);
   if (m.hp>0 && m.anim && !o.noStun && !(m.boss&&m.slamT>0)) m.anim.once('hit',1.5,true);
-  if (m.hp<=0){ m.dying=1.6; W.kills++; if (m.anim) m.anim.die(); fx.burst(m.x,.9,m.z,m.color,m.boss?40:22,m.boss?8:6); SFX.kill();
+  if (m.hp<=0){ m.dying=1.6; W.kills++; if (PEACE_RUN){ fx.rise(m.x,m.z,0xdff1ff,16); if (m.anim){ m.anim.dead=true; } } else if (m.anim) m.anim.die(); fx.burst(m.x,.9,m.z,m.color,m.boss?40:22,m.boss?8:6); SFX.kill();
     if (!m.boss && (o.launch||o.crit)){ m.avy=o.launch?7:4.5; m.kbx*=1.7; m.kbz*=1.7; }
     if (m.boss) shake=.5; if (!m.boss && Math.random()<CARD_CHANCE) dropCard(m.x,m.z); }
   return true;
@@ -2552,7 +2591,7 @@ function settle(ok,item,source){
     return {fx:{label: ok?(left>0?`부활까지 ${left}문제 남았어요`:'부활 성공!'):'부활 실패'},extras:ok?[]:['이번 판은 여기까지예요. 결과 화면에서 틀린 문제를 복습해요.']};
   }
   const parcelQ=source&&source.type==='parcel';
-  const fx=jobFx((ok?GOOD:BAD)[parcelQ?1:Math.floor(Math.random()*3)],ok);
+  const fx=jobFx((ok?GOOD:BAD)[parcelQ||PEACE_RUN?1:Math.floor(Math.random()*3)],ok);
   if (parcelQ) extras.push(ok?'급행 배송! 빨리 달려서 배달하세요.':'상자가 무거워졌어요… 그래도 배달은 할 수 있어요.');
   applyEffect(fx);
   if (entry && ok) extras.push('지난번에 틀린 문제를 이번엔 맞혔어요!');
@@ -2564,7 +2603,7 @@ function settle(ok,item,source){
     boss.shield++; extras.push(`오답이라 보스 보호막이 하나 되살아났어요 (${boss.shield}개)`);
   }
   if (ok && MAPK==='defense' && source && source.type==='station' && source.station.turret){
-    const t=source.station.turret; t.until=W.t+TURRET_TIME; t.cd=.3; extras.push(`${t.title}이 ${TURRET_TIME}초 동안 자동으로 공격해요!`);
+    const tt=PEACE_RUN?PEACE_TURRET:TURRET_TIME; const t=source.station.turret; t.until=W.t+tt; t.cd=.3; extras.push(PEACE_RUN?`${t.title}이 ${tt}초 동안 정화의 빛을 쏴요!`:`${t.title}이 ${tt}초 동안 자동으로 공격해요!`);
   }
   if (ok && MAPK==='defense' && source && source.type==='timed'){
     const before=W.door; W.door=Math.min(W.doorMax,W.door+Math.round(W.doorMax*.1)); extras.push(W.door>before?`성문 수리 +${W.door-before}`:'성문은 이미 튼튼해요.');
@@ -2596,7 +2635,7 @@ function closeQuiz(){
   if (s && s.type==='revive'){ reviveNext(Q.ok); return; }
   if (s && s.type==='station'){
     const quick = W.gate || !!liveBoss();
-    s.station.readyAt=W.t+(quick?8:MAPS[MAPK].recharge);
+    s.station.readyAt=W.t+(quick?8:(PEACE_RUN&&MAPK==='defense'?PEACE_RECHARGE:MAPS[MAPK].recharge));
     W.nextQuiz=Math.max(W.nextQuiz,W.t+10);
   } else if (s && s.type==='timed'){ W.nextQuiz=W.t+TIMED_EVERY; }
   else if (s && s.type==='parcel'){ W.nextQuiz=Math.max(W.nextQuiz,W.t+12); }
@@ -2690,7 +2729,7 @@ function updateHUD(){
   $('#corTxt').textContent=`${W.correct}/${W.asked}`;
   $('#nextCard').hidden=!!W.loc;
   $('#nextTxt').textContent=Math.max(0,Math.ceil(W.nextQuiz-W.t));
-  const effs=W.effects.concat(MAPK==='defense'?TURRETS.filter(t=>W.t<t.until).map(t=>({label:t.title+' 자동 공격',until:t.until,good:true})):[]);
+  const effs=W.effects.concat(MAPK==='defense'?TURRETS.filter(t=>W.t<t.until).map(t=>({label:t.title+(PEACE_RUN?' 정화 중':' 자동 공격'),until:t.until,good:true})):[]);
   if (W.qshield>0) effs.push({label:`방어막 ${Math.ceil(W.qshield)}`,good:true,noT:true});
   if (JOB==='archer' && W.streak>0) effs.push({label:`${W.streak}연속 정답 · 치명타 ${Math.round(archerCrit()*100)}%${W.streak>=5?' · 관통':''}`,good:true,noT:true});
   if (JOB==='mage' && W.orbBoost>0) effs.push({label:`큰 구슬 ${W.orbBoost}개`,good:true,noT:true});
@@ -2705,7 +2744,7 @@ function updateHUD(){
       $('#bossHelp').textContent=boss.shield>0?'퀴즈를 맞히면 보호막이 깨지고, 틀리면 되살아나요. 붉은 원이 보이면 피하세요!':'보호막이 모두 깨졌어요. 지금 공격하세요! 오답이면 보호막이 되살아나요.'; }
   }
   $('#gateCard').hidden=!W.gate;
-  if (MAPK==='island' && W.isl){ const S=W.isl, show=S.quota>0; $('#parcelRow').hidden=!show; if (show){ $('#parcelTxt').textContent=`${S.done-0} / ${S.quota}`+(S.lost?` · 잃어버림 ${S.lost}`:''); $('#parcelBar').style.width=(S.done/S.quota*100)+'%'; } }
+  if (MAPK==='island' && W.isl){ const S=W.isl, show=S.quota>0; $('#parcelRow').hidden=!show; if (show){ const cp=S.carry; $('#parcelTxt').textContent=`${S.done-0} / ${S.quota}`+(S.lost?` · 잃어버림 ${S.lost}`:'')+(PEACE_RUN&&S.stars?` · ★${S.stars}`:'')+(PEACE_RUN&&cp&&cp.due?(W.t<=cp.due?` · ⏱ ${Math.ceil(cp.due-W.t)}초`:' · ⏱ 늦었어요'):''); $('#parcelBar').style.width=(S.done/S.quota*100)+'%'; } }
   if (MAPK==='defense'){ const dk=Math.max(0,W.door); $('#doorTxt').textContent=`${Math.ceil(dk)} / ${W.doorMax}`; $('#doorBar').style.width=(dk/W.doorMax*100)+'%'; }
   if (W.loc){
     const rem=W.loc.until-W.t;
@@ -2809,10 +2848,14 @@ function startGame(){
   LOC_TIME = MODE==='hero' ? HERO.loc : Math.round(25*(DIFF<1? 1+(1-DIFF)*.8 : 1))+EASEF.loc;
   document.body.classList.toggle('hero',MODE==='hero');
   { applyPlay(); const pu=DATA.units.find(u=>u.id===playUnit); applyZoneCfg(zcfgOf(pu)); setMap(PLAYMAP||mapOf(pu)); }
+  PEACE_RUN=PEACE && PEACE_MAPS.includes(MAPK);
+  if (PEACE_RUN) WAVES=WAVESETS[MAPK+'_peace'];
+  document.body.classList.toggle('peace',PEACE_RUN);
   startQualityMonitor();
   applyLook(jobLook()); applyJobHUD(); loadParts('rogue').catch(()=>{});
   $('#title').hidden=true; $('#end').hidden=true;
   ['#hud','#hint','#touch','#skillbar'].forEach(s=>$(s).hidden=false);
+  if (PEACE_RUN) $('#hint').textContent='🕊️ 평화 모드 · WASD 이동 · Shift '+(JOB==='knight'?'막기':'구르기')+' · '+(MAPK==='island'?'상자에 다가가면 집어요 · 배달 깔개에 서면 배달':'빛나는 수정에 다가가 퀴즈를 맞혀 포탑을 깨워요');
   reset(); canvas.focus({preventScroll:true});
 }
 function esc(s){ return s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
@@ -2839,7 +2882,7 @@ function setPending(a){ try{ localStorage.setItem(PENDING_KEY,JSON.stringify(a.s
 function combatStats(){
   const S=W.stats||{}; const r=v=>Math.max(0,Math.round(v||0));
   return {dealt:r(S.dealt),taken:r(S.taken),minHp:r(Math.min(S.minHp===undefined?1:S.minHp,Math.max(0,P.hp)/(P.max||1))*100),melee:r(S.melee),ranged:r(S.ranged),boss:r(S.boss),quiz:r(S.quiz),
-    blocks:r(S.blocks),blocked:r(S.blocked),dodges:r(S.dodges),ults:r(S.ults),evaded:r(S.evaded),shots:r(S.shots),dl:r(S.dl),lost:r(S.lost),rv:W.revived?1:0,wv:r(W.wave+1),hpMax:r(P.max),
+    blocks:r(S.blocks),blocked:r(S.blocked),dodges:r(S.dodges),ults:r(S.ults),evaded:r(S.evaded),shots:r(S.shots),dl:r(S.dl),lost:r(S.lost),pc:PEACE_RUN?1:0,st:r(PEACE_RUN&&W.isl?W.isl.stars:0),rv:W.revived?1:0,wv:r(W.wave+1),hpMax:r(P.max),
     wt:(S.ws||[]).map(v=>v===undefined?'':Math.round(v)).join(',').slice(0,120)};
 }
 function toRecord(r,uid){
@@ -3364,8 +3407,8 @@ function endGame(win){
   $('#locCard').hidden=true; $('#gateCard').hidden=true; $('#bossbar').hidden=true; $('#prompt').hidden=true;
   $('#endEyebrow').textContent=win?'승리':'게임 오버';
   W.won=!!win;
-  $('#endTitle').textContent=win?MAPS[MAPK].winTitle:(MAPK==='defense'&&W.door<=0?'성문이 무너졌어요':'체력이 모두 닳았어요');
-  $('#endMsg').textContent=win?MAPS[MAPK].winMsg:'퀴즈를 맞히면 회복하거나 더 강해질 수 있어요. 아래 틀린 문제를 복습하고 다시 도전해 보세요.';
+  $('#endTitle').textContent=win?(PEACE_RUN?PEACE_TXT[MAPK].winTitle:MAPS[MAPK].winTitle):(MAPK==='defense'&&W.door<=0?'성문이 무너졌어요':'체력이 모두 닳았어요');
+  $('#endMsg').textContent=win?(PEACE_RUN?PEACE_TXT[MAPK].winMsg:MAPS[MAPK].winMsg):'퀴즈를 맞히면 회복하거나 더 강해질 수 있어요. 아래 틀린 문제를 복습하고 다시 도전해 보세요.';
   $('#sKills').textContent=W.kills; $('#sCorrect').textContent=`${W.correct}/${W.asked}`;
   const s=Math.floor(W.t); $('#sTime').textContent=`${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;
   const rv=$('#review');
@@ -3377,10 +3420,10 @@ function endGame(win){
   }
   const unit=DATA.units.find(u=>u.id===playUnit);
   const fixedN=W.wrong.filter(w=>w.fixed).length;
-  const dlv=MAPK==='island'&&W.isl?W.isl.delivered:0;
-  const score=Math.round((W.correct*100+fixedN*50+W.kills*10+dlv*50+(win?500:0))*(MODE==='hero'?HERO.score:1));
-  $('#sScoreNote').textContent=`정답 100점 · 다시 맞힘 +50점(${fixedN}개) · 처치 10점`+(MAPK==='island'?` · 배달 50점(${dlv}개)`:'')+' · 승리 500점'+(MODE==='hero'?' · 영웅 모드 ×1.5':'');
-  if (MAPK==='island'&&W.isl) $('#endMsg').textContent=`택배 ${W.isl.delivered}개 배달`+(W.isl.lost?` · 도둑에게 ${W.isl.lost}개 잃어버림`:'')+'. '+$('#endMsg').textContent;
+  const dlv=MAPK==='island'&&W.isl?W.isl.delivered:0, stars=PEACE_RUN&&W.isl?(W.isl.stars|0):0;
+  const score=Math.round((W.correct*100+fixedN*50+W.kills*10+dlv*50+stars*30+(win?500:0))*(MODE==='hero'?HERO.score:1));
+  $('#sScoreNote').textContent=`정답 100점 · 다시 맞힘 +50점(${fixedN}개) · 처치 10점`+(MAPK==='island'?` · 배달 50점(${dlv}개)`:'')+(stars?` · 별 30점(${stars}개)`:'')+(PEACE_RUN?' · 평화 모드':'')+' · 승리 500점'+(MODE==='hero'?' · 영웅 모드 ×1.5':'');
+  if (MAPK==='island'&&W.isl) $('#endMsg').textContent=`택배 ${W.isl.delivered}개 배달`+(stars?` · 제시간 배달 ★${stars}`:'')+(W.isl.lost?` · 도둑에게 ${W.isl.lost}개 잃어버림`:'')+'. '+$('#endMsg').textContent;
   const newSkill=updateSkill(win);
   const d=new Date();
   const when=`${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
@@ -3485,8 +3528,16 @@ function applyPlay(){
   if (c.u.id!==playUnit) useUnit(c.u.id);
   PLAYMAP=c.m; if (W.state!=='play' && MAPK!==c.m) setMap(c.m);
   $('#unitEyebrow').innerHTML=`${esc(c.u.name)}<span class="mapname">${MAPS[c.m].name}</span>`;
-  renderUnitPicker(c); updateBankInfo();
+  renderUnitPicker(c); updateBankInfo(); refreshStyle();
 }
+function refreshStyle(){
+  const ok=PEACE_MAPS.includes(MAPK), on=ok&&PEACE, M=MAPS[MAPK], T=PEACE_TXT[MAPK];
+  $('#stylePick').hidden=!ok;
+  $('#stylePick').querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',String((b.dataset.style==='peace')===on)));
+  $('#mapDesc').textContent=on?T.desc:M.desc;
+  $('#mapRules').innerHTML=(on?T.rules:M.rules).concat([on?'<b>조작:</b> WASD 이동 · Shift 구르기(기사는 막기) · 공격 버튼은 쓰지 않아요':'<b>조작:</b> 스페이스 연타 = 3단 콤보(마지막 타가 가장 세요) · Shift = 구르기(잠깐 무적) · E = 회전 베기(8초마다)']).map(r=>`<li>${r}</li>`).join('');
+}
+$('#stylePick').addEventListener('click',e=>{ const b=e.target.closest('[data-style]'); if (!b) return; PEACE=b.dataset.style==='peace'; try{ localStorage.setItem('gsd-peace',PEACE?'1':'0'); }catch(_){} refreshStyle(); });
 function renderUnitPicker(c){
   c=c||playChoice(); if (!c||!c.u) return;
   const ready=DATA.units.filter(isReady);
@@ -3851,7 +3902,7 @@ function frame(now){
       if (MAPK==='island' && m.def && m.def.thief && thiefAI(m,dt)) continue;
       const pdx=P.x-m.x, pdz=P.z-m.z, pd=Math.hypot(pdx,pdz)||1;
       let dx=pdx, dz=pdz, d=pd, atDoor=false;
-      if (MAPK==='defense' && (m.runner || pd>(m.boss?9:7))){ dx=DOOR.x-m.x; dz=DOOR.z-m.z; d=Math.hypot(dx,dz)||1; atDoor=d<m.r+2.6; }
+      if (MAPK==='defense' && (m.runner || PEACE_RUN || pd>(m.boss?9:7))){ dx=DOOR.x-m.x; dz=DOOR.z-m.z; d=Math.hypot(dx,dz)||1; atDoor=d<m.r+2.6; }
       m.atDoor=atDoor;
       if (m.boss){
         const B=m.def.boss;
@@ -3870,7 +3921,7 @@ function frame(now){
           continue;
         }
         m.slamCd-=dt;
-        if (m.slamCd<=0 && (pd<10 || atDoor)){ m.slamT=B.slamWarn; m.slamX=m.x; m.slamZ=m.z; flashPrompt(atDoor&&pd>=10?'해골 장군이 성문을 내려찍으려 해요!':'붉은 원 밖으로 피하세요!',B.slamWarn); }
+        if (m.slamCd<=0 && ((!PEACE_RUN && pd<10) || atDoor)){ m.slamT=B.slamWarn; m.slamX=m.x; m.slamZ=m.z; flashPrompt(atDoor&&pd>=10?'해골 장군이 성문을 내려찍으려 해요!':'붉은 원 밖으로 피하세요!',B.slamWarn); }
       }
       const slow=W.loc?.5:1, mv=atDoor?0:1;
       m.x+=(dx/d*m.spd*slow*mv*slowK(m) + m.kbx)*dt; m.z+=(dz/d*m.spd*slow*mv*slowK(m) + m.kbz)*dt;
@@ -3879,7 +3930,7 @@ function frame(now){
       resolve(m,m.r);
       m.g.rotation.y=Math.atan2(dx,dz);
       m.atkCd=Math.max(0,m.atkCd-dt);
-      if (pd<m.r+.75 && m.atkCd<=0 && W.t>W.invuln){ if (m.anim) m.anim.once('attack',1.6); hurtPlayer(m.dmg,{x:m.x,z:m.z,mob:m}); m.atkCd=1; }
+      if (!PEACE_RUN && pd<m.r+.75 && m.atkCd<=0 && W.t>W.invuln){ if (m.anim) m.anim.once('attack',1.6); hurtPlayer(m.dmg,{x:m.x,z:m.z,mob:m}); m.atkCd=1; }
       if (atDoor){ m.doorCd=(m.doorCd||0)-dt;
         const dh=Math.round(m.dmg*DOOR_HIT);
         if (m.doorCd<=0){ m.doorCd=1.2; W.door-=dh; doorFlash=.2; SFX.door(); if (m.anim) m.anim.once('attack',1.6,true);
