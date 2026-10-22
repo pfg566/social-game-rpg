@@ -397,6 +397,9 @@ body.hero .vitals{border-color:#c27a00;box-shadow:4px 4px 0 #c27a00}
 .stylepick button b{font-family:var(--display);font-weight:400;font-size:17px}
 .stylepick button small{font-size:11.5px;color:var(--muted);font-weight:700}
 .stylepick button[aria-pressed="true"]{background:#e3f6ea;box-shadow:inset 0 0 0 2px #1f8a57}
+body.aim-mouse #c{cursor:crosshair}
+.jdiff{font-style:normal;font-size:11px;font-weight:700;padding:0 7px;border-radius:999px;line-height:1.6}
+.jdiff.d1{background:#dff3e6;color:#1f7a4c} .jdiff.d2{background:#fff0cc;color:#8a5a00} .jdiff.d3{background:#fde0e0;color:#a3282c}
 body.peace .hprow-main,body.peace .hpbar-main,body.peace #skSpin,body.peace #skUlt,body.peace #atkBtn,body.peace #spinBtn,body.peace #ultBtn{display:none!important} #title .panel .zone span{font-size:11.5px}
 .mini-logo{flex-wrap:nowrap} .mini-logo span{width:clamp(30px,8.4vw,38px);height:clamp(30px,8.4vw,38px);font-size:clamp(19px,5.2vw,24px)}
 .jobtip{font-weight:400;color:var(--muted);font-size:12px;margin-left:6px}
@@ -566,9 +569,9 @@ body.peace .hprow-main,body.peace .hpbar-main,body.peace #skSpin,body.peace #skU
     <div class="jobpick" id="jobPick">
       <p class="jobtitle">직업 고르기 <small class="jobtip">화면을 끌면 캐릭터가 돌아가요</small></p>
       <div class="jobs" role="group" aria-label="직업 고르기">
-        <button data-job="knight" aria-pressed="true"><i>🛡️</i><b>기사</b><small>틀려도 버틴다</small></button>
-        <button data-job="archer" aria-pressed="false"><i>🏹</i><b>궁수</b><small>연달아 맞히면 강해진다</small></button>
-        <button data-job="mage" aria-pressed="false"><i>🔮</i><b>마법사</b><small>많이 풀수록 강해진다</small></button>
+        <button data-job="knight" aria-pressed="true"><i>🛡️</i><b>기사</b><em class="jdiff d2">보통</em><small>근접 · 튼튼함</small></button>
+        <button data-job="archer" aria-pressed="false"><i>🏹</i><b>궁수</b><em class="jdiff d3">어려움</em><small>마우스 조준 · 연사</small></button>
+        <button data-job="mage" aria-pressed="false"><i>🔮</i><b>마법사</b><em class="jdiff d1">쉬움</em><small>자동 조준 · 범위</small></button>
       </div>
       <div class="elems" id="elemPick" role="group" aria-label="마법 원소 고르기" hidden><span>마법 원소</span>
         <button data-elem="fire" aria-pressed="true">🔥 불</button><button data-elem="ice" aria-pressed="false">❄️ 얼음</button><button data-elem="bolt" aria-pressed="false">⚡ 번개</button>
@@ -2127,11 +2130,11 @@ function spinHit(h){
 // 퀴즈를 대하는 방식이 직업마다 달라요. 기사는 틀려도 버티고, 궁수는 연달아 맞히면 강해지고, 마법사는 많이 풀수록 강해져요.
 const JOBS={
   knight:{name:'기사',hp:150,spd:1,   dodgeCd:1.2,skillCd:6,ultName:'대검 회오리',dodgeName:'막기',skillName:'돌진 베기',
-          hint:'WASD 이동 · 스페이스 3단 베기 · Shift 막기(정면 피해 80% 감소, 반격) · E 돌진 베기 · Q 필살기(퀴즈 3문제)'},
+          hint:'WASD 이동 · 클릭 또는 스페이스 3단 베기 · Shift 막기(정면 피해 80% 감소, 반격) · E 돌진 베기 · Q 필살기(퀴즈 3문제)'},
   archer:{name:'궁수',hp:75, spd:1.1, dodgeCd:.7, skillCd:6,ultName:'화살비',dodgeName:'구르기',skillName:'세 갈래',
-          hint:'WASD 이동 · 스페이스 화살(가까운 적 자동 조준) · Shift 구르기 · E 뒤로 뛰며 세 갈래 화살 · Q 필살기(퀴즈 3문제)'},
+          hint:'WASD 이동 · 마우스로 조준 · 클릭(누르고 있으면 연사) 또는 스페이스 = 화살 · Shift 구르기 · E 뒤로 뛰며 세 갈래 · Q 필살기'},
   mage:  {name:'마법사',hp:80,spd:1,  dodgeCd:2.2,skillCd:7,ultName:'',dodgeName:'순간이동',skillName:'원소 마법',
-          hint:'WASD 이동 · 스페이스 원소 구슬(터지면 주변까지) · Shift 순간이동 · E 원소 마법 · Q 필살기(퀴즈 3문제)'}
+          hint:'WASD 이동 · 클릭 또는 스페이스 원소 구슬(가까운 적 자동 조준, 터지면 주변까지) · Shift 순간이동 · E 원소 마법 · Q 필살기(퀴즈 3문제)'}
 };
 const ELEM={fire:{name:'불',color:0xff7a2f,css:'#ff7a2f',skill:'화염 폭발',ult:'운석'},
             ice:{name:'얼음',color:0x7fdcff,css:'#5cc8f0',skill:'얼음 고리',ult:'눈보라'},
@@ -2150,6 +2153,42 @@ function jobLookFor(j){
   return equippedLook();
 }
 function jobLook(){ return jobLookFor(JOB); }
+
+/* 마우스 조준 (PC): 커서가 가리키는 땅 쪽으로 쏴요. 커서 방향 앞 20도 안의 적에게는 살짝 휘어서 맞아요 */
+const MOUSE={x:0,y:0,on:false,held:false}, aimRay=new THREE.Raycaster(), aimPlane=new THREE.Plane(new THREE.Vector3(0,1,0),0), aimHit=new THREE.Vector3();
+const AIM_ASSIST=Math.cos(20*Math.PI/180);
+function mouseAimDir(){
+  if (!MOUSE.on) return null;
+  const r=canvas.getBoundingClientRect(), v=new THREE.Vector2((MOUSE.x-r.left)/r.width*2-1,-(MOUSE.y-r.top)/r.height*2+1);
+  aimRay.setFromCamera(v,camera); if (!aimRay.ray.intersectPlane(aimPlane,aimHit)) return null;
+  const dx=aimHit.x-P.x, dz=aimHit.z-P.z, d=Math.hypot(dx,dz); if (d<.4) return null;
+  return {x:dx/d,z:dz/d,px:aimHit.x,pz:aimHit.z};
+}
+function archerAim(range){
+  const dir=mouseAimDir()||{x:P.fx,z:P.fz}; P.fx=dir.x; P.fz=dir.z;
+  let best=null, bc=AIM_ASSIST;
+  for (const m of mobs){ if (m.dying>=0||m.spawnT>0) continue; const dx=m.x-P.x, dz=m.z-P.z, d=Math.hypot(dx,dz)||1; if (d>range) continue;
+    const c=(dx*dir.x+dz*dir.z)/d; if (c>bc){ bc=c; best=m; } }
+  if (best){ const dx=best.x-P.x, dz=best.z-P.z, d=Math.hypot(dx,dz)||1; P.fx=dx/d; P.fz=dz/d; }
+  return best;
+}
+canvas.addEventListener('pointermove',e=>{ if (e.pointerType!=='mouse') return; MOUSE.x=e.clientX; MOUSE.y=e.clientY; MOUSE.on=true; });
+canvas.addEventListener('pointerdown',e=>{ if (e.pointerType!=='mouse' || e.button!==0) return; MOUSE.x=e.clientX; MOUSE.y=e.clientY; MOUSE.on=true; if (W.state!=='play'||W.paused) return; MOUSE.held=true; attack(); });
+addEventListener('pointerup',e=>{ if (e.button===0) MOUSE.held=false; });
+addEventListener('blur',()=>{ MOUSE.held=false; });
+canvas.addEventListener('contextmenu',e=>e.preventDefault());
+/* 궁수 조준점: 땅 위의 작은 과녁 */
+const aimMark=new THREE.Group();
+{ const m1=new THREE.Mesh(new THREE.RingGeometry(.42,.56,32),new THREE.MeshBasicMaterial({color:0xffd34d,transparent:true,opacity:.9,side:THREE.DoubleSide,depthWrite:false,toneMapped:false}));
+  const m2=new THREE.Mesh(new THREE.CircleGeometry(.12,16),new THREE.MeshBasicMaterial({color:0xffd34d,transparent:true,opacity:.95,side:THREE.DoubleSide,depthWrite:false,toneMapped:false}));
+  [m1,m2].forEach(m=>{ m.rotation.x=-Math.PI/2; m.renderOrder=4; aimMark.add(m); }); aimMark.position.y=.08; aimMark.visible=false; scene.add(aimMark); }
+function aimTick(real){
+  const on=W.state==='play' && !W.paused && JOB==='archer' && !PEACE_RUN && MOUSE.on;
+  aimMark.visible=false; if (!on) return;
+  const d=mouseAimDir(); if (!d) return;
+  aimMark.visible=true; aimMark.position.set(d.px,.08,d.pz); aimMark.rotation.y=real*1.5;
+  if (MOUSE.held && W.t>=0) attack();
+}
 
 /* 가까운 적 자동 조준 (앞쪽에 있는 적을 조금 더 골라요) */
 function aimAt(range){
@@ -2207,7 +2246,7 @@ function archerCrit(){ return Math.min(.6,CRIT_CHANCE+.08*Math.min(6,W.streak||0
 function castOrb(ang){
   const dx=Math.sin(ang), dz=Math.cos(ang), big=W.orbBoost>0; if (big) W.orbBoost--;
   const col=ELEM[MELEM].color, mesh=makeOrb(col,big);
-  PROJ.push({kind:'orb',mesh,x:P.x+dx*.7,z:P.z+dz*.7,y:1.35,vx:dx*15,vz:dz*15,life:.95,dmg:big?48:30,r:big?3.1:2.1,big,el:MELEM});
+  PROJ.push({kind:'orb',mesh,x:P.x+dx*.7,z:P.z+dz*.7,y:1.35,vx:dx*15,vz:dz*15,life:.95,dmg:big?50:32,r:big?3.1:2.1,big,el:MELEM});
 }
 function orbBurst(p){
   const E=ELEM[p.el], hit=mobsNear(p.x,p.z,p.r);
@@ -2279,10 +2318,10 @@ function jobAttack(){
   if (P.atkCd>0){ if (P.atkCd<.18) P.buffer=true; return; }
   P.buffer=false; P.lastAtk=W.t;
   if (JOB==='archer'){
-    P.atkCd=.36; aimAt(17); const ang=Math.atan2(P.fx,P.fz);
-    knightAttackAnim('shoot',2.4); SFX.zap(); shootArrow(ang,{dmg:28});
+    P.atkCd=.3; archerAim(18); const ang=Math.atan2(P.fx,P.fz);
+    knightAttackAnim('shoot',2.4); SFX.zap(); shootArrow(ang,{dmg:22});
   } else {
-    P.atkCd=.58; aimAt(15); const ang=Math.atan2(P.fx,P.fz);
+    P.atkCd=.8; aimAt(12); const ang=Math.atan2(P.fx,P.fz);
     knightAttackAnim('cast',2.2); SFX.zap(); castOrb(ang);
   }
 }
@@ -2319,7 +2358,7 @@ function dashTick(dt){
   if (n){ hitStop=Math.max(hitStop,.05); SFX.hit(true); }
 }
 function archerVolley(){
-  P.spinCd=JOBS.archer.skillCd; aimAt(17);
+  P.spinCd=JOBS.archer.skillCd; archerAim(18);
   P.ddx=-P.fx; P.ddz=-P.fz; P.dodgeT=.2; W.invuln=Math.max(W.invuln||0,W.t+.3); P.backstep=true;
   const ang=Math.atan2(P.fx,P.fz);
   if (knight) knight.anim.once('shoot',2.4,true);
@@ -2404,9 +2443,9 @@ function renderJobPick(){
   $('#elemPick').hidden=JOB!=='mage';
   $('#elemPick').querySelectorAll('[data-elem]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.elem===MELEM)));
   const J=JOBS[JOB];
-  $('#jobDesc').textContent=JOB==='knight'?'틀려도 버틴다 · 체력 150% · 막기와 반격 · 오답 너프 절반, 정답이면 방어막'
-    :JOB==='archer'?'연달아 맞히면 강해진다 · 체력 75%, 빠른 이동 · 자동 조준 화살 · 연속 정답마다 치명타, 5연속이면 관통'
-    :`많이 풀수록 강해진다 · 체력 80% · ${ELEM[MELEM].name} 구슬이 터져요 · 퀴즈 효과 1.5배 · 기둥 퀴즈마다 구슬이 커져요`;
+  $('#jobDesc').textContent=JOB==='knight'?'보통 · 붙어서 싸워요 · 체력 150% · 막기와 반격 · 오답 너프 절반, 정답이면 방어막'
+    :JOB==='archer'?'어려움 · 마우스로 직접 조준(커서 앞 20도는 살짝 보정) · 빠른 연사 · 체력 75% · 연속 정답마다 치명타, 5연속이면 관통'
+    :`쉬움 · 가까운 적 자동 조준 · 느리지만 ${ELEM[MELEM].name} 구슬이 터져 주변까지 · 체력 80% · 퀴즈 효과 1.5배`;
 }
 function setJob(j,el){
   if (j && JOBS[j]) JOB=j; if (el && ELEM[el]) MELEM=el;
@@ -2850,11 +2889,12 @@ function startGame(){
   { applyPlay(); const pu=DATA.units.find(u=>u.id===playUnit); applyZoneCfg(zcfgOf(pu)); setMap(PLAYMAP||mapOf(pu)); }
   PEACE_RUN=PEACE && PEACE_MAPS.includes(MAPK);
   if (PEACE_RUN) WAVES=WAVESETS[MAPK+'_peace'];
-  document.body.classList.toggle('peace',PEACE_RUN);
+  document.body.classList.toggle('peace',PEACE_RUN); document.body.classList.toggle('aim-mouse',JOB==='archer'&&!PEACE_RUN);
   startQualityMonitor();
   applyLook(jobLook()); applyJobHUD(); loadParts('rogue').catch(()=>{});
   $('#title').hidden=true; $('#end').hidden=true;
   ['#hud','#hint','#touch','#skillbar'].forEach(s=>$(s).hidden=false);
+  setTimeout(()=>{ W.snapCam=true; },0);
   if (PEACE_RUN) $('#hint').textContent='🕊️ 평화 모드 · WASD 이동 · Shift '+(JOB==='knight'?'막기':'구르기')+' · '+(MAPK==='island'?'상자에 다가가면 집어요 · 배달 깔개에 서면 배달':'빛나는 수정에 다가가 퀴즈를 맞혀 포탑을 깨워요');
   reset(); canvas.focus({preventScroll:true});
 }
@@ -4073,7 +4113,8 @@ function frame(now){
   // 배경 움직임
   for (const c of clouds){ c.position.x+=c.userData.v*dt; if (c.position.x>130) c.position.x=-130; }
   smokeT-=dt; if (smokeT<=0){ smokeT=.5; if (MAPK==='zones') fx.smoke(29.2,5.4,7.6); }
-  updateDefenseLook(real,dt); islandLook(real,dt);
+  updateDefenseLook(real,dt); islandLook(real,dt); aimTick(real);
+  if (MOUSE.held && JOB!=='archer' && W.state==='play' && !W.paused) attack();
   fx.update(dt); updateCombatFx(dt); updateDreamy(real); qualityTick(now);
 
   // 해 · 카메라
@@ -4081,7 +4122,7 @@ function frame(now){
   const inLobby=lobbyTick(real,dt);
   if (!shopCamera(real) && !inLobby){
     const target=new THREE.Vector3(P.x,0,P.z);
-    camera.position.lerp(target.clone().add(camOff), W.state==='play'?.12:1);
+    camera.position.lerp(target.clone().add(camOff), W.state==='play'&&!W.snapCam?.12:1); W.snapCam=false;
     camera.lookAt(P.x,1.4,P.z);
   }
   if (shake>0){ shake=Math.max(0,shake-dt); camera.position.x+=rnd(-1,1)*shake*.9; camera.position.y+=rnd(-1,1)*shake*.9; }
