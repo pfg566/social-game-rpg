@@ -61,6 +61,18 @@ h1{font-family:var(--display);font-weight:400;font-size:clamp(26px,5vw,34px);mar
 .tablewrap{overflow-x:auto}
 table{width:100%;border-collapse:collapse;font-size:13px}
 th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap;vertical-align:top}
+#pBalance{display:grid;gap:10px}
+.bal-filters{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end}
+.bal-note{margin:0;font-size:12.5px;color:var(--muted);flex:1 1 260px}
+.bal-h{margin:8px 0 0;font-size:15px}
+.bal-help{margin:0;font-size:12px;color:var(--muted)}
+.srcrow{display:grid;grid-template-columns:110px minmax(0,1fr) 120px;gap:10px;align-items:center;font-size:13px;margin:6px 0}
+.srcbar{display:flex;height:16px;border-radius:6px;overflow:hidden;background:#eef1f6}
+.srcbar i{display:block;height:100%}
+.srckey{display:flex;flex-wrap:wrap;gap:12px;font-size:12px;color:var(--muted)}
+.srckey span::before{content:"";display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px;background:var(--c)}
+.verdict{display:inline-block;font-size:11.5px;font-weight:700;padding:1px 8px;border-radius:999px;border:1.5px solid}
+.verdict.easy{color:var(--accent);border-color:var(--accent)} .verdict.ok{color:var(--good);border-color:var(--good)} .verdict.hard{color:var(--bad);border-color:var(--bad)} .verdict.few{color:var(--muted);border-color:#c9cfdc}
 th{font-size:12px;color:var(--muted);font-weight:700;background:#f4f6fa;position:sticky;top:0;cursor:pointer;user-select:none}
 th[data-sort]:hover{color:var(--ink)}
 td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
@@ -166,6 +178,7 @@ input.rename{border:2px solid var(--line);border-radius:6px;padding:2px 6px;widt
       <button class="tab" role="tab" data-tab="students" aria-selected="true">학생별</button>
       <button class="tab" role="tab" data-tab="records" aria-selected="false">전체 기록</button>
       <button class="tab" role="tab" data-tab="missed" aria-selected="false">많이 틀린 문제</button>
+      <button class="tab" role="tab" data-tab="balance" aria-selected="false">난이도 분석</button>
       <button class="tab" role="tab" data-tab="classes" aria-selected="false">학급 관리</button>
       <button class="tab" role="tab" data-tab="roster" aria-selected="false">학생 명단</button>
       <button class="tab" role="tab" data-tab="manage" aria-selected="false">관리</button>
@@ -174,6 +187,22 @@ input.rename{border:2px solid var(--line);border-radius:6px;padding:2px 6px;widt
     <section class="card panel" id="pStudents"><div class="tablewrap"><table id="tblStudents"></table></div></section>
     <section class="card panel" id="pRecords" hidden><div class="tablewrap"><table id="tblRecords"></table></div></section>
     <section class="card panel" id="pMissed" hidden><div class="miss" id="missList"></div></section>
+    <section class="card panel" id="pBalance" hidden>
+      <div class="bal-filters">
+        <label class="f"><span>맵</span><select id="bMap"><option value="">모든 맵</option><option value="zones">세 거점 맵</option><option value="general">들판 마을 맵</option><option value="defense">성벽 디펜스 맵</option><option value="island">서비스업 섬 맵</option></select></label>
+        <label class="f"><span>난이도</span><select id="bEase"><option value="">모두</option><option value="0">보통</option><option value="1">쉬움</option><option value="2">아주 쉬움</option><option value="-1">영웅 모드</option></select></label>
+        <p class="bal-note" id="bNote"></p>
+      </div>
+      <h3 class="bal-h">직업별 비교</h3>
+      <div class="tablewrap"><table id="bJobs"></table></div>
+      <p class="bal-help">판정 기준: 승률 90% 이상이면서 가장 낮았던 체력이 평균 60% 이상이면 <b>너무 쉬움</b>, 승률 50% 미만이거나 최저 체력 평균 15% 미만이면 <b>어려움</b>이에요.</p>
+      <h3 class="bal-h">피해는 어디서 받았나</h3>
+      <div id="bSrc"></div>
+      <h3 class="bal-h">어디서 쓰러지나 (게임 오버 판의 웨이브)</h3>
+      <div class="tablewrap"><table id="bWave"></table></div>
+      <h3 class="bal-h">조작 활용</h3>
+      <div class="tablewrap"><table id="bSkill"></table></div>
+    </section>
     <section id="pClasses" hidden>
       <div class="manage">
         <div class="card box">
@@ -336,8 +365,46 @@ function render(){
   $('#tScore').textContent=plays?Math.round(VIEW.reduce((a,r)=>a+(r.score|0),0)/plays):0;
   $('#tWin').textContent=plays?`승리 ${VIEW.filter(r=>r.win).length}판 (${Math.round(VIEW.filter(r=>r.win).length/plays*100)}%)`:'';
   $('#tRate').textContent=sumA?Math.round(sumC/sumA*100)+'%':'0%'; $('#tQ').textContent=`푼 문제 ${sumA}개 · 맞힌 문제 ${sumC}개`;
-  renderStudents(); renderRecords(); renderMissed();
+  renderStudents(); renderRecords(); renderMissed(); renderBalance();
 }
+/* 난이도 분석: 게임이 판마다 남기는 전투 기록(cs)으로 직업별 난이도를 봐요 */
+const JOBNAME={knight:'기사',archer:'궁수',mage:'마법사'}, ELNAME={fire:'불',ice:'얼음',bolt:'번개'};
+const jobLabel=j=>{ const [a,b]=String(j||'').split(':'); return (JOBNAME[a]||a||'?')+(b?` (${ELNAME[b]||b})`:''); };
+const SRC=[['melee','근접 몹','#8b5cf6'],['ranged','석궁병','#e0434a'],['boss','보스','#4b5563'],['quiz','오답 너프','#c27a00']];
+function renderBalance(){
+  const mp=$('#bMap').value, ez=$('#bEase').value;
+  const withCs=VIEW.filter(r=>r.cs&&r.job);
+  const rows=withCs.filter(r=>(!mp||r.map===mp)&&(ez===''||String(r.ease)===ez));
+  const old=VIEW.length-withCs.length;
+  $('#bNote').textContent=`전투 기록이 있는 판 ${rows.length}개를 분석해요.`+(old?` (업데이트 전 기록 ${old}판은 전투 기록이 없어 빠져요.)`:'');
+  const by=new Map(); rows.forEach(r=>{ const k=String(r.job).split(':')[0]; if (!by.has(k)) by.set(k,[]); by.get(k).push(r); if (r.job.includes(':')){ if (!by.has(r.job)) by.set(r.job,[]); by.get(r.job).push(r); } });
+  const order=['knight','archer','mage','mage:fire','mage:ice','mage:bolt'].filter(k=>by.has(k));
+  const avg=(a,f)=>a.length?a.reduce((s,r)=>s+(+f(r)||0),0)/a.length:0;
+  const cols=['직업','판 수','승률','평균 받은 피해','최저 체력 평균','부활한 판','평균 시간(승리)','평균 처치','분당 준 피해','정답률','판정'];
+  if (!order.length){ $('#bJobs').innerHTML='<tr><td class="empty">아직 전투 기록이 있는 판이 없어요. 업데이트한 게임으로 학생들이 플레이하면 여기에 쌓여요.</td></tr>'; $('#bSrc').innerHTML=''; $('#bWave').innerHTML=''; $('#bSkill').innerHTML=''; return; }
+  $('#bJobs').innerHTML='<thead><tr>'+cols.map((c,i)=>`<th class="${i?'num':''}">${c}</th>`).join('')+'</tr></thead><tbody>'+order.map(k=>{
+    const a=by.get(k), n=a.length, win=a.filter(r=>r.win).length/n, minHp=avg(a,r=>r.cs.minHp), wins=a.filter(r=>r.win);
+    const dpm=avg(a,r=>r.timeSec?r.cs.dealt/(r.timeSec/60):0), c=a.reduce((s,r)=>s+(r.correct|0),0), q=a.reduce((s,r)=>s+(r.asked|0),0);
+    const v=n<5?['few','기록 부족']:win>=.9&&minHp>=60?['easy','너무 쉬움']:(win<.5||minHp<15)?['hard','어려움']:['ok','적당'];
+    const sub=k.includes(':');
+    return `<tr><td>${sub?'&nbsp;&nbsp;└ ':''}<b>${esc(jobLabel(k))}</b></td><td class="num">${n}</td><td class="num">${rateBar(Math.round(win*100))}</td><td class="num">${Math.round(avg(a,r=>r.cs.taken))}${a[0].cs.hpMax?` <small style="color:var(--muted)">/ 체력 ${a[0].cs.hpMax}</small>`:''}</td><td class="num">${Math.round(minHp)}%</td><td class="num">${Math.round(a.filter(r=>r.cs.rv).length/n*100)}%</td><td class="num">${wins.length?fmtDur(Math.round(avg(wins,r=>r.timeSec))):'-'}</td><td class="num">${avg(a,r=>r.kills).toFixed(1)}</td><td class="num">${Math.round(dpm)}</td><td class="num">${q?Math.round(c/q*100):0}%</td><td><span class="verdict ${v[0]}">${v[1]}</span></td></tr>`; }).join('')+'</tbody>';
+  // 피해 출처
+  $('#bSrc').innerHTML='<div class="srckey">'+SRC.map(([k,l,c])=>`<span style="--c:${c}">${l}</span>`).join('')+'</div>'+order.filter(k=>!k.includes(':')).map(k=>{
+    const a=by.get(k), tot=SRC.reduce((s,[x])=>s+a.reduce((t,r)=>t+(r.cs[x]|0),0),0)||1;
+    const parts=SRC.map(([x,l,c])=>{ const v=a.reduce((t,r)=>t+(r.cs[x]|0),0); return [l,c,v/tot]; });
+    return `<div class="srcrow"><b>${esc(jobLabel(k))}</b><div class="srcbar" role="img" aria-label="${esc(jobLabel(k))} 피해 출처: ${parts.map(([l,,p])=>`${l} ${Math.round(p*100)}%`).join(', ')}">${parts.map(([l,c,p])=>p>0?`<i title="${l} ${Math.round(p*100)}%" style="width:${p*100}%;background:${c}"></i>`:'').join('')}</div><small style="color:var(--muted)">${parts.filter(x=>x[2]>=.1).map(([l,,p])=>`${l} ${Math.round(p*100)}%`).join(' · ')||'피해 없음'}</small></div>`; }).join('');
+  // 쓰러진 웨이브
+  const loses=rows.filter(r=>!r.win), maxW=Math.max(1,...loses.map(r=>r.cs.wv|0));
+  const wcols=Array.from({length:maxW},(_,i)=>i+1);
+  $('#bWave').innerHTML=loses.length?'<thead><tr><th>직업</th><th class="num">게임 오버</th>'+wcols.map(w=>`<th class="num">웨이브 ${w}</th>`).join('')+'</tr></thead><tbody>'+order.filter(k=>!k.includes(':')).map(k=>{
+      const a=by.get(k).filter(r=>!r.win); return `<tr><td><b>${esc(jobLabel(k))}</b></td><td class="num">${a.length}</td>`+wcols.map(w=>{ const n=a.filter(r=>(r.cs.wv|0)===w).length; return `<td class="num">${n||'-'}</td>`; }).join('')+'</tr>'; }).join('')+'</tbody>'
+    :'<tr><td class="empty">게임 오버된 판이 없어요.</td></tr>';
+  // 조작 활용
+  $('#bSkill').innerHTML='<thead><tr><th>직업</th><th class="num">Shift 사용(판당)</th><th class="num">막은 피해(기사)</th><th class="num">석궁 화살 피함</th><th class="num">필살기 사용(판당)</th></tr></thead><tbody>'+order.filter(k=>!k.includes(':')).map(k=>{
+    const a=by.get(k), shots=a.reduce((s,r)=>s+(r.cs.shots|0),0), ev=a.reduce((s,r)=>s+(r.cs.evaded|0),0);
+    return `<tr><td><b>${esc(jobLabel(k))}</b></td><td class="num">${avg(a,r=>r.cs.dodges).toFixed(1)}</td><td class="num">${k==='knight'?Math.round(avg(a,r=>r.cs.blocked)):'-'}</td><td class="num">${shots?`${ev}/${shots}발`:'-'}</td><td class="num">${avg(a,r=>r.cs.ults).toFixed(1)}</td></tr>`; }).join('')+'</tbody>';
+}
+['#bMap','#bEase'].forEach(sel=>$(sel).addEventListener('change',renderBalance));
 function th(cols,sort,id){
   return '<thead><tr>'+cols.map(([k,l,num])=>`<th data-sort="${k}" data-t="${id}" class="${num?'num':''}">${l}${sort.k===k?(sort.d>0?' ▲':' ▼'):''}</th>`).join('')+'</tr></thead>';
 }
@@ -382,7 +449,7 @@ $('#tabs').addEventListener('click',e=>{ const b=e.target.closest('[data-tab]');
   document.querySelectorAll('.tab').forEach(t=>t.setAttribute('aria-selected',String(t===b)));
   $('#pClasses').hidden=tab!=='classes';
   $('#pRoster').hidden=tab!=='roster'; if (tab==='roster'&&!RS.cls&&$('#rsCls').options.length>1){ $('#rsCls').selectedIndex=1; rsWatch(); }
-  $('#pStudents').hidden=tab!=='students'; $('#pRecords').hidden=tab!=='records'; $('#pMissed').hidden=tab!=='missed'; $('#pManage').hidden=tab!=='manage'; });
+  $('#pStudents').hidden=tab!=='students'; $('#pRecords').hidden=tab!=='records'; $('#pMissed').hidden=tab!=='missed'; $('#pManage').hidden=tab!=='manage'; $('#pBalance').hidden=tab!=='balance'; });
 
 /* CSV */
 $('#csv').addEventListener('click',()=>{

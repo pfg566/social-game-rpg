@@ -66,6 +66,8 @@ button:focus-visible{outline:3px solid var(--sun);outline-offset:2px}
 .gate{padding:8px 14px;font-family:var(--display);font-size:17px;text-align:center;background:var(--sun)}
 .door-row{display:grid;gap:4px}
 .hpbar.door{background:#efe0c4}
+.hpbar.parcel{background:#f3e6cc}
+.hpbar.parcel i{background:linear-gradient(90deg,#c27a1a,#f0b44a)}
 .hpbar.door i{background:linear-gradient(90deg,#9a5b1e,#d9932f)}
 .eyebrow .mapname{display:inline-block;margin-left:6px;padding:1px 8px;border-radius:999px;background:var(--ink);color:#fff;font-size:12px;vertical-align:1px}
 .bossbar{padding:8px 12px}
@@ -347,6 +349,7 @@ body.hero .vitals{border-color:#c27a00;box-shadow:4px 4px 0 #c27a00}
     <div class="who" id="hudNick"></div>
     <div class="hp-row"><span>체력</span><b id="hpTxt">100 / 100</b></div>
     <div class="hpbar"><i id="hpBar" style="width:100%"></i></div>
+    <div class="door-row" id="parcelRow" hidden><div class="hp-row"><span>택배 배달</span><b id="parcelTxt">0 / 0</b></div><div class="hpbar parcel"><i id="parcelBar" style="width:0%"></i></div></div>
     <div class="door-row" id="doorRow" hidden><div class="hp-row"><span>성문</span><b id="doorTxt">500 / 500</b></div><div class="hpbar door"><i id="doorBar" style="width:100%"></i></div></div>
     <div class="meta"><span>웨이브 <b id="waveTxt">1/3</b></span><span>처치 <b id="killTxt">0</b></span><span>정답 <b id="corTxt">0/0</b></span></div>
   </div>
@@ -566,7 +569,7 @@ body.hero .vitals{border-color:#c27a00;box-shadow:4px 4px 0 #c27a00}
         <button class="btn small ghost" id="edUnitRename">이름 바꾸기</button>
         <button class="btn small ghost" id="edUnitActive">수업 단원으로 지정</button>
       </div>
-      <label class="fld"><span>맵</span><select id="edMap"><option value="zones">세 거점 맵 · 거점 이름을 단원에 맞게 바꿔요 (4가지 유형 모두 필요)</option><option value="general">들판 마을 맵 · 어느 단원이든 (4지선다 + O/X만 있으면 돼요)</option><option value="defense">성벽 디펜스 맵 · 어느 단원이든 (4지선다 + O/X만 있으면 돼요)</option></select></label>
+      <label class="fld"><span>맵</span><select id="edMap"><option value="zones">세 거점 맵 · 거점 이름을 단원에 맞게 바꿔요 (4가지 유형 모두 필요)</option><option value="general">들판 마을 맵 · 어느 단원이든 (4지선다 + O/X만 있으면 돼요)</option><option value="defense">성벽 디펜스 맵 · 어느 단원이든 (4지선다 + O/X만 있으면 돼요)</option><option value="island">서비스업 섬 맵 · 택배를 배달하며 싸워요 (4지선다 + O/X만 있으면 돼요)</option></select></label>
       <div class="zcfgbox" id="edZcfg" hidden>
         <div class="zc-head"><b>세 거점 이름</b><span>빠른 설정:</span><span id="edZPresets"></span></div>
         <div class="zc-grid">
@@ -749,6 +752,11 @@ const WAVESETS = {
   {name:'해골 병사', n:4, hp:60, spd:2.2, dmg:8, color:0xe0434a},
   {name:'해골 도적단', n:6, hp:90, spd:2.6, dmg:10, color:0x8b5cf6},
   {name:'해골 장군', n:3, hp:90, spd:2.5, dmg:10, color:0x8b5cf6, boss:{...BOSS_BASE}}],
+ island:[
+  {name:'배송 방해 해골', n:3, hp:60, spd:2.2, dmg:8, color:0xe0434a, parcels:3},
+  {name:'상자 도둑 해골단', n:3, hp:80, spd:2.4, dmg:9, color:0x8b5cf6, parcels:4, thieves:[{at:5,n:1},{at:16,n:2}]},
+  {name:'해적 해골 습격', n:4, hp:90, spd:2.5, dmg:10, color:0x8b5cf6, parcels:5, thieves:[{at:4,n:2},{at:18,n:2}]},
+  {name:'해적 해골 선장', n:2, hp:90, spd:2.5, dmg:10, color:0x8b5cf6, boss:{...BOSS_BASE, hp:760}}],
  defense:[
   {name:'해골 선봉대', n:0, hp:60, spd:2.1, dmg:8, color:0xe0434a, groups:[{n:5,at:0},{n:5,at:9}]},
   {name:'해골 돌격대', n:0, hp:80, spd:2.3, dmg:9, color:0x8b5cf6, groups:[{n:5,at:0},{n:4,at:6,runner:true},{n:5,at:14}]},
@@ -768,6 +776,11 @@ const MAPS = {
   rules:['<b>지식의 수정:</b> 마을의 빛나는 수정 3개에 다가가면 4지선다 문제. 맞히면 다음 웨이브가 열려요','<b>돌발 퀴즈:</b> 30초마다 4지선다 문제가 나와요','<b>지식 카드:</b> 몬스터가 떨어뜨려요. 주우면 O/X 문제',BOSS_RULE,'정답은 강화, 오답은 약화 · 틀린 문제는 다시 나와요 · 체력 0이면 게임 오버'],
   gateText:'잠김 · 빛나는 지식의 수정에서 퀴즈를 맞히면 다음 웨이브가 열려요', clearText:'웨이브 클리어! 지식의 수정에서 다음 웨이브를 여세요',
   winTitle:'마을을 지켜 냈어요!', winMsg:'이번 단원의 핵심을 잘 알고 있네요. 아래 틀린 문제를 한 번 더 읽어 보고 마무리해요.'},
+ island:{name:'서비스업 섬 맵', need:['mc','ox'], start:[0,7], recharge:30,
+  desc:'물류 센터에 도착한 택배를 섬 마을로 배달하세요. 상자를 노리는 도둑 해골을 막고, 마지막에는 해적 해골 선장을 물리쳐요.',
+  rules:['<b>택배:</b> 물류 센터(북쪽 부두)에 상자가 와요. 다가가면 집어 들고 4지선다나 O/X 문제가 나와요. 맞히면 빨리 달려요','<b>배달:</b> 주황 화살표와 빛기둥을 따라 배달지 문 앞 깔개에 서면 배달 완료. 체력도 조금 회복돼요','<b>도둑 해골:</b> 주황색 해골은 바닥의 상자를 훔쳐 바다로 달아나요. 쓰러뜨리면 상자를 되찾아요','<b>지식의 수정:</b> 웨이브가 끝나면 수정 3개 중 하나의 퀴즈를 맞혀야 다음 웨이브가 열려요',BOSS_RULE,'정답은 강화, 오답은 약화 · 틀린 문제는 다시 나와요 · 체력 0이면 게임 오버'],
+  gateText:'잠김 · 빛나는 지식의 수정에서 퀴즈를 맞히면 다음 웨이브가 열려요', clearText:'웨이브 클리어! 지식의 수정에서 다음 웨이브를 여세요',
+  winTitle:'섬 마을 배송 완료!', winMsg:'전자 상거래와 택배 산업이 섬 마을을 세계와 이어 줬어요. 아래 틀린 문제를 한 번 더 읽어 보고 마무리해요.'},
  defense:{name:'성벽 디펜스 맵', need:['mc','ox'], start:[0,-1], recharge:22,
   desc:'해골 군단이 남쪽에서 성문으로 몰려와요. 퀴즈로 성벽 포탑을 깨우고, 성문이 무너지지 않게 지키세요.',
   rules:['<b>성문:</b> 몬스터가 성문을 부숴요. 성문 체력이 0이 되면 게임 오버','<b>포탑 수정:</b> 성벽 앞 수정 3개. 맞히면 그 포탑이 20초 동안 자동으로 공격하고, 웨이브 사이에는 다음 웨이브도 열려요','<b>웨이브 4개:</b> 몬스터가 왼쪽·가운데·오른쪽 길로 여러 무리로 나눠 와요. 주황색 돌격병은 나를 무시하고 성문으로만 달려가요','<b>돌발 퀴즈:</b> 맞히면 성문 수리 +10%','<b>지식 카드:</b> 몬스터가 떨어뜨려요. 주우면 O/X 문제','<b>보스:</b> 보호막 4개는 퀴즈 정답으로만 깨져요. 내려찍기는 성문도 부숴요','성문에 붙은 몬스터는 가까이 가면 나를 쫓아와요. 끌어내서 처치하세요'],
@@ -909,6 +922,7 @@ function buildAllGrass(){
   const N=60000;
   within('zones',()=>buildGrass(N,(x,z)=>!zoneAt(x,z)&&Math.hypot(x-PLAZA.x,z-PLAZA.z)>PLAZA.r+.3&&!nearPath(x,z,1.9)&&!inCol(x,z)));
   within('general',()=>buildGrass(N,(x,z)=>Math.hypot(x,z-2)>6.8&&![[0,-15],[-15,11],[15,11]].some(([a,b])=>Math.hypot(x-a,z-b)<3.2)&&!nearSegs(GEN_SEGS,x,z,1.9)&&!inCol(x,z)));
+  within('island',()=>buildGrass(N,(x,z)=>Math.hypot(x,z)<ISL_R-2.8&&Math.hypot(x-ISL_PLAZA.x,z-ISL_PLAZA.z)>ISL_PLAZA.r+.3&&Math.hypot(x-ISL_DOCK.x,z-ISL_DOCK.z)>3.6&&!ISL_STATIONS.some(([a,b])=>Math.hypot(x-a,z-b)<3.2)&&!ISL_HOUSES.some(h=>Math.hypot(x-h.x,z-h.z)<2)&&!nearSegs(ISL_SEGS,x,z,1.7)&&!inCol(x,z)));
   within('defense',()=>buildGrass(N,(x,z)=>(z>-13.1||z<-15.2)&&![[-15,-8.2],[0,-6.4],[15,-8.2]].some(([a,b])=>Math.hypot(x-a,z-b)<3.2)&&!nearSegs(DEF_SEGS,x,z,2.7)&&!inCol(x,z)));
 }
 
@@ -972,10 +986,11 @@ const ground=new THREE.Mesh(new THREE.PlaneGeometry(220,220),toonMat({map:grassT
 ground.rotation.x=-Math.PI/2; ground.receiveShadow=true; scene.add(ground);
 
 /* 맵마다 장면 묶음 · 충돌 상자 · 기둥 · 사람을 따로 두고, 고른 맵만 보여 줘요 */
-const MAP_KEYS=['zones','general','defense'];
+const MAP_KEYS=['zones','general','defense','island'];
 const MAPSTATE={}, mapGroups={};
 MAP_KEYS.forEach(k=>{ MAPSTATE[k]={colliders:[],stations:[],npcs:[]}; mapGroups[k]=new THREE.Group(); scene.add(mapGroups[k]); });
 let MAPK='zones';
+const bgGroup=new THREE.Group(); scene.add(bgGroup);
 let colliders=MAPSTATE.zones.colliders, stations=MAPSTATE.zones.stations, npcs=MAPSTATE.zones.npcs;
 function within(k,fn){
   const prev={colliders,stations,npcs,MAPK};
@@ -1150,12 +1165,15 @@ function buildWorld(){
   /* ===== 들판 마을 맵 · 성벽 디펜스 맵 ===== */
   within('general',buildGeneral);
   within('defense',buildDefense);
+  within('island',buildIsland);
 
-  /* 모든 맵이 함께 쓰는 배경: 나무 띠 · 언덕 · 산 · 구름 */
+  /* 모든 맵이 함께 쓰는 배경: 나무 띠 · 언덕 · 산 (섬 맵에서는 바다라서 숨겨요) · 구름 */
+  scene.add=function(){ bgGroup.add.apply(bgGroup,arguments); return scene; };
   for (let i=0;i<34;i++){ const a=i/34*Math.PI*2+rnd(-.05,.05), r=rnd(38,45);
     place(i%2?'trees_A_large':'trees_B_medium',Math.cos(a)*r,Math.sin(a)*r,rnd(4.5,6),rnd(0,6),false); }
   for (let i=0;i<14;i++){ const a=i/14*Math.PI*2+.2, r=rnd(52,60); place(i%2?'hills_A_trees':'hills_B_trees',Math.cos(a)*r,Math.sin(a)*r,rnd(8,11),rnd(0,6),false); }
   for (let i=0;i<10;i++){ const a=i/10*Math.PI*2+rnd(-.1,.1), r=rnd(72,85); place(i%2?'mountain_A_grass_trees':'mountain_B_grass_trees',Math.cos(a)*r,Math.sin(a)*r,rnd(13,18),rnd(0,6),false); }
+  delete scene.add;
   for (let i=0;i<8;i++){ const c=GL.cloud_big.scene.clone(true); c.traverse(o=>{ if (o.isMesh){ o.material=o.material.clone(); o.material.emissive=new THREE.Color(0xffffff); o.material.emissiveIntensity=.35; o.material.fog=false; } });
     c.scale.setScalar(rnd(5,8)); c.position.set(rnd(-120,120),rnd(36,48),rnd(-110,30)); c.userData.v=rnd(.6,1.4); scene.add(c); clouds.push(c); }
   /* 주인공 */
@@ -1287,7 +1305,7 @@ function updateBolts(dt){
     const b=bolts[i], p=b.mesh.position, m=b.m;
     const tx=m.x, ty=m.boss?2.4:1.1, tz=m.z, dx=tx-p.x, dy=ty-p.y, dz=tz-p.z, d=Math.hypot(dx,dy,dz), step=34*dt;
     if (m.dying>=0 || d<=step+.2){
-      if (m.dying<0) hitMob(m,TURRET_DMG,b.sx,b.sz,.4,'#'+b.t.color.toString(16).padStart(6,'0'),false);
+      if (m.dying<0) hitMob(m,TURRET_DMG,b.sx,b.sz,.4,'#'+b.t.color.toString(16).padStart(6,'0'),false,{src:'turret'});
       fx.burst(p.x,p.y,p.z,b.t.color,8,3); scene.remove(b.mesh); bolts.splice(i,1); continue;
     }
     p.x+=dx/d*step; p.y+=dy/d*step; p.z+=dz/d*step;
@@ -1310,6 +1328,219 @@ function updateDefenseLook(real,dt){
     t.orbit.visible=t.orbit2.visible=on; if (on){ t.orbit.rotation.set(real*1.6,real*.8,0); t.orbit2.rotation.set(-real,0,real*1.3); const sc=left<5?.6+.4*Math.abs(Math.sin(real*8)):1; t.orbit.scale.setScalar(sc); t.orbit2.scale.setScalar(sc); }
   }
 }
+
+/* ---------- 서비스업 섬 맵: 물류 센터에 도착한 택배를 마을로 배달해요 ---------- */
+const ISL_R=30, ISL_DOCK={x:0,z:-21.5}, ISL_PLAZA={x:0,z:2,r:4.6};
+const ISL_SEGS=[], ISL_HOUSES=[], ISL_STATIONS=[[-10.5,-7],[10.5,-7],[0,12.5]];
+let parcels=[], islBeam=null, islRing=null, islArrow=null, islBoat=null, islWater=null;
+const PARCEL_COL=0xe0a040;
+function islandOK(x,z,m){ return Math.hypot(x,z)<ISL_R-(m||0); }
+function smallTag(text,color){
+  const cv=document.createElement('canvas'); cv.width=320; cv.height=96; const g=cv.getContext('2d');
+  g.fillStyle='rgba(18,22,34,.86)'; roundRect(g,4,4,312,88,20); g.fill();
+  g.fillStyle=color; roundRect(g,4,4,16,88,8); g.fill();
+  g.strokeStyle='rgba(232,200,120,.85)'; g.lineWidth=3; roundRect(g,6,6,308,84,18); g.stroke();
+  g.fillStyle='#f7f1e3'; g.textAlign='center'; g.textBaseline='middle'; g.font='44px Jua, "Malgun Gothic", sans-serif'; g.fillText(text,166,52);
+  const t=new THREE.CanvasTexture(cv); t.encoding=THREE.sRGBEncoding;
+  const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:t,fog:false,toneMapped:false})); sp.scale.set(4.2,1.26,1); return sp;
+}
+const boxTex=canvasTex(128,128,(g,w,h)=>{ g.fillStyle='#c8955a'; g.fillRect(0,0,w,h);
+  for (let i=0;i<300;i++){ g.fillStyle=`rgba(90,55,20,${rnd(.03,.09)})`; g.fillRect(Math.random()*w,Math.random()*h,rnd(2,8),1); }
+  g.fillStyle='#e8d29a'; g.fillRect(w*.42,0,w*.16,h); g.strokeStyle='rgba(80,50,20,.6)'; g.lineWidth=4; g.strokeRect(2,2,w-4,h-4); });
+boxTex.wrapS=boxTex.wrapT=THREE.ClampToEdgeWrapping;
+const boxGeo=new THREE.BoxGeometry(.72,.56,.72), boxMat=toonMat({map:boxTex,rim:.25});
+function makeBox(){ const m=cs(new THREE.Mesh(boxGeo,boxMat),false); return m; }
+
+function buildIsland(){
+  /* 바다: 섬 둘레가 물결치고 파도가 부서져요 */
+  const lin=c=>new THREE.Color(c).convertSRGBToLinear();
+  const wm=new THREE.ShaderMaterial({fog:true,
+    uniforms:THREE.UniformsUtils.merge([THREE.UniformsLib.fog,{uTime:{value:0},uR:{value:ISL_R},uShal:{value:lin(0x5fc9d8)},uDeep:{value:lin(0x2a6fa8)}}]),
+    vertexShader:'varying vec2 vW;\n#include <fog_pars_vertex>\nvoid main(){ vec4 wp=modelMatrix*vec4(position,1.); vW=wp.xz; vec4 mvPosition=viewMatrix*wp; gl_Position=projectionMatrix*mvPosition;\n#include <fog_vertex>\n}',
+    fragmentShader:'uniform float uTime; uniform float uR; uniform vec3 uShal; uniform vec3 uDeep; varying vec2 vW;\n#include <common>\n#include <fog_pars_fragment>\n'+
+      'void main(){ float r=length(vW); float t=smoothstep(uR+1.,uR+16.,r); vec3 col=mix(uShal,uDeep,t);'+
+      'float w=sin(vW.x*.33+uTime*.7)*sin(vW.y*.29-uTime*.55)+.5*sin((vW.x+vW.y)*.8+uTime*1.3); col+=smoothstep(1.05,1.4,w)*.10;'+
+      'float a=atan(vW.y,vW.x); float e=r-(uR+1.2)+sin(a*14.+uTime*1.6)*.28+sin(a*5.-uTime)*.2; float f=1.-smoothstep(0.,1.4,e); col=mix(col,vec3(1.),f*.8);'+
+      'float f2=smoothstep(.15,0.,abs(e-2.2-sin(uTime*1.1)*.6)); col=mix(col,vec3(1.),f2*.35);'+
+      'gl_FragColor=vec4(col,1.);\n#include <tonemapping_fragment>\n#include <encodings_fragment>\n#include <fog_fragment>\n}'});
+  islWater=wm;
+  const water=new THREE.Mesh(new THREE.RingGeometry(ISL_R+.6,175,160,1),wm); water.rotation.x=-Math.PI/2; water.position.y=.06; scene.add(water);
+  /* 모래사장 */
+  const R2=ISL_R+2.4, rin=(ISL_R-3.2)/R2;
+  const sand=canvasTex(1024,1024,(g,w,h)=>{ const c=w/2;
+    const gr=g.createRadialGradient(c,c,0,c,c,c); gr.addColorStop(0,'rgba(230,207,150,0)'); gr.addColorStop(rin,'rgba(230,207,150,0)'); gr.addColorStop(rin+.05,'rgba(230,207,150,1)'); gr.addColorStop(1,'rgba(214,186,124,1)');
+    g.fillStyle=gr; g.fillRect(0,0,w,h);
+    g.globalCompositeOperation='source-atop'; for (let i=0;i<9000;i++){ g.fillStyle=Math.random()<.5?'rgba(150,120,70,.25)':'rgba(255,245,215,.35)'; g.fillRect(Math.random()*w,Math.random()*h,2,2); } });
+  sand.wrapS=sand.wrapT=THREE.ClampToEdgeWrapping; sand.repeat.set(1,1);
+  const sm=new THREE.Mesh(new THREE.CircleGeometry(R2,128),toonMat({map:sand,transparent:true,depthWrite:false}));
+  sm.rotation.x=-Math.PI/2; sm.position.y=.035; sm.receiveShadow=true; scene.add(sm);
+  /* 부두와 배 */
+  const wood=std(0x8a5a32,{roughness:.9}), wood2=std(0x6e4526,{roughness:.9});
+  for (let i=0;i<13;i++){ const p=cs(new THREE.Mesh(new THREE.BoxGeometry(3.4,.2,.82),i%2?wood:wood2)); p.position.set(0,.5,-(ISL_R-3+i*.95)); p.rotation.y=rnd(-.03,.03); scene.add(p); }
+  for (const x of [-1.6,1.6]) for (let i=0;i<4;i++){ const p=cs(new THREE.Mesh(new THREE.CylinderGeometry(.16,.18,1.6,8),wood2)); p.position.set(x,.2,-(ISL_R+.5+i*2.8)); scene.add(p); }
+  islBoat=new THREE.Group(); islBoat.position.set(4.4,0,-(ISL_R+6.5)); islBoat.rotation.y=Math.PI;
+  { const hg=new THREE.BoxGeometry(2.6,1.1,6.4,1,2,6), pa=hg.attributes.position;
+    for (let i=0;i<pa.count;i++){ const y=pa.getY(i), z=pa.getZ(i); let k=y<0?.62:1; if (z>1.6) k*=1-(z-1.6)/1.6*.85; pa.setX(i,pa.getX(i)*k); if (z>2.6&&y>0) pa.setY(i,y+.25); }
+    hg.computeVertexNormals();
+    const hull=cs(new THREE.Mesh(hg,std(0x9a4a2a,{flatShading:true}))); hull.position.y=.45; islBoat.add(hull);
+    const deck=cs(new THREE.Mesh(new THREE.BoxGeometry(2.3,.12,4.2),std(0xc89a62))); deck.position.set(0,1.02,-.4); islBoat.add(deck);
+    const stripe=new THREE.Mesh(new THREE.BoxGeometry(2.66,.16,4.4),std(0xf2ead6)); stripe.position.set(0,.78,-.5); islBoat.add(stripe);
+    const mast=cs(new THREE.Mesh(new THREE.CylinderGeometry(.09,.11,5.4,8),wood2)); mast.position.set(0,3.6,.2); islBoat.add(mast);
+    const sailT=canvasTex(256,256,(g,w,h)=>{ g.fillStyle='#f7f0dc'; g.fillRect(0,0,w,h); g.fillStyle='#e0a040'; roundRect(g,w*.3,h*.34,w*.4,h*.32,10); g.fill(); g.fillStyle='#f7f0dc'; g.fillRect(w*.47,h*.34,w*.06,h*.32); g.strokeStyle='rgba(120,90,50,.4)'; g.lineWidth=3; for (let y=20;y<h;y+=40){ g.beginPath(); g.moveTo(0,y); g.lineTo(w,y); g.stroke(); } });
+    sailT.wrapS=sailT.wrapT=THREE.ClampToEdgeWrapping;
+    const sg=new THREE.PlaneGeometry(3.2,3.6,6,1), sp=sg.attributes.position; for (let i=0;i<sp.count;i++){ const x=sp.getX(i); sp.setZ(i,(1-(x/1.6)*(x/1.6))*.45); } sg.computeVertexNormals();
+    const sail=cs(new THREE.Mesh(sg,toonMat({map:sailT,side:THREE.DoubleSide}))); sail.rotation.y=Math.PI/2; sail.position.set(0,3.9,.25); islBoat.add(sail);
+    for (let i=0;i<3;i++){ const b=makeBox(); b.position.set(rnd(-.6,.6),1.36,-1.4+i*.8); b.rotation.y=rnd(-.4,.4); islBoat.add(b); }
+  }
+  scene.add(islBoat);
+  /* 물류 센터 */
+  stoneDisc(ISL_DOCK.x,ISL_DOCK.z,3.3);
+  place('building_market_blue',-8.8,-20.5,3.4,2.6,.7);
+  place('tent',8.6,-20.8,5,3.6,.8);
+  [['crate_A_big',-4.6,-23.6,5],['crate_A_big',-4.1,-24.4,5],['crate_long_A',4.8,-23.8,5],['barrel',5.6,-22.6,5],['sack',-5.2,-18.6,6],['wheelbarrow',4.6,-18.2,5],['crate_A_big',-12.5,-16.5,5],['barrel',12.5,-17,5]]
+    .forEach(([n,x,z,s])=>place(n,x,z,s,rnd(0,6),false));
+  label('물류 센터','택배가 도착하는 곳','#e0a040',0,9,-26);
+  /* 광장과 길 */
+  stoneDisc(ISL_PLAZA.x,ISL_PLAZA.z,ISL_PLAZA.r);
+  dirtStrip(ISL_DOCK.x,ISL_DOCK.z+3.1,ISL_PLAZA.x,ISL_PLAZA.z-ISL_PLAZA.r+.3,ISL_SEGS);
+  /* 배달지: 집마다 문 앞에 배달 깔개가 있어요 */
+  const H=[['파랑 지붕 집','building_home_A_blue',-22.5,-6,4.2,'#3b6fd9'],['초록 지붕 집','building_home_B_green',-21,10,3.8,'#21966f'],['성당','building_church_green',-9.5,22,4.6,'#7c4dff'],
+           ['대장간','building_blacksmith_red',9.5,22,4.4,'#d9481f'],['풍차 농장','building_windmill_red',21,10,4.8,'#c98a00'],['광산','building_mine_red',22.5,-6,3.6,'#7a5a3a']];
+  H.forEach(([name,model,x,z,s,hex],i)=>{
+    const ry=Math.atan2(-x,-z);
+    const o=place(model,x,z,s,ry,.72); if (model==='building_windmill_red') lift(o);
+    const d=Math.hypot(x,z), ux=-x/d, uz=-z/d, sx=x+ux*4.6, sz=z+uz*4.6;
+    dirtStrip(ISL_PLAZA.x-ux*(ISL_PLAZA.r-.3),ISL_PLAZA.z-uz*(ISL_PLAZA.r-.3),sx+ux*.4,sz+uz*.4,ISL_SEGS,2.8);
+    const col=new THREE.Color(hex);
+    const rug=new THREE.Mesh(new THREE.CircleGeometry(1.5,32),toonMat({color:col.clone().lerp(new THREE.Color(0xf2ead6),.35)})); rug.rotation.x=-Math.PI/2; rug.position.set(sx,.045,sz); rug.receiveShadow=true; scene.add(rug);
+    const edge=new THREE.Mesh(new THREE.RingGeometry(1.5,1.75,40),new THREE.MeshBasicMaterial({color:col,side:THREE.DoubleSide})); edge.rotation.x=-Math.PI/2; edge.position.set(sx,.05,sz); scene.add(edge);
+    const tag=smallTag(name,hex); tag.position.set(x,s*1.7+2.2,z); scene.add(tag);
+    ISL_HOUSES.push({name,hex,x:sx,z:sz,hx:x,hz:z,tag,edge});
+  });
+  /* 지식의 수정 */
+  ISL_STATIONS.forEach(([x,z],i)=>{ const c=[0x9b6bff,0xffb72e,0x35c8e8][i], hex=['#7c4dff','#c98a00','#1b8fb0'][i]; stoneDisc(x,z,2.9); makeStation('any',x,z,c,{title:'지식의 수정',hex}); });
+  /* 나무 · 바위 · 먼 섬 */
+  const keep=[[ISL_PLAZA.x,ISL_PLAZA.z,ISL_PLAZA.r+2.5],[ISL_DOCK.x,ISL_DOCK.z,6],...ISL_STATIONS.map(([x,z])=>[x,z,4.5]),...ISL_HOUSES.map(h=>[h.x,h.z,3.2])];
+  let n=0; for (let i=0;i<300&&n<20;i++){ const x=rnd(-27,27), z=rnd(-27,27); if (!islandOK(x,z,4)||!clearSpot(x,z,3,ISL_SEGS,keep)) continue; place(Math.random()<.5?'tree_single_A':'tree_single_B',x,z,rnd(3.2,4.2),rnd(0,6),.25); n++; }
+  n=0; for (let i=0;i<300&&n<12;i++){ const a=rnd(0,6.283), r=rnd(ISL_R-3.5,ISL_R-1.2), x=Math.cos(a)*r, z=Math.sin(a)*r; if (z<-(ISL_R-10)&&Math.abs(x)<8) continue; if (!clearSpot(x,z,2,ISL_SEGS,keep)) continue; place(['rock_single_A','rock_single_C','rock_single_E'][n%3],x,z,rnd(2.6,4),rnd(0,6),false); n++; }
+  for (let i=0;i<7;i++){ const a=i/7*Math.PI*2+.4, r=rnd(92,118); place(i%2?'mountain_A_grass_trees':'mountain_B_grass_trees',Math.cos(a)*r,Math.sin(a)*r,rnd(11,16),rnd(0,6),false); }
+  for (let i=0;i<5;i++){ const a=i/5*Math.PI*2+1.1, r=rnd(62,72); place(i%2?'hills_A_trees':'hills_B_trees',Math.cos(a)*r,Math.sin(a)*r,rnd(6,8),rnd(0,6),false); }
+  /* 섬 사람들 */
+  addNpc('barbarian',-3.4,-18.2,.4); addNpc('rogue',-13,3,.9); addNpc('mage',13,3,-.9);
+  /* 배달지 표시: 빛기둥 · 발밑 화살표 */
+  islBeam=new THREE.Mesh(new THREE.CylinderGeometry(1.2,1.6,36,28,1,true),new THREE.MeshBasicMaterial({color:PARCEL_COL,transparent:true,opacity:.3,side:THREE.DoubleSide,depthWrite:false,blending:THREE.AdditiveBlending,fog:false}));
+  islBeam.position.y=18; islBeam.visible=false; scene.add(islBeam);
+}
+/* 발밑 화살표는 모든 맵 공용 그룹(arrowG처럼)으로 둬요 */
+{
+  islArrow=new THREE.Group();
+  const sh=new THREE.Shape(); sh.moveTo(0,.95); sh.lineTo(.5,.25); sh.lineTo(.2,.25); sh.lineTo(.2,-.4); sh.lineTo(-.2,-.4); sh.lineTo(-.2,.25); sh.lineTo(-.5,.25); sh.lineTo(0,.95);
+  const m=new THREE.Mesh(new THREE.ShapeGeometry(sh),new THREE.MeshBasicMaterial({color:PARCEL_COL,side:THREE.DoubleSide,depthWrite:false,transparent:true,opacity:.95}));
+  m.rotation.x=-Math.PI/2; m.position.z=2.6; islArrow.add(m);
+  const o=new THREE.Mesh(new THREE.ShapeGeometry(sh),new THREE.MeshBasicMaterial({color:0x18213a,side:THREE.DoubleSide,depthWrite:false}));
+  o.rotation.x=-Math.PI/2; o.position.set(0,-.01,2.6); o.scale.setScalar(1.22); islArrow.add(o);
+  islArrow.visible=false; scene.add(islArrow);
+}
+
+/* ---------- 택배 ---------- */
+function islReset(){
+  parcels.forEach(p=>{ if (p.mesh.parent) p.mesh.parent.remove(p.mesh); if (p.g) scene.remove(p.g); }); parcels=[];
+  W.isl={quota:0,spawned:0,done:0,nextAt:0,delivered:0,lost:0,thiefQ:[],carry:null,hint:0,lastDest:-1,waitHint:0};
+  if (islBeam) islBeam.visible=false; if (islArrow) islArrow.visible=false;
+  ISL_HOUSES.forEach(h=>h.tag.scale.set(4.2,1.26,1));
+}
+function islWaveStart(d){
+  const S=W.isl; if (!S) return;
+  S.quota=d.parcels||0; S.spawned=0; S.done=0; S.nextAt=W.t+2.5;
+  S.thiefQ=(d.thieves||[]).map(q=>({at:W.t+q.at,n:q.n,def:d}));
+}
+function islWaveDone(){ const S=W.isl; return MAPK!=='island' || !S || (S.spawned>=S.quota && !parcels.length && !S.thiefQ.length); }
+function spawnParcel(){
+  const S=W.isl; let di; do { di=Math.floor(Math.random()*ISL_HOUSES.length); } while (di===S.lastDest && ISL_HOUSES.length>1); S.lastDest=di;
+  const a=rnd(0,6.283), r=rnd(.3,1.8), x=ISL_DOCK.x+Math.cos(a)*r, z=ISL_DOCK.z+Math.sin(a)*r;
+  const g=new THREE.Group(); g.position.set(x,0,z);
+  const mesh=makeBox(); mesh.position.y=.75; g.add(mesh);
+  const beam=new THREE.Mesh(new THREE.CylinderGeometry(.35,.55,5,14,1,true),new THREE.MeshBasicMaterial({color:PARCEL_COL,transparent:true,opacity:.25,side:THREE.DoubleSide,depthWrite:false,blending:THREE.AdditiveBlending})); beam.position.y=2.5; g.add(beam);
+  const ring=new THREE.Mesh(new THREE.RingGeometry(.55,.85,28),new THREE.MeshBasicMaterial({color:PARCEL_COL,transparent:true,opacity:.6,side:THREE.DoubleSide,depthWrite:false})); ring.rotation.x=-Math.PI/2; ring.position.y=.07; g.add(ring);
+  scene.add(g);
+  parcels.push({state:'ground',x,z,dest:di,g,mesh,beam,ring,born:W.t});
+  S.spawned++; fx.burst(x,1,z,PARCEL_COL,10,3);
+  if (!S.hint){ S.hint=1; flashPrompt('북쪽 부두의 물류 센터에 택배가 왔어요! 상자에 다가가 집은 뒤 배달지로 가져가세요',3.5); }
+}
+function setGround(p,x,z){
+  p.state='ground'; p.thief=null; p.x=x; p.z=z; p.g.position.set(x,0,z); p.g.add(p.mesh); p.mesh.position.set(0,.75,0); p.mesh.rotation.set(0,0,0); p.mesh.scale.setScalar(1);
+  p.beam.visible=p.ring.visible=true; scene.add(p.g);
+}
+function removeParcel(p){ if (p.mesh.parent) p.mesh.parent.remove(p.mesh); scene.remove(p.g); parcels=parcels.filter(q=>q!==p); if (W.isl.carry===p) W.isl.carry=null; }
+function pickParcel(p){
+  const S=W.isl; S.carry=p; p.state='carried'; scene.remove(p.g); pg.add(p.mesh); p.mesh.position.set(0,2.85,0); p.mesh.rotation.set(0,.4,0); p.mesh.scale.setScalar(1.15);
+  SFX.card(); fx.burst(P.x,1.4,P.z,PARCEL_COL,12,3);
+  const h=ISL_HOUSES[p.dest]; flashPrompt(`${h.name}(으)로 배달해요! 주황 화살표를 따라가세요`,3);
+  const useOX=OX.length&&Math.random()<.45;
+  openQuiz(pick(useOX?['ox','mc']:['mc','ox'],useOX?OX:MC),{type:'parcel'});
+}
+function deliverParcel(p){
+  const S=W.isl, h=ISL_HOUSES[p.dest];
+  removeParcel(p); S.delivered++; S.done++;
+  SFX.correct(); fx.rise(h.x,h.z,PARCEL_COL,24); fx.burst(h.x,1.2,h.z,0xffffff,12,4); fx.num(h.x,3.2,h.z,'배달 완료!','#ffd34d',1.3);
+  P.hp=Math.min(P.max,P.hp+5);
+  showBanner(`${h.name} 배달 완료!`);
+  if (W.stats) W.stats.dl=(W.stats.dl||0)+1;
+}
+function thiefSpawn(def){
+  const a=-rnd(.2,Math.PI-.2), r=ISL_R-2.5;
+  spawnMob({...def,hp:Math.round(def.hp*.55),spd:3.3,runner:true,thief:true},false,{x:Math.cos(a)*r,z:Math.sin(a)*r});
+}
+/* 도둑 해골: 바닥에 놓인 상자를 노리고, 훔치면 바다로 달아나요. 처치하면 상자를 떨어뜨려요 */
+function thiefAI(m,dt){
+  let tx,tz;
+  if (m.parcel){ const d=Math.hypot(m.x,m.z)||1; tx=m.x/d*(ISL_R+2); tz=m.z/d*(ISL_R+2);
+    if (d>ISL_R-1.3){ const p=m.parcel; m.parcel=null; removeParcel(p); W.isl.lost++; W.isl.done++; if (W.stats) W.stats.lost=(W.stats.lost||0)+1;
+      fx.burst(m.x,.5,m.z,0xffffff,24,5); flashPrompt('도둑 해골이 상자를 들고 바다로 달아났어요… 다음 상자는 꼭 지켜요!',2.6); SFX.wrong();
+      m.hp=0; m.dying=0; return true; }
+  } else {
+    let best=null, bd=1e9; for (const p of parcels){ if (p.state!=='ground') continue; const d=Math.hypot(p.x-m.x,p.z-m.z); if (d<bd){ bd=d; best=p; } }
+    if (!best) return false;
+    tx=best.x; tz=best.z;
+    if (bd<1.1){ best.state='thief'; best.thief=m; m.parcel=best; scene.remove(best.g); m.g.add(best.mesh); best.mesh.position.set(0,2.45,0); best.mesh.scale.setScalar(1.1);
+      flashPrompt('도둑 해골이 상자를 훔쳤어요! 바다에 닿기 전에 쓰러뜨리세요',2.6); SFX.wrong(); }
+  }
+  const dx=tx-m.x, dz=tz-m.z, d=Math.hypot(dx,dz)||1, sp=m.spd*(m.parcel?.85:1)*(W.loc?.5:1)*slowK(m);
+  m.x+=(dx/d*sp+m.kbx)*dt; m.z+=(dz/d*sp+m.kbz)*dt; m.kbx*=Math.pow(.02,dt); m.kbz*=Math.pow(.02,dt);
+  if (!m.parcel) resolve(m,m.r);
+  m.g.rotation.y=Math.atan2(dx,dz); m.flash=Math.max(0,m.flash-dt); m.mat.emissive.setHex(m.flash>0?0xffffff:0x000000);
+  return true;
+}
+function islandTick(dt){
+  const S=W.isl; if (MAPK!=='island' || !S) return;
+  // 상자 도착
+  if (S.spawned<S.quota && W.t>=S.nextAt && parcels.filter(p=>p.state==='ground').length<2){ spawnParcel(); S.nextAt=W.t+6; }
+  // 도둑 해골 등장
+  for (let i=S.thiefQ.length-1;i>=0;i--){ const q=S.thiefQ[i]; if (W.t<q.at) continue; S.thiefQ.splice(i,1); for (let k=0;k<q.n;k++) thiefSpawn(q.def);
+    flashPrompt(S.thiefSeen?'도둑 해골이 또 나타났어요!':'주황색 도둑 해골은 상자를 훔쳐 가요! 상자 근처를 지키세요',3); S.thiefSeen=1; }
+  // 쓰러진 도둑은 상자를 떨어뜨려요
+  for (const p of parcels){ if (p.state==='thief' && p.thief && p.thief.dying>=0){ const m=p.thief; m.parcel=null; setGround(p,Math.max(-ISL_R+2,Math.min(ISL_R-2,m.x)),Math.max(-ISL_R+2,Math.min(ISL_R-2,m.z))); fx.burst(p.x,1,p.z,PARCEL_COL,10,3); flashPrompt('상자를 되찾았어요! 다시 집어서 배달하세요',2); } }
+  // 줍기 · 배달
+  if (!W.paused && !W.loc){
+    if (S.carry){ const p=S.carry, h=ISL_HOUSES[p.dest]; if (Math.hypot(P.x-h.x,P.z-h.z)<2.1) deliverParcel(p); }
+    else { for (const p of parcels){ if (p.state==='ground' && W.t-p.born>.6 && Math.hypot(P.x-p.x,P.z-p.z)<1.5){ pickParcel(p); break; } } }
+  }
+  // 남은 택배 안내
+  if (!mobs.length && !W.gate && (parcels.length || S.spawned<S.quota) && W.t>=S.waitHint){ S.waitHint=W.t+9; flashPrompt('남은 택배를 모두 배달하면 웨이브가 끝나요',2.5); }
+}
+function islandLook(real,dt){
+  if (islWater) islWater.uniforms.uTime.value=real;
+  if (MAPK!=='island'){ if (islArrow) islArrow.visible=false; return; }
+  if (islBoat){ islBoat.position.y=Math.sin(real*1.3)*.12; islBoat.rotation.z=Math.sin(real*1.1)*.04; islBoat.rotation.x=Math.sin(real*.9)*.025; }
+  for (const p of parcels){ if (p.state!=='ground') continue; p.mesh.rotation.y=real*1.2; p.mesh.position.y=.75+Math.sin(real*3+p.x)*.12; p.ring.material.opacity=.45+Math.sin(real*4)*.2; }
+  const S=W.isl, c=S&&S.carry&&W.state==='play';
+  islBeam.visible=!!c; islArrow.visible=false;
+  ISL_HOUSES.forEach(h=>h.tag.scale.set(4.2,1.26,1));
+  if (c){ const h=ISL_HOUSES[S.carry.dest]; islBeam.position.set(h.x,18,h.z); islBeam.material.opacity=.24+Math.sin(real*4)*.1; islBeam.rotation.y=real*.5;
+    const sc=1.25+Math.sin(real*5)*.1; h.tag.scale.set(4.2*sc,1.26*sc,1);
+    const far=Math.hypot(h.x-P.x,h.z-P.z)>3; islArrow.visible=far; if (far){ islArrow.position.set(P.x,.14,P.z); islArrow.rotation.y=Math.atan2(h.x-P.x,h.z-P.z); const s2=1+Math.sin(real*6)*.12; islArrow.children[0].scale.setScalar(s2); islArrow.children[1].scale.setScalar(1.22*s2); } }
+}
+
 const clouds=[];
 
 /* 애니메이션 캐릭터 */
@@ -1448,6 +1679,7 @@ function resolve(p,r){
     }
   }
   p.x=Math.max(-34,Math.min(34,p.x)); p.z=Math.max(-34,Math.min(34,p.z));
+  if (MAPK==='island'){ const d=Math.hypot(p.x,p.z); if (d>ISL_R){ p.x*=ISL_R/d; p.z*=ISL_R/d; } }
 }
 
 /* ---------- 몬스터 ---------- */
@@ -1482,8 +1714,9 @@ function spawnMob(def,isBoss,at){
   if (MAPK==='defense' && !at){
     do { x=rnd(-26,26); z=rnd(21,32); tries++; } while (colliders.some(b=>x>b.x0-2&&x<b.x1+2&&z>b.z0-2&&z<b.z1+2) && tries<40);
   } else do { const a=Math.random()*Math.PI*2, r=at?3+Math.random()*2:14+Math.random()*16, cx=at?at.x:P.x, cz=at?at.z:P.z; x=cx+Math.cos(a)*r; z=cz+Math.sin(a)*r; tries++; }
-  while ((Math.abs(x)>32||Math.abs(z)>32||colliders.some(b=>x>b.x0-2&&x<b.x1+2&&z>b.z0-2&&z<b.z1+2)) && tries<60);
+  while ((Math.abs(x)>32||Math.abs(z)>32||(MAPK==='island'&&Math.hypot(x,z)>ISL_R-1.5)||colliders.some(b=>x>b.x0-2&&x<b.x1+2&&z>b.z0-2&&z<b.z1+2)) && tries<60);
   x=Math.max(-32,Math.min(32,x)); z=Math.max(-32,Math.min(32,z));
+  if (MAPK==='island'){ const dd=Math.hypot(x,z); if (dd>ISL_R-1.5){ x*=(ISL_R-1.5)/dd; z*=(ISL_R-1.5)/dd; } }
   g.position.set(x,0,z); g.rotation.y=Math.atan2(P.x-x,P.z-z); scene.add(g);
   fx.burst(x,.4,z,isBoss?0x8a8f99:0xc9c2b0,isBoss?30:12,isBoss?6:3);
   const K=MODE==='hero'?{hp:HERO.hp,dmg:HERO.dmg,spd:HERO.spd}:{hp:DIFF*EASEF.hp,dmg:DIFF*EASEF.dmg,spd:(.9+.1*DIFF)*EASEF.spd};
@@ -1516,12 +1749,14 @@ function removeMob(m){ if (m.aimLine) scene.remove(m.aimLine); scene.remove(m.g)
 function liveBoss(){ return mobs.find(m=>m.boss&&m.dying<0); }
 
 function startWave(i){
+  if (W.stats) W.stats.ws[i]=Math.round(W.t);
   W.wave=i; W.nextWaveAt=-1; W.gate=false;
   const d=WAVES[i];
   for (let k=0;k<d.n;k++) spawnMob(d,false);
   if (d.groups){ const lanes=[-20,0,20]; d.groups.forEach((g,gi)=>W.spawnQ.push({at:W.t+g.at,n:g.n,runner:!!g.runner,lane:lanes[Math.floor(Math.random()*3)],def:d,first:gi===0})); }
   if (d.boss){ spawnMob(d,true); stations.forEach(s=>s.readyAt=Math.min(s.readyAt,W.t)); }
   const nr=rangedCount(i); for (let k=0;k<nr;k++) spawnRanged(d);
+  if (MAPK==='island') islWaveStart(d);
   showBanner(`웨이브 ${i+1} · ${d.name}`); SFX.wave();
   if (nr && !W.rangedSeen){ W.rangedSeen=true; setTimeout(()=>flashPrompt('석궁 든 해골은 멀리서 쏴요! 빨간 조준선이 보이면 옆으로 피하세요',3.5),1800); }
 }
@@ -1733,6 +1968,7 @@ function doHit(c){
 }
 function dodge(){
   if (W.paused || W.state!=='play' || P.dodgeCd>0 || P.dodgeT>0 || P.dashT>0) return;
+  if (W.stats) W.stats.dodges++;
   if (JOB==='knight'){ knightBlock(); P.dodgeMax=P.dodgeCd; return; }
   if (JOB==='mage'){ mageBlink(); P.dodgeMax=P.dodgeCd; return; }
   P.backstep=false;
@@ -1984,7 +2220,7 @@ function mageSkill(){
 function ultimate(){
   if (W.paused || W.state!=='play') return;
   if ((W.ult||0)<ULT_NEED){ flashPrompt(`필살기는 퀴즈를 ${ULT_NEED-(W.ult||0)}문제 더 맞히면 쓸 수 있어요`,1.6); return; }
-  W.ult=0; showBanner(`${ultLabel()}!`); SFX.wave();
+  W.ult=0; if (W.stats) W.stats.ults++; showBanner(`${ultLabel()}!`); SFX.wave();
   if (JOB==='knight'){ P.ultT=1.8; P.ultTick=0; P.atkCd=1.8; P.combo=0; P.pendingHit=null; P.buffer=false;
     if (knight) knight.anim.once('whirl',1.2,true); slashFx(3); fx.shock(P.x,P.z,5.5); }
   else if (JOB==='archer'){ const t=crowdSpot(18,7); if (knight) knight.anim.once('shoot',1.6,true);
@@ -2014,12 +2250,13 @@ function hurtPlayer(amount,src){
   let dmg=amount;
   if (JOB==='knight' && P.blockT>0 && src){
     const dx=src.x-P.x, dz=src.z-P.z, d=Math.hypot(dx,dz)||1;
-    if ((dx*P.fx+dz*P.fz)/d>-.2){ dmg=amount*.2; SFX.block(); impactFx(P.x+dx/d*.8,1.3,P.z+dz/d*.8,0x9fe3ff,2.4); fx.num(P.x,3.4,P.z,'막기!','#9fe3ff');
+    if ((dx*P.fx+dz*P.fz)/d>-.2){ dmg=amount*.2; SFX.block(); if (W.stats){ W.stats.blocks++; W.stats.blocked+=Math.round(amount-dmg); } impactFx(P.x+dx/d*.8,1.3,P.z+dz/d*.8,0x9fe3ff,2.4); fx.num(P.x,3.4,P.z,'막기!','#9fe3ff');
       if (src.mob && src.mob.dying<0 && d<3.5){ hitMob(src.mob,28*atkMult(),P.x,P.z,1.6,'#ffffff',true,{stun:.7}); if (knight) knight.anim.once('blockAtk',1.8,true); } } }
   if (W.qshield>0){ const a=Math.min(W.qshield,dmg); W.qshield-=a; dmg-=a; if (a>0) fx.num(P.x,3.8,P.z,'방어막 -'+Math.round(a),'#9fe3ff'); }
   if (P.ultT>0) dmg*=.5;
   dmg=Math.round(dmg); if (dmg<=0) return 0;
   P.hp-=dmg; hurtT=.3; SFX.hurt(); fx.num(P.x,3,P.z,'-'+dmg,'#ff6b6b');
+  if (W.stats){ const k=src&&src.mob?(src.mob.ranged?'ranged':src.mob.boss?'boss':'melee'):'boss'; W.stats.taken+=dmg; W.stats[k]+=dmg; W.stats.minHp=Math.min(W.stats.minHp,Math.max(0,P.hp)/P.max); }
   return dmg;
 }
 
@@ -2072,7 +2309,7 @@ let EBOLTS=[];
 function easeIdx(){ return MODE==='hero'?-1:Math.max(0,EASES.indexOf(EASEF)); }
 function rangedCount(i){
   if (i<1) return 0;
-  let n=MAPK==='defense'?1+i:1+i;           // 웨이브 2: 2명, 웨이브 3: 3명 (디펜스는 웨이브 4: 4명)
+  let n=MAPK==='island'?Math.min(i,2):1+i;           // 웨이브 2: 2명, 웨이브 3: 3명 (디펜스는 웨이브 4: 4명)
   const e=easeIdx(); if (e<0) n+=1; else if (e===2) n=Math.max(1,n-1); else if (e===1) n=Math.max(1,n-1+(i>=2?0:0));
   return n;
 }
@@ -2120,12 +2357,13 @@ function fireBolt(m){
   const ax=m.aimX-m.x, az=m.aimZ-m.z, d=Math.hypot(ax,az)||1, sp=RANGED.speed*boltK();
   const mesh=makeArrow(0xff4a4a); mesh.rotation.y=Math.atan2(ax,az);
   EBOLTS.push({mesh,x:m.x+ax/d*.8,z:m.z+az/d*.8,vx:ax/d*sp,vz:az/d*sp,life:19/sp,dmg:Math.round(m.dmg*1.3),door:!!m.aimDoor,src:{x:m.x,z:m.z,mob:m}});
-  if (m.anim) m.anim.once('shoot',1.3,true); SFX.zap();
+  if (m.anim) m.anim.once('shoot',1.3,true); SFX.zap(); if (W.stats && !m.aimDoor) W.stats.shots++;
 }
 function updateEBolts(dt){
   for (let i=EBOLTS.length-1;i>=0;i--){ const b=EBOLTS[i]; b.life-=dt;
     b.x+=b.vx*dt; b.z+=b.vz*dt; b.mesh.position.set(b.x,1.2,b.z);
     let gone=b.life<=0||Math.abs(b.x)>36||Math.abs(b.z)>36;
+    if (!gone && !b.near && !b.door && Math.hypot(P.x-b.x,P.z-b.z)<1.6 && W.t<=W.invuln){ b.near=true; if (W.stats) W.stats.evaded++; }
     if (!gone && Math.hypot(P.x-b.x,P.z-b.z)<.75){
       if (W.t>W.invuln){ hurtPlayer(b.dmg,b.src); fx.burst(b.x,1.2,b.z,0xff6b6b,8,3); gone=true; }
     }
@@ -2157,7 +2395,7 @@ function hitMob(m,dmg,sx,sz,kbk,col,byPlayer,o){
   const dx=m.x-sx, dz=m.z-sz, d=Math.hypot(dx,dz)||1, hy=m.boss?2.4:1.1;
   const k=(m.boss?3:7)*kbk; m.kbx=dx/d*k; m.kbz=dz/d*k;
   if (m.shield>0){ if (byPlayer){ flashPrompt('보호막! 퀴즈를 맞혀야 깰 수 있어요',1.5); SFX.block(); } fx.burst(m.x,2.4,m.z,0x5cc8f0,8,4); fx.num(m.x,5,m.z,'막힘','#9fe3ff'); return false; }
-  m.hp-=dmg; m.flash=o.crit?.2:.15; if (!m.boss && !o.noStun) m.stun=Math.max(m.stun||0,o.stun||.2);
+  const hpBefore=m.hp; m.hp-=dmg; if (W.stats && o.src!=='turret') W.stats.dealt+=Math.max(0,Math.min(dmg,hpBefore)); m.flash=o.crit?.2:.15; if (!m.boss && !o.noStun) m.stun=Math.max(m.stun||0,o.stun||.2);
   if (!o.quiet){ fx.burst(m.x,hy,m.z,0xfff1a8,o.crit?12:7,o.crit?6:4); fx.burst(m.x,hy,m.z,0xffffff,o.crit?8:4,8); }
   if (!o.quiet) impactFx(m.x-dx/d*.35,hy,m.z-dz/d*.35,o.crit?0xffd34d:0xfff2d6,o.crit?3.4:(o.fin?2.8:2));
   fx.num(m.x,m.boss?5.2:2.5,m.z,o.crit?Math.round(dmg)+'!':String(Math.round(dmg)),o.crit?'#ffcf3a':col,o.crit?1.4:1);
@@ -2192,8 +2430,8 @@ function openQuiz(item,source){
   else if (item.kind==='ox'){ opts=['O','X']; correctIdx=item.a?0:1; }
   else { opts=CLS_OPTS; correctIdx=item.a; }
   Object.assign(Q,{item,correctIdx,nOpts:opts.length,start:performance.now(),dur:Math.round(TIME_BY_KIND[item.kind]*(MODE==='hero'&&source.type!=='revive'?HERO.quiz:1)*(MODE==='hero'?1:EASEF.quiz)),answered:false,source,resultOnly:false});
-  const tagName = source.type==='station'?(source.station.title||`${ZINFO[source.station.zone].name} 퀴즈`):source.type==='card'?(item.kind==='ox'?'지식 카드 · O/X':'지식 카드 · 분류'):'돌발 퀴즈';
-  const tagColor = source.type==='station'?(source.station.hex||ZINFO[source.station.zone].color):source.type==='card'?'#c28a00':'#18213a';
+  const tagName = source.type==='station'?(source.station.title||`${ZINFO[source.station.zone].name} 퀴즈`):source.type==='card'?(item.kind==='ox'?'지식 카드 · O/X':'지식 카드 · 분류'):source.type==='parcel'?'택배 퀴즈':'돌발 퀴즈';
+  const tagColor = source.type==='station'?(source.station.hex||ZINFO[source.station.zone].color):source.type==='card'?'#c28a00':source.type==='parcel'?'#b86b1f':'#18213a';
   $('#qtag').textContent=tagName; $('#qtag').style.background=tagColor;
   $('#qtext').textContent = item.kind==='cls' ? `“${item.q}” ${ZCFG.q}` : item.q;
   const box=$('#qopts'); box.innerHTML=''; box.className='opts'+(opts.length===2?' two':''); box.hidden=false;
@@ -2230,7 +2468,9 @@ function settle(ok,item,source){
     if (entry && ok) entry.fixed=true;
     return {fx:{label: ok?(left>0?`부활까지 ${left}문제 남았어요`:'부활 성공!'):'부활 실패'},extras:ok?[]:['이번 판은 여기까지예요. 결과 화면에서 틀린 문제를 복습해요.']};
   }
-  const fx=jobFx((ok?GOOD:BAD)[Math.floor(Math.random()*3)],ok);
+  const parcelQ=source&&source.type==='parcel';
+  const fx=jobFx((ok?GOOD:BAD)[parcelQ?1:Math.floor(Math.random()*3)],ok);
+  if (parcelQ) extras.push(ok?'급행 배송! 빨리 달려서 배달하세요.':'상자가 무거워졌어요… 그래도 배달은 할 수 있어요.');
   applyEffect(fx);
   if (entry && ok) extras.push('지난번에 틀린 문제를 이번엔 맞혔어요!');
   if (!entry && !ok) extras.push('이 문제는 잠시 뒤에 다시 나와요.');
@@ -2264,7 +2504,7 @@ function showResult(ok,timeout,item){
 }
 function applyEffect(fx){
   if (fx.k==='heal') P.hp=Math.min(P.max,P.hp+fx.amount);
-  else if (fx.k==='dmg') P.hp=Math.max(1,P.hp-fx.amount);
+  else if (fx.k==='dmg'){ const b=P.hp; P.hp=Math.max(1,P.hp-fx.amount); if (W.stats){ W.stats.quiz+=b-P.hp; W.stats.taken+=b-P.hp; W.stats.minHp=Math.min(W.stats.minHp,P.hp/P.max); } }
   else { W.effects=W.effects.filter(e=>e.k!==fx.k); W.effects.push({k:fx.k,mult:fx.mult,label:fx.label,until:W.t+fx.dur,good:fx.mult>1}); }
 }
 function closeQuiz(){
@@ -2276,6 +2516,7 @@ function closeQuiz(){
     s.station.readyAt=W.t+(quick?8:MAPS[MAPK].recharge);
     W.nextQuiz=Math.max(W.nextQuiz,W.t+10);
   } else if (s && s.type==='timed'){ W.nextQuiz=W.t+TIMED_EVERY; }
+  else if (s && s.type==='parcel'){ W.nextQuiz=Math.max(W.nextQuiz,W.t+12); }
   if (W.lastFx){ fx.rise(P.x,P.z,W.lastFx==='good'?0xffd34d:0x8a8fa0,W.lastFx==='good'?26:12); W.lastFx=null; }
   if (W.lastShield){ SFX.shield(); const b=W.lastShield; fx.burst(b.x,2.5,b.z,0x5cc8f0,34,8); fx.shock(b.x,b.z,4); shake=.3; W.lastShield=null; }
   W.paused=false; canvas.focus({preventScroll:true});
@@ -2381,6 +2622,7 @@ function updateHUD(){
       $('#bossHelp').textContent=boss.shield>0?'퀴즈를 맞히면 보호막이 깨지고, 틀리면 되살아나요. 붉은 원이 보이면 피하세요!':'보호막이 모두 깨졌어요. 지금 공격하세요! 오답이면 보호막이 되살아나요.'; }
   }
   $('#gateCard').hidden=!W.gate;
+  if (MAPK==='island' && W.isl){ const S=W.isl, show=S.quota>0; $('#parcelRow').hidden=!show; if (show){ $('#parcelTxt').textContent=`${S.done-0} / ${S.quota}`+(S.lost?` · 잃어버림 ${S.lost}`:''); $('#parcelBar').style.width=(S.done/S.quota*100)+'%'; } }
   if (MAPK==='defense'){ const dk=Math.max(0,W.door); $('#doorTxt').textContent=`${Math.ceil(dk)} / ${W.doorMax}`; $('#doorBar').style.width=(dk/W.doorMax*100)+'%'; }
   if (W.loc){
     const rem=W.loc.until-W.t;
@@ -2392,17 +2634,19 @@ function updateHUD(){
 
 function clearWorld(){
   mobs.forEach(removeMob); mobs=[];
+  parcels.forEach(p=>{ if (p.mesh.parent) p.mesh.parent.remove(p.mesh); scene.remove(p.g); }); parcels=[]; if (W.isl) W.isl.carry=null;
   cards.forEach(c=>scene.remove(c.m)); cards=[];
 }
 function reset(){
   clearWorld();
   const st=MAPS[MAPK].start;
   Object.assign(P,{x:st[0],z:st[1],hp:100,fx:0,fz:-1,atkCd:0,swingT:0,combo:0,lastAtk:-9,buffer:false,pendingHit:null,lunge:0,dodgeT:0,dodgeCd:0,spinT:0,spinCd:0,spinHits:[],spinBuf:false,blockT:0,dashT:0,ultT:0,dodgeMax:1,spinMax:1,backstep:false}); P.max=jobInfo().hp; P.hp=P.max; hitStop=0; skKey=''; clearProj(); clearEBolts();
-  Object.assign(W,{won:false,door:DOOR_HP,doorMax:DOOR_HP,doorWarnAt:0,revived:false,revive:null,invuln:0,t:0,paused:false,state:'play',wave:-1,nextWaveAt:1.2,gate:false,nextQuiz:TIMED_EVERY,timedFlip:0,kills:0,correct:0,asked:0,effects:[],wrong:[],loc:null,spawnQ:[],runnerSeen:false,ult:0,streak:0,qshield:0,orbBoost:0,rangedSeen:false});
+  Object.assign(W,{won:false,door:DOOR_HP,doorMax:DOOR_HP,doorWarnAt:0,revived:false,revive:null,invuln:0,t:0,paused:false,state:'play',wave:-1,nextWaveAt:1.2,gate:false,nextQuiz:TIMED_EVERY,timedFlip:0,kills:0,correct:0,asked:0,effects:[],wrong:[],loc:null,spawnQ:[],runnerSeen:false,ult:0,streak:0,qshield:0,orbBoost:0,rangedSeen:false,stats:{dealt:0,taken:0,minHp:1,melee:0,ranged:0,boss:0,quiz:0,blocks:0,blocked:0,dodges:0,ults:0,evaded:0,shots:0,ws:[]}});
   W.used=new Set(); stations.forEach(s=>s.readyAt=0); chipKey=''; shieldKey=''; $('#chips').innerHTML='';
   $('#locCard').hidden=true; $('#gateCard').hidden=true;
   TURRETS.forEach(t=>{ t.until=0; t.cd=0; }); bolts.forEach(b=>scene.remove(b.mesh)); bolts=[]; doorFlash=0;
   $('#doorRow').hidden=MAPK!=='defense';
+  $('#parcelRow').hidden=true; islReset();
 }
 let NICK='', BAN='', CI=null;
 try{ NICK=localStorage.getItem('gsd-nick')||''; }catch(e){}
@@ -2509,11 +2753,18 @@ function emailKey(e){ return String(e||'').toLowerCase().replace(/\./g,','); }
 function setSave(kind,msg,retry){ const b=$('#saveBox'); b.className='savebox '+kind; $('#saveMsg').textContent=msg; $('#saveRetry').hidden=!retry; }
 function pendingList(){ try{ return JSON.parse(localStorage.getItem(PENDING_KEY)||'[]'); }catch(e){ return []; } }
 function setPending(a){ try{ localStorage.setItem(PENDING_KEY,JSON.stringify(a.slice(-20))); }catch(e){} }
+function combatStats(){
+  const S=W.stats||{}; const r=v=>Math.max(0,Math.round(v||0));
+  return {dealt:r(S.dealt),taken:r(S.taken),minHp:r(Math.min(S.minHp===undefined?1:S.minHp,Math.max(0,P.hp)/(P.max||1))*100),melee:r(S.melee),ranged:r(S.ranged),boss:r(S.boss),quiz:r(S.quiz),
+    blocks:r(S.blocks),blocked:r(S.blocked),dodges:r(S.dodges),ults:r(S.ults),evaded:r(S.evaded),shots:r(S.shots),dl:r(S.dl),lost:r(S.lost),rv:W.revived?1:0,wv:r(W.wave+1),hpMax:r(P.max),
+    wt:(S.ws||[]).map(v=>v===undefined?'':Math.round(v)).join(',').slice(0,120)};
+}
 function toRecord(r,uid){
   if (!r.label) r.label=(r.cls||'')+'반';
   return {uid,cls:String(r.cls).slice(0,4),cid:String(r.cid||'').slice(0,10),sch:String(r.sch||'').slice(0,30),grade:+r.grade||0,year:+r.year||0,nick:String(r.nick).slice(0,20),unit:String(r.unit).slice(0,80),unitId:String(r.unitId).slice(0,20),
     win:!!r.win,score:r.score|0,correct:r.correct|0,asked:r.asked|0,kills:r.kills|0,timeSec:r.timeSec|0,
-    wrong:r.wrong.join('\n').slice(0,3000),ts:firebase.database.ServerValue.TIMESTAMP,mode:r.mode==='hero'?'hero':'normal',diff:Math.round((r.diff||1)*100)/100};
+    wrong:r.wrong.join('\n').slice(0,3000),ts:firebase.database.ServerValue.TIMESTAMP,mode:r.mode==='hero'?'hero':'normal',diff:Math.round((r.diff||1)*100)/100,
+    ...(r.cs?{job:String(r.job||'').slice(0,12),map:String(r.map||'').slice(0,10),ease:Math.max(-1,Math.min(2,r.ease|0)),cs:r.cs}:{})};
 }
 function withTimeout(p,ms){ return Promise.race([p,new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),ms))]); }
 async function pushResult(r){
@@ -2524,6 +2775,9 @@ async function pushResult(r){
   catch(e){
     // 예전 보안 규칙(모드·난이도 칸이 없는 규칙)이면 그 두 칸을 빼고 다시 저장
     if (!/permission|PERMISSION/i.test(String(e&&(e.code||e.message)))) throw e;
+    if (rec.cs){ delete rec.job; delete rec.map; delete rec.ease; delete rec.cs;
+      try{ await withTimeout(fbDb.ref('results').push(rec),10000); return; }
+      catch(e2){ if (!/permission|PERMISSION/i.test(String(e2&&(e2.code||e2.message)))) throw e2; } }
     delete rec.mode; delete rec.diff;
     await withTimeout(fbDb.ref('results').push(rec),10000);
   }
@@ -3019,13 +3273,16 @@ function endGame(win){
   }
   const unit=DATA.units.find(u=>u.id===playUnit);
   const fixedN=W.wrong.filter(w=>w.fixed).length;
-  const score=Math.round((W.correct*100+fixedN*50+W.kills*10+(win?500:0))*(MODE==='hero'?HERO.score:1));
-  $('#sScoreNote').textContent=`정답 100점 · 다시 맞힘 +50점(${fixedN}개) · 처치 10점 · 승리 500점`+(MODE==='hero'?' · 영웅 모드 ×1.5':'');
+  const dlv=MAPK==='island'&&W.isl?W.isl.delivered:0;
+  const score=Math.round((W.correct*100+fixedN*50+W.kills*10+dlv*50+(win?500:0))*(MODE==='hero'?HERO.score:1));
+  $('#sScoreNote').textContent=`정답 100점 · 다시 맞힘 +50점(${fixedN}개) · 처치 10점`+(MAPK==='island'?` · 배달 50점(${dlv}개)`:'')+' · 승리 500점'+(MODE==='hero'?' · 영웅 모드 ×1.5':'');
+  if (MAPK==='island'&&W.isl) $('#endMsg').textContent=`택배 ${W.isl.delivered}개 배달`+(W.isl.lost?` · 도둑에게 ${W.isl.lost}개 잃어버림`:'')+'. '+$('#endMsg').textContent;
   const newSkill=updateSkill(win);
   const d=new Date();
   const when=`${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
   lastResult={diff:DIFF,mode:MODE,nick:NICK,cls:CI.cls,cid:CI.cid,sch:CI.sch,grade:CI.grade,year:CI.year,label:CI.label,unit:unit?unit.name:'',unitId:playUnit,win,score,correct:W.correct,asked:W.asked,kills:W.kills,
-    time:$('#sTime').textContent,timeSec:s,when,wrong:W.wrong.filter(w=>!w.fixed).map(w=>w.item.q)};
+    time:$('#sTime').textContent,timeSec:s,when,wrong:W.wrong.filter(w=>!w.fixed).map(w=>w.item.q),
+    job:JOB+(JOB==='mage'?':'+MELEM:''),map:MAPK,ease:easeIdx(),cs:combatStats()};
   $('#endWho').textContent=`${CI.label} ${NICK} · ${lastResult.unit} · ${when}`;
   saveResult(lastResult);
   grantRewards({...lastResult,newSkill},fixedN);
@@ -3097,6 +3354,7 @@ function setMap(k){
   if (k!==MAPK){ clearWorld(); bolts.forEach(b=>scene.remove(b.mesh)); bolts=[]; }
   MAPK=k;
   for (const g in mapGroups) mapGroups[g].visible=g===k;
+  bgGroup.visible=k!=='island';
   colliders=MAPSTATE[k].colliders; stations=MAPSTATE[k].stations; npcs=MAPSTATE[k].npcs;
   WAVES=WAVESETS[k==='zones'?(MAPS.zones.waves||'zones'):k];
   const M=MAPS[k];
@@ -3382,6 +3640,7 @@ function frame(now){
       if (m.ranged){ rangedAI(m,dt); continue; }
       if (m.stun>0){ if (m.aimT>0){ m.aimT=0; if (m.aimLine) m.aimLine.visible=false; } m.stun-=dt; m.x+=m.kbx*dt; m.z+=m.kbz*dt; m.kbx*=Math.pow(.02,dt); m.kbz*=Math.pow(.02,dt); resolve(m,m.r);
         m.flash=Math.max(0,m.flash-dt); m.mat.emissive.setHex(m.flash>0?0xffffff:0x000000); continue; }
+      if (MAPK==='island' && m.def && m.def.thief && thiefAI(m,dt)) continue;
       const pdx=P.x-m.x, pdz=P.z-m.z, pd=Math.hypot(pdx,pdz)||1;
       let dx=pdx, dz=pdz, d=pd, atDoor=false;
       if (MAPK==='defense' && (m.runner || pd>(m.boss?9:7))){ dx=DOOR.x-m.x; dz=DOOR.z-m.z; d=Math.hypot(dx,dz)||1; atDoor=d<m.r+2.6; }
@@ -3423,6 +3682,7 @@ function frame(now){
     }
     mobs=mobs.filter(m=>{ if (m.dying===0){ removeMob(m); return false; } return true; });
     if (MAPK==='defense'){ updateTurrets(dt); updateBolts(dt); }
+    islandTick(dt);
 
     // 웨이브 진행 · 잠금
     if (W.nextWaveAt>=0 && W.t>=W.nextWaveAt) startWave(W.wave+1);
@@ -3431,7 +3691,7 @@ function frame(now){
         for (let k=0;k<q.n;k++) spawnMob(def,false,{x:q.lane+rnd(-4,4),z:rnd(25,31)});
         if (q.runner){ if (!W.runnerSeen){ W.runnerSeen=true; flashPrompt('주황 돌격병은 성문만 노려요! 성문에 닿기 전에 막으세요',3); } else flashPrompt('돌격병이 몰려와요!',2); }
         else if (!q.first) flashPrompt('해골 지원군이 몰려와요!',2); } }
-    if (W.nextWaveAt<0 && !W.gate && W.wave>=0 && mobs.length===0 && !W.spawnQ.length){
+    if (W.nextWaveAt<0 && !W.gate && W.wave>=0 && mobs.length===0 && !W.spawnQ.length && islWaveDone()){
       if (W.wave<WAVES.length-1){
         P.hp=Math.min(P.max,P.hp+Math.round(P.max*.2)); W.gate=true; stations.forEach(s=>s.readyAt=W.t);
         showBanner(MAPS[MAPK].clearText);
@@ -3554,7 +3814,7 @@ function frame(now){
   // 배경 움직임
   for (const c of clouds){ c.position.x+=c.userData.v*dt; if (c.position.x>130) c.position.x=-130; }
   smokeT-=dt; if (smokeT<=0){ smokeT=.5; if (MAPK==='zones') fx.smoke(29.2,5.4,7.6); }
-  updateDefenseLook(real,dt);
+  updateDefenseLook(real,dt); islandLook(real,dt);
   fx.update(dt); updateCombatFx(dt); updateDreamy(real); qualityTick(now);
 
   // 해 · 카메라
