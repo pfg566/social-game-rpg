@@ -124,12 +124,12 @@ function startGame(){
     else { lgError('번호와 코드로 로그인해 주세요.'); $('#lgCode').focus(); }
     return;
   }
-  MODE = HERO_OPEN && $('#modeHero').checked ? 'hero' : 'normal';
+  MODE = PARTY.on || (HERO_OPEN && $('#modeHero').checked) ? 'hero' : 'normal';   // 파티 판은 늘 영웅 모드 이상
   DIFF = loadSkill();
   EASEF = EASES[MODE==='hero'?0:Math.min(2,Math.max(0,(CI&&CI.ease)|0))];
   LOC_TIME = MODE==='hero' ? HERO.loc : Math.round(25*(DIFF<1? 1+(1-DIFF)*.8 : 1))+EASEF.loc;
   document.body.classList.toggle('hero',MODE==='hero');
-  { applyPlay(); const pu=DATA.units.find(u=>u.id===playUnit); applyZoneCfg(zcfgOf(pu)); setMap(PLAYMAP||mapOf(pu)); }
+  { applyPlay(); const pu=DATA.units.find(u=>u.id===playUnit); applyZoneCfg(zcfgOf(pu)); setMap(PARTY.on?'conquest':(PLAYMAP||mapOf(pu))); }
   PEACE_RUN=PEACE && PEACE_MAPS.includes(MAPK);
   if (PEACE_RUN) WAVES=WAVESETS[MAPK+'_peace'];
   document.body.classList.toggle('peace',PEACE_RUN); document.body.classList.toggle('aim-mouse',JOB==='archer'&&!PEACE_RUN);

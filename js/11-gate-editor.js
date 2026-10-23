@@ -93,10 +93,10 @@ function endGame(win){
   const unit=DATA.units.find(u=>u.id===playUnit);
   const fixedN=W.wrong.filter(w=>w.fixed).length;
   const dlv=MAPK==='island'&&W.isl?W.isl.delivered:0, stars=PEACE_RUN&&W.isl?(W.isl.stars|0):0;
-  const score=Math.round((W.correct*100+fixedN*50+W.kills*10+dlv*50+stars*30+(win?500:0))*(MODE==='hero'?HERO.score:1));
-  $('#sScoreNote').textContent=`정답 100점 · 다시 맞힘 +50점(${fixedN}개) · 처치 10점`+(MAPK==='island'?` · 배달 50점(${dlv}개)`:'')+(stars?` · 별 30점(${stars}개)`:'')+(PEACE_RUN?' · 평화 모드':'')+' · 승리 500점'+(MODE==='hero'?' · 영웅 모드 ×1.5':'');
+  const score=Math.round((W.correct*100+fixedN*50+W.kills*10+dlv*50+stars*30+(win?500:0)+(PARTY.on?PARTY.bonus:0))*(MODE==='hero'?HERO.score:1));
+  $('#sScoreNote').textContent=`정답 100점 · 다시 맞힘 +50점(${fixedN}개) · 처치 10점`+(MAPK==='island'?` · 배달 50점(${dlv}개)`:'')+(stars?` · 별 30점(${stars}개)`:'')+(PEACE_RUN?' · 평화 모드':'')+(PARTY.on?` · 거점 지키기 +${PARTY.bonus}점`:'')+' · 승리 500점'+(MODE==='hero'?' · 영웅 모드 ×1.5':'');
   if (MAPK==='island'&&W.isl) $('#endMsg').textContent=`택배 ${W.isl.delivered}개 배달`+(stars?` · 제시간 배달 ★${stars}`:'')+(W.isl.lost?` · 도둑에게 ${W.isl.lost}개 잃어버림`:'')+'. '+$('#endMsg').textContent;
-  const newSkill=updateSkill(win);
+  const newSkill=PARTY.on?loadSkill():updateSkill(win);
   const d=new Date();
   const when=`${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
   lastResult={diff:DIFF,mode:MODE,nick:NICK,cls:CI.cls,cid:CI.cid,sch:CI.sch,grade:CI.grade,year:CI.year,label:CI.label,unit:unit?unit.name:'',unitId:playUnit,win,score,correct:W.correct,asked:W.asked,kills:W.kills,

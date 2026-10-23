@@ -31,7 +31,7 @@ const skillLabel=()=>JOB==='mage'?ELEM[MELEM].skill:JOBS[JOB].skillName;
 
 /* 직업별 기본 차림 (2단계에서 직업별 상점으로 바뀌어요) */
 // 궁수 · 마법사는 각자 모델(레인저 · 마법사)이 따로 있어요. 상점 옷은 기사가 입고, 색 · 칼 궤적은 모두 함께 써요
-function jobLookFor(j){ return equippedLook(); }
+function jobLookFor(j){ return equippedLook(j); }
 function jobLook(){ return jobLookFor(JOB); }
 
 /* 마우스 조준 (PC): 커서가 가리키는 땅 쪽으로 쏴요. 커서 방향 앞 20도 안의 적에게는 살짝 휘어서 맞아요 */
@@ -94,8 +94,10 @@ function crowdSpot(range,fallback){
 function mobsNear(x,z,r){ return mobs.filter(m=>m.dying<0&&!(m.spawnT>0)&&Math.hypot(m.x-x,m.z-z)<r+m.r*.5); }
 
 /* 상태 이상: 불타기 · 느려짐 */
-function burn(m,sec,dps){ m.burnT=Math.max(m.burnT||0,sec); m.burnDps=Math.max(m.burnDps||0,dps); }
-function slowMob(m,sec,k){ m.slowT=Math.max(m.slowT||0,sec); m.slowK=Math.min(m.slowK||1,k); }
+function burn(m,sec,dps){ if (PARTY.on && !PARTY.host && m.net){ partySend({k:'st',id:m.id,b:[sec,dps]}); return; } burnRaw(m,sec,dps); }
+function burnRaw(m,sec,dps){ m.burnT=Math.max(m.burnT||0,sec); m.burnDps=Math.max(m.burnDps||0,dps); }
+function slowMob(m,sec,k){ if (PARTY.on && !PARTY.host && m.net){ partySend({k:'st',id:m.id,s:[sec,k]}); return; } slowRaw(m,sec,k); }
+function slowRaw(m,sec,k){ m.slowT=Math.max(m.slowT||0,sec); m.slowK=Math.min(m.slowK||1,k); }
 function mobStatus(m,dt){
   if (m.slowT>0){ m.slowT-=dt; if (m.slowT<=0){ m.slowT=0; m.slowK=1; } }
   if (m.burnT>0){ m.burnT-=dt; m.burnTick=(m.burnTick||0)-dt;
@@ -265,6 +267,7 @@ function mageSkill(){
 }
 /* Q 필살기: 퀴즈 3문제를 맞히면 가득 차요 */
 function ultimate(){
+  if (P.down) return;
   if (W.paused || W.state!=='play' || PEACE_RUN) return;
   if ((W.ult||0)<ULT_NEED){ flashPrompt(`필살기는 퀴즈를 ${ULT_NEED-(W.ult||0)}문제 더 맞히면 쓸 수 있어요`,1.6); return; }
   W.ult=0; if (W.stats) W.stats.ults++; showBanner(`${ultLabel()}!`); SFX.wave();
@@ -294,6 +297,7 @@ function ultTick(dt){
 /* 주인공이 맞을 때: 막기 · 방어막 · 직업 체력 */
 function hurtPlayer(amount,src){
   if (W.t<=W.invuln || PEACE_RUN) return 0;
+  if (PARTY.on && (W.paused || P.down || PARTY.ended)) return 0;
   let dmg=amount;
   if (JOB==='knight' && P.blockT>0 && src){
     const dx=src.x-P.x, dz=src.z-P.z, d=Math.hypot(dx,dz)||1;
@@ -341,6 +345,7 @@ function setJob(j,el){
   if (j && JOBS[j]) JOB=j; if (el && ELEM[el] && ownedElems().includes(el)) MELEM=el;
   try{ localStorage.setItem('gsd-job',JOB); localStorage.setItem('gsd-elem',MELEM); }catch(e){}
   renderJobPick(); if (WORLD_READY && W.state!=='play') applyLook(jobLook());
+  try{ partyJobChanged(); }catch(e){}
 }
 function applyJobHUD(){
   const J=jobInfo();
@@ -443,17 +448,18 @@ function updateSkillHUD(){
 
 function hitMob(m,dmg,sx,sz,kbk,col,byPlayer,o){
   o=o||{};
+  if (PARTY.on && !PARTY.host && m.net) return partyClientHit(m,dmg,sx,sz,kbk,col,byPlayer,o);
   const dx=m.x-sx, dz=m.z-sz, d=Math.hypot(dx,dz)||1, hy=m.boss?2.4:1.1;
   const k=(m.boss?3:7)*kbk; m.kbx=dx/d*k; m.kbz=dz/d*k;
   if (m.shield>0){ if (byPlayer){ flashPrompt('보호막! 퀴즈를 맞혀야 깰 수 있어요',1.5); SFX.block(); } fx.burst(m.x,2.4,m.z,0x5cc8f0,8,4); fx.num(m.x,5,m.z,'막힘','#9fe3ff'); return false; }
-  const hpBefore=m.hp; m.hp-=dmg; if (W.stats && o.src!=='turret') W.stats.dealt+=Math.max(0,Math.min(dmg,hpBefore)); m.flash=o.crit?.2:.15; if (!m.boss && !o.noStun) m.stun=Math.max(m.stun||0,o.stun||.2);
+  const hpBefore=m.hp; m.hp-=dmg; if (W.stats && o.src!=='turret' && !o.by) W.stats.dealt+=Math.max(0,Math.min(dmg,hpBefore)); m.flash=o.crit?.2:.15; if (!m.boss && !o.noStun) m.stun=Math.max(m.stun||0,o.stun||.2);
   if (!o.quiet){ fx.burst(m.x,hy,m.z,0xfff1a8,o.crit?12:7,o.crit?6:4); fx.burst(m.x,hy,m.z,0xffffff,o.crit?8:4,8); }
   if (!o.quiet) impactFx(m.x-dx/d*.35,hy,m.z-dz/d*.35,o.crit?0xffd34d:0xfff2d6,o.crit?3.4:(o.fin?2.8:2));
   fx.num(m.x,m.boss?5.2:2.5,m.z,o.crit?Math.round(dmg)+'!':String(Math.round(dmg)),o.crit?'#ffcf3a':col,o.crit?1.4:1);
   if (m.hp>0 && m.anim && !o.noStun && !(m.boss&&m.slamT>0)) m.anim.once('hit',1.5,true);
-  if (m.hp<=0){ m.dying=1.6; W.kills++; if (PEACE_RUN){ fx.rise(m.x,m.z,0xdff1ff,16); if (m.anim){ m.anim.dead=true; } } else if (m.anim) m.anim.die(); fx.burst(m.x,.9,m.z,m.color,m.boss?40:22,m.boss?8:6); SFX.kill();
+  if (m.hp<=0){ m.dying=1.6; if (!o.by || o.by===PARTY.me) W.kills++; m.killer=o.by||PARTY.me; if (PEACE_RUN){ fx.rise(m.x,m.z,0xdff1ff,16); if (m.anim){ m.anim.dead=true; } } else if (m.anim) m.anim.die(); fx.burst(m.x,.9,m.z,m.color,m.boss?40:22,m.boss?8:6); SFX.kill();
     if (!m.boss && (o.launch||o.crit)){ m.avy=o.launch?7:4.5; m.kbx*=1.7; m.kbz*=1.7; }
-    if (m.boss) shake=.5; if (!m.boss && Math.random()<CARD_CHANCE) dropCard(m.x,m.z); }
+    if (m.boss) shake=.5; if (!m.boss && !PARTY.on && Math.random()<CARD_CHANCE) dropCard(m.x,m.z); }
   return true;
 }
 

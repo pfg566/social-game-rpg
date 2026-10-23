@@ -3,8 +3,6 @@
 /* ---------- 3D 모델 불러오기 ---------- */
 const MODEL_FILES={
   pclips:'models/pclips.glb?v=2', p_knight:'models/p2/Knight.glb', p_ranger:'models/p2/Ranger.glb', p_mage:'models/p2/Mage.glb',
-  w_sword1:'models/p2/sword_1handed.glb', w_sword2:'models/p2/sword_2handed.glb', w_shround:'models/p2/shield_round.glb', w_shbadge:'models/p2/shield_badge.glb',
-  w_shsquare:'models/p2/shield_square.glb', w_shspike:'models/p2/shield_spikes.glb', w_bow:'models/p2/bow_withString.glb', w_staff:'models/p2/staff.glb',
   mage:'models/mage.glb', barbarian:'models/barbarian.glb', rogue:'models/rogue.glb',
   sk_minion:'models/sk_minion.glb', sk_rogue:'models/sk_rogue.glb?v=3', sk_warrior:'models/sk_warrior.glb',
   blade:'models/Skeleton_Blade.gltf', axe:'models/Skeleton_Axe.gltf'

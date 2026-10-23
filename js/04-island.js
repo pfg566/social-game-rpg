@@ -233,7 +233,7 @@ Anim.prototype._to=function(a,t){ if (this.cur && this.cur!==a) this.cur.fadeOut
 Anim.prototype.setBase=function(k,speed){ this.want=k; if (this.dead||this.lock) return; const a=this.actions[k]; if (!a) return;
   if (speed) a.timeScale=speed; if (this.baseKey===k) return; this.baseKey=k; a.setLoop(THREE.LoopRepeat,Infinity); a.clampWhenFinished=false; this._to(a,.2); };
 Anim.prototype.once=function(k,speed,force){ if (this.dead) return false; if (this.lock && !force) return false; const a=this.actions[k]; if (!a) return false;
-  a.setLoop(THREE.LoopOnce,1); a.clampWhenFinished=true; a.timeScale=speed||1; this.lock=true; this.baseKey=null; this._to(a,.08); return true; };
+  a.setLoop(THREE.LoopOnce,1); a.clampWhenFinished=true; a.timeScale=speed||1; this.lock=true; this.baseKey=null; this._to(a,.08); if (this.onAct) this.onAct(k,speed); return true; };
 Anim.prototype.die=function(){ if (this.dead) return; this.once('death',1,true); this.dead=true; };
 Anim.prototype.revive=function(){ this.dead=false; this.lock=false; this.baseKey=null; this.mixer.stopAllAction(); this.cur=null; this.setBase('idle'); };
 function addNpc(key,x,z,ry){

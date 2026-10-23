@@ -24,8 +24,8 @@ function openQuiz(item,source){
   else if (item.kind==='ox'){ opts=['O','X']; correctIdx=item.a?0:1; }
   else { opts=CLS_OPTS; correctIdx=item.a; }
   Object.assign(Q,{item,correctIdx,nOpts:opts.length,start:performance.now(),dur:Math.round(TIME_BY_KIND[item.kind]*(MODE==='hero'&&source.type!=='revive'?HERO.quiz:1)*(MODE==='hero'?1:EASEF.quiz)),answered:false,source,resultOnly:false});
-  const tagName = source.type==='station'?(source.station.title||`${ZINFO[source.station.zone].name} 퀴즈`):source.type==='card'?(item.kind==='ox'?'지식 카드 · O/X':'지식 카드 · 분류'):source.type==='parcel'?'택배 퀴즈':'돌발 퀴즈';
-  const tagColor = source.type==='station'?(source.station.hex||ZINFO[source.station.zone].color):source.type==='card'?'#c28a00':source.type==='parcel'?'#b86b1f':'#18213a';
+  const tagName = source.type==='cap'?`점령 퀴즈 · ${CQ.pts[source.point].k} ${CQ.pts[source.point].name}`:source.type==='station'?(source.station.title||`${ZINFO[source.station.zone].name} 퀴즈`):source.type==='card'?(item.kind==='ox'?'지식 카드 · O/X':'지식 카드 · 분류'):source.type==='parcel'?'택배 퀴즈':'돌발 퀴즈';
+  const tagColor = source.type==='cap'?'#2f6fed':source.type==='station'?(source.station.hex||ZINFO[source.station.zone].color):source.type==='card'?'#c28a00':source.type==='parcel'?'#b86b1f':'#18213a';
   $('#qtag').textContent=tagName; $('#qtag').style.background=tagColor;
   $('#qtext').textContent = item.kind==='cls' ? `“${item.q}” ${ZCFG.q}` : item.q;
   const box=$('#qopts'); box.innerHTML=''; box.className='opts'+(opts.length===2?' two':''); box.hidden=false;
@@ -62,6 +62,7 @@ function settle(ok,item,source){
     if (entry && ok) entry.fixed=true;
     return {fx:{label: ok?(left>0?`부활까지 ${left}문제 남았어요`:'부활 성공!'):'부활 실패'},extras:ok?[]:['이번 판은 여기까지예요. 결과 화면에서 틀린 문제를 복습해요.']};
   }
+  if (source && source.type==='cap') partyQuizDone(source.point,ok);
   const parcelQ=source&&source.type==='parcel';
   const fx=jobFx((ok?GOOD:BAD)[parcelQ||PEACE_RUN?1:Math.floor(Math.random()*3)],ok);
   if (parcelQ) extras.push(ok?'급행 배송! 빨리 달려서 배달하세요.':'상자가 무거워졌어요… 그래도 배달은 할 수 있어요.');
@@ -69,9 +70,9 @@ function settle(ok,item,source){
   if (entry && ok) extras.push('지난번에 틀린 문제를 이번엔 맞혔어요!');
   if (!entry && !ok) extras.push('이 문제는 잠시 뒤에 다시 나와요.');
   const boss=liveBoss();
-  if (ok && boss && boss.shield>0){
+  if (!PARTY.on && ok && boss && boss.shield>0){
     boss.shield--; W.lastShield=boss; extras.push(boss.shield>0?`보스 보호막 파괴! 남은 보호막 ${boss.shield}개`:'보스 보호막이 모두 깨졌어요. 이제 공격이 통해요!');
-  } else if (!ok && boss && boss.shield<boss.shieldMax){
+  } else if (!PARTY.on && !ok && boss && boss.shield<boss.shieldMax){
     boss.shield++; extras.push(`오답이라 보스 보호막이 하나 되살아났어요 (${boss.shield}개)`);
   }
   if (ok && MAPK==='defense' && source && source.type==='station' && source.station.turret){

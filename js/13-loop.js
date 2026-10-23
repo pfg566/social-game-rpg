@@ -16,6 +16,7 @@ function frame(now){
     if (rem<=0) answer(-1);
   }
 
+  if (PARTY.on && W.state==='play' && W.paused){ W.t+=dt; W.effects=W.effects.filter(e=>e.until>W.t); partyTick(dt); }
   if (W.state==='play' && !W.paused){
     W.t+=dt;
     W.effects=W.effects.filter(e=>e.until>W.t);
@@ -37,6 +38,7 @@ function frame(now){
     while (P.spinHits.length && W.t>=P.spinHits[0].t) spinHit(P.spinHits.shift());
     if (P.buffer && P.atkCd<=0 && P.dodgeT<=0 && P.spinT<=0 && !(P.dashT>0) && !(P.ultT>0)) attack();
 
+    if (PARTY.on) partyTick(dt); else {
     for (const m of mobs){
       if (m.dying>=0){ if (m.aimLine) m.aimLine.visible=false; if (m.leapRing) m.leapRing.visible=false; m.dying=Math.max(0,m.dying-dt); if (m.onDying) m.onDying();
         m.x+=m.kbx*dt; m.z+=m.kbz*dt; m.kbx*=Math.pow(.03,dt); m.kbz*=Math.pow(.03,dt);
@@ -144,6 +146,7 @@ function frame(now){
         else openQuiz(pick(['mc'],MC),{type:'timed'});
       }
     }
+    }
   }
 
   // 시각 갱신
@@ -174,7 +177,7 @@ function frame(now){
   for (const c of cards){ c.m.rotation.y=real*2; c.card.position.y=1.2+Math.sin(real*3+c.x)*.15; }
 
   // 주인공 동작
-  const animDt=W.paused&&W.state==='play'?0:dt;
+  const animDt=W.paused&&W.state==='play'&&!PARTY.on?0:dt;
   const moved=Math.hypot(P.x-pg.position.x,P.z-pg.position.z);
   pg.position.set(P.x,0,P.z);
   { let dy=Math.atan2(P.fx,P.fz)-pg.rotation.y; dy=Math.atan2(Math.sin(dy),Math.cos(dy)); pg.rotation.y+=dy*Math.min(1,dt*14); }
@@ -185,7 +188,7 @@ function frame(now){
     const A=knight.anim;
     if (W.state==='play'){
       const U=knight.upper;
-      if (A.dead||endPose){ A.revive(); endPose=false; U.cur=null; }
+      if ((A.dead&&!P.down)||endPose){ A.revive(); endPose=false; U.cur=null; }
       if (hurtT>lastHurt+.05 && !A.lock) A.once('hit',1.6);
       // 제자리에서 베다가 움직이기 시작하면: 남은 베기를 상체로 넘기고 하체는 바로 달려요
       if (walking && A.lock && A.cur && !A.dead){ const key=ATK_KEYS.find(k2=>A.actions[k2]===A.cur);
@@ -222,7 +225,7 @@ function frame(now){
   // 배경 움직임
   for (const c of clouds){ c.position.x+=c.userData.v*dt; if (c.position.x>130) c.position.x=-130; }
   smokeT-=dt; if (smokeT<=0){ smokeT=.5; if (MAPK==='zones') fx.smoke(29.2,5.4,7.6); }
-  updateDefenseLook(real,dt); islandLook(real,dt); aimTick(real); fpsTick(now);
+  updateDefenseLook(real,dt); islandLook(real,dt); partyLook(real,dt); aimTick(real); fpsTick(now);
   if (MOUSE.held && JOB!=='archer' && W.state==='play' && !W.paused) attack();
   fx.update(dt); updateCombatFx(dt); updateDreamy(real); qualityTick(now);
 
@@ -238,7 +241,7 @@ function frame(now){
 
   hurtT=Math.max(0,hurtT-dt); $('#hurt').style.opacity=hurtT>0?1:0;
   if (W.state==='play'){
-    updateHUD(); updateSkillHUD();
+    updateHUD(); updateSkillHUD(); partyHUD();
     const pr=$('#prompt');
     let msg='';
     if (W.t<promptUntil) msg=promptMsg;

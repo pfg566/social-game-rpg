@@ -7,7 +7,7 @@
 <style>body{margin:0}[hidden]{display:none!important}img{max-width:100%}</style>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jua&family=IBM+Plex+Sans+KR:wght@400;600;700&display=swap">
-<link rel="stylesheet" href="style.css?v=20261023c">
+<link rel="stylesheet" href="style.css?v=20261023f">
 </head>
 <body>
 
@@ -68,6 +68,7 @@
   <div class="shop-panel card">
     <div class="shop-top"><h2>상점 · 꾸미기</h2><span class="pc-coins"><i></i><b id="shopCoins">0</b></span><button class="btn small ghost" id="shopClose">닫기</button></div>
     <p class="shop-note" id="shopNote"></p>
+    <div class="tabs jobtabs" id="shopJobs"></div>
     <div class="tabs" id="shopTabs"></div>
     <div class="shop-grid" id="shopGrid"></div>
     <div class="shop-act"><div id="shopSel"></div><button class="btn small" id="shopBuy"></button></div>
@@ -159,6 +160,7 @@
     <p class="bankinfo lobby" id="bankInfo"></p>
     <div class="title-actions lobby">
       <button class="btn" id="startBtn">게임 시작</button>
+      <button class="btn ghost partybtn" id="partyBtn">👥 파티 모드 · 점령전 (최대 5명 · 최고 난이도)</button>
       <p class="gatenote" id="gateNote" hidden></p>
     </div>
     <div class="history lobby" id="history" hidden></div>
@@ -183,7 +185,25 @@
     </div>
   </div>
   <button class="btn ghost shopbtn shopcorner lobby" id="shopBtn" disabled>🎒 상점 · 꾸미기</button>
+  <div class="partypanel card" id="partyPanel" hidden>
+    <div class="pp-top"><h2>👥 파티 모드 · 점령전</h2><button class="btn small ghost" id="ppClose">닫기</button></div>
+    <div id="ppList">
+      <p class="pp-note" id="ppNote"></p>
+      <div class="pp-rooms" id="ppRooms"></div>
+      <div class="pp-make"><b>새 방 만들기</b>
+        <div class="pp-modes"><button data-pmode="quiz" class="on">🧠 퀴즈 점령<small>게이지를 채우고 퀴즈를 맞혀야 점령</small></button><button data-pmode="fight">⚔️ 몹 막기<small>퀴즈 없이 거점을 지켜요</small></button></div>
+        <button class="btn" id="ppCreate">방 만들기</button></div>
+    </div>
+    <div id="ppRoom" hidden>
+      <p class="pp-mode" id="ppMode"></p>
+      <ol class="pp-members" id="ppMembers"></ol>
+      <p class="pp-note" id="ppRoomNote"></p>
+      <div class="pp-act"><button class="btn" id="ppStart" hidden>시작</button><button class="btn ghost" id="ppLeave">방 나가기</button></div>
+    </div>
+  </div>
 </div>
+<div class="partyhud" id="partyHud" hidden><div class="cq-pts" id="cqPts"></div><div class="cq-info" id="cqInfo"></div></div>
+<div class="partylist" id="partyList" hidden></div>
 
 <div class="screen locintro reviveintro" id="reviveIntro" hidden>
   <div class="panel card" role="dialog" aria-labelledby="reviveTitle">
@@ -337,19 +357,20 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="firebase-config.js"></script>
-<script src="js/01-data.js?v=20261023c"></script>
-<script src="js/02-graphics.js?v=20261023c"></script>
-<script src="js/03-world.js?v=20261023c"></script>
-<script src="js/04-island.js?v=20261023c"></script>
-<script src="js/05-play.js?v=20261023c"></script>
-<script src="js/06-jobs.js?v=20261023c"></script>
-<script src="js/06p-player.js?v=20261023c"></script>
-<script src="js/07-quiz.js?v=20261023c"></script>
-<script src="js/08-hud.js?v=20261023c"></script>
-<script src="js/09-server.js?v=20261023c"></script>
-<script src="js/10-shop.js?v=20261023c"></script>
-<script src="js/11-gate-editor.js?v=20261023c"></script>
-<script src="js/12-lobby.js?v=20261023c"></script>
-<script src="js/13-loop.js?v=20261023c"></script>
+<script src="js/01-data.js?v=20261023f"></script>
+<script src="js/02-graphics.js?v=20261023f"></script>
+<script src="js/03-world.js?v=20261023f"></script>
+<script src="js/04-island.js?v=20261023f"></script>
+<script src="js/05-play.js?v=20261023f"></script>
+<script src="js/06-jobs.js?v=20261023f"></script>
+<script src="js/06p-player.js?v=20261023f"></script>
+<script src="js/07-quiz.js?v=20261023f"></script>
+<script src="js/08-hud.js?v=20261023f"></script>
+<script src="js/09-server.js?v=20261023f"></script>
+<script src="js/10-shop.js?v=20261023f"></script>
+<script src="js/11-gate-editor.js?v=20261023f"></script>
+<script src="js/12-lobby.js?v=20261023f"></script>
+<script src="js/13-loop.js?v=20261023f"></script>
+<script src="js/14-party.js?v=20261023f"></script>
 </body>
 </html>

@@ -61,6 +61,7 @@ function spawnMob(def,isBoss,at){
   g.position.set(x,0,z); g.rotation.y=Math.atan2(P.x-x,P.z-z); scene.add(g);
   fx.burst(x,.4,z,isBoss?0x8a8f99:0xc9c2b0,isBoss?30:12,isBoss?6:3);
   const K=MODE==='hero'?{hp:HERO.hp,dmg:HERO.dmg,spd:HERO.spd}:{hp:DIFF*EASEF.hp,dmg:DIFF*EASEF.dmg,spd:(.9+.1*DIFF)*EASEF.spd};
+  if (PARTY.on){ K.hp*=PARTY_K.hp; K.dmg*=PARTY_K.dmg; K.spd*=PARTY_K.spd; }   // 파티 판: 영웅 모드보다 더 세요
   const hp=Math.round((isBoss?def.boss.hp:def.hp)*K.hp*MOB_HP);
   const mats=c.mats; let em=-1;
   const m={g,body:c.root,parts:{},color,boss:isBoss,r:isBoss?1.6:.8,x,z,hp,max:hp,spd:(isBoss?def.boss.spd:def.spd)*K.spd,dmg:Math.round((isBoss?def.boss.dmg:def.dmg)*K.dmg),
@@ -195,6 +196,7 @@ function playUpper(key,speed,from){
   a.reset(); a.setLoop(THREE.LoopOnce,1); a.clampWhenFinished=true; a.timeScale=speed; a.setEffectiveWeight(1); a.fadeIn(from?.1:.05); a.play();
   if (from) a.time=from;
   U.cur=a; U.left=(a.dur-(from||0))/speed;
+  if (!from && knight.anim.onAct) knight.anim.onAct(key,speed);
 }
 function knightAttackAnim(key,speed){
   if (!knight) return;
@@ -307,6 +309,7 @@ function aimAssist(){
   if (best){ const dx=best.x-P.x, dz=best.z-P.z, d=Math.hypot(dx,dz)||1; P.fx=dx/d; P.fz=dz/d; }
 }
 function attack(){
+  if (P.down) return;
   if (W.paused || W.state!=='play' || PEACE_RUN) return;
   if (P.dodgeT>0 || P.spinT>0 || P.dashT>0 || P.ultT>0){ P.buffer=true; return; }
   if (JOB!=='knight'){ jobAttack(); return; }
@@ -336,6 +339,7 @@ function doHit(c){
   if (n){ hitStop=Math.max(hitStop,big?.09:.055); SFX.hit(big); if (big) shake=Math.max(shake,.16); }
 }
 function dodge(){
+  if (P.down) return;
   if (W.paused || W.state!=='play' || P.dodgeCd>0 || P.dodgeT>0 || P.dashT>0) return;
   if (W.stats) W.stats.dodges++;
   if (JOB==='knight'){ knightBlock(); P.dodgeMax=P.dodgeCd; return; }
@@ -349,7 +353,7 @@ function dodge(){
   SFX.dodge(); fx.burst(P.x,.2,P.z,0xd8c9a8,8,2.5);
 }
 function spinSkill(){
-  if (PEACE_RUN) return;
+  if (PEACE_RUN || P.down) return;
   if (W.paused || W.state!=='play' || P.spinCd>0 || P.ultT>0 || P.dashT>0) return;
   if (P.dodgeT>0){ P.spinBuf=true; return; }
   P.blockT=0;
