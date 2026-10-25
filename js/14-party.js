@@ -125,9 +125,10 @@ function renderRooms(){
   if (html!==PP.html){ PP.html=html; $('#ppRooms').innerHTML=html; }
   $('#ppCreate').disabled=!ok;
 }
+function gateWhy(){ const g=activeGate(); if (!g) return '🔒 선생님이 게임을 열어야 방을 만들 수 있어요.'; if (playsLeft(g)<=0) return '이번 시간에 할 수 있는 판을 다 했어요. 선생님께 한 판 더를 부탁하세요.'; return '지금은 방을 만들 수 없어요.'; }
 async function createRoom(){
-  if (!gateOpen()) return;
-  PARTY.cid=partyCid(); PARTY.me=myUid(); if (!PARTY.cid||!PARTY.me) return;
+  if (!gateOpen()){ ppNote(gateWhy(),'err'); return; }
+  PARTY.cid=partyCid(); PARTY.me=myUid(); if (!PARTY.cid||!PARTY.me){ ppNote('로그인 정보를 확인하지 못했어요. 새로고침 후 다시 해 주세요.','err'); return; }
   const rid=pRef('partyIdx/'+PARTY.cid).push().key; PARTY.rid=rid;
   const room={meta:{host:PARTY.me,hostName:myName().slice(0,12),mode:PP.mode,state:'wait',at:firebase.database.ServerValue.TIMESTAMP},m:{[PARTY.me]:memberInfo()}};
   try{
@@ -135,14 +136,14 @@ async function createRoom(){
     await withTimeout(pRef(livePath()+'/host').set(PARTY.me),8000);
     try{ pRef(idxPath()).onDisconnect().remove(); pRef(livePath()).onDisconnect().remove(); }catch(e){}
     showRoom();
-  }catch(e){ PARTY.rid=''; ppNote('방을 만들지 못했어요. 선생님께 보안 규칙이 최신인지 알려 주세요.','err'); }
+  }catch(e){ const code=String(e&&(e.code||e.message)||'오류'); try{ pRef(idxPath()).remove().catch(()=>{}); }catch(_){} PARTY.rid=''; ppNote(`방을 만들지 못했어요 (${code}).`+(/permission/i.test(code)?' 선생님께 보안 규칙이 최신인지 알려 주세요.':' 잠시 뒤 다시 해 보세요.'),'err'); }
 }
 async function joinRoom(rid){
-  const r=PP.rooms[rid]; if (!r||!gateOpen()) return;
+  const r=PP.rooms[rid]; if (!r) return; if (!gateOpen()){ ppNote(gateWhy(),'err'); return; }
   if (Object.keys(r.m||{}).length>=5){ ppNote('방이 가득 찼어요.','err'); return; }
   PARTY.rid=rid; PARTY.me=myUid();
   try{ await withTimeout(pRef(idxPath()+'/m/'+PARTY.me).set(memberInfo()),8000); try{ pRef(idxPath()+'/m/'+PARTY.me).onDisconnect().remove(); }catch(e){} showRoom(); }
-  catch(e){ PARTY.rid=''; ppNote('들어가지 못했어요. 잠시 뒤 다시 해 보세요.','err'); }
+  catch(e){ const code=String(e&&(e.code||e.message)||'오류'); PARTY.rid=''; ppNote(`들어가지 못했어요 (${code}). 잠시 뒤 다시 해 보세요.`,'err'); }
 }
 function showRoom(){
   stopList(); $('#ppList').hidden=true; $('#ppRoom').hidden=false;
