@@ -116,9 +116,9 @@ function bgArrowMesh(){
   if (!bgArrow){ bgArrow=new THREE.Group();
     const sh=new THREE.Shape(); sh.moveTo(0,.95); sh.lineTo(.5,.25); sh.lineTo(.2,.25); sh.lineTo(.2,-.4); sh.lineTo(-.2,-.4); sh.lineTo(-.2,.25); sh.lineTo(-.5,.25); sh.lineTo(0,.95);
     const m=new THREE.Mesh(new THREE.ShapeGeometry(sh),new THREE.MeshBasicMaterial({color:0xc06bff,side:THREE.DoubleSide,depthWrite:false,transparent:true,opacity:.95}));
-    m.rotation.x=-Math.PI/2; m.position.z=2.6; bgArrow.add(m);
+    m.rotation.x=Math.PI/2; m.position.z=2.6; bgArrow.add(m);
     const o=new THREE.Mesh(new THREE.ShapeGeometry(sh),new THREE.MeshBasicMaterial({color:0x18213a,side:THREE.DoubleSide,depthWrite:false}));
-    o.rotation.x=-Math.PI/2; o.position.set(0,-.01,2.6); o.scale.setScalar(1.22); bgArrow.add(o);
+    o.rotation.x=Math.PI/2; o.position.set(0,-.01,2.6); o.scale.setScalar(1.22); bgArrow.add(o);
     bgArrow.visible=false; scene.add(bgArrow); }
   return bgArrow;
 }

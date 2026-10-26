@@ -239,9 +239,9 @@ within('zones',()=>[['hq',0x3b6fd9],['lab',0x21966f],['fac',0xea7d1f]].forEach((
   const ar=new THREE.Group();
   const sh=new THREE.Shape(); sh.moveTo(0,.95); sh.lineTo(.5,.25); sh.lineTo(.2,.25); sh.lineTo(.2,-.4); sh.lineTo(-.2,-.4); sh.lineTo(-.2,.25); sh.lineTo(-.5,.25); sh.lineTo(0,.95);
   const m=new THREE.Mesh(new THREE.ShapeGeometry(sh),new THREE.MeshBasicMaterial({color:c,side:THREE.DoubleSide,depthWrite:false,transparent:true,opacity:.95}));
-  m.rotation.x=-Math.PI/2; m.position.z=2.6; ar.add(m);
+  m.rotation.x=Math.PI/2; m.position.z=2.6; ar.add(m);
   const o=new THREE.Mesh(new THREE.ShapeGeometry(sh),new THREE.MeshBasicMaterial({color:0x18213a,side:THREE.DoubleSide,depthWrite:false}));
-  o.rotation.x=-Math.PI/2; o.position.set(0,-.01,2.6); o.scale.setScalar(1.22); ar.add(o);
+  o.rotation.x=Math.PI/2; o.position.set(0,-.01,2.6); o.scale.setScalar(1.22); ar.add(o);
   ar.visible=false; arrowG.add(ar); locArrows[k]=ar;
 }));
 
