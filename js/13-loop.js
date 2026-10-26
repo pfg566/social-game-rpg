@@ -20,8 +20,9 @@ function frame(now){
   if (W.state==='play' && !W.paused){
     W.t+=dt;
     W.effects=W.effects.filter(e=>e.until>W.t);
-    let ix=(keys.KeyD||keys.ArrowRight?1:0)-(keys.KeyA||keys.ArrowLeft?1:0)+joy.x;
-    let iz=(keys.KeyS||keys.ArrowDown?1:0)-(keys.KeyW||keys.ArrowUp?1:0)+joy.y;
+    const am=arrowsMove();
+    let ix=(keys.KeyD||am&&keys.ArrowRight?1:0)-(keys.KeyA||am&&keys.ArrowLeft?1:0)+joy.x;
+    let iz=(keys.KeyS||am&&keys.ArrowDown?1:0)-(keys.KeyW||am&&keys.ArrowUp?1:0)+joy.y;
     const L=Math.hypot(ix,iz);
     if (P.dashT>0){ dashTick(dt); }
     else if (P.dodgeT>0){ P.dodgeT-=dt; if (P.dodgeT<1e-4) P.dodgeT=0; P.x+=P.ddx*16*dt; P.z+=P.ddz*16*dt; if (Math.random()<.6) fx.burst(P.x,.15,P.z,0xd8c9a8,2,1.4); }
@@ -103,15 +104,17 @@ function frame(now){
         else if (!q.first) flashPrompt('해골 지원군이 몰려와요!',2); } }
     if (W.nextWaveAt<0 && !W.gate && W.wave>=0 && mobs.length===0 && !W.spawnQ.length && islWaveDone()){
       if (W.wave<WAVES.length-1){
-        P.hp=Math.min(P.max,P.hp+Math.round(P.max*.2)); W.gate=true; stations.forEach(s=>s.readyAt=W.t);
-        showBanner(MAPS[MAPK].clearText);
+        P.hp=Math.min(P.max,P.hp+Math.round(P.max*.2));
+        if (NEWQ()){ showBanner('웨이브 클리어! 정비 시간'); startPrep(); }
+        else { W.gate=true; stations.forEach(s=>s.readyAt=W.t); showBanner(MAPS[MAPK].clearText); }
       } else endGame(true);
     }
 
     if (W.state==='play'){
       // 지식 카드 줍기
       let pickedCard=null;
-      for (const c of cards){ if (Math.hypot(P.x-c.x,P.z-c.z)<1.4){ pickedCard=c; break; } }
+      if (!W.prep) for (const c of cards){ if (Math.hypot(P.x-c.x,P.z-c.z)<1.4){ pickedCard=c; break; } }
+      if (!W.paused) bgTick();
       // 위치 퀴즈 판정
       if (W.loc){
         const zNow=zoneAt(P.x,P.z);
@@ -120,7 +123,7 @@ function frame(now){
         else if (W.t>=W.loc.until) finishLoc(null);
       }
       let near=null;
-      if (!W.loc && !W.paused) for (const s of stations){ if (W.t>=s.readyAt && Math.hypot(P.x-s.g.position.x,P.z-s.g.position.z)<2.3) near=s; }
+      if (!W.loc && !W.paused) for (const s of stations){ if (W.t>=s.readyAt && stationOn(s) && Math.hypot(P.x-s.g.position.x,P.z-s.g.position.z)<2.3) near=s; }
       if (P.hp<=0 || (MAPK==='defense' && W.door<=0)){ if (P.hp<0) P.hp=0; if (W.door<0) W.door=0; if (!tryRevive()) endGame(false); }
       else if (W.paused){ /* 위치 퀴즈 결과 표시 중 */ }
       else if (pickedCard){
@@ -140,9 +143,9 @@ function frame(now){
         } else item=pick(['mc'],MC);
         openQuiz(item,{type:'station',station:near});
       }
-      else if (!W.loc && W.t>=W.nextQuiz){
+      else if (!W.loc && !W.prep && W.t>=W.nextQuiz){
         W.timedFlip^=1;
-        if (W.timedFlip && MAPK==='zones' && LOC.length) startLoc();
+        if (W.timedFlip && MAPK==='zones' && LOC.length && !NEWQ()) startLoc();
         else openQuiz(pick(['mc'],MC),{type:'timed'});
       }
     }
@@ -151,10 +154,12 @@ function frame(now){
 
   // 시각 갱신
   const lockedForLoc=!!W.loc;
+  bgVisual(real);
   for (const s of stations){
-    const ready=W.state!=='play'||(W.t>=s.readyAt&&!lockedForLoc);
+    const bgS=!!(W.bg&&W.bg.st===s&&W.state==='play');
+    const ready=bgS||W.state!=='play'||(W.t>=s.readyAt&&!lockedForLoc&&stationOn(s));
     s.gem.rotation.y=real*1.5; s.gem.position.y=2.75+Math.sin(real*2)*.15;
-    s.gemMat.color.setHex(ready?s.color:0x7d8594); s.gemMat.emissive.setHex(ready?s.color:0x000000);
+    const gc=bgS?0xb24dff:s.color; s.gemMat.color.setHex(ready?gc:0x7d8594); s.gemMat.emissive.setHex(ready?gc:0x000000);
     s.light.intensity=ready?.7+Math.sin(real*3)*.2:0;
     s.ring.visible=ready; s.ring.material.opacity=.45+Math.sin(real*4)*.25;
     s.orbit.visible=s.orbit2.visible=s.beam.visible=ready;
@@ -227,6 +232,7 @@ function frame(now){
   smokeT-=dt; if (smokeT<=0){ smokeT=.5; if (MAPK==='zones') fx.smoke(29.2,5.4,7.6); }
   updateDefenseLook(real,dt); islandLook(real,dt); partyLook(real,dt); aimTick(real); fpsTick(now);
   if (MOUSE.held && JOB!=='archer' && W.state==='play' && !W.paused) attack();
+  if (JOB==='archer' && kbAimDir() && W.state==='play' && !W.paused) attack();   // 방향키를 누르고 있으면 그쪽으로 연사
   fx.update(dt); updateCombatFx(dt); updateDreamy(real); qualityTick(now);
 
   // 해 · 카메라
@@ -245,7 +251,7 @@ function frame(now){
     const pr=$('#prompt');
     let msg='';
     if (W.t<promptUntil) msg=promptMsg;
-    else { for (const s of stations){ if (W.t<s.readyAt && Math.hypot(P.x-s.g.position.x,P.z-s.g.position.z)<3) msg=`충전 중 · ${Math.ceil(s.readyAt-W.t)}초 후 다시 풀 수 있어요`; } }
+    else { for (const s of stations){ if (W.t<s.readyAt && s.readyAt<1e9 && stationOn(s) && Math.hypot(P.x-s.g.position.x,P.z-s.g.position.z)<3) msg=`충전 중 · ${Math.ceil(s.readyAt-W.t)}초 후 다시 풀 수 있어요`; } }
     if (msg && !W.paused){ pr.hidden=false; pr.textContent=msg; } else pr.hidden=true;
   }
   renderFrame();

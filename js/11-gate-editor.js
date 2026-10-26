@@ -75,7 +75,7 @@ function renderHistory(){
 renderHistory();
 function endGame(win){
   $('#rewardBox').hidden=true;
-  W.state='end'; W.paused=true; W.loc=null; $('#locIntro').hidden=true; $('#reviveIntro').hidden=true;
+  W.state='end'; W.paused=true; W.loc=null; W.prep=null; $('#prep').hidden=true; $('#locIntro').hidden=true; $('#reviveIntro').hidden=true;
   $('#locCard').hidden=true; $('#gateCard').hidden=true; $('#bossbar').hidden=true; $('#prompt').hidden=true;
   $('#endEyebrow').textContent=win?'승리':'게임 오버';
   W.won=!!win;
@@ -93,13 +93,13 @@ function endGame(win){
   const unit=DATA.units.find(u=>u.id===playUnit);
   const fixedN=W.wrong.filter(w=>w.fixed).length;
   const dlv=MAPK==='island'&&W.isl?W.isl.delivered:0, stars=PEACE_RUN&&W.isl?(W.isl.stars|0):0;
-  const score=Math.round((W.correct*100+fixedN*50+W.kills*10+dlv*50+stars*30+(win?500:0)+(PARTY.on?PARTY.bonus:0))*(MODE==='hero'?HERO.score:1));
-  $('#sScoreNote').textContent=`정답 100점 · 다시 맞힘 +50점(${fixedN}개) · 처치 10점`+(MAPK==='island'?` · 배달 50점(${dlv}개)`:'')+(stars?` · 별 30점(${stars}개)`:'')+(PEACE_RUN?' · 평화 모드':'')+(PARTY.on?` · 거점 지키기 +${PARTY.bonus}점`:'')+' · 승리 500점'+(MODE==='hero'?' · 영웅 모드 ×1.5':'');
+  const score=Math.round((W.correct*100+fixedN*50+W.kills*10+dlv*50+stars*30+(win?500:0)+(PARTY.on?PARTY.bonus:0))*(MODE==='hero'?HERO.score:LEVELS[LEVEL].score));
+  $('#sScoreNote').textContent=`정답 100점 · 다시 맞힘 +50점(${fixedN}개) · 처치 10점`+(MAPK==='island'?` · 배달 50점(${dlv}개)`:'')+(stars?` · 별 30점(${stars}개)`:'')+(PEACE_RUN?' · 평화 모드':'')+(PARTY.on?` · 거점 지키기 +${PARTY.bonus}점`:'')+' · 승리 500점'+(PARTY.on||MODE==='hero'?' · 영웅 ×1.5':LEVEL!=='normal'?` · ${LEVELS[LEVEL].name} ×${LEVELS[LEVEL].score}`:'');
   if (MAPK==='island'&&W.isl) $('#endMsg').textContent=`택배 ${W.isl.delivered}개 배달`+(stars?` · 제시간 배달 ★${stars}`:'')+(W.isl.lost?` · 도둑에게 ${W.isl.lost}개 잃어버림`:'')+'. '+$('#endMsg').textContent;
   const newSkill=PARTY.on?loadSkill():updateSkill(win);
   const d=new Date();
   const when=`${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
-  lastResult={diff:DIFF,mode:MODE,nick:NICK,cls:CI.cls,cid:CI.cid,sch:CI.sch,grade:CI.grade,year:CI.year,label:CI.label,unit:unit?unit.name:'',unitId:playUnit,win,score,correct:W.correct,asked:W.asked,kills:W.kills,
+  lastResult={diff:DIFF,mode:MODE,lv:PARTY.on?'hero':LEVEL,nick:NICK,cls:CI.cls,cid:CI.cid,sch:CI.sch,grade:CI.grade,year:CI.year,label:CI.label,unit:unit?unit.name:'',unitId:playUnit,win,score,correct:W.correct,asked:W.asked,kills:W.kills,
     time:$('#sTime').textContent,timeSec:s,when,wrong:W.wrong.filter(w=>!w.fixed).map(w=>w.item.q),
     job:JOB+(JOB==='mage'?':'+MELEM:''),map:MAPK,ease:easeIdx(),cs:combatStats()};
   $('#endWho').textContent=`${CI.label} ${NICK} · ${lastResult.unit} · ${when}`;
@@ -128,9 +128,9 @@ $('#againBtn').addEventListener('click',tryStart);
 
 /* ---------- 문제은행(단원별) 불러오기 · 문제 관리 ---------- */
 const TYPES={
-  mc:{label:'4지선다',desc:'거점 기둥과 돌발 퀴즈에 나와요. 거점을 정해 두면 그 거점의 기둥에서 주로 나오고, "공통"은 어디서나 나와요.',
+  mc:{label:'4지선다',desc:'정비 시간, 웨이브를 여는 거점 기둥, 돌발 퀴즈(50초마다), 보스 수정에서 나와요. 거점을 정해 두면 그 거점의 기둥에서 주로 나오고, "공통"은 어디서나 나와요.',
       cols:['거점(본사/연구소/생산 공장/공통)','문제','정답','오답1','오답2','오답3','해설']},
-  loc:{label:'위치 퀴즈',desc:'상황을 읽고 알맞은 거점 바닥으로 직접 달려가는 문제예요. 돌발 퀴즈 시간에 번갈아 나와요.',
+  loc:{label:'위치 퀴즈',desc:'상황을 읽고 알맞은 거점 바닥으로 직접 달려가는 문제예요. 웨이브 사이 정비 시간마다 첫 문제로 나와요.',
       cols:['상황','정답 거점(본사/연구소/생산 공장)','해설']},
   ox:{label:'O/X',desc:'몬스터가 떨어뜨린 지식 카드를 주우면 나와요. 10초 안에 풀어야 해요.',
       cols:['문장','정답(O/X)','해설']},
@@ -175,7 +175,7 @@ function setMap(k){
   for (const g in mapGroups) mapGroups[g].visible=g===k;
   bgGroup.visible=k!=='island';
   colliders=MAPSTATE[k].colliders; stations=MAPSTATE[k].stations; npcs=MAPSTATE[k].npcs;
-  WAVES=WAVESETS[k==='zones'?(MAPS.zones.waves||'zones'):k];
+  WAVES=wavesFor(k==='zones'?(MAPS.zones.waves||'zones'):k);
   const M=MAPS[k];
   $('#mapDesc').textContent=M.desc; $('#mapZones').hidden=k!=='zones';
   $('#mapRules').innerHTML=M.rules.concat(['<b>조작:</b> 스페이스 연타 = 3단 콤보(마지막 타가 가장 세요) · Shift = 구르기(잠깐 무적) · E = 회전 베기(8초마다)']).map(r=>`<li>${r}</li>`).join('');
@@ -280,12 +280,12 @@ function renderEditor(){
   const b=B();
   $('#edTabs').innerHTML=Object.keys(TYPES).map(k=>`<button class="tab" role="tab" data-tab="${k}" aria-selected="${k===edTab}">${TYPES[k].label} ${b[k].length}</button>`).join('');
   const um=mapOf(curU());
-  $('#edDesc').textContent=(um!=='zones'&&(edTab==='loc'||edTab==='cls')?`이 단원은 ${MAPS[um].name}이라 이 유형은 게임에 나오지 않아요. `:'')+(um!=='zones'&&edTab==='mc'?'4지선다는 수정 기둥과 돌발 퀴즈에 나와요. 거점 칸은 세 거점 맵에서만 쓰여요.':TYPES[edTab].desc);
+  $('#edDesc').textContent=(um!=='zones'&&(edTab==='loc'||edTab==='cls')?`이 단원은 ${MAPS[um].name}이라 이 유형은 게임에 나오지 않아요. `:'')+(um!=='zones'&&edTab==='mc'?'4지선다는 정비 시간, 수정 기둥, 돌발 퀴즈, 보스 수정에서 나와요. 거점 칸은 세 거점 맵에서만 쓰여요.':TYPES[edTab].desc);
   { const zc=zcfgOf(curU()), cols=[...TYPES[edTab].cols];
     if (edTab==='mc') cols[0]=`거점(${zc.n.join('/')}/공통)`; if (edTab==='loc') cols[1]=`정답 거점(${zc.n.join('/')})`; if (edTab==='cls'){ cols[0]='문장'; cols[1]=`정답(${zc.c.join('/')})`; }
     $('#edCols').textContent=cols.join('  |  ');
     if (um==='zones'&&edTab==='cls') $('#edDesc').textContent=`제시된 문장이 "${zc.c[0]}"과 "${zc.c[1]}" 중 어디에 해당하는지 고르는 문제예요. 지식 카드에서 나와요.`;
-    if (um==='zones'&&edTab==='loc') $('#edDesc').textContent=`상황을 읽고 알맞은 거점(${zc.n.join(', ')}) 바닥으로 직접 달려가는 문제예요. 돌발 퀴즈 시간에 번갈아 나와요.`; }
+    if (um==='zones'&&edTab==='loc') $('#edDesc').textContent=`상황을 읽고 알맞은 거점(${zc.n.join(', ')}) 바닥으로 직접 달려가는 문제예요. 웨이브 사이 정비 시간마다 첫 문제로 나와요.`; }
   $('#edList').innerHTML=b[edTab].map((it,i)=>`<div class="qrow" data-row="${i}"><div class="qrow-top"><span class="qnum">${i+1}번</span><button class="del" data-del="${i}">삭제</button></div><div class="fields">${fieldHTML(edTab,it,i)}</div></div>`).join('')
     || '<p class="ed-desc">아직 문제가 없어요. 아래 버튼으로 추가하거나 시트에서 붙여넣으세요.</p>';
 }

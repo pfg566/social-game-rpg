@@ -95,7 +95,7 @@ function applyZoneCfg(c){
   document.querySelectorAll('#locCard .legend span').forEach((el,i)=>{ el.textContent=`${c.n[i]} · ${ZDIR[i]}`; });
   ['#dirHq','#dirLab','#dirFac'].forEach((id,i)=>{ const el=$(id); if (el&&el.parentNode.firstChild.nodeType===3) el.parentNode.firstChild.nodeValue=c.n[i]; });
   const def=isDefaultZ(c);
-  MAPS.zones.desc=def?'다국적 기업의 세 거점을 지키세요. 퀴즈를 맞혀야 강해지고, 웨이브가 열리고, 보스의 보호막이 깨져요.':`${c.n.join(', ')} 세 거점을 지키세요. 퀴즈를 맞혀야 강해지고, 웨이브가 열리고, 보스의 보호막이 깨져요.`;
+  MAPS.zones.desc=def?'다국적 기업의 세 거점을 지키세요. 정비 시간과 퀴즈로 강해지고, 웨이브를 열고, 보스의 힘을 끊어요.':`${c.n.join(', ')} 세 거점을 지키세요. 정비 시간과 퀴즈로 강해지고, 웨이브를 열고, 보스의 힘을 끊어요.`;
   MAPS.zones.winMsg=def?'공간적 분업의 핵심을 잘 알고 있네요. 아래 틀린 문제를 한 번 더 읽어 보고 마무리해요.':'이번 단원의 핵심을 잘 알고 있네요. 아래 틀린 문제를 한 번 더 읽어 보고 마무리해요.';
   MAPS.zones.waves=def?'zones':'general';
 }
@@ -114,50 +114,46 @@ const WAVESETS = {
  island_peace:[
   {name:'1단계 · 아침 배송', n:0, hp:60, spd:2, dmg:0, color:0xe0434a, parcels:3},
   {name:'2단계 · 점심 배송', n:0, hp:60, spd:2, dmg:0, color:0xe0434a, parcels:4},
-  {name:'3단계 · 저녁 배송', n:0, hp:60, spd:2, dmg:0, color:0xe0434a, parcels:5},
   {name:'마지막 단계 · 급행 배송', n:0, hp:60, spd:2, dmg:0, color:0xe0434a, parcels:4}],
  defense_peace:[
   {name:'안개 정령 선발대', n:0, hp:55, spd:1.9, dmg:8, color:0xe0434a, groups:[{n:4,at:0},{n:4,at:12}]},
-  {name:'안개 정령 무리', n:0, hp:70, spd:2.0, dmg:9, color:0x8b5cf6, groups:[{n:5,at:0},{n:4,at:14}]},
   {name:'짙은 안개 정령 무리', n:0, hp:80, spd:2.1, dmg:10, color:0x8b5cf6, groups:[{n:5,at:0},{n:4,at:10},{n:5,at:22}]},
   {name:'거대한 안개 정령', n:0, hp:75, spd:2.0, dmg:10, color:0x8b5cf6, boss:{...BOSS_BASE, hp:700, spd:1.8, summonEvery:18}, groups:[{n:5,at:0},{n:4,at:20}]}],
  island:[
   {name:'배송 방해 해골', n:3, hp:60, spd:2.2, dmg:8, color:0xe0434a, parcels:3},
   {name:'상자 도둑 해골단', n:3, hp:80, spd:2.4, dmg:9, color:0x8b5cf6, parcels:4, thieves:[{at:5,n:1},{at:16,n:2}]},
-  {name:'해적 해골 습격', n:4, hp:90, spd:2.5, dmg:10, color:0x8b5cf6, parcels:5, thieves:[{at:4,n:2},{at:18,n:2}]},
   {name:'해적 해골 선장', n:2, hp:90, spd:2.5, dmg:10, color:0x8b5cf6, boss:{...BOSS_BASE, hp:760}}],
  defense:[
   {name:'해골 선봉대', n:0, hp:60, spd:2.1, dmg:8, color:0xe0434a, groups:[{n:5,at:0},{n:5,at:9}]},
   {name:'해골 돌격대', n:0, hp:80, spd:2.3, dmg:9, color:0x8b5cf6, groups:[{n:5,at:0},{n:4,at:6,runner:true},{n:5,at:14}]},
-  {name:'해골 대군세', n:0, hp:90, spd:2.4, dmg:10, color:0x8b5cf6, groups:[{n:6,at:0},{n:5,at:8,runner:true},{n:6,at:16},{n:4,at:24,runner:true}]},
   {name:'공성 해골 장군', n:0, hp:80, spd:2.3, dmg:10, color:0x8b5cf6, boss:{...BOSS_BASE, hp:800, spd:2.0, summonEvery:16}, groups:[{n:6,at:0},{n:4,at:16,runner:true},{n:5,at:28},{n:4,at:40,runner:true}]}]
 };
 let WAVES = WAVESETS.zones;
-const BOSS_RULE='<b>보스:</b> 보호막 4개는 퀴즈 정답으로만 깨지고, 오답이면 되살아나요. 내려찍기와 부하 소환을 조심하세요';
+const BOSS_RULE='<b>보스:</b> 보스가 보라색 빛줄기로 수정의 힘을 끌어와요. 그 수정에서 퀴즈를 맞히면 보호막이 깨지고 보스가 휘청여요. 늦으면 보호막이 다시 생겨요';
 const MAPS = {
  zones:{name:'세 거점 맵', need:['mc','ox','cls','loc'], start:[0,4], recharge:30,
-  desc:'다국적 기업의 세 거점을 지키세요. 퀴즈를 맞혀야 강해지고, 웨이브가 열리고, 보스의 보호막이 깨져요.',
-  rules:['<b>위치 퀴즈:</b> 상황을 읽고 알맞은 거점 바닥으로 직접 달려가요','<b>거점 기둥:</b> 맞히면 다음 웨이브가 열려요','<b>지식 카드:</b> 몬스터가 떨어뜨려요. 주우면 O/X 문제',BOSS_RULE,'정답은 강화, 오답은 약화 · 틀린 문제는 다시 나와요 · 체력 0이면 게임 오버'],
+  desc:'다국적 기업의 세 거점을 지키세요. 정비 시간과 퀴즈로 강해지고, 웨이브를 열고, 보스의 힘을 끊어요.',
+  rules:['<b>정비 시간:</b> 웨이브가 끝나면 위치 퀴즈 1개와 4지선다 2개를 풀어요. 맞힐 때마다 강화 카드를 하나 골라요','<b>거점 기둥:</b> 정비가 끝나면 빛나는 거점 기둥의 퀴즈를 맞혀 다음 웨이브를 열어요','<b>돌발 퀴즈:</b> 50초마다 4지선다 문제가 나와요','<b>지식 카드:</b> 몬스터가 떨어뜨려요. 주우면 O/X 문제 · 맞히면 코인 뽑기(꽝 · 조금 · 아주 가끔 대박!)',BOSS_RULE,'정답은 강화, 오답은 약화 · 틀린 문제는 다시 나와요 · 체력 0이면 게임 오버'],
   gateText:'잠김 · 빛나는 거점 기둥의 퀴즈를 맞히면 다음 웨이브가 열려요', clearText:'웨이브 클리어! 거점 퀴즈로 다음 웨이브를 여세요',
   winTitle:'세 거점을 모두 지켰어요!', winMsg:'공간적 분업의 핵심을 잘 알고 있네요. 아래 틀린 문제를 한 번 더 읽어 보고 마무리해요.'},
  general:{name:'들판 마을 맵', need:['mc','ox'], start:[0,4], recharge:30,
-  desc:'마을을 습격한 해골 군단을 물리치세요. 퀴즈를 맞혀야 강해지고, 웨이브가 열리고, 보스의 보호막이 깨져요.',
-  rules:['<b>지식의 수정:</b> 마을의 빛나는 수정 3개에 다가가면 4지선다 문제. 맞히면 다음 웨이브가 열려요','<b>돌발 퀴즈:</b> 30초마다 4지선다 문제가 나와요','<b>지식 카드:</b> 몬스터가 떨어뜨려요. 주우면 O/X 문제',BOSS_RULE,'정답은 강화, 오답은 약화 · 틀린 문제는 다시 나와요 · 체력 0이면 게임 오버'],
+  desc:'마을을 습격한 해골 군단을 물리치세요. 정비 시간과 퀴즈로 강해지고, 웨이브를 열고, 보스의 힘을 끊어요.',
+  rules:['<b>정비 시간:</b> 웨이브가 끝나면 문제 3개를 풀어요. 맞힐 때마다 강화 카드(공격력·체력·방어막 등)를 하나 골라요','<b>지식의 수정:</b> 정비가 끝나면 빛나는 수정의 퀴즈를 맞혀 다음 웨이브를 열어요','<b>돌발 퀴즈:</b> 50초마다 4지선다 문제가 나와요','<b>지식 카드:</b> 몬스터가 떨어뜨려요. 주우면 O/X 문제 · 맞히면 코인 뽑기(꽝 · 조금 · 아주 가끔 대박!)',BOSS_RULE,'정답은 강화, 오답은 약화 · 틀린 문제는 다시 나와요 · 체력 0이면 게임 오버'],
   gateText:'잠김 · 빛나는 지식의 수정에서 퀴즈를 맞히면 다음 웨이브가 열려요', clearText:'웨이브 클리어! 지식의 수정에서 다음 웨이브를 여세요',
   winTitle:'마을을 지켜 냈어요!', winMsg:'이번 단원의 핵심을 잘 알고 있네요. 아래 틀린 문제를 한 번 더 읽어 보고 마무리해요.'},
  island:{name:'서비스업 섬 맵', need:['mc','ox'], start:[0,7], recharge:30,
   desc:'물류 센터에 도착한 택배를 섬 마을로 배달하세요. 상자를 노리는 도둑 해골을 막고, 마지막에는 해적 해골 선장을 물리쳐요.',
-  rules:['<b>택배:</b> 물류 센터(북쪽 부두)에 상자가 와요. 다가가면 집어 들고 4지선다나 O/X 문제가 나와요. 맞히면 빨리 달려요','<b>배달:</b> 주황 화살표와 빛기둥을 따라 배달지 문 앞 깔개에 서면 배달 완료. 체력도 조금 회복돼요','<b>도둑 해골:</b> 주황색 해골은 바닥의 상자를 훔쳐 바다로 달아나요. 쓰러뜨리면 상자를 되찾아요','<b>지식의 수정:</b> 웨이브가 끝나면 수정 3개 중 하나의 퀴즈를 맞혀야 다음 웨이브가 열려요',BOSS_RULE,'정답은 강화, 오답은 약화 · 틀린 문제는 다시 나와요 · 체력 0이면 게임 오버'],
+  rules:['<b>택배:</b> 물류 센터(북쪽 부두)에 상자가 와요. 다가가면 집어 들고 4지선다나 O/X 문제가 나와요. 맞히면 빨리 달려요','<b>배달:</b> 주황 화살표와 빛기둥을 따라 배달지 문 앞 깔개에 서면 배달 완료. 체력도 조금 회복돼요','<b>도둑 해골:</b> 주황색 해골은 바닥의 상자를 훔쳐 바다로 달아나요. 쓰러뜨리면 상자를 되찾아요','<b>정비 시간:</b> 웨이브가 끝나면 문제 3개를 풀어요. 맞힐 때마다 강화 카드(공격력·체력·방어막 등)를 하나 골라요','<b>지식의 수정:</b> 정비가 끝나면 빛나는 수정의 퀴즈를 맞혀 다음 웨이브를 열어요','<b>돌발 퀴즈:</b> 50초마다 4지선다 문제가 나와요',BOSS_RULE,'정답은 강화, 오답은 약화 · 틀린 문제는 다시 나와요 · 체력 0이면 게임 오버'],
   gateText:'잠김 · 빛나는 지식의 수정에서 퀴즈를 맞히면 다음 웨이브가 열려요', clearText:'웨이브 클리어! 지식의 수정에서 다음 웨이브를 여세요',
   winTitle:'섬 마을 배송 완료!', winMsg:'전자 상거래와 택배 산업이 섬 마을을 세계와 이어 줬어요. 아래 틀린 문제를 한 번 더 읽어 보고 마무리해요.'},
  defense:{name:'성벽 디펜스 맵', need:['mc','ox'], start:[0,-1], recharge:22,
   desc:'해골 군단이 남쪽에서 성문으로 몰려와요. 퀴즈로 성벽 포탑을 깨우고, 성문이 무너지지 않게 지키세요.',
-  rules:['<b>성문:</b> 몬스터가 성문을 부숴요. 성문 체력이 0이 되면 게임 오버','<b>포탑 수정:</b> 성벽 앞 수정 3개. 맞히면 그 포탑이 20초 동안 자동으로 공격하고, 웨이브 사이에는 다음 웨이브도 열려요','<b>웨이브 4개:</b> 몬스터가 왼쪽·가운데·오른쪽 길로 여러 무리로 나눠 와요. 주황색 돌격병은 나를 무시하고 성문으로만 달려가요','<b>돌발 퀴즈:</b> 맞히면 성문 수리 +10%','<b>지식 카드:</b> 몬스터가 떨어뜨려요. 주우면 O/X 문제','<b>보스:</b> 보호막 4개는 퀴즈 정답으로만 깨져요. 내려찍기는 성문도 부숴요','성문에 붙은 몬스터는 가까이 가면 나를 쫓아와요. 끌어내서 처치하세요'],
+  rules:['<b>성문:</b> 몬스터가 성문을 부숴요. 성문 체력이 0이 되면 게임 오버','<b>포탑 수정:</b> 성벽 앞 수정 3개. 맞히면 그 포탑이 20초 동안 자동으로 공격하고, 정비가 끝난 뒤에는 다음 웨이브도 열려요','<b>웨이브 3개:</b> 몬스터가 왼쪽·가운데·오른쪽 길로 여러 무리로 나눠 와요. 주황색 돌격병은 나를 무시하고 성문으로만 달려가요','<b>정비 시간:</b> 웨이브가 끝나면 문제 3개를 풀고 강화 카드를 골라요. 성문 수리·포탑 가동 카드도 나와요','<b>돌발 퀴즈:</b> 50초마다 · 맞히면 성문 수리 +10%','<b>지식 카드:</b> 몬스터가 떨어뜨려요. 주우면 O/X 문제 · 맞히면 코인 뽑기(꽝 · 조금 · 아주 가끔 대박!)',BOSS_RULE+' 내려찍기는 성문도 부숴요','성문에 붙은 몬스터는 가까이 가면 나를 쫓아와요. 끌어내서 처치하세요'],
   gateText:'잠김 · 빛나는 포탑 수정의 퀴즈를 맞히면 다음 웨이브가 열려요', clearText:'웨이브 클리어! 포탑 수정 퀴즈로 다음 웨이브를 여세요',
   winTitle:'성문을 끝까지 지켰어요!', winMsg:'이번 단원의 핵심을 잘 알고 있네요. 아래 틀린 문제를 한 번 더 읽어 보고 마무리해요.'}
 };
 const mapOf=u=>u&&MAPS[u.map]?u.map:'zones';
-const TIMED_EVERY = 30, STATION_RECHARGE = 30, CARD_CHANCE = .5;
+const TIMED_EVERY = 30, TIMED_NEW = 50, STATION_RECHARGE = 30, CARD_CHANCE = .5;
 /* 평화 모드: 직접 싸우지 않고 퀴즈와 맵의 일(배달 · 포탑 지휘)로 진행해요 */
 let PEACE=false, PEACE_RUN=false;
 try{ PEACE=localStorage.getItem('gsd-peace')==='1'; }catch(e){}
@@ -173,7 +169,21 @@ const PEACE_TXT={
   winTitle:'안개를 모두 걷어 냈어요!',winMsg:'퀴즈로 포탑을 지휘해 성을 지켰어요. 아래 틀린 문제를 한 번 더 읽어 보고 마무리해요.'}
 };
 let LOC_TIME = 25;
-const HERO={hp:1.35,dmg:1.35,spd:1.1,quiz:.75,loc:18,score:1.5};
+const HERO={hp:1.5,dmg:1.45,spd:1.12,quiz:.75,loc:18,score:1.5};
+/* 난이도: 쉬움·보통은 3웨이브, 어려움·영웅은 4웨이브 (평화 모드·파티는 따로) */
+const LEVELS={
+ easy:  {name:'쉬움',  k:{hp:.8,dmg:.75,spd:.93}, score:.8, waves:3, desc:'3웨이브 · 약한 몬스터 · 점수 ×0.8'},
+ normal:{name:'보통',  k:{hp:1,dmg:1,spd:1},      score:1,  waves:3, desc:'3웨이브 · 내 실력에 맞춰요'},
+ hard:  {name:'어려움',k:{hp:1.2,dmg:1.2,spd:1.05},score:1.2,waves:4, desc:'4웨이브 · 강한 몬스터 · 점수 ×1.2'},
+ hero:  {name:'영웅',  k:null,                     score:1.5,waves:4, desc:'4웨이브 · 아주 강함 · 점수 ×1.5'}};
+let LEVEL='normal'; try{ const l=localStorage.getItem('gsd-level'); if (LEVELS[l]) LEVEL=l; }catch(e){}
+/* 어려움·영웅에서 보스 앞에 끼워 넣는 웨이브 */
+const EXTRA_WAVE={
+ zones:{name:'무역 장벽 해골 대부대', n:7, hp:95, spd:2.6, dmg:11, color:0x8b5cf6},
+ general:{name:'해골 대부대', n:7, hp:95, spd:2.6, dmg:11, color:0x8b5cf6},
+ island:{name:'해적 해골 습격', n:4, hp:90, spd:2.5, dmg:10, color:0x8b5cf6, parcels:5, thieves:[{at:4,n:2},{at:18,n:2}]},
+ defense:{name:'해골 대군세', n:0, hp:90, spd:2.4, dmg:10, color:0x8b5cf6, groups:[{n:6,at:0},{n:5,at:8,runner:true},{n:6,at:16},{n:4,at:24,runner:true}]}};
+function wavesFor(key){ const base=WAVESETS[key]; const ex=EXTRA_WAVE[key]; if (!base||!ex||LEVELS[LEVEL].waves<4) return base; return base.slice(0,-1).concat([ex],base.slice(-1)); }
 let MODE='normal', HERO_OPEN=false, DIFF=1;
 /* 학교별 난이도: 0 보통 · 1 쉬움 · 2 아주 쉬움 (영웅 모드에는 적용 안 해요) */
 const EASES=[{hp:1,dmg:1,spd:1,quiz:1,loc:0},{hp:.8,dmg:.75,spd:.92,quiz:1.25,loc:5},{hp:.65,dmg:.6,spd:.85,quiz:1.5,loc:10}];

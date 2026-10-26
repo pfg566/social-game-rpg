@@ -20,28 +20,29 @@ const OSRC={
   druid: {key:'m_druid',file:'Druid',pre:'Druid',tex:'druid_texture',parts:['ArmLeft','ArmRight','Body','LegLeft','LegRight','Backpack']},
   barb:  {key:'m_barb',file:'Barbarian',pre:'Barbarian',tex:'barbarian_texture',parts:['ArmLeft','ArmRight','Body','LegLeft','LegRight']}
 };
-const HAIRS=[['gold','금발','#e8bf63',200],['brown','갈색','#7a4b2c',200],['black','검정','#2e2c33',200],['red','빨강','#cc452e',300],['silver','은발','#d8dce3',300],['sky','하늘색','#5aa6e6',400],['pink','분홍','#ee84b2',400]];
+// 검정 · 황금(금발)은 비싼 아이템이에요. was = 예전 번호(이미 산 학생은 그대로 가져요)
+const HAIRS=[['gold2','금발','#e8bf63',1000,'gold'],['brown','갈색','#7a4b2c',200],['black2','검정','#2e2c33',1000,'black'],['red','빨강','#cc452e',300],['silver','은발','#d8dce3',300],['sky','하늘색','#5aa6e6',400],['pink','분홍','#ee84b2',400]];
 const SW={silver:'linear-gradient(90deg,#b9bec6 60%,#d23a3a 60%)'};
 const CATALOG=[
   /* ===== 기사 ===== */
   {id:'knight_p0',job:'knight',slot:'outfit',name:'은기사 갑옷',src:'knight',sw:SW.silver,desc:'처음 받은 은빛 갑옷'},
   {id:'wknight_p800',job:'knight',slot:'outfit',name:'백기사 갑옷',src:'knight',tex:'knight_texture_alt_A',sw:'linear-gradient(90deg,#f2f4f7 60%,#3fa565 60%)',desc:'눈처럼 하얀 갑옷과 초록 망토'},
   {id:'rknight_p800',job:'knight',slot:'outfit',name:'적기사 갑옷',src:'knight',tex:'knight_texture_alt_C',sw:'linear-gradient(90deg,#b81f2e 60%,#f2f2f2 60%)',desc:'붉은 갑옷과 하얀 망토'},
-  {id:'bknight_p1000',job:'knight',slot:'outfit',name:'흑기사 갑옷',src:'knight',rec:'black',sw:'linear-gradient(90deg,#2b2b31 60%,#7a1b24 60%)',desc:'검은 갑옷과 검붉은 망토'},
+  {id:'bknight_p2500',was:'bknight_p1000',job:'knight',slot:'outfit',name:'흑기사 갑옷',src:'knight',rec:'black',sw:'linear-gradient(90deg,#2b2b31 60%,#7a1b24 60%)',desc:'검은 갑옷과 검붉은 망토'},
   {id:'barb_p800',job:'knight',slot:'outfit',name:'바바리안 전사복',src:'barb',tex:'barbarian_texture_alt_A',sw:'linear-gradient(90deg,#f0c9a0 60%,#5f7d3b 60%)',desc:'북쪽 땅 전사의 옷 (망토 없음)'},
   {id:'barbw_p1000',job:'knight',slot:'outfit',name:'설원 전사복',src:'barb',tex:'barbarian_texture_alt_B',sw:'linear-gradient(90deg,#f0c9a0 60%,#c9ccd2 60%)',desc:'눈 덮인 땅 전사의 옷 (망토 없음)'},
   {id:'khelm_p600',job:'knight',slot:'hat',name:'기사 투구',sig:{src:'knight',meshes:['Helmet','HelmetVisor']},desc:'얼굴 가리개 달린 투구 · 갑옷 색을 따라가요'},
   {id:'barbhat_p400',job:'knight',slot:'hat',name:'곰 털모자',sig:{src:'barb',meshes:['BearHat'],own:true},desc:'바바리안의 곰 털모자'},
-  {id:'kcape_p0',job:'knight',slot:'cape',name:'옷에 딸린 망토',desc:'갑옷과 같은 색 망토'},
+  {id:'kcape_p300',job:'knight',slot:'cape',name:'기사 망토',own:true,desc:'갑옷과 같은 색 망토 (바바리안 옷에는 안 보여요)'},
   {id:'barbcape_p300',job:'knight',slot:'cape',name:'털 망토',part:'barb',mesh:'Barbarian_Cape'},
   {id:'sword_p0',job:'knight',slot:'weapon',name:'한손검',w:'sword_1handed',t:'knight_texture'},
   {id:'mug_p150',job:'knight',slot:'weapon',name:'머그잔',w:'mug_full',t:'barbarian_texture',desc:'이걸로 싸울 수 있을까?'},
   {id:'knife_p200',job:'knight',slot:'weapon',name:'단검',w:'dagger',t:'rogue_texture'},
-  {id:'axe_p300',job:'knight',slot:'weapon',name:'한손 도끼',w:'axe_1handed',t:'barbarian_texture'},
+  {id:'axe_p300',job:'knight',slot:'weapon',name:'한손 도끼',w:'axe_1handed',t:'barbarian_texture',ry:Math.PI},
   {id:'sword2_p500',job:'knight',slot:'weapon',name:'양손 대검',w:'sword_2handed',t:'knight_texture'},
   {id:'axe2_p600',job:'knight',slot:'weapon',name:'양손 도끼',w:'axe_2handed',t:'barbarian_texture'},
-  {id:'gsword_p800',job:'knight',slot:'weapon',name:'황금 대검',w:'sword_2handed_color',t:'knight_texture',desc:'손잡이가 금빛인 대검'},
-  {id:'rshield_p0',job:'knight',slot:'shield',name:'둥근 방패',w:'shield_round',t:'knight_texture',hand:'l'},
+  {id:'gsword_p2000',was:'gsword_p800',job:'knight',slot:'weapon',name:'황금 대검',w:'sword_2handed_color',t:'knight_texture',desc:'손잡이가 금빛인 대검'},
+  {id:'rshield_p150',job:'knight',slot:'shield',name:'둥근 방패',w:'shield_round',t:'knight_texture',hand:'l'},
   {id:'badge_p200',job:'knight',slot:'shield',name:'문장 방패',w:'shield_badge',t:'knight_texture',hand:'l'},
   {id:'rect_p250',job:'knight',slot:'shield',name:'사각 방패',w:'shield_square',t:'knight_texture',hand:'l'},
   {id:'barbsh_p250',job:'knight',slot:'shield',name:'나무 방패',w:'shield_round_barbarian',t:'barbarian_texture',hand:'l'},
@@ -51,7 +52,7 @@ const CATALOG=[
   {id:'spike_p400',job:'knight',slot:'shield',name:'가시 방패',w:'shield_spikes',t:'knight_texture',hand:'l'},
   {id:'rectc_p400',job:'knight',slot:'shield',name:'붉은 사각 방패',w:'shield_square_color',t:'knight_texture',hand:'l'},
   {id:'swordoff_p450',job:'knight',slot:'shield',name:'쌍검',w:'sword_1handed',t:'knight_texture',hand:'l'},
-  {id:'axeoff_p450',job:'knight',slot:'shield',name:'쌍도끼',w:'axe_1handed',t:'barbarian_texture',hand:'l'},
+  {id:'axeoff_p450',job:'knight',slot:'shield',name:'쌍도끼',w:'axe_1handed',t:'barbarian_texture',hand:'l',ry:Math.PI},
   {id:'spikec_p500',job:'knight',slot:'shield',name:'붉은 가시 방패',w:'shield_spikes_color',t:'knight_texture',hand:'l'},
   {id:'gold_p0',job:'knight',slot:'trail',name:'금빛 궤적',color:0xfff1c4},
   {id:'ice_p200',job:'knight',slot:'trail',name:'얼음 궤적',color:0x8fe3ff},
@@ -70,13 +71,14 @@ const CATALOG=[
   {id:'hood_p1200',job:'archer',slot:'outfit',name:'복면 도적',src:'hood',sw:'linear-gradient(90deg,#3a4a5a 60%,#2e9a6a 60%)',desc:'후드와 복면으로 얼굴을 가려요 (모자 · 머리색은 안 보여요)'},
   {id:'abear_p400',job:'archer',slot:'hat',name:'곰 털모자',sig:{src:'barb',meshes:['BearHat'],own:true},desc:'바바리안의 곰 털모자'},
   {id:'ahelm_p600',job:'archer',slot:'hat',name:'기사 투구',sig:{src:'knight',meshes:['Helmet','HelmetVisor']},desc:'궁수도 투구를 써요'},
-  {id:'acape_p0',job:'archer',slot:'cape',name:'옷에 딸린 망토',desc:'옷과 같은 색 망토'},
+  {id:'acape_p300',job:'archer',slot:'cape',name:'궁수 망토',own:true,desc:'옷과 같은 색 망토'},
   {id:'roguecape_p300',job:'archer',slot:'cape',name:'도적 망토',part:'rogue',mesh:'Rogue_Cape'},
-  {id:'bow_p0',job:'archer',slot:'weapon',name:'활',w:'bow_withString',t:'ranger_texture',hand:'l',ry:Math.PI},
-  {id:'bowh_p400',job:'archer',slot:'weapon',name:'사냥꾼 활',w:'bow_withString',t:'barbarian_texture',hand:'l',ry:Math.PI,desc:'잿빛 나무에 주황 손잡이'},
-  {id:'bowr_p400',job:'archer',slot:'weapon',name:'붉은 활',w:'bow_withString',t:'knight_texture',hand:'l',ry:Math.PI,desc:'붉은 시위의 활'},
-  {id:'bowf_p500',job:'archer',slot:'weapon',name:'숲의 활',w:'bow_withString',t:'druid_texture',hand:'l',ry:Math.PI,desc:'초록 시위의 활'},
-  {id:'bowd_p600',job:'archer',slot:'weapon',name:'흑단 활',w:'bow_withString',t:'ranger_texture',tint:0x4a4048,hand:'l',ry:Math.PI,desc:'검은 나무로 만든 활'},
+  {id:'bow_p0',job:'archer',slot:'weapon',name:'활',sw:'#8f4c39',w:'bow_withString',t:'ranger_texture',hand:'l',ry:Math.PI},
+  {id:'bowh_p400',job:'archer',slot:'weapon',name:'사냥꾼 활',w:'bow_withString',t:'ranger_texture',bow:'#a29a8e',sw:'#a29a8e',hand:'l',ry:Math.PI,desc:'잿빛 나무로 만든 활'},
+  {id:'bowr_p400',hidden:true,job:'archer',slot:'weapon',name:'붉은 활',w:'bow_withString',t:'ranger_texture',bow:'#c0353d',sw:'#c0353d',hand:'l',ry:Math.PI,desc:'붉게 칠한 활'},
+  {id:'bowf_p500',hidden:true,job:'archer',slot:'weapon',name:'숲의 활',w:'bow_withString',t:'ranger_texture',bow:'#5c9a3c',sw:'#5c9a3c',hand:'l',ry:Math.PI,desc:'초록 나무로 만든 활'},
+  {id:'bowd_p1500',was:'bowd_p600',job:'archer',slot:'weapon',name:'흑단 활',w:'bow_withString',t:'ranger_texture',bow:'#3b3238',sw:'#3b3238',hand:'l',ry:Math.PI,desc:'검은 나무로 만든 활'},
+  {id:'bowg_p2000',job:'archer',slot:'weapon',name:'황금 활',w:'bow_withString',t:'ranger_texture',bow:'#e0b23a',sw:'linear-gradient(90deg,#f6dc7a,#c8921c)',hand:'l',ry:Math.PI,desc:'금빛으로 빛나는 활'},
   /* ===== 마법사 ===== */
   {id:'magerobe_p0',job:'mage',slot:'outfit',name:'마법사 로브',src:'mage',sw:'linear-gradient(90deg,#5a4aa8 60%,#d0408a 60%)',desc:'보랏빛 로브'},
   {id:'magea_p600',job:'mage',slot:'outfit',name:'노을 로브',src:'mage',tex:'mage_texture_alt_A',sw:'linear-gradient(90deg,#e8843a 60%,#5a86b8 60%)',desc:'주황 로브'},
@@ -87,7 +89,7 @@ const CATALOG=[
   {id:'druidc_p1000',job:'mage',slot:'outfit',name:'햇살 드루이드',src:'druid',tex:'druid_texture_alt_C',sw:'linear-gradient(90deg,#f2c84a 60%,#2aa8a0 60%)',desc:'노란 옷의 드루이드'},
   {id:'magehat_p500',job:'mage',slot:'hat',name:'마법사 모자',sig:{src:'mage',meshes:['Hat']},desc:'커다란 마법사 모자 · 로브 색을 따라가요'},
   {id:'dhood_p800',job:'mage',slot:'hat',name:'사슴뿔 두건',head:'druid',desc:'드루이드의 사슴뿔 두건 (머리를 감싸요)'},
-  {id:'mcape_p0',job:'mage',slot:'cape',name:'옷에 딸린 망토',desc:'로브와 같은 색 망토'},
+  {id:'mcape_p300',job:'mage',slot:'cape',name:'마법사 망토',own:true,desc:'로브와 같은 색 망토 (드루이드 옷에는 안 보여요)'},
   {id:'magecape_p400',job:'mage',slot:'cape',name:'별 망토',part:'mage',mesh:'Mage_Cape'},
   {id:'mstaff_p0',job:'mage',slot:'weapon',name:'마법 지팡이',w:'staff',t:'mage_texture'},
   {id:'wand_p400',job:'mage',slot:'weapon',name:'마법봉',w:'wand',t:'mage_texture'},
@@ -108,14 +110,14 @@ const CATALOG=[
 JOB_LIST.forEach(j=>{
   const p=j[0];
   CATALOG.push({id:p+'hair_p0',job:j,slot:'hair',name:'처음 머리색',desc:'캐릭터의 원래 머리색'});
-  HAIRS.forEach(([k,nm,col,pr])=>CATALOG.push({id:`${p}h${k}_p${pr}`,job:j,slot:'hair',name:nm+' 머리',hair:col,sw:col,desc:'머리카락 색만 바뀌어요'}));
+  HAIRS.forEach(([k,nm,col,pr,old])=>CATALOG.push({id:`${p}h${k}_p${pr}`,job:j,slot:'hair',name:nm+' 머리',hair:col,sw:col,desc:'머리카락 색만 바뀌어요',...(old?{was:`${p}h${old}_p200`}:{})}));
 });
-const CAT={}; CATALOG.forEach(it=>CAT[it.id]=it);
+const CAT={}; CATALOG.forEach(it=>CAT[it.id]=it); CATALOG.forEach(it=>{ if (it.was && !CAT[it.was]) CAT[it.was]=it; });
 const priceOf=id=>{ const m=/_p(\d+)$/.exec(id||''); return m?+m[1]:0; };
 const DEFAULTS={
-  knight:{outfit:'knight_p0',hat:'nohat_p0',cape:'kcape_p0',weapon:'sword_p0',shield:'rshield_p0',hair:'khair_p0',trail:'gold_p0'},
-  archer:{outfit:'ranger_p0',hat:'nohat_p0',cape:'acape_p0',weapon:'bow_p0',hair:'ahair_p0'},
-  mage:{outfit:'magerobe_p0',hat:'nohat_p0',cape:'mcape_p0',weapon:'mstaff_p0',shield:'noshield_p0',hair:'mhair_p0'}
+  knight:{outfit:'knight_p0',hat:'nohat_p0',cape:'nocape_p0',weapon:'sword_p0',shield:'noshield_p0',hair:'khair_p0',trail:'gold_p0'},
+  archer:{outfit:'ranger_p0',hat:'nohat_p0',cape:'nocape_p0',weapon:'bow_p0',hair:'ahair_p0'},
+  mage:{outfit:'magerobe_p0',hat:'nohat_p0',cape:'nocape_p0',weapon:'mstaff_p0',shield:'noshield_p0',hair:'mhair_p0'}
 };
 const fitsJob=(id,job,slot)=>{ const it=CAT[id]; return !!it && it.slot===slot && (it.job===job||it.job==='all') && JOB_SLOTS[job].includes(slot); };
 /* 저장된 착용: equip/<직업>_<칸>. 예전(직업 없이 칸만) 기록은 기사 것으로 읽어요 */
@@ -124,7 +126,7 @@ function lookOf(job,eq){ const L={...DEFAULTS[job]}; eq=eq||{};
 function guestEquip(){ try{ return JSON.parse(localStorage.getItem('gsd-look2')||'{}'); }catch(e){ return {}; } }
 function guestLook(job){ job=job||JOB; const L=lookOf(job,guestEquip()); JOB_SLOTS[job].forEach(s=>{ if (priceOf(L[s])>0 && !isAdmin) L[s]=DEFAULTS[job][s]; }); return L; }
 function equippedLook(job){ job=job||JOB; return STUDENT&&WARDROBE ? lookOf(job,WARDROBE.equip) : guestLook(job); }
-function owns(id){ return priceOf(id)===0 || !!(WARDROBE&&WARDROBE.inv&&WARDROBE.inv[id]) || (!STUDENT && typeof isAdmin!=='undefined' && isAdmin); }
+function owns(id){ const it=CAT[id]; return priceOf(id)===0 || !!(WARDROBE&&WARDROBE.inv&&(WARDROBE.inv[id]||(it&&it.was&&WARDROBE.inv[it.was]))) || (!STUDENT && typeof isAdmin!=='undefined' && isAdmin); }
 function availCoins(){ return PROFILE ? Math.max(0,(PROFILE.coins|0)-((WARDROBE&&WARDROBE.spent)|0)) : 0; }
 
 /* ---------- 파일 불러오기 (필요할 때 한 번만) ---------- */
@@ -172,6 +174,18 @@ function dyeHair(g,hex){
   g.putImageData(d,128,32);
 }
 
+/* 활: 활대 칸만 다시 칠해요 (줄 · 손잡이는 기본 그대로) */
+const BOWC={};
+function bowTex(hex){
+  if (BOWC[hex]) return BOWC[hex];
+  return BOWC[hex]=loadImg('ranger_texture').then(img=>{
+    const c=document.createElement('canvas'); c.width=c.height=1024; const g=c.getContext('2d'); g.drawImage(img,0,0,1024,1024);
+    const d=g.getImageData(832,352,64,96), p=d.data, T=new THREE.Color(hex); let s=0,n=0;
+    for (let i=0;i<p.length;i+=4){ s+=p[i]*.3+p[i+1]*.59+p[i+2]*.11; n++; } const ref=s/n||1;
+    for (let i=0;i<p.length;i+=4){ const k=Math.min(1.5,Math.max(.4,(p[i]*.3+p[i+1]*.59+p[i+2]*.11)/ref)); p[i]=Math.min(255,T.r*255*k); p[i+1]=Math.min(255,T.g*255*k); p[i+2]=Math.min(255,T.b*255*k); }
+    g.putImageData(d,832,352);
+    const t=new THREE.CanvasTexture(c); t.flipY=false; t.encoding=THREE.sRGBEncoding; t.anisotropy=4; return t; });
+}
 /* ---------- 캐릭터 입히기 ---------- */
 function charMat(ch,tex){ ch.matCache=ch.matCache||new Map(); let m=ch.matCache.get(tex); if (!m){ m=toonMat({map:tex,rim:.5,skinning:true}); ch.matCache.set(tex,m); } return m; }
 function srcMesh(s,part){ const O=OSRC[s]; const g=GL[O.key]; return g&&g.scene.getObjectByName(O.pre+'_'+part); }
@@ -194,6 +208,7 @@ async function dressP2(ch,L){
   const hatTex=hat.sig&&hat.sig.own?await compTex(hat.sig.src===o.src?(o.tex||OSRC[o.src].tex):OSRC[hat.sig.src].tex,null,null,null):hat.sig?await texFor(hat.sig.src):hat.head?await texFor(hat.head):null;
   const quivTex=job==='archer'?await texFor('ranger'):null;
   const capeG=cape.part?await loadParts(cape.part):null;
+  const heldTex={}; for (const it of held){ heldTex[it.id]=it.bow?await bowTex(it.bow):plainTex(it.t); }
   if (tok!==ch.dressTok) return;
   // 지난번에 입힌 것 벗기기
   (ch.wardParts||[]).forEach(m=>{ if (m.parent) m.parent.remove(m); }); ch.wardParts=[];
@@ -207,7 +222,7 @@ async function dressP2(ch,L){
   else { ch.nativeHead.visible=true; ch.nativeHead.material=charMat(ch,oTex); }
   // 옷 · 망토
   OSRC[o.src].parts.forEach(p=>addSkin(srcMesh(o.src,p),oTex));
-  if (cape.id===job[0]+'cape_p0' && OSRC[o.src].cape) addSkin(srcMesh(o.src,OSRC[o.src].cape),oTex);
+  if (cape.own && OSRC[o.src].cape) addSkin(srcMesh(o.src,OSRC[o.src].cape),oTex);
   else if (capeG){ const src=capeG.scene.getObjectByName(cape.mesh); const bone=src&&src.parent&&root.getObjectByName(src.parent.name);
     if (bone){ const m=src.clone(true); m.traverse(x=>{ if (x.isMesh){ x.material=partMat(x.material,.4); x.castShadow=true; } }); bone.add(m); ch.wardParts.push(m); } }
   if (job==='archer') addSkin(srcMesh('ranger','Quiver'),quivTex);
@@ -216,7 +231,7 @@ async function dressP2(ch,L){
   // 손에 드는 것: 원래 텍스처 그대로 (머리색 · 옷 색과 상관없어요)
   for (const it of held){ const bone=root.getObjectByName(it.hand==='l'?'handslotl':'handslotr'); if (!bone) continue;
     const w=GL['w2_'+it.w].scene.clone(true); if (it.ry) w.rotation.y=it.ry;
-    w.traverse(x=>{ if (x.isMesh){ x.material=toonMat({map:plainTex(it.t),color:it.tint||0xffffff,rim:.4}); x.castShadow=true; } });
+    w.traverse(x=>{ if (x.isMesh){ x.material=toonMat({map:heldTex[it.id],color:it.tint||0xffffff,rim:.4}); x.castShadow=true; } });
     bone.add(w); ch.wardParts.push(w); }
   // 맞았을 때 빨갛게 번쩍이는 재질 목록 다시 모으기
   const mats=new Set(); root.traverse(x=>{ if (x.isMesh && x.visible!==false){ (Array.isArray(x.material)?x.material:[x.material]).forEach(m=>mats.add(m)); } });
@@ -273,15 +288,15 @@ function renderShop(){
   $('#shopJobs').innerHTML=JOB_LIST.map(j=>`<button class="tab" data-sjob="${j}" aria-selected="${j===J}">${JOB_NAME[j]}</button>`).join('');
   $('#shopTabs').innerHTML=JOB_SLOTS[J].map(s=>`<button class="tab" data-stab="${s}" aria-selected="${s===SHOP.tab}">${SLOT_INFO[s].icon} ${SLOT_INFO[s].label}</button>`).join('');
   const eq=equippedLook(J);
-  $('#shopGrid').innerHTML=CATALOG.filter(it=>it.slot===SHOP.tab&&(it.job===J||it.job==='all')&&!it.hidden).map(it=>{
-    const pr=priceOf(it.id), own=owns(it.id), on=eq[it.slot]===it.id;
+  $('#shopGrid').innerHTML=CATALOG.filter(it=>it.slot===SHOP.tab&&(it.job===J||it.job==='all')&&(!it.hidden||owns(it.id))).map(it=>{
+    const pr=priceOf(it.id), own=owns(it.id), on=CAT[eq[it.slot]]===it;
     const st=on?'착용 중':own?(pr?'보유':'기본'):`${pr.toLocaleString('ko-KR')} 코인`;
     const sw=it.sw?`<span class="sw" style="background:${it.sw}"></span>`:it.slot==='trail'?`<span class="sw" style="background:${it.rainbow?'linear-gradient(90deg,#ff6b6b,#ffd34d,#7be38a,#5cc8f0,#b38cff)':'#'+it.color.toString(16).padStart(6,'0')}"></span>`:'';
     return `<button class="item${it.id===SHOP.sel?' sel':''}${on?' on':''}${own?' own':''}" data-item="${it.id}">${sw}<b>${esc(it.name)}</b><span class="pr">${st}</span></button>`; }).join('');
   const it=CAT[SHOP.sel], btn=$('#shopBuy');
   if (!it || it.slot!==SHOP.tab){ $('#shopSel').innerHTML='<small>아이템을 눌러 미리 입어 보세요.</small>'; btn.hidden=true; return; }
   btn.hidden=false;
-  const pr=priceOf(it.id), own=owns(it.id), on=eq[it.slot]===it.id;
+  const pr=priceOf(it.id), own=owns(it.id), on=CAT[eq[it.slot]]===it;
   $('#shopSel').innerHTML=`<b>${esc(it.name)}</b><small>${esc(it.desc||(pr?pr.toLocaleString('ko-KR')+' 코인':'기본 아이템'))}</small>`;
   btn.disabled=SHOP.busy; btn.classList.remove('warn');
   if (on){ btn.textContent='착용 중'; btn.disabled=true; }
@@ -297,7 +312,8 @@ async function shopAction(){
   if (own){
     SHOP.busy=true; renderShop();
     try{
-      if (STUDENT&&WARDROBE){ await withTimeout(wardRef().child('equip/'+key).set(it.id),10000); WARDROBE.equip[key]=it.id; }
+      const eid=(WARDROBE&&WARDROBE.inv&&!WARDROBE.inv[it.id]&&it.was&&WARDROBE.inv[it.was])?it.was:it.id;   // 예전 번호로 산 학생
+      if (STUDENT&&WARDROBE){ await withTimeout(wardRef().child('equip/'+key).set(eid),10000); WARDROBE.equip[key]=eid; }
       else { const g=guestEquip(); g[key]=it.id; try{ localStorage.setItem('gsd-look2',JSON.stringify(g)); }catch(e){} }
       shopMsg(`${it.name}을(를) 착용했어요.`,'ok'); if (knight) knight.anim.once('cheer',1.3,true); SFX.card();
     }catch(e){ shopMsg(/permission|PERMISSION/i.test(String(e&&(e.code||e.message)))?'저장하지 못했어요. 선생님께 보안 규칙이 최신인지 알려 주세요.':'저장하지 못했어요. 잠시 뒤 다시 해 주세요.','err'); }

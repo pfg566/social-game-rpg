@@ -6,7 +6,7 @@ const JOBS={
   knight:{name:'기사',hp:150,spd:1,   dodgeCd:1.2,skillCd:6,ultName:'대검 회오리',dodgeName:'막기',skillName:'돌진 베기',
           hint:'WASD 이동 · 클릭 또는 스페이스 3단 베기 · Shift 막기(정면 피해 80% 감소, 반격) · E 돌진 베기 · Q 필살기(퀴즈 3문제)'},
   archer:{name:'궁수',hp:75, spd:1.1, dodgeCd:.7, skillCd:6,ultName:'화살비',dodgeName:'구르기',skillName:'세 갈래',
-          hint:'WASD 이동 · 마우스로 조준 · 클릭(누르고 있으면 연사) 또는 스페이스 = 화살 · Shift 구르기 · E 뒤로 뛰며 세 갈래 · Q 필살기'},
+          hint:'WASD 이동 · 방향키 누르면 그쪽으로 연사 (마우스 클릭도 OK) · Shift 구르기 · E 세 갈래 · Q 필살기'},
   mage:  {name:'마법사',hp:80,spd:1,  dodgeCd:2.2,skillCd:7,ultName:'',dodgeName:'순간이동',skillName:'원소 마법',
           hint:'WASD 이동 · 클릭 또는 스페이스 원소 구슬(가까운 적 자동 조준, 터지면 주변까지) · Shift 순간이동 · E 원소 마법 · Q 필살기(퀴즈 3문제)'}
 };
@@ -44,15 +44,27 @@ function mouseAimDir(){
   const dx=aimHit.x-P.x, dz=aimHit.z-P.z, d=Math.hypot(dx,dz); if (d<.4) return null;
   return {x:dx/d,z:dz/d,px:aimHit.x,pz:aimHit.z};
 }
+/* 키보드 조준 (마우스 없는 학생): 궁수는 방향키로 조준하며 쏴요. 8방향이라 앞 15도 안의 적에게 살짝 휘어서 맞아요 */
+const KB_ASSIST=Math.cos(15*Math.PI/180);
+let CTRL='auto'; try{ const c=localStorage.getItem('gsd-ctrl'); if (c==='kb'||c==='mouse') CTRL=c; }catch(e){}
+const arrowsMove=()=>JOB!=='archer';                    // 궁수는 방향키가 조준, 다른 직업은 방향키도 이동
+function kbAimDir(){
+  if (JOB!=='archer') return null;
+  const x=(keys.ArrowRight?1:0)-(keys.ArrowLeft?1:0), z=(keys.ArrowDown?1:0)-(keys.ArrowUp?1:0), L=Math.hypot(x,z);
+  return L?{x:x/L,z:z/L}:null;
+}
+/* 마우스 조준을 쓰는 중인지: '키보드만'이면 안 써요. '자동'이면 최근 2.5초 안에 마우스를 움직였을 때만 (터치패드 흔들림 방지) */
+function mouseAiming(){ if (CTRL==='kb' || !MOUSE.on) return false; if (CTRL==='mouse' || MOUSE.held) return true; return performance.now()-(MOUSE.t||0)<2500; }
 function archerAim(range){
-  const dir=mouseAimDir()||{x:P.fx,z:P.fz}; P.fx=dir.x; P.fz=dir.z;
-  let best=null, bc=AIM_ASSIST;
+  const kb=kbAimDir(), md=!kb&&mouseAiming()?mouseAimDir():null;
+  const dir=kb||md||{x:P.fx,z:P.fz}; P.fx=dir.x; P.fz=dir.z;
+  let best=null, bc=md?AIM_ASSIST:KB_ASSIST;
   for (const m of mobs){ if (m.dying>=0||m.spawnT>0) continue; const dx=m.x-P.x, dz=m.z-P.z, d=Math.hypot(dx,dz)||1; if (d>range) continue;
     const c=(dx*dir.x+dz*dir.z)/d; if (c>bc){ bc=c; best=m; } }
   if (best){ const dx=best.x-P.x, dz=best.z-P.z, d=Math.hypot(dx,dz)||1; P.fx=dx/d; P.fz=dz/d; }
   return best;
 }
-canvas.addEventListener('pointermove',e=>{ if (e.pointerType!=='mouse') return; MOUSE.x=e.clientX; MOUSE.y=e.clientY; MOUSE.on=true; });
+canvas.addEventListener('pointermove',e=>{ if (e.pointerType!=='mouse') return; if (Math.abs(e.clientX-MOUSE.x)+Math.abs(e.clientY-MOUSE.y)>2) MOUSE.t=performance.now(); MOUSE.x=e.clientX; MOUSE.y=e.clientY; MOUSE.on=true; });
 canvas.addEventListener('pointerdown',e=>{ if (e.pointerType!=='mouse' || e.button!==0) return; MOUSE.x=e.clientX; MOUSE.y=e.clientY; MOUSE.on=true; if (W.state!=='play'||W.paused) return; MOUSE.held=true; attack(); });
 addEventListener('pointerup',e=>{ if (e.button===0) MOUSE.held=false; });
 addEventListener('blur',()=>{ MOUSE.held=false; });
@@ -65,8 +77,13 @@ const aimMark=new THREE.Group();
 const aimLine=new THREE.Mesh(new THREE.PlaneGeometry(1,1).translate(0,.5,0),new THREE.MeshBasicMaterial({color:0xffd34d,transparent:true,opacity:.45,side:THREE.DoubleSide,depthWrite:false,toneMapped:false}));
 aimLine.rotation.order='YXZ'; aimLine.visible=false; aimLine.renderOrder=4; scene.add(aimLine);
 function aimTick(real){
-  const on=W.state==='play' && !W.paused && JOB==='archer' && !PEACE_RUN && MOUSE.on;
+  const on=W.state==='play' && !W.paused && JOB==='archer' && !PEACE_RUN && !P.down;
   aimMark.visible=false; aimLine.visible=false; if (!on) return;
+  const kb=kbAimDir();
+  if (kb){ if (P.dodgeT<=0 && !(P.dashT>0)){ P.fx=kb.x; P.fz=kb.z; }
+    aimLine.position.set(P.x+kb.x*.7,.09,P.z+kb.z*.7); aimLine.rotation.set(Math.PI/2,Math.atan2(kb.x,kb.z),0); aimLine.scale.set(.14,ARROW_RANGE-.7,1); aimLine.visible=true;
+    aimMark.visible=true; aimMark.position.set(P.x+kb.x*ARROW_RANGE,.08,P.z+kb.z*ARROW_RANGE); aimMark.rotation.y=real*1.5; aimMark.children[0].material.color.setHex(0xffd34d); return; }
+  if (!mouseAiming()) return;
   const d=mouseAimDir(); if (!d) return;
   if (P.dodgeT<=0 && !(P.dashT>0)){ P.fx=d.x; P.fz=d.z; }
   const far=Math.min(ARROW_RANGE,Math.hypot(d.px-P.x,d.pz-P.z));
@@ -338,7 +355,7 @@ function renderJobPick(){
   $('#elemNote').textContent=own.length>=3?'모든 원소를 각성했어요!':`레벨업할 때마다 ${Math.round(AWAKE_CHANCE*100)}% 확률로 새 원소가 각성해요 · 3번 놓치면 다음 레벨업엔 확정`;
   const J=JOBS[JOB];
   $('#jobDesc').textContent=JOB==='knight'?'보통 · 붙어서 싸워요 · 체력 150% · 막기와 반격 · 오답 너프 절반, 정답이면 방어막'
-    :JOB==='archer'?'어려움 · 마우스로 직접 조준(커서 쪽을 늘 바라봐요) · 빠른 연사 · 쏘는 동안 느려져요 · 체력 75% · 연속 정답마다 치명타'
+    :JOB==='archer'?'어려움 · 방향키로 직접 조준하며 연사(마우스가 있으면 마우스로도) · 쏘는 동안 느려져요 · 체력 75% · 연속 정답마다 치명타'
     :`쉬움 · 가까운 적 자동 조준(짧은 거리) · 쏠 때 잠깐 멈춰요 · ${ELEM[MELEM].name} 구슬이 터져 주변까지 · 체력 80% · 퀴즈 효과 1.5배`;
 }
 function setJob(j,el){
@@ -452,6 +469,7 @@ function hitMob(m,dmg,sx,sz,kbk,col,byPlayer,o){
   const dx=m.x-sx, dz=m.z-sz, d=Math.hypot(dx,dz)||1, hy=m.boss?2.4:1.1;
   const k=(m.boss?3:7)*kbk; m.kbx=dx/d*k; m.kbz=dz/d*k;
   if (m.shield>0){ if (byPlayer){ flashPrompt('보호막! 퀴즈를 맞혀야 깰 수 있어요',1.5); SFX.block(); } fx.burst(m.x,2.4,m.z,0x5cc8f0,8,4); fx.num(m.x,5,m.z,'막힘','#9fe3ff'); return false; }
+  if (m.boss && m.groggy>W.t) dmg=Math.round(dmg*GROGGY_DMG);
   const hpBefore=m.hp; m.hp-=dmg; if (W.stats && o.src!=='turret' && !o.by) W.stats.dealt+=Math.max(0,Math.min(dmg,hpBefore)); m.flash=o.crit?.2:.15; if (!m.boss && !o.noStun) m.stun=Math.max(m.stun||0,o.stun||.2);
   if (!o.quiet){ fx.burst(m.x,hy,m.z,0xfff1a8,o.crit?12:7,o.crit?6:4); fx.burst(m.x,hy,m.z,0xffffff,o.crit?8:4,8); }
   if (!o.quiet) impactFx(m.x-dx/d*.35,hy,m.z-dz/d*.35,o.crit?0xffd34d:0xfff2d6,o.crit?3.4:(o.fin?2.8:2));
@@ -463,3 +481,6 @@ function hitMob(m,dmg,sx,sz,kbk,col,byPlayer,o){
   return true;
 }
 
+
+/* 설정: 조작 방식 */
+{ const sel=$('#ctrlSel'); if (sel){ sel.value=CTRL; sel.addEventListener('change',e=>{ CTRL=e.target.value; try{ localStorage.setItem('gsd-ctrl',CTRL); }catch(_){} }); } }

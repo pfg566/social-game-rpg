@@ -17,7 +17,7 @@ function toRecord(r,uid){
   if (!r.label) r.label=(r.cls||'')+'반';
   return {uid,cls:String(r.cls).slice(0,4),cid:String(r.cid||'').slice(0,10),sch:String(r.sch||'').slice(0,30),grade:+r.grade||0,year:+r.year||0,nick:String(r.nick).slice(0,20),unit:String(r.unit).slice(0,80),unitId:String(r.unitId).slice(0,20),
     win:!!r.win,score:r.score|0,correct:r.correct|0,asked:r.asked|0,kills:r.kills|0,timeSec:r.timeSec|0,
-    wrong:r.wrong.join('\n').slice(0,3000),ts:firebase.database.ServerValue.TIMESTAMP,mode:r.mode==='hero'?'hero':'normal',diff:Math.round((r.diff||1)*100)/100,
+    wrong:r.wrong.join('\n').slice(0,3000),ts:firebase.database.ServerValue.TIMESTAMP,mode:r.mode==='hero'?'hero':(r.lv==='easy'||r.lv==='hard')?r.lv:'normal',diff:Math.round((r.diff||1)*100)/100,
     ...(r.cs?{job:String(r.job||'').slice(0,12),map:String(r.map||'').slice(0,10),ease:Math.max(-1,Math.min(2,r.ease|0)),cs:r.cs}:{})};
 }
 function withTimeout(p,ms){ return Promise.race([p,new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),ms))]); }
@@ -29,6 +29,7 @@ async function pushResult(r){
   catch(e){
     // 예전 보안 규칙(모드·난이도 칸이 없는 규칙)이면 그 두 칸을 빼고 다시 저장
     if (!/permission|PERMISSION/i.test(String(e&&(e.code||e.message)))) throw e;
+    if (rec.mode==='easy'||rec.mode==='hard'){ rec.mode='normal'; try{ await withTimeout(fbDb.ref('results').push(rec),10000); return; }catch(e1){ if (!/permission|PERMISSION/i.test(String(e1&&(e1.code||e1.message)))) throw e1; } }
     if (rec.cs){ delete rec.job; delete rec.map; delete rec.ease; delete rec.cs;
       try{ await withTimeout(fbDb.ref('results').push(rec),10000); return; }
       catch(e2){ if (!/permission|PERMISSION/i.test(String(e2&&(e2.code||e2.message)))) throw e2; } }
@@ -107,7 +108,7 @@ $('#teacherLogin').addEventListener('click',async e=>{
 });
 function loadSettings(){
   if (!fbDb) return;
-  fbDb.ref('settings').once('value').then(snap=>{ const v=snap.val()||{}; HERO_OPEN=v.heroMode===true; FREE_PLAY=v.freePlay===true; applyPlay(); $('#modePick').hidden=!HERO_OPEN; if (!HERO_OPEN) $('#modeNormal').checked=true; }).catch(()=>{ HERO_OPEN=false; });
+  fbDb.ref('settings').once('value').then(snap=>{ const v=snap.val()||{}; HERO_OPEN=v.heroMode===true; FREE_PLAY=v.freePlay===true; applyPlay(); renderLevels(); }).catch(()=>{ HERO_OPEN=false; });
 }
 function loadBank(){
   if (!fbDb) return;
@@ -138,7 +139,7 @@ function showAuthUI(){
   if (AUTHMODE==='guest'&&GUEST_IN){ const ci=classInfo($('#pkCls').value); $('#gcName').textContent=$('#nick').value.trim(); $('#gcWho').textContent=ci?ci.label:''; }
   if (AUTHMODE==='student') renderProfileCard();
   renderJobPick();
-  watchPlog(); updateGateUI(); try{ applyPlay(); }catch(e){}
+  watchPlog(); try{ watchPartyLog(); }catch(e){} updateGateUI(); try{ applyPlay(); }catch(e){}
 }
 function renderProfileCard(){
   const L=levelOf(PROFILE.xp);
@@ -236,8 +237,8 @@ async function grantRewards(r,fixedN){
   let xp=10*r.asked+20*r.correct+40*fixedN+5*r.kills+(r.win?100:0);
   const newBest=(PROFILE.plays|0)>0 && r.score>(PROFILE.best|0);
   if (newBest) xp+=80;
-  if (r.mode==='hero') xp*=1.5;
-  xp=Math.min(1800,Math.round(xp)); const coins=Math.min(900,Math.round(xp/2));
+  const lvS=r.mode==='hero'?1.5:((LEVELS[r.lv]||LEVELS.normal).score); xp*=lvS;
+  xp=Math.min(1800,Math.round(xp)); const cardC=Math.min(100,W.cardCoins|0); const coins=Math.min(1000,Math.min(900,Math.round(xp/2))+cardC);
   const before=levelOf(PROFILE.xp|0), after=levelOf((PROFILE.xp|0)+xp);
   // 각성: 오른 레벨마다 한 번씩 굴려요
   let own=ownedElems(), awk=PROFILE.awk|0; const awoke=[]; let tries=0;
@@ -248,7 +249,7 @@ async function grantRewards(r,fixedN){
     skill:Math.round((r.newSkill??PROFILE.skill??1)*100)/100,updatedAt:firebase.database.ServerValue.TIMESTAMP};
   if (tries){ upd.elems=ELEM_ORDER.filter(e=>own.includes(e)).join(','); upd.awk=awk; }
   const lines=[`<b>+${xp} 경험치 · +${coins} 코인</b>`];
-  const why=[]; if (r.asked) why.push(`문제 ${r.asked}개 도전`); if (fixedN) why.push(`틀린 문제 ${fixedN}개 다시 맞힘`); if (newBest) why.push('내 최고 점수 경신!'); if (r.mode==='hero') why.push('영웅 모드 ×1.5');
+  const why=[]; if (r.asked) why.push(`문제 ${r.asked}개 도전`); if (fixedN) why.push(`틀린 문제 ${fixedN}개 다시 맞힘`); if (newBest) why.push('내 최고 점수 경신!'); if (lvS!==1) why.push(`${r.mode==='hero'?'영웅':(LEVELS[r.lv]||LEVELS.normal).name} ×${lvS}`); if (W.cardCoins) why.push(`지식 카드 코인 +${Math.min(100,W.cardCoins)}`);
   if (why.length) lines.push(`<span>${why.join(' · ')}</span>`);
   if (after.lv>before.lv) lines.push(`<span class="lvup">레벨 업! Lv.${before.lv} → Lv.${after.lv}</span>`);
   awoke.forEach(e=>lines.push(`<span class="awake">✨ 각성! 마법사가 <b>${{fire:'🔥 불',ice:'❄️ 얼음',bolt:'⚡ 번개'}[e]}</b> 원소를 깨우쳤어요</span>`));

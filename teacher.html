@@ -264,7 +264,7 @@ input.rename{border:2px solid var(--line);border-radius:6px;padding:2px 6px;widt
         </div>
         <div class="card box">
           <h3>영웅 모드</h3>
-          <p>켜면 학생 첫 화면에 '영웅 모드' 선택지가 생겨요. 몬스터가 강하고 퀴즈 시간이 짧은 대신 점수가 1.5배예요. 학생들이 게임에 익숙해진 뒤 여는 걸 추천해요.</p>
+          <p>학생은 쉬움(3웨이브 · 점수 0.8배) · 보통(3웨이브) · 어려움(4웨이브 · 점수 1.2배) 중에서 고를 수 있어요. 켜면 '영웅'(4웨이브 · 몬스터가 훨씬 강하고 퀴즈 시간이 짧음 · 점수 1.5배)도 생겨요. 학생들이 게임에 익숙해진 뒤 여는 걸 추천해요.</p>
           <div class="row"><span class="pill lose" id="heroState">불러오는 중</span><button class="btn" id="heroToggle" disabled>영웅 모드 열기</button></div>
           <p class="msg" id="heroMsg" role="status"></p>
         </div>
@@ -432,7 +432,7 @@ function renderStudents(){
 function renderRecords(){
   const rows=VIEW.map(r=>({...r,rate:pct(r)})).sort(sorter(sortR));
   const cols=[['ts','시각'],['kl','학급'],['nick','이름'],['unit','단원'],['win','결과'],['score','점수',1],['rate','정답률',1],['kills','처치',1],['timeSec','시간',1],['wrong','못 맞힌 문제']];
-  $('#tblRecords').innerHTML = rows.length ? th(cols,sortR,'r')+'<tbody>'+rows.map(r=>`<tr><td>${fmtT(r.ts)}</td><td>${esc(r.kl)}</td><td>${esc(r.nick)}</td><td>${esc(r.unit||'')}</td><td><span class="pill ${r.win?'win':'lose'}">${r.win?'승리':'게임 오버'}</span>${r.mode==='hero'?' <span class="pill hero">영웅</span>':''}</td><td class="num">${r.score|0}</td><td class="num">${r.correct|0}/${r.asked|0} · ${r.rate}%</td><td class="num">${r.kills|0}</td><td class="num">${fmtDur(r.timeSec|0)}</td><td class="qcell">${r.wrongList.length?r.wrongList.map(esc).join('<br>'):'-'}</td></tr>`).join('')+'</tbody>'
+  $('#tblRecords').innerHTML = rows.length ? th(cols,sortR,'r')+'<tbody>'+rows.map(r=>`<tr><td>${fmtT(r.ts)}</td><td>${esc(r.kl)}</td><td>${esc(r.nick)}</td><td>${esc(r.unit||'')}</td><td><span class="pill ${r.win?'win':'lose'}">${r.win?'승리':'게임 오버'}</span>${r.mode==='hero'?' <span class="pill hero">영웅</span>':r.mode==='hard'?' <span class="pill hero">어려움</span>':r.mode==='easy'?' <span class="pill">쉬움</span>':''}</td><td class="num">${r.score|0}</td><td class="num">${r.correct|0}/${r.asked|0} · ${r.rate}%</td><td class="num">${r.kills|0}</td><td class="num">${fmtDur(r.timeSec|0)}</td><td class="qcell">${r.wrongList.length?r.wrongList.map(esc).join('<br>'):'-'}</td></tr>`).join('')+'</tbody>'
     : '<tr><td class="empty">이 조건에 맞는 기록이 없어요.</td></tr>';
 }
 function renderMissed(){
@@ -464,7 +464,7 @@ $('#csv').addEventListener('click',()=>{
   applyFilter();
   const q=v=>{ const s=String(v==null?'':v); return /[",\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s; };
   const head=['시각','학급','이름','단원','모드','결과','점수','맞힌 문제','푼 문제','정답률(%)','처치','시간(초)','못 맞힌 문제'];
-  const lines=[head.join(',')].concat([...VIEW].sort((a,b)=>a.ts-b.ts).map(r=>[new Date(r.ts).toLocaleString('ko-KR'),r.kl,r.nick,r.unit||'',r.mode==='hero'?'영웅':'일반',r.win?'승리':'게임 오버',r.score|0,r.correct|0,r.asked|0,pct(r),r.kills|0,r.timeSec|0,r.wrongList.join(' / ')].map(q).join(',')));
+  const lines=[head.join(',')].concat([...VIEW].sort((a,b)=>a.ts-b.ts).map(r=>[new Date(r.ts).toLocaleString('ko-KR'),r.kl,r.nick,r.unit||'',({hero:'영웅',hard:'어려움',easy:'쉬움'})[r.mode]||'보통',r.win?'승리':'게임 오버',r.score|0,r.correct|0,r.asked|0,pct(r),r.kills|0,r.timeSec|0,r.wrongList.join(' / ')].map(q).join(',')));
   const blob=new Blob(['﻿'+lines.join('\r\n')],{type:'text/csv;charset=utf-8'});
   const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
   const d=new Date(); a.download=`게임결과_${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}.csv`;
@@ -609,7 +609,7 @@ $('#ckAdd').addEventListener('click',async()=>{
 ['#clSch','#clYear'].forEach(s=>$(s).addEventListener('change',()=>{ clsDelArmed=''; yearDelArmed=''; renderClasses(); }));
 async function deleteClasses(cids){
   const up={};
-  for (const cid of cids){ up['classes/'+cid]=null; up['roster/'+cid]=null; up['profiles/'+cid]=null; up['wardrobe/'+cid]=null; up['playgate/'+cid]=null; up['playlog/'+cid]=null;
+  for (const cid of cids){ up['classes/'+cid]=null; up['roster/'+cid]=null; up['profiles/'+cid]=null; up['wardrobe/'+cid]=null; up['playgate/'+cid]=null; up['playlog/'+cid]=null; up['partylog/'+cid]=null;
     const snap=await db.ref('results').orderByChild('cid').equalTo(cid).once('value');
     snap.forEach(c=>{ const v=c.val(); if (v&&v.cid===cid) up['results/'+c.key]=null; }); }
   const keys=Object.keys(up);

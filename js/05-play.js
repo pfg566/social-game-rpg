@@ -5,8 +5,8 @@ const P={x:0,z:4,hp:100,max:100,fx:0,fz:-1,atkCd:0,swingT:0,combo:0,lastAtk:-9,b
 const W={t:0,paused:true,state:'title',wave:-1,nextWaveAt:-1,gate:false,nextQuiz:TIMED_EVERY,timedFlip:0,kills:0,correct:0,asked:0,effects:[],used:new Set(),wrong:[],loc:null};
 let mobs=[];
 
-function atkMult(){ return W.effects.filter(e=>e.k==='atk').reduce((a,e)=>a*e.mult,1); }
-function spdMult(){ return W.effects.filter(e=>e.k==='spd').reduce((a,e)=>a*e.mult,1); }
+function atkMult(){ return W.effects.filter(e=>e.k==='atk').reduce((a,e)=>a*e.mult,1)*(W.up?W.up.atk:1); }
+function spdMult(){ return W.effects.filter(e=>e.k==='spd').reduce((a,e)=>a*e.mult,1)*(W.up?W.up.spd:1); }
 
 function resolve(p,r){
   for (const b of colliders){
@@ -60,8 +60,8 @@ function spawnMob(def,isBoss,at){
   if (MAPK==='island'){ const dd=Math.hypot(x,z); if (dd>ISL_R-1.5){ x*=(ISL_R-1.5)/dd; z*=(ISL_R-1.5)/dd; } }
   g.position.set(x,0,z); g.rotation.y=Math.atan2(P.x-x,P.z-z); scene.add(g);
   fx.burst(x,.4,z,isBoss?0x8a8f99:0xc9c2b0,isBoss?30:12,isBoss?6:3);
-  const K=MODE==='hero'?{hp:HERO.hp,dmg:HERO.dmg,spd:HERO.spd}:{hp:DIFF*EASEF.hp,dmg:DIFF*EASEF.dmg,spd:(.9+.1*DIFF)*EASEF.spd};
-  if (PARTY.on){ K.hp*=PARTY_K.hp; K.dmg*=PARTY_K.dmg; K.spd*=PARTY_K.spd; }   // 파티 판: 영웅 모드보다 더 세요
+  const K=MODE==='hero'?{hp:HERO.hp,dmg:HERO.dmg,spd:HERO.spd}:(()=>{ const L=LEVELS[LEVEL].k||{hp:1,dmg:1,spd:1}; return {hp:DIFF*EASEF.hp*L.hp,dmg:DIFF*EASEF.dmg*L.dmg,spd:(.9+.1*DIFF)*EASEF.spd*L.spd}; })();
+  if (PARTY.on){ const PK=partyK(); K.hp*=PK.hp; K.dmg*=PK.dmg; K.spd*=PK.spd; }   // 파티 판: 영웅 모드보다 더 세요
   const hp=Math.round((isBoss?def.boss.hp:def.hp)*K.hp*MOB_HP);
   const mats=c.mats; let em=-1;
   const m={g,body:c.root,parts:{},color,boss:isBoss,r:isBoss?1.6:.8,x,z,hp,max:hp,spd:(isBoss?def.boss.spd:def.spd)*K.spd,dmg:Math.round((isBoss?def.boss.dmg:def.dmg)*K.dmg),
@@ -97,7 +97,8 @@ function startWave(i){
   const d=WAVES[i];
   for (let k=0;k<d.n;k++) spawnMob(d,false);
   if (d.groups){ const lanes=[-20,0,20]; d.groups.forEach((g,gi)=>W.spawnQ.push({at:W.t+g.at,n:g.n,runner:!!g.runner,lane:lanes[Math.floor(Math.random()*3)],def:d,first:gi===0})); }
-  if (d.boss){ spawnMob(d,true); stations.forEach(s=>s.readyAt=Math.min(s.readyAt,W.t)); }
+  if (d.boss){ spawnMob(d,true); if (NEWQ()) bgBossSpawned(liveBoss()); else stations.forEach(s=>s.readyAt=Math.min(s.readyAt,W.t)); }
+  if (W.up && W.up.turret && MAPK==='defense'){ TURRETS.forEach(t=>{ t.until=W.t+W.up.turret; t.cd=.3; }); W.up.turret=0; setTimeout(()=>flashPrompt('강화 카드: 포탑 3개가 자동으로 쏴요!',2.5),1200); }
   const nr=rangedCount(i); for (let k=0;k<nr;k++) spawnRanged(d);
   const nl=leapCount(i); for (let k=0;k<nl;k++) spawnMob({...d,leaper:true,hp:Math.round(d.hp*.8)},false);
   if (nl && !W.leapSeen){ W.leapSeen=true; setTimeout(()=>flashPrompt('노란 도약 해골은 가까이 오면 뛰어들어요! 빨간 원이 보이면 구르기로 피하세요',3.5),nr?5200:1800); }
@@ -151,6 +152,7 @@ addEventListener('keydown',e=>{
     return;
   }
   keys[e.code]=true;
+  if (/^Arrow/.test(e.code) && W.state==='play') e.preventDefault();
   if (e.code==='Space'||e.code==='KeyJ'){ e.preventDefault(); attack(); }
   else if (e.code==='ShiftLeft'||e.code==='ShiftRight'||e.code==='KeyK'){ e.preventDefault(); dodge(); }
   else if (e.code==='KeyE'||e.code==='KeyL'){ e.preventDefault(); spinSkill(); }
@@ -300,7 +302,7 @@ const COMBO=[
 const CRIT_CHANCE=.12, CRIT_MULT=1.8, DODGE_CD=1.1, DODGE_TIME=.3, SPIN_CD=8, SPIN_DMG=26, SPIN_R=4.3, MOB_HP=1.3;
 let hitStop=0;
 function inputDir(){
-  let ix=(keys.KeyD||keys.ArrowRight?1:0)-(keys.KeyA||keys.ArrowLeft?1:0)+joy.x, iz=(keys.KeyS||keys.ArrowDown?1:0)-(keys.KeyW||keys.ArrowUp?1:0)+joy.y;
+  const am=arrowsMove(); let ix=(keys.KeyD||am&&keys.ArrowRight?1:0)-(keys.KeyA||am&&keys.ArrowLeft?1:0)+joy.x, iz=(keys.KeyS||am&&keys.ArrowDown?1:0)-(keys.KeyW||am&&keys.ArrowUp?1:0)+joy.y;
   const L=Math.hypot(ix,iz); return L>.12?{x:ix/L,z:iz/L}:null;
 }
 function aimAssist(){

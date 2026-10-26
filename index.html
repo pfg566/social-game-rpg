@@ -7,7 +7,7 @@
 <style>body{margin:0}[hidden]{display:none!important}img{max-width:100%}</style>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jua&family=IBM+Plex+Sans+KR:wght@400;600;700&display=swap">
-<link rel="stylesheet" href="style.css?v=20261026a">
+<link rel="stylesheet" href="style.css?v=20261026k">
 </head>
 <body>
 
@@ -25,6 +25,7 @@
   <div class="right">
     <button class="mute" id="muteBtn" aria-label="소리 켜기·끄기">🔊</button>
     <div class="card next" id="nextCard">돌발 퀴즈까지 <b id="nextTxt">30</b>초</div>
+    <div class="card next bgcard" id="bgCard" hidden>보스가 힘을 모으는 중 <b id="bgTxt">20</b>초</div>
     <div class="chips" id="chips"></div>
   </div>
 </div>
@@ -96,6 +97,7 @@
   <div class="setpop card" id="setPop" role="dialog" aria-label="설정" hidden>
     <p class="setpop-h">설정</p>
     <label class="unitpick" id="qPick"><span>화질</span><select id="qSel"><option value="auto">자동 (추천 · 컴퓨터에 맞춰 조절)</option><option value="high">고화질 (풀밭·빛 효과 모두)</option><option value="medium">보통</option><option value="low">가벼움 (느린 컴퓨터)</option></select></label>
+    <label class="unitpick"><span>조작</span><select id="ctrlSel"><option value="auto">자동 (마우스를 움직이면 마우스 조준)</option><option value="kb">키보드만 (마우스·터치패드 없이)</option><option value="mouse">마우스 조준 우선</option></select></label>
     <label class="fpsopt"><input type="checkbox" id="fpsChk"> 화면 속도(FPS) 보기</label>
     <button class="btn ghost" id="editBtn" hidden>문제 관리</button>
   </div>
@@ -153,14 +155,16 @@
       <li>정답은 강화, 오답은 약화 · 틀린 문제는 다시 나와요 · 체력 0이면 게임 오버</li>
     </ul>
     </details>
-    <div class="modepick lobby" id="modePick" hidden>
-      <label class="mode"><input type="radio" name="mode" id="modeNormal" value="normal" checked><span><b>일반 모드</b><small>내 실력에 맞춰 함께 성장해요</small></span></label>
-      <label class="mode hero"><input type="radio" name="mode" id="modeHero" value="hero"><span><b>영웅 모드</b><small>몬스터가 강하고 시간이 짧아요 · 점수 1.5배</small></span></label>
+    <div class="modepick lobby" id="modePick">
+      <label class="mode easy"><input type="radio" name="mode" value="easy"><span><b>쉬움</b><small></small></span></label>
+      <label class="mode"><input type="radio" name="mode" value="normal" checked><span><b>보통</b><small></small></span></label>
+      <label class="mode hard"><input type="radio" name="mode" value="hard"><span><b>어려움</b><small></small></span></label>
+      <label class="mode hero" id="modeHeroL"><input type="radio" name="mode" value="hero" id="modeHero"><span><b>영웅</b><small></small></span></label>
     </div>
     <p class="bankinfo lobby" id="bankInfo"></p>
     <div class="title-actions lobby">
       <button class="btn" id="startBtn">게임 시작</button>
-      <button class="btn ghost partybtn" id="partyBtn">👥 파티 모드 · 점령전 (최대 5명 · 최고 난이도)</button>
+      <button class="btn ghost partybtn" id="partyBtn">👥 파티 모드 · 점령전 (최대 5명)</button>
       <p class="gatenote" id="gateNote" hidden></p>
     </div>
     <div class="history lobby" id="history" hidden></div>
@@ -175,7 +179,7 @@
       <p class="jobtitle">직업 고르기 <small class="jobtip">화면을 끌면 캐릭터가 돌아가요</small></p>
       <div class="jobs" role="group" aria-label="직업 고르기">
         <button data-job="knight" aria-pressed="true"><i>🛡️</i><b>기사</b><em class="jdiff d2">보통</em><small>근접 · 튼튼함</small></button>
-        <button data-job="archer" aria-pressed="false"><i>🏹</i><b>궁수</b><em class="jdiff d3">어려움</em><small>마우스 조준 · 연사</small></button>
+        <button data-job="archer" aria-pressed="false"><i>🏹</i><b>궁수</b><em class="jdiff d3">어려움</em><small>방향키·마우스 조준</small></button>
         <button data-job="mage" aria-pressed="false"><i>🔮</i><b>마법사</b><em class="jdiff d1">쉬움</em><small>자동 조준 · 범위</small></button>
       </div>
       <div class="elems" id="elemPick" role="group" aria-label="마법 원소 고르기" hidden><span>마법 원소</span>
@@ -211,6 +215,17 @@
     <p class="q">이번 판에서 틀렸던 문제 2개를 모두 맞히면<br>체력 절반으로 다시 일어나요.</p>
     <p class="note">한 판에 한 번만 쓸 수 있어요. 하나라도 틀리면 게임이 끝나요.</p>
     <button class="btn" id="reviveGo">부활 도전! (Enter)</button>
+  </div>
+</div>
+
+<div class="screen locintro prepintro" id="prep" hidden>
+  <div class="panel card" role="dialog" aria-labelledby="prepTitle">
+    <div class="prep-steps" id="prepSteps"></div>
+    <p class="big" id="prepTitle">정비 시간!</p>
+    <p class="q" id="prepQ"></p>
+    <div class="upcards" id="prepCards" hidden></div>
+    <p class="note" id="prepNote"></p>
+    <button class="btn" id="prepGo">정비 시작 (Enter)</button>
   </div>
 </div>
 
@@ -357,20 +372,21 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="firebase-config.js"></script>
-<script src="js/01-data.js?v=20261026a"></script>
-<script src="js/02-graphics.js?v=20261026a"></script>
-<script src="js/03-world.js?v=20261026a"></script>
-<script src="js/04-island.js?v=20261026a"></script>
-<script src="js/05-play.js?v=20261026a"></script>
-<script src="js/06-jobs.js?v=20261026a"></script>
-<script src="js/06p-player.js?v=20261026a"></script>
-<script src="js/07-quiz.js?v=20261026a"></script>
-<script src="js/08-hud.js?v=20261026a"></script>
-<script src="js/09-server.js?v=20261026a"></script>
-<script src="js/10-shop.js?v=20261026a"></script>
-<script src="js/11-gate-editor.js?v=20261026a"></script>
-<script src="js/12-lobby.js?v=20261026a"></script>
-<script src="js/13-loop.js?v=20261026a"></script>
-<script src="js/14-party.js?v=20261026a"></script>
+<script src="js/01-data.js?v=20261026k"></script>
+<script src="js/02-graphics.js?v=20261026k"></script>
+<script src="js/03-world.js?v=20261026k"></script>
+<script src="js/04-island.js?v=20261026k"></script>
+<script src="js/05-play.js?v=20261026k"></script>
+<script src="js/06-jobs.js?v=20261026k"></script>
+<script src="js/06p-player.js?v=20261026k"></script>
+<script src="js/07-quiz.js?v=20261026k"></script>
+<script src="js/07b-prep.js?v=20261026k"></script>
+<script src="js/08-hud.js?v=20261026k"></script>
+<script src="js/09-server.js?v=20261026k"></script>
+<script src="js/10-shop.js?v=20261026k"></script>
+<script src="js/11-gate-editor.js?v=20261026k"></script>
+<script src="js/12-lobby.js?v=20261026k"></script>
+<script src="js/13-loop.js?v=20261026k"></script>
+<script src="js/14-party.js?v=20261026k"></script>
 </body>
 </html>

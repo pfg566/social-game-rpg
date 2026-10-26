@@ -452,3 +452,21 @@ body.peace .hprow-main,body.peace .hpbar-main,body.peace #skSpin,body.peace #skU
 .partylist .pl i{display:block;height:6px;background:rgba(255,255,255,.18);border-radius:99px;overflow:hidden}
 .partylist .pl i b{display:block;height:100%;background:#3fbf6a;border-radius:99px}
 body.party #nextCard{display:none}
+
+/* 정비 시간 · 강화 카드 */
+.prepintro .panel{max-width:680px}
+.prep-steps{display:flex;gap:8px;justify-content:center;margin:0 0 6px}
+.prep-steps i{width:16px;height:16px;border-radius:50%;border:3px solid var(--ink);background:var(--paper)}
+.prep-steps i.done{background:#2fb36b}.prep-steps i.now{background:#ffd34d}
+.upcards{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:0 0 12px}
+.upcard{position:relative;display:flex;flex-direction:column;align-items:center;gap:4px;padding:16px 10px 12px;border:3px solid var(--ink);border-radius:14px;background:var(--paper);cursor:pointer;font:inherit;color:var(--ink);transition:transform .12s}
+.upcard:hover,.upcard:focus-visible{transform:translateY(-3px);background:#fff8dc}
+.upcard .n{position:absolute;top:6px;left:8px;font-weight:800;font-size:13px;opacity:.6}
+.upcard .ic{font-size:34px;line-height:1}
+.upcard b{font-family:var(--display);font-size:19px}
+.upcard small{font-size:13px;font-weight:600;line-height:1.35}
+.bgcard{background:#efe0ff;border-color:#7b2fd0}
+@media (max-width:620px){.upcards{grid-template-columns:1fr}}
+
+.mode.easy input:checked+span{background:#e2f6ea;box-shadow:inset 0 0 0 2px #2fb36b}
+.mode.hard input:checked+span{background:#ffe3e3;box-shadow:inset 0 0 0 2px #d0453f}

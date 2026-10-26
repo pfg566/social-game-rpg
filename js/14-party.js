@@ -9,13 +9,20 @@ const CQ={r:4.4, camp:{x:0,z:23},
   portals:[{x:-22,z:-27},{x:0,z:-30},{x:22,z:-27}],
   cap:15, dec:17, loseHold:10, aggro:8.5, respawn:12, breakT:8, regen:1.5};
 /* 파티 판은 가장 어려워요: 영웅 모드 위에 몬스터 체력 ×1.3 · 공격 ×1.25 · 속도 ×1.08, 사람 수만큼 더 많고 단단해져요 */
-const PARTY_K={hp:1.3,dmg:1.25,spd:1.08}, PARTY_SCALE={n:.45,hp:.2}, PARTY_MAXLIVE=26;   // 학교 노트북이 버티도록 한 번에 살아 있는 몬스터는 26마리까지
+/* 퀴즈 점령 방도 낮췄어요: 영웅 기준 ×0.7 체력 · ×0.65 공격 → 보통과 비슷해요 (퀴즈 버프가 있어서 몹 막기보다 조금 세게) */
+const PARTY_K={hp:.7,dmg:.65,spd:.95}, PARTY_SCALE={n:.35,hp:.12}, PARTY_MAXLIVE=26;
+/* 몹 막기 방은 퀴즈 도움(버프·회복)이 없어서 훨씬 쉽게: 영웅 기준 ×0.6 체력 · ×0.55 공격 → 보통보다 조금 약해요 */
+const PARTY_K_FIGHT={hp:.6,dmg:.55,spd:.92}, PARTY_SCALE_FIGHT={n:.3,hp:.1};
+const partyFight=()=>PARTY.mode==='fight';
+const partyK=()=>partyFight()?PARTY_K_FIGHT:PARTY_K;
+const partyScale=()=>partyFight()?PARTY_SCALE_FIGHT:PARTY_SCALE;
+const cqRespawn=()=>partyFight()?7:8, cqRegen=()=>partyFight()?3:2.5;   // 학교 노트북이 버티도록 한 번에 살아 있는 몬스터는 26마리까지
 const CQ_SEGS=[], CQV=[], CQ_PORTALS=[];
 MAP_KEYS.push('conquest');
 MAPSTATE.conquest={colliders:[],stations:[],npcs:[]}; mapGroups.conquest=new THREE.Group(); mapGroups.conquest.visible=false; scene.add(mapGroups.conquest);
 MAPS.conquest={name:'점령전 맵', need:['mc'], start:[0,23], recharge:30,
-  desc:'가장 어려운 모드예요. 파티원과 함께 세 거점을 점령하고 해골 대군단에게서 지켜요.',
-  rules:['<b>점령:</b> 거점 원 안에 서 있으면 게이지가 차요. 친구가 함께 서면 더 빨리 차요','<b>퀴즈 점령 방:</b> 게이지가 다 차면 원 안의 한 명에게 퀴즈가 나와요. 맞히면 점령, 틀리면 게이지가 절반으로','<b>몹 막기 방:</b> 게이지만 다 차면 점령','<b>지키기:</b> 몬스터가 원에 들어오면 게이지를 깎아요. 세 거점을 10초 동안 모두 빼앗기면 패배','<b>점령한 거점 안</b>에서는 체력이 조금씩 차요','<b>최고 난이도:</b> 영웅 모드보다 몬스터가 더 세고, 사람이 많을수록 더 많이 몰려와요. 웨이브 5개, 마지막에 해골 장군','쓰러지면 12초 뒤 캠프에서 다시 일어나요. 모두 한꺼번에 쓰러지면 패배'],
+  desc:'파티원과 함께 세 거점을 점령하고 해골 대군단에게서 지켜요.',
+  rules:['<b>점령:</b> 거점 원 안에 서 있으면 게이지가 차요. 친구가 함께 서면 더 빨리 차요','<b>퀴즈 점령 방:</b> 게이지가 다 차면 원 안의 한 명에게 퀴즈가 나와요. 맞히면 점령, 틀리면 게이지가 절반으로','<b>몹 막기 방:</b> 게이지만 다 차면 점령','<b>지키기:</b> 몬스터가 원에 들어오면 게이지를 깎아요. 세 거점을 10초 동안 모두 빼앗기면 패배','<b>점령한 거점 안</b>에서는 체력이 조금씩 차요','<b>난이도:</b> 퀴즈 점령 방은 보통 정도, 몹 막기 방은 보통보다 조금 쉬워요. 사람이 많을수록 더 많이 몰려와요. 웨이브 5개, 마지막에 해골 장군','쓰러지면 캠프에서 다시 일어나요(퀴즈 방 8초 · 몹 막기 방 7초). 모두 한꺼번에 쓰러지면 패배'],
   gateText:'', clearText:'웨이브 클리어!', winTitle:'점령전 승리!', winMsg:'파티원과 힘을 합쳐 해골 군단을 막아 냈어요. 아래 틀린 문제를 한 번 더 읽어 보고 마무리해요.'};
 WAVESETS.conquest=[
   {name:'해골 정찰대',hp:70,spd:2.3,dmg:9,color:0xe0434a,groups:[{n:4,at:0},{n:3,at:8,runner:true},{n:4,at:16}]},
@@ -109,7 +116,7 @@ function openPartyPanel(){
 function closePartyPanel(){ if (PARTY.rid) return; PP.open=false; $('#partyPanel').hidden=true; stopList(); }
 function stopList(){ if (PP.listRef){ PP.listRef.off('value',PP.listCb); PP.listRef=null; } }
 function showList(){
-  $('#ppList').hidden=false; $('#ppRoom').hidden=true; ppNote(gateOpen()?'같은 반 친구가 만든 방에 들어가거나, 새 방을 만들어요. 한 방에 5명까지 · 가장 어려운 모드라 몬스터가 영웅 모드보다 세요.':'🔒 선생님이 게임을 열면 파티 방을 만들고 들어갈 수 있어요.');
+  $('#ppList').hidden=false; $('#ppRoom').hidden=true; ppNote(partyGateOpen()?'같은 반 친구가 만든 방에 들어가거나, 새 방을 만들어요. 한 방에 5명까지 · 🧠 퀴즈 점령은 보통 정도, ⚔️ 몹 막기는 보통보다 조금 쉬워요.':gateWhy());
   stopList(); PP.listRef=pRef('partyIdx/'+PARTY.cid);
   PP.listCb=PP.listRef.on('value',s=>{ PP.rooms=s.val()||{}; renderRooms(); },()=>ppNote('방 목록을 불러오지 못했어요. 선생님께 보안 규칙이 최신인지 알려 주세요.','err'));
   renderModes();
@@ -118,16 +125,31 @@ function renderModes(){ document.querySelectorAll('[data-pmode]').forEach(b=>b.c
 function renderRooms(){
   const now=Date.now(), list=Object.entries(PP.rooms).filter(([k,r])=>r&&r.meta&&r.meta.state==='wait'&&now-(+r.meta.at||0)<3*3600e3)
     .sort((a,b)=>(+a[1].meta.at||0)-(+b[1].meta.at||0));
-  const ok=gateOpen();
+  const ok=partyGateOpen();
   const html=list.length?list.map(([k,r])=>{ const n=Object.keys(r.m||{}).length, full=n>=5;
       return `<div class="pp-room"><span><b>${esc(r.meta.hostName||'친구')}의 방</b><small>${r.meta.mode==='quiz'?'🧠 퀴즈 점령':'⚔️ 몹 막기'} · ${n}/5명 · ${Object.values(r.m||{}).map(m=>esc(m.name)).join(', ')}</small></span><button class="btn small" data-join="${k}"${full||!ok?' disabled':''}>${full?'가득 참':'들어가기'}</button></div>`; }).join('')
     :'<p class="pp-empty">아직 열린 방이 없어요. 새 방을 만들어 보세요!</p>';
   if (html!==PP.html){ PP.html=html; $('#ppRooms').innerHTML=html; }
   $('#ppCreate').disabled=!ok;
 }
-function gateWhy(){ const g=activeGate(); if (!g) return '🔒 선생님이 게임을 열어야 방을 만들 수 있어요.'; if (playsLeft(g)<=0) return '이번 시간에 할 수 있는 판을 다 했어요. 선생님께 한 판 더를 부탁하세요.'; return '지금은 방을 만들 수 없어요.'; }
+/* 파티 판 수: 혼자 하는 판과 따로 세요. 선생님이 정한 판 수만큼 파티도 따로 할 수 있어요 */
+let PPLOG={}, pplogRef=null;
+function watchPartyLog(){
+  if (pplogRef){ pplogRef.off(); pplogRef=null; } PPLOG={};
+  if (!(AUTHMODE==='student'&&STUDENT&&fbDb)) return;
+  pplogRef=fbDb.ref(`partylog/${STUDENT.cid}/${STUDENT.num}`);
+  pplogRef.on('value',s=>{ PPLOG=s.val()||{}; if (PP.open) try{ renderRooms(); }catch(e){} },()=>{ PPLOG={}; });
+}
+function partyUsed(g){
+  if (!g||!g.sid) return 0;
+  if (AUTHMODE==='student'&&STUDENT) return +PPLOG[g.sid]||0;
+  try{ return +localStorage.getItem('gsd-ppl-'+g.sid)||0; }catch(e){ return 0; }
+}
+function partyLeft(g){ if (!g) return 0; if (!g.sid||!g.plays||g.plays>=999) return Infinity; return Math.max(0,g.plays-partyUsed(g)); }
+function partyGateOpen(){ if (isAdmin || !fbDb || GATE_OK===false) return true; const g=activeGate(); return !!g && partyLeft(g)>0; }
+function gateWhy(){ const g=activeGate(); if (!g) return '🔒 선생님이 게임을 열어야 방을 만들 수 있어요.'; if (partyLeft(g)<=0) return '이번 시간에 할 수 있는 파티 판을 다 했어요. (혼자 하는 판은 따로 남아 있을 수 있어요)'; return '지금은 방을 만들 수 없어요.'; }
 async function createRoom(){
-  if (!gateOpen()){ ppNote(gateWhy(),'err'); return; }
+  if (!partyGateOpen()){ ppNote(gateWhy(),'err'); return; }
   PARTY.cid=partyCid(); PARTY.me=myUid(); if (!PARTY.cid||!PARTY.me){ ppNote('로그인 정보를 확인하지 못했어요. 새로고침 후 다시 해 주세요.','err'); return; }
   const rid=pRef('partyIdx/'+PARTY.cid).push().key; PARTY.rid=rid;
   const room={meta:{host:PARTY.me,hostName:myName().slice(0,12),mode:PP.mode,state:'wait',at:firebase.database.ServerValue.TIMESTAMP},m:{[PARTY.me]:memberInfo()}};
@@ -139,7 +161,7 @@ async function createRoom(){
   }catch(e){ const code=String(e&&(e.code||e.message)||'오류'); try{ pRef(idxPath()).remove().catch(()=>{}); }catch(_){} PARTY.rid=''; ppNote(`방을 만들지 못했어요 (${code}).`+(/permission/i.test(code)?' 선생님께 보안 규칙이 최신인지 알려 주세요.':' 잠시 뒤 다시 해 보세요.'),'err'); }
 }
 async function joinRoom(rid){
-  const r=PP.rooms[rid]; if (!r) return; if (!gateOpen()){ ppNote(gateWhy(),'err'); return; }
+  const r=PP.rooms[rid]; if (!r) return; if (!partyGateOpen()){ ppNote(gateWhy(),'err'); return; }
   if (Object.keys(r.m||{}).length>=5){ ppNote('방이 가득 찼어요.','err'); return; }
   PARTY.rid=rid; PARTY.me=myUid();
   try{ await withTimeout(pRef(idxPath()+'/m/'+PARTY.me).set(memberInfo()),8000); try{ pRef(idxPath()+'/m/'+PARTY.me).onDisconnect().remove(); }catch(e){} showRoom(); }
@@ -163,7 +185,7 @@ function renderRoom(r){
   $('#ppMode').innerHTML=`${r.meta.mode==='quiz'?'🧠 <b>퀴즈 점령 방</b> · 게이지를 채운 뒤 퀴즈를 맞혀야 점령':'⚔️ <b>몹 막기 방</b> · 퀴즈 없이 거점을 지켜요'} · ${ms.length}/5명`;
   const mh=ms.map(([u,m])=>`<li${u===PARTY.me?' class="me"':''}><i>${JOBI[m.job]||'🙂'}</i><b>${esc(m.name)}</b>${u===r.meta.host?'<em>방장</em>':''}<small>${({knight:'기사',archer:'궁수',mage:'마법사'})[m.job]||''}</small></li>`).join(''); if (mh!==PARTY.mh){ PARTY.mh=mh; $('#ppMembers').innerHTML=mh; }
   const host=r.meta.host===PARTY.me;
-  $('#ppStart').hidden=!host; $('#ppStart').disabled=!gateOpen();
+  $('#ppStart').hidden=!host; $('#ppStart').disabled=!partyGateOpen();
   $('#ppRoomNote').textContent=host?'친구들이 다 들어오면 시작을 눌러요. 아래에서 직업을 바꿀 수 있어요.':'방장이 시작하면 바로 게임이 열려요. 아래에서 직업을 바꿀 수 있어요.';
 }
 function leaveRoomLocal(){
@@ -177,7 +199,7 @@ async function leaveRoom(){
   try{ if (wasHost){ await pRef(ip).remove(); await pRef(lp).remove(); } else await pRef(ip+'/m/'+PARTY.me).remove(); }catch(e){}
 }
 async function hostStart(){
-  if (!PARTY.host || !PARTY.room || !gateOpen()) return;
+  if (!PARTY.host || !PARTY.room || !partyGateOpen()) return;
   const n=Object.keys(PARTY.room.m||{}).length;
   try{ await pRef(idxPath()+'/meta').update({state:'play',n,start:firebase.database.ServerValue.TIMESTAMP}); }catch(e){ $('#ppRoomNote').textContent='시작하지 못했어요. 다시 눌러 주세요.'; }
 }
@@ -186,8 +208,10 @@ function partyJobChanged(){ if (PARTY.rid && !PARTY.on && PARTY.room && PARTY.ro
 
 /* 판 수 쓰기 (정해진 판 수가 있을 때만) */
 async function consumePlayQuiet(){
-  try{ const g=activeGate(); if (!g||!g.sid||playsLeft(g)===Infinity||!(AUTHMODE==='student'&&STUDENT)) return;
-    const ref=fbDb.ref(`playlog/${STUDENT.cid}/${STUDENT.num}/${g.sid}`); const cur=+((await ref.once('value')).val())||0; await ref.set(cur+1); PLOG[g.sid]=cur+1; }catch(e){}
+  try{ const g=activeGate(); if (!g||!g.sid||partyLeft(g)===Infinity) return;
+    if (AUTHMODE==='guest'){ try{ localStorage.setItem('gsd-ppl-'+g.sid,String(partyUsed(g)+1)); }catch(e){} return; }
+    if (!(AUTHMODE==='student'&&STUDENT)) return;
+    const ref=fbDb.ref(`partylog/${STUDENT.cid}/${STUDENT.num}/${g.sid}`); const cur=+((await ref.once('value')).val())||0; await ref.set(cur+1); PPLOG[g.sid]=cur+1; }catch(e){}
 }
 
 /* ---------- 게임 시작 ---------- */
@@ -219,7 +243,7 @@ function startPartyGame(r){
     listen(livePath()+'/host','value',s=>{ if (!s.val() && PARTY.on && !PARTY.ended && W.state==='play') partyEnd(false,'host'); });
   }
   showBanner(PARTY.mode==='quiz'?'점령전 · 퀴즈 점령':'점령전 · 몹 막기');
-  flashPrompt('최고 난이도! 세 거점(A · B · C) 원 안에 함께 서서 점령하세요',4);
+  flashPrompt('세 거점(A · B · C) 원 안에 함께 서서 점령하세요',4);
   $('#partyHud').hidden=false; $('#partyList').hidden=false;
 }
 function partySend(e){ if (!PARTY.on||PARTY.ended) return; if (PARTY.host){ hostEvent({...e,u:PARTY.me}); return; } pRef(livePath()+'/ev').push({...e,u:PARTY.me}).catch(()=>{}); }
@@ -296,9 +320,9 @@ function cqSpawn(def,isBoss,portal){
   return m;
 }
 function hostStartWave(i){
-  W.wave=i; PH.wave=i; PH.next=0; const d=WAVES[i], kN=1+PARTY_SCALE.n*(PARTY.n-1), kH=1+PARTY_SCALE.hp*(PARTY.n-1);
+  W.wave=i; PH.wave=i; PH.next=0; const d=WAVES[i], S=partyScale(), kN=(1+S.n*(PARTY.n-1))*(partyFight()?.8:.85), kH=1+S.hp*(PARTY.n-1);
   d.groups.forEach((g,gi)=>PH.q.push({at:W.t+g.at,n:Math.max(1,Math.round(g.n*kN)),runner:!!g.runner,portal:CQ.portals[(gi+i)%3],def:{...d,hp:Math.round(d.hp*kH),boss:undefined}}));
-  if (d.boss){ const bd={...d,boss:{...d.boss,hp:Math.round(d.boss.hp*kH)}}; cqSpawn(bd,true,CQ.portals[1]); }
+  if (d.boss){ const bd={...d,boss:{...d.boss,hp:Math.round(d.boss.hp*kH),slamEvery:5.5,slamWarn:1.2,summonEvery:partyFight()?14:12}}; cqSpawn(bd,true,CQ.portals[1]); }
   showBanner(`웨이브 ${i+1} · ${d.name}`); SFX.wave();
 }
 function pickGoal(m){
@@ -324,7 +348,7 @@ function hostMobs(dt,players){
       if (m.summonCd<=0){ m.summonCd=B.summonEvery; if (mobs.filter(o=>o.dying<0).length<16){ for (let k=0;k<2+Math.min(3,PARTY.n-1);k++){ const s=cqSpawn(TYPES_DEF(m.def)[1],false,{x:m.x,z:m.z}); } hostMsg('해골 장군이 부하를 불렀어요!'); } }
       if (m.slamT>0){ m.slamT-=dt;
         if (m.slamT<=0){ fx.shock(m.slamX,m.slamZ,B.slamR); fx.burst(m.slamX,.3,m.slamZ,0x9aa3b5,26,7); shake=.45; m.recover=.35; m.slamN=(m.slamN||0)+1;
-          for (const a of players){ if (a.alive && Math.hypot(a.x-m.slamX,a.z-m.slamZ)<B.slamR) hostDamage(a,Math.round(B.slamDmg*HERO.dmg*PARTY_K.dmg),{x:m.slamX,z:m.slamZ}); }
+          for (const a of players){ if (a.alive && Math.hypot(a.x-m.slamX,a.z-m.slamZ)<B.slamR) hostDamage(a,Math.round(B.slamDmg*HERO.dmg*partyK().dmg),{x:m.slamX,z:m.slamZ}); }
           m.slamCd=B.slamEvery; }
         m.g.rotation.y=Math.atan2(dx,dz); m.flash=Math.max(0,m.flash-dt); m.mat.emissive.setHex(0x661111); continue; }
       m.slamCd-=dt; if (m.slamCd<=0 && pl && pd<10){ m.slamT=B.slamWarn; m.slamX=m.x; m.slamZ=m.z; }
@@ -467,12 +491,12 @@ function partyTick(dt){
   if (PARTY.host) hostTick(dt); else clientTick(dt);
   if (PARTY.ended) return;
   // 쓰러짐 · 다시 일어나기
-  if (!P.down && P.hp<=0){ P.down=true; P.hp=0; P.downT=CQ.respawn; P.dx=P.x; P.dz=P.z; if (knight) knight.anim.die(); flashPrompt(`쓰러졌어요! ${CQ.respawn}초 뒤 캠프에서 다시 일어나요`,3); }
+  if (!P.down && P.hp<=0){ P.down=true; P.hp=0; P.downT=cqRespawn(); P.dx=P.x; P.dz=P.z; if (knight) knight.anim.die(); flashPrompt(`쓰러졌어요! ${cqRespawn()}초 뒤 캠프에서 다시 일어나요`,3); }
   if (P.down){ P.x=P.dx; P.z=P.dz; P.downT-=dt;
     if (P.downT<=0){ P.down=false; P.hp=P.max; const k=PARTY.order.indexOf(PARTY.me); P.x=CQ.camp.x+(k-2)*1.4; P.z=CQ.camp.z-1; W.invuln=W.t+2.5; if (knight) knight.anim.revive(); W.snapCam=true; flashPrompt('다시 일어났어요! 거점으로 달려가요',2); } }
   else {
     // 점령한 거점 안에서는 체력이 차요
-    CQ.pts.forEach((p,i)=>{ if (PH.pts[i].own===1 && Math.hypot(P.x-p.x,P.z-p.z)<CQ.r) P.hp=Math.min(P.max,P.hp+CQ.regen*dt); });
+    CQ.pts.forEach((p,i)=>{ if (PH.pts[i].own===1 && Math.hypot(P.x-p.x,P.z-p.z)<CQ.r) P.hp=Math.min(P.max,P.hp+cqRegen()*dt); });
     // 내 차례 퀴즈
     if (partyQuiz() && $('#quiz').hidden && !W.loc){ PH.pts.forEach((S,i)=>{ const key=i+':'+S.qn;
       if (S.qb===PARTY.me && PARTY.lastQ!==key){ PARTY.lastQ=key; const useOX=OX.length&&Math.random()<.35, item=pick(useOX?['ox']:['mc'],useOX?OX:MC);
