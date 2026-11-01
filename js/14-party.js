@@ -107,6 +107,19 @@ function listen(path,ev,cb){ const r=pRef(path), f=r.on(ev,cb,()=>{}); PARTY.ref
 /* ---------- 파티 방 화면 ---------- */
 let PP={open:false,mode:'quiz',rooms:{},listRef:null,listCb:null};
 function ppNote(t,kind){ const e=$('#ppNote'); e.textContent=t||''; e.className='pp-note'+(kind?' '+kind:''); }
+/* 선생님 잠금: 퀴즈 점령 방 · 몹 막기 방을 따로 잠글 수 있어요 (선생님 계정은 시험해 볼 수 있게 열려 있어요) */
+let PARTY_LOCK={quiz:false,fight:false};
+const modeLocked=m=>!isAdmin && !!PARTY_LOCK[m==='fight'?'fight':'quiz'];
+const allLocked=()=>modeLocked('quiz')&&modeLocked('fight');
+function applyPartyLock(){
+  const b=$('#partyBtn'); if (b){ b.classList.toggle('locked',allLocked()); b.textContent=allLocked()?'🔒 파티 모드 · 선생님이 잠갔어요':'👥 파티 모드 · 점령전 (최대 5명)'; }
+  document.querySelectorAll('[data-pmode]').forEach(x=>{ const L=modeLocked(x.dataset.pmode); x.disabled=L; x.classList.toggle('locked',L); });
+  if (modeLocked(PP.mode) && !allLocked()) PP.mode=modeLocked('quiz')?'fight':'quiz';
+  renderModes();
+  if (PP.open && !PARTY.rid){ PP.html=''; try{ renderRooms(); }catch(e){} }
+  if (PARTY.room && !PARTY.on) try{ renderRoom(PARTY.room); }catch(e){}
+}
+const lockWhy=m=>`🔒 선생님이 ${m==='fight'?'⚔️ 몹 막기':'🧠 퀴즈 점령'} 방을 잠갔어요.`;
 function openPartyPanel(){
   if (!assetsReady) return;
   if (!fbDb || !(STUDENT||isAdmin)){ $('#partyPanel').hidden=false; $('#ppList').hidden=false; $('#ppRoom').hidden=true; $('#ppRooms').innerHTML=''; ppNote('파티 모드는 코드로 로그인해야 쓸 수 있어요.','err'); return; }
@@ -127,11 +140,12 @@ function renderRooms(){
   const now=Date.now(), list=Object.entries(PP.rooms).filter(([k,r])=>r&&r.meta&&r.meta.state==='wait'&&now-(+r.meta.at||0)<3*3600e3)
     .sort((a,b)=>(+a[1].meta.at||0)-(+b[1].meta.at||0));
   const ok=partyGateOpen();
-  const html=list.length?list.map(([k,r])=>{ const n=Object.keys(r.m||{}).length, full=n>=5;
-      return `<div class="pp-room"><span><b>${esc(r.meta.hostName||'친구')}의 방</b><small>${r.meta.mode==='quiz'?'🧠 퀴즈 점령':'⚔️ 몹 막기'} · ${n}/5명 · ${Object.values(r.m||{}).map(m=>esc(m.name)).join(', ')}</small></span><button class="btn small" data-join="${k}"${full||!ok?' disabled':''}>${full?'가득 참':'들어가기'}</button></div>`; }).join('')
+  const html=list.length?list.map(([k,r])=>{ const n=Object.keys(r.m||{}).length, full=n>=5, lk=modeLocked(r.meta.mode);
+      return `<div class="pp-room"><span><b>${esc(r.meta.hostName||'친구')}의 방</b><small>${r.meta.mode==='quiz'?'🧠 퀴즈 점령':'⚔️ 몹 막기'} · ${n}/5명 · ${Object.values(r.m||{}).map(m=>esc(m.name)).join(', ')}</small></span><button class="btn small" data-join="${k}"${full||!ok||lk?' disabled':''}>${lk?'🔒 잠김':full?'가득 참':'들어가기'}</button></div>`; }).join('')
     :'<p class="pp-empty">아직 열린 방이 없어요. 새 방을 만들어 보세요!</p>';
   if (html!==PP.html){ PP.html=html; $('#ppRooms').innerHTML=html; }
-  $('#ppCreate').disabled=!ok;
+  $('#ppCreate').disabled=!ok||allLocked();
+  if (ok && allLocked()) ppNote('🔒 선생님이 파티 모드를 잠갔어요.','err');
 }
 /* 파티 판 수: 혼자 하는 판과 따로 세요. 선생님이 정한 판 수만큼 파티도 따로 할 수 있어요 */
 let PPLOG={}, pplogRef=null;
@@ -151,6 +165,7 @@ function partyGateOpen(){ if (isAdmin || !fbDb || GATE_OK===false) return true; 
 function gateWhy(){ const g=activeGate(); if (!g) return '🔒 선생님이 게임을 열어야 방을 만들 수 있어요.'; if (partyLeft(g)<=0) return '이번 시간에 할 수 있는 파티 판을 다 했어요. (혼자 하는 판은 따로 남아 있을 수 있어요)'; return '지금은 방을 만들 수 없어요.'; }
 async function createRoom(){
   if (!partyGateOpen()){ ppNote(gateWhy(),'err'); return; }
+  if (modeLocked(PP.mode)){ ppNote(lockWhy(PP.mode),'err'); return; }
   PARTY.cid=partyCid(); PARTY.me=myUid(); if (!PARTY.cid||!PARTY.me){ ppNote('로그인 정보를 확인하지 못했어요. 새로고침 후 다시 해 주세요.','err'); return; }
   const rid=pRef('partyIdx/'+PARTY.cid).push().key; PARTY.rid=rid;
   const room={meta:{host:PARTY.me,hostName:myName().slice(0,12),mode:PP.mode,state:'wait',at:firebase.database.ServerValue.TIMESTAMP},m:{[PARTY.me]:memberInfo()}};
@@ -163,6 +178,7 @@ async function createRoom(){
 }
 async function joinRoom(rid){
   const r=PP.rooms[rid]; if (!r) return; if (!partyGateOpen()){ ppNote(gateWhy(),'err'); return; }
+  if (modeLocked(r.meta.mode)){ ppNote(lockWhy(r.meta.mode),'err'); return; }
   if (Object.keys(r.m||{}).length>=5){ ppNote('방이 가득 찼어요.','err'); return; }
   PARTY.rid=rid; PARTY.me=myUid();
   try{ await withTimeout(pRef(idxPath()+'/m/'+PARTY.me).set(memberInfo()),8000); try{ pRef(idxPath()+'/m/'+PARTY.me).onDisconnect().remove(); }catch(e){} showRoom(); }
@@ -186,8 +202,9 @@ function renderRoom(r){
   $('#ppMode').innerHTML=`${r.meta.mode==='quiz'?'🧠 <b>퀴즈 점령 방</b> · 게이지를 채운 뒤 퀴즈를 맞혀야 점령':'⚔️ <b>몹 막기 방</b> · 퀴즈 없이 거점을 지켜요'} · ${ms.length}/5명`;
   const mh=ms.map(([u,m])=>`<li${u===PARTY.me?' class="me"':''}><i>${JOBI[m.job]||'🙂'}</i><b>${esc(m.name)}</b>${u===r.meta.host?'<em>방장</em>':''}<small>${({knight:'기사',archer:'궁수',mage:'마법사'})[m.job]||''}</small></li>`).join(''); if (mh!==PARTY.mh){ PARTY.mh=mh; $('#ppMembers').innerHTML=mh; }
   const host=r.meta.host===PARTY.me;
-  $('#ppStart').hidden=!host; $('#ppStart').disabled=!partyGateOpen();
-  $('#ppRoomNote').textContent=host?'친구들이 다 들어오면 시작을 눌러요. 아래에서 직업을 바꿀 수 있어요.':'방장이 시작하면 바로 게임이 열려요. 아래에서 직업을 바꿀 수 있어요.';
+  const lk=modeLocked(r.meta.mode);
+  $('#ppStart').hidden=!host; $('#ppStart').disabled=!partyGateOpen()||lk;
+  $('#ppRoomNote').textContent=lk?lockWhy(r.meta.mode)+' 방에서 나가 다른 방을 골라 주세요.':host?'친구들이 다 들어오면 시작을 눌러요. 아래에서 직업을 바꿀 수 있어요.':'방장이 시작하면 바로 게임이 열려요. 아래에서 직업을 바꿀 수 있어요.';
 }
 function leaveRoomLocal(){
   if (PARTY.roomRef){ PARTY.roomRef.off('value',PARTY.roomCb); PARTY.roomRef=null; }
@@ -201,6 +218,7 @@ async function leaveRoom(){
 }
 async function hostStart(){
   if (!PARTY.host || !PARTY.room || !partyGateOpen()) return;
+  if (modeLocked(PARTY.room.meta.mode)){ $('#ppRoomNote').textContent=lockWhy(PARTY.room.meta.mode)+' 방에서 나가 다른 방을 골라 주세요.'; return; }
   const n=Object.keys(PARTY.room.m||{}).length;
   try{ await pRef(idxPath()+'/meta').update({state:'play',n,start:firebase.database.ServerValue.TIMESTAMP}); }catch(e){ $('#ppRoomNote').textContent='시작하지 못했어요. 다시 눌러 주세요.'; }
 }
@@ -667,7 +685,7 @@ $('#partyBtn').addEventListener('click',openPartyPanel);
 $('#ppClose').addEventListener('click',closePartyPanel);
 $('#ppCreate').addEventListener('click',createRoom);
 $('#ppRooms').addEventListener('click',e=>{ const b=e.target.closest('[data-join]'); if (b) joinRoom(b.dataset.join); });
-document.querySelectorAll('[data-pmode]').forEach(b=>b.addEventListener('click',()=>{ PP.mode=b.dataset.pmode; renderModes(); }));
+document.querySelectorAll('[data-pmode]').forEach(b=>b.addEventListener('click',()=>{ if (modeLocked(b.dataset.pmode)){ ppNote(lockWhy(b.dataset.pmode),'err'); return; } PP.mode=b.dataset.pmode; renderModes(); }));
 $('#ppLeave').addEventListener('click',async()=>{ await leaveRoom(); });
 $('#ppStart').addEventListener('click',hostStart);
 setInterval(()=>{ if (PP.open && !PARTY.rid) renderRooms(); if (PARTY.room && !PARTY.on) renderRoom(PARTY.room); },3000);

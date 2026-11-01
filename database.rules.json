@@ -1,0 +1,388 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "admins": {
+      ".read": "auth != null && auth.token.email_verified == true && (auth.token.email.toLowerCase() == 'pfg566@gmail.com' || root.child('admins').child(auth.token.email.toLowerCase().replace('.', ',')).val() == true)",
+      "$emailKey": {
+        ".read": "auth != null && auth.token.email_verified == true && auth.token.email.toLowerCase().replace('.', ',') == $emailKey",
+        ".write": "auth != null && auth.token.email_verified == true && (auth.token.email.toLowerCase() == 'pfg566@gmail.com' || root.child('admins').child(auth.token.email.toLowerCase().replace('.', ',')).val() == true)",
+        ".validate": "newData.isBoolean() && newData.val() == true"
+      }
+    },
+    "settings": {
+      ".read": true,
+      ".write": "auth != null && auth.token.email_verified == true && (auth.token.email.toLowerCase() == 'pfg566@gmail.com' || root.child('admins').child(auth.token.email.toLowerCase().replace('.', ',')).val() == true)",
+      "heroMode": {
+        ".validate": "newData.isBoolean()"
+      },
+      "freePlay": {
+        ".validate": "newData.isBoolean()"
+      },
+      "partyQuizOff": {
+        ".validate": "newData.isBoolean()"
+      },
+      "partyFightOff": {
+        ".validate": "newData.isBoolean()"
+      },
+      "$other": {
+        ".validate": false
+      }
+    },
+    "schools": {
+      ".read": true,
+      ".write": "auth != null && auth.token.email_verified == true && (auth.token.email.toLowerCase() == 'pfg566@gmail.com' || root.child('admins').child(auth.token.email.toLowerCase().replace('.', ',')).val() == true)",
+      "$sid": {
+        ".validate": "newData.hasChildren(['name']) && $sid.matches(/^[a-z0-9]{4,10}$/)",
+        "name": {
+          ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 30"
+        },
+        "order": {
+          ".validate": "newData.isNumber()"
+        },
+        "$other": {
+          ".validate": false
+        },
+        "ease": {
+          ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 2"
+        }
+      }
+    },
+    "classes": {
+      ".read": true,
+      ".write": "auth != null && auth.token.email_verified == true && (auth.token.email.toLowerCase() == 'pfg566@gmail.com' || root.child('admins').child(auth.token.email.toLowerCase().replace('.', ',')).val() == true)",
+      ".indexOn": [
+        "sid"
+      ],
+      "$cid": {
+        ".validate": "newData.hasChildren(['sid', 'year', 'grade', 'cls']) && $cid.matches(/^[a-z0-9]{4,10}$/)",
+        "sid": {
+          ".validate": "newData.isString() && root.child('schools').child(newData.val()).exists()"
+        },
+        "year": {
+          ".validate": "newData.isNumber() && newData.val() >= 2020 && newData.val() <= 2100"
+        },
+        "grade": {
+          ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 6"
+        },
+        "cls": {
+          ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 30"
+        },
+        "hidden": {
+          ".validate": "newData.isBoolean()"
+        },
+        "$other": {
+          ".validate": false
+        }
+      }
+    },
+    "roster": {
+      ".read": "auth != null && auth.token.email_verified == true && (auth.token.email.toLowerCase() == 'pfg566@gmail.com' || root.child('admins').child(auth.token.email.toLowerCase().replace('.', ',')).val() == true)",
+      ".write": "auth != null && auth.token.email_verified == true && (auth.token.email.toLowerCase() == 'pfg566@gmail.com' || root.child('admins').child(auth.token.email.toLowerCase().replace('.', ',')).val() == true)",
+      "$cls": {
+        "$num": {
+          ".validate": "newData.hasChildren(['code']) && $cls.matches(/^[a-z0-9]{4,10}$/) && $num.matches(/^[0-9]{1,2}$/)",
+          "code": {
+            ".validate": "newData.isString() && newData.val().matches(/^[a-z0-9]{6}$/)"
+          },
+          "name": {
+            ".validate": "newData.isString() && newData.val().length <= 20"
+          },
+          "issuedAt": {
+            ".validate": "newData.isNumber()"
+          },
+          "$other": {
+            ".validate": false
+          }
+        }
+      }
+    },
+    "profiles": {
+      ".read": "auth != null && auth.token.email_verified == true && (auth.token.email.toLowerCase() == 'pfg566@gmail.com' || root.child('admins').child(auth.token.email.toLowerCase().replace('.', ',')).val() == true)",
+      ".write": "auth != null && auth.token.email_verified == true && (auth.token.email.toLowerCase() == 'pfg566@gmail.com' || root.child('admins').child(auth.token.email.toLowerCase().replace('.', ',')).val() == true)",
+      "$cls": {
+        ".read": "auth != null && auth.token.email_verified == true && (auth.token.email.toLowerCase() == 'pfg566@gmail.com' || root.child('admins').child(auth.token.email.toLowerCase().replace('.', ',')).val() == true)",
+        "$num": {
+          ".read": "auth != null && auth.token.email == ($cls + '-' + $num + '-' + root.child('roster').child($cls).child($num).child('code').val() + '@stu.sgame.kr')",
+          ".write": "(auth != null && auth.token.email_verified == true && (auth.token.email.toLowerCase() == 'pfg566@gmail.com' || root.child('admins').child(auth.token.email.toLowerCase().replace('.', ',')).val() == true)) || (auth != null && auth.token.email == ($cls + '-' + $num + '-' + root.child('roster').child($cls).child($num).child('code').val() + '@stu.sgame.kr'))",
+          ".validate": "newData.hasChildren(['name', 'xp', 'coins', 'plays', 'updatedAt', 'createdAt']) && ((auth != null && auth.token.email_verified == true && (auth.token.email.toLowerCase() == 'pfg566@gmail.com' || root.child('admins').child(auth.token.email.toLowerCase().replace('.', ',')).val() == true)) || (newData.child('updatedAt').val() == now && ((!data.exists() && newData.child('xp').val() == 0 && newData.child('coins').val() == 0 && newData.child('plays').val() == 0) || (data.exists() && ((root.child('playgate').child($cls).child('until').exists() && root.child('playgate').child($cls).child('until').val() + 900000 > now) || (root.child('playgate').child('all').child('until').exists() && root.child('playgate').child('all').child('until').val() + 900000 > now)) && now - data.child('updatedAt').val() >= 10000 && newData.child('xp').val() >= data.child('xp').val() && newData.child('xp').val() - data.child('xp').val() <= 2000 && newData.child('coins').val() - data.child('coins').val() <= 1000 && newData.child('plays').val() - data.child('plays').val() <= 1 && newData.child('name').val() == data.child('name').val() && newData.child('createdAt').val() == data.child('createdAt').val()))))",
+          "name": {
+            ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 12"
+          },
+          "xp": {
+            ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 10000000"
+          },
+          "coins": {
+            ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 10000000"
+          },
+          "plays": {
+            ".validate": "newData.isNumber() && newData.val() >= 0"
+          },
+          "wins": {
+            ".validate": "newData.isNumber() && newData.val() >= 0"
+          },
+          "best": {
+            ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100000"
+          },
+          "skill": {
+            ".validate": "newData.isNumber() && newData.val() >= 0.7 && newData.val() <= 1.25"
+          },
+          "correct": {
+            ".validate": "newData.isNumber() && newData.val() >= 0"
+          },
+          "asked": {
+            ".validate": "newData.isNumber() && newData.val() >= 0"
+          },
+          "fixed": {
+            ".validate": "newData.isNumber() && newData.val() >= 0"
+          },
+          "createdAt": {
+            ".validate": "newData.isNumber()"
+          },
+          "updatedAt": {
+            ".validate": "newData.isNumber()"
+          },
+          "elems": {
+            ".validate": "newData.isString() && newData.val().matches(/^(fire|ice|bolt)(,(fire|ice|bolt)){0,2}$/)"
+          },
+          "awk": {
+            ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 10"
+          },
+          "$other": {
+            ".validate": false
+          }
+        }
+      }
+    },
+    "bank": {
+      ".read": true,
+      ".write": "auth != null && auth.token.email_verified == true && (auth.token.email.toLowerCase() == 'pfg566@gmail.com' || root.child('admins').child(auth.token.email.toLowerCase().replace('.', ',')).val() == true)"
+    },
+    "results": {
+      ".read": "auth != null && auth.token.email_verified == true && (auth.token.email.toLowerCase() == 'pfg566@gmail.com' || root.child('admins').child(auth.token.email.toLowerCase().replace('.', ',')).val() == true)",
+      ".write": "auth != null && auth.token.email_verified == true && (auth.token.email.toLowerCase() == 'pfg566@gmail.com' || root.child('admins').child(auth.token.email.toLowerCase().replace('.', ',')).val() == true)",
+      ".indexOn": [
+        "ts",
+        "cid"
+      ],
+      "$id": {
+        ".write": "auth != null && !data.exists() && newData.exists()",
+        ".validate": "newData.hasChildren(['uid', 'cls', 'nick', 'score', 'ts'])",
+        "uid": {
+          ".validate": "newData.val() == auth.uid || (auth.token.email_verified == true && auth.token.email.toLowerCase() == 'pfg566@gmail.com')"
+        },
+        "cls": {
+          ".validate": "newData.isString() && newData.val().length <= 4"
+        },
+        "nick": {
+          ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 20"
+        },
+        "unit": {
+          ".validate": "newData.isString() && newData.val().length <= 80"
+        },
+        "unitId": {
+          ".validate": "newData.isString() && newData.val().length <= 20"
+        },
+        "win": {
+          ".validate": "newData.isBoolean()"
+        },
+        "score": {
+          ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100000"
+        },
+        "correct": {
+          ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 500"
+        },
+        "asked": {
+          ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 500"
+        },
+        "kills": {
+          ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1000"
+        },
+        "timeSec": {
+          ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 86400"
+        },
+        "wrong": {
+          ".validate": "newData.isString() && newData.val().length <= 3000"
+        },
+        "ts": {
+          ".validate": "newData.isNumber() && newData.val() == now"
+        },
+        "cid": {
+          ".validate": "newData.isString() && newData.val().length <= 10"
+        },
+        "sch": {
+          ".validate": "newData.isString() && newData.val().length <= 30"
+        },
+        "grade": {
+          ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 6"
+        },
+        "year": {
+          ".validate": "newData.isNumber()"
+        },
+        "mode": {
+          ".validate": "newData.isString() && (newData.val() == 'normal' || newData.val() == 'hero' || newData.val() == 'easy' || newData.val() == 'hard')"
+        },
+        "diff": {
+          ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 3"
+        },
+        "job": {
+          ".validate": "newData.isString() && newData.val().length <= 12"
+        },
+        "map": {
+          ".validate": "newData.isString() && newData.val().length <= 10"
+        },
+        "ease": {
+          ".validate": "newData.isNumber() && newData.val() >= -1 && newData.val() <= 2"
+        },
+        "cs": {
+          "$k": {
+            ".validate": "(newData.isNumber() && newData.val() >= 0 && newData.val() <= 10000000) || (newData.isString() && newData.val().length <= 200)"
+          }
+        },
+        "$other": {
+          ".validate": false
+        }
+      }
+    },
+    "wardrobe": {
+      ".read": "auth != null",
+      "$cls": {
+        "$num": {
+          ".write": "(auth != null && auth.token.email_verified == true && (auth.token.email.toLowerCase() == 'pfg566@gmail.com' || root.child('admins').child(auth.token.email.toLowerCase().replace('.', ',')).val() == true)) || (auth != null && auth.token.email == ($cls + '-' + $num + '-' + root.child('roster').child($cls).child($num).child('code').val() + '@stu.sgame.kr'))",
+          "spent": {
+            ".validate": "newData.isNumber() && (!data.exists() || newData.val() >= data.val()) && newData.val() <= root.child('profiles').child($cls).child($num).child('coins').val()"
+          },
+          "inv": {
+            "$item": {
+              ".validate": "newData.val() == true && !data.exists() && $item.matches(/^[a-z0-9]+_p[0-9]+$/) && (($item.matches(/_p0$/) && ((!data.parent().parent().child('spent').exists() && newData.parent().parent().child('spent').val() >= 0) || (data.parent().parent().child('spent').exists() && newData.parent().parent().child('spent').val() >= data.parent().parent().child('spent').val() + 0))) || ($item.matches(/_p150$/) && ((!data.parent().parent().child('spent').exists() && newData.parent().parent().child('spent').val() >= 150) || (data.parent().parent().child('spent').exists() && newData.parent().parent().child('spent').val() >= data.parent().parent().child('spent').val() + 150))) || ($item.matches(/_p200$/) && ((!data.parent().parent().child('spent').exists() && newData.parent().parent().child('spent').val() >= 200) || (data.parent().parent().child('spent').exists() && newData.parent().parent().child('spent').val() >= data.parent().parent().child('spent').val() + 200))) || ($item.matches(/_p250$/) && ((!data.parent().parent().child('spent').exists() && newData.parent().parent().child('spent').val() >= 250) || (data.parent().parent().child('spent').exists() && newData.parent().parent().child('spent').val() >= data.parent().parent().child('spent').val() + 250))) || ($item.matches(/_p300$/) && ((!data.parent().parent().child('spent').exists() && newData.parent().parent().child('spent').val() >= 300) || (data.parent().parent().child('spent').exists() && newData.parent().parent().child('spent').val() >= data.parent().parent().child('spent').val() + 300))) || ($item.matches(/_p400$/) && ((!data.parent().parent().child('spent').exists() && newData.parent().parent().child('spent').val() >= 400) || (data.parent().parent().child('spent').exists() && newData.parent().parent().child('spent').val() >= data.parent().parent().child('spent').val() + 400))) || ($item.matches(/_p450$/) && ((!data.parent().parent().child('spent').exists() && newData.parent().parent().child('spent').val() >= 450) || (data.parent().parent().child('spent').exists() && newData.parent().parent().child('spent').val() >= data.parent().parent().child('spent').val() + 450))) || ($item.matches(/_p500$/) && ((!data.parent().parent().child('spent').exists() && newData.parent().parent().child('spent').val() >= 500) || (data.parent().parent().child('spent').exists() && newData.parent().parent().child('spent').val() >= data.parent().parent().child('spent').val() + 500))) || ($item.matches(/_p600$/) && ((!data.parent().parent().child('spent').exists() && newData.parent().parent().child('spent').val() >= 600) || (data.parent().parent().child('spent').exists() && newData.parent().parent().child('spent').val() >= data.parent().parent().child('spent').val() + 600))) || ($item.matches(/_p800$/) && ((!data.parent().parent().child('spent').exists() && newData.parent().parent().child('spent').val() >= 800) || (data.parent().parent().child('spent').exists() && newData.parent().parent().child('spent').val() >= data.parent().parent().child('spent').val() + 800))) || ($item.matches(/_p1000$/) && ((!data.parent().parent().child('spent').exists() && newData.parent().parent().child('spent').val() >= 1000) || (data.parent().parent().child('spent').exists() && newData.parent().parent().child('spent').val() >= data.parent().parent().child('spent').val() + 1000))) || ($item.matches(/_p1200$/) && ((!data.parent().parent().child('spent').exists() && newData.parent().parent().child('spent').val() >= 1200) || (data.parent().parent().child('spent').exists() && newData.parent().parent().child('spent').val() >= data.parent().parent().child('spent').val() + 1200))) || ($item.matches(/_p1500$/) && ((!data.parent().parent().child('spent').exists() && newData.parent().parent().child('spent').val() >= 1500) || (data.parent().parent().child('spent').exists() && newData.parent().parent().child('spent').val() >= data.parent().parent().child('spent').val() + 1500))) || ($item.matches(/_p2000$/) && ((!data.parent().parent().child('spent').exists() && newData.parent().parent().child('spent').val() >= 2000) || (data.parent().parent().child('spent').exists() && newData.parent().parent().child('spent').val() >= data.parent().parent().child('spent').val() + 2000))) || ($item.matches(/_p2500$/) && ((!data.parent().parent().child('spent').exists() && newData.parent().parent().child('spent').val() >= 2500) || (data.parent().parent().child('spent').exists() && newData.parent().parent().child('spent').val() >= data.parent().parent().child('spent').val() + 2500))))"
+            }
+          },
+          "equip": {
+            "$slot": {
+              ".validate": "newData.isString() && $slot.matches(/^((knight|archer|mage)_)?(outfit|hat|cape|weapon|shield|hair|color|trail)$/) && newData.val().matches(/^[a-z0-9]+_p[0-9]+$/) && (newData.val().matches(/_p0$/) || newData.parent().parent().child('inv').child(newData.val()).exists())"
+            }
+          },
+          "$other": {
+            ".validate": false
+          }
+        }
+      }
+    },
+    "playgate": {
+      ".read": "auth != null",
+      ".write": "auth != null && auth.token.email_verified == true && (auth.token.email.toLowerCase() == 'pfg566@gmail.com' || root.child('admins').child(auth.token.email.toLowerCase().replace('.', ',')).val() == true)",
+      "$cid": {
+        ".validate": "newData.hasChildren(['until'])",
+        "until": {
+          ".validate": "newData.isNumber()"
+        },
+        "by": {
+          ".validate": "newData.isString() && newData.val().length <= 80"
+        },
+        "sid": {
+          ".validate": "newData.isString() && newData.val().length <= 30"
+        },
+        "plays": {
+          ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 999"
+        },
+        "unit": {
+          ".validate": "newData.isString() && newData.val().length <= 20"
+        },
+        "map": {
+          ".validate": "newData.isString() && newData.val().length <= 10"
+        },
+        "$other": {
+          ".validate": false
+        }
+      }
+    },
+    "playlog": {
+      ".read": "auth != null && auth.token.email_verified == true && (auth.token.email.toLowerCase() == 'pfg566@gmail.com' || root.child('admins').child(auth.token.email.toLowerCase().replace('.', ',')).val() == true)",
+      ".write": "auth != null && auth.token.email_verified == true && (auth.token.email.toLowerCase() == 'pfg566@gmail.com' || root.child('admins').child(auth.token.email.toLowerCase().replace('.', ',')).val() == true)",
+      "$cid": {
+        "$num": {
+          ".read": "auth != null && auth.token.email == ($cid + '-' + $num + '-' + root.child('roster').child($cid).child($num).child('code').val() + '@stu.sgame.kr')",
+          "$sid": {
+            ".write": "auth != null && auth.token.email == ($cid + '-' + $num + '-' + root.child('roster').child($cid).child($num).child('code').val() + '@stu.sgame.kr')",
+            ".validate": "(auth != null && auth.token.email_verified == true && (auth.token.email.toLowerCase() == 'pfg566@gmail.com' || root.child('admins').child(auth.token.email.toLowerCase().replace('.', ',')).val() == true) && newData.isNumber() && newData.val() >= 0) || (newData.isNumber() && ((!data.exists() && newData.val() == 1) || (data.exists() && newData.val() == data.val() + 1)) && ((root.child('playgate').child($cid).child('sid').val() == $sid && root.child('playgate').child($cid).child('until').val() > now && newData.val() <= root.child('playgate').child($cid).child('plays').val()) || (root.child('playgate').child('all').child('sid').val() == $sid && root.child('playgate').child('all').child('until').val() > now && newData.val() <= root.child('playgate').child('all').child('plays').val())))"
+          }
+        }
+      }
+    },
+    "partylog": {
+      ".read": "auth != null && auth.token.email_verified == true && (auth.token.email.toLowerCase() == 'pfg566@gmail.com' || root.child('admins').child(auth.token.email.toLowerCase().replace('.', ',')).val() == true)",
+      ".write": "auth != null && auth.token.email_verified == true && (auth.token.email.toLowerCase() == 'pfg566@gmail.com' || root.child('admins').child(auth.token.email.toLowerCase().replace('.', ',')).val() == true)",
+      "$cid": {
+        "$num": {
+          ".read": "auth != null && auth.token.email == ($cid + '-' + $num + '-' + root.child('roster').child($cid).child($num).child('code').val() + '@stu.sgame.kr')",
+          "$sid": {
+            ".write": "auth != null && auth.token.email == ($cid + '-' + $num + '-' + root.child('roster').child($cid).child($num).child('code').val() + '@stu.sgame.kr')",
+            ".validate": "(auth != null && auth.token.email_verified == true && (auth.token.email.toLowerCase() == 'pfg566@gmail.com' || root.child('admins').child(auth.token.email.toLowerCase().replace('.', ',')).val() == true) && newData.isNumber() && newData.val() >= 0) || (newData.isNumber() && ((!data.exists() && newData.val() == 1) || (data.exists() && newData.val() == data.val() + 1)) && ((root.child('playgate').child($cid).child('sid').val() == $sid && root.child('playgate').child($cid).child('until').val() > now && newData.val() <= root.child('playgate').child($cid).child('plays').val()) || (root.child('playgate').child('all').child('sid').val() == $sid && root.child('playgate').child('all').child('until').val() > now && newData.val() <= root.child('playgate').child('all').child('plays').val())))"
+          }
+        }
+      }
+    },
+    "partyIdx": {
+      "$cid": {
+        ".read": "auth != null && (auth.token.email.beginsWith($cid + '-') || (auth.token.email_verified == true && (auth.token.email.toLowerCase() == 'pfg566@gmail.com' || root.child('admins').child(auth.token.email.toLowerCase().replace('.', ',')).val() == true)))",
+        "$rid": {
+          ".write": "auth != null && (data.child('meta/host').val() == auth.uid || (auth.token.email_verified == true && (auth.token.email.toLowerCase() == 'pfg566@gmail.com' || root.child('admins').child(auth.token.email.toLowerCase().replace('.', ',')).val() == true)) || (!data.exists() && newData.child('meta/host').val() == auth.uid && auth.token.email.beginsWith($cid + '-')) || (data.exists() && data.child('meta/at').val() < now - 10800000))",
+          "meta": {
+            ".write": "auth != null && ((auth.token.email.beginsWith($cid + '-') || (auth.token.email_verified == true && (auth.token.email.toLowerCase() == 'pfg566@gmail.com' || root.child('admins').child(auth.token.email.toLowerCase().replace('.', ',')).val() == true))) && ((!data.exists() && newData.child('host').val() == auth.uid) || data.child('host').val() == auth.uid))",
+            ".validate": "newData.hasChildren(['host','mode','state'])",
+            "mode": {
+              ".validate": "newData.val() == 'quiz' || newData.val() == 'fight'"
+            },
+            "state": {
+              ".validate": "newData.val() == 'wait' || newData.val() == 'play' || newData.val() == 'end'"
+            },
+            "hostName": {
+              ".validate": "newData.isString() && newData.val().length <= 12"
+            }
+          },
+          "m": {
+            "$uid": {
+              ".write": "auth != null && auth.uid == $uid && (auth.token.email.beginsWith($cid + '-') || (auth.token.email_verified == true && (auth.token.email.toLowerCase() == 'pfg566@gmail.com' || root.child('admins').child(auth.token.email.toLowerCase().replace('.', ',')).val() == true)))",
+              ".validate": "newData.hasChildren(['name','job'])",
+              "name": {
+                ".validate": "newData.isString() && newData.val().length <= 12"
+              },
+              "job": {
+                ".validate": "newData.val() == 'knight' || newData.val() == 'archer' || newData.val() == 'mage'"
+              }
+            }
+          }
+        }
+      }
+    },
+    "partyLive": {
+      "$rid": {
+        ".read": "auth != null",
+        ".write": "auth != null && (data.child('host').val() == auth.uid || (auth.token.email_verified == true && (auth.token.email.toLowerCase() == 'pfg566@gmail.com' || root.child('admins').child(auth.token.email.toLowerCase().replace('.', ',')).val() == true)))",
+        "host": {
+          ".write": "auth != null && ((!data.exists() && newData.val() == auth.uid) || data.val() == auth.uid)"
+        },
+        "g": {
+          ".write": "auth != null && data.parent().child('host').val() == auth.uid"
+        },
+        "p": {
+          "$uid": {
+            ".write": "auth != null && auth.uid == $uid"
+          }
+        },
+        "ev": {
+          "$e": {
+            ".write": "auth != null && (!data.exists() || data.parent().parent().child('host').val() == auth.uid)"
+          }
+        },
+        "dm": {
+          "$uid": {
+            "$e": {
+              ".write": "auth != null && (auth.uid == $uid || data.parent().parent().parent().child('host').val() == auth.uid)"
+            }
+          }
+        }
+      }
+    }
+  }
+}

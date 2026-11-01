@@ -470,3 +470,7 @@ body.party #nextCard{display:none}
 
 .mode.easy input:checked+span{background:#e2f6ea;box-shadow:inset 0 0 0 2px #2fb36b}
 .mode.hard input:checked+span{background:#ffe3e3;box-shadow:inset 0 0 0 2px #d0453f}
+
+/* 파티 잠금 */
+.partybtn.locked{opacity:.6}
+[data-pmode].locked{opacity:.45;cursor:not-allowed;text-decoration:line-through}

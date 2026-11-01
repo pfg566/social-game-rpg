@@ -108,7 +108,7 @@ $('#teacherLogin').addEventListener('click',async e=>{
 });
 function loadSettings(){
   if (!fbDb) return;
-  fbDb.ref('settings').once('value').then(snap=>{ const v=snap.val()||{}; HERO_OPEN=v.heroMode===true; FREE_PLAY=v.freePlay===true; applyPlay(); renderLevels(); }).catch(()=>{ HERO_OPEN=false; });
+  fbDb.ref('settings').on('value',snap=>{ const v=snap.val()||{}; HERO_OPEN=v.heroMode===true; FREE_PLAY=v.freePlay===true; PARTY_LOCK={quiz:v.partyQuizOff===true,fight:v.partyFightOff===true}; if (W.state!=='play'){ applyPlay(); renderLevels(); } try{ applyPartyLock(); }catch(e){} },()=>{ HERO_OPEN=false; });
 }
 function loadBank(){
   if (!fbDb) return;
