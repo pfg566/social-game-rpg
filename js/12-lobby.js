@@ -34,12 +34,15 @@ function lobbyTick(real,dt){
   const login=loginActive(), on=lobbyActive()||login; if (on) ensureLobby();
   if (LOBBY.g) LOBBY.g.visible=on;
   LABEL_SPRITES.forEach(s=>{ s.visible=!on; });
+  // 로비·로그인 화면은 캐릭터가 카메라 가까이 있어서 빛 번짐을 줄여요 (얼굴이 하얗게 날아가지 않게)
+  // 로비·로그인 화면은 캐릭터가 카메라 바로 앞이라 햇빛과 빛 번짐을 줄여요 (하얗게 날아가지 않게)
+  if (MOODS[MOOD]){ const M=MOODS[MOOD]; if (bloom) bloom.strength=M.bloom[0]*(on?.6:1); sun.intensity=M.sun[1]*(on?.8:1); renderer.toneMappingExposure=M.exp*(on?.95:1); }
   pg.visible=!on;
   if (!on || !LOBBY.g) return false;
   const LX=LOBBY_AT.x, LZ=LOBBY_AT.z;
   LOBBY.g.position.set(LX,0,LZ);
   { const o=sun.userData.off||[22,38,14]; sun.position.set(LX+o[0],o[1],LZ+o[2]); } sun.target.position.set(LX,0,LZ); sun.target.updateMatrixWorld();
-  if (LOBBY.light && !login) LOBBY.light.intensity=.8;
+  if (LOBBY.light && !login) LOBBY.light.intensity=.5;
   if (login) return loginTick(real,dt);
   // 고른 직업 캐릭터 하나만 가운데에. 바꾸면 '뿅' 하고 나타나며 만세해요
   if (LOBBY.last!==JOB){ const c=LOBBY.chars[JOB]; if (c){ LOBBY.popT=0; c.root.scale.setScalar(.01); if (LOBBY.last){ c.anim.once('cheer',1.5,true); fx.burst(LX,1.5,LZ,0xffd34d,22,4); fx.rise(LX,LZ,0xffe9a0,16); } } LOBBY.last=JOB; }
@@ -75,7 +78,7 @@ function loginTick(real,dt){
   const W0=innerWidth, H0=innerHeight, tn=Math.tan(camera.fov*Math.PI/360), wide=W0>=900;
   const panel=document.querySelector('#title .panel'), pr=panel?panel.getBoundingClientRect():null;
   const free=wide&&pr?pr.left:W0, cx=free/2, cy=H0*(wide?.6:.42);
-  if (LOBBY.light) LOBBY.light.intensity=.25;
+  if (LOBBY.light) LOBBY.light.intensity=.2;
   const dd=wide?11.5:13, a=reduceMotion()?0:Math.sin(real*.11)*.32;
   const rx=Math.cos(a), rz=-Math.sin(a), k=2*dd*tn/H0, ox=(cx-W0/2)*k, oy=(H0/2-cy)*k;
   const lx=LX-rx*ox, lz=LZ-rz*ox, ly=1.15-oy;
