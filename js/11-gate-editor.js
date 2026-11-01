@@ -5,7 +5,7 @@ let GATE={}, GATE_OK=null, SOFF=0, PLOG={}, plogRef=null, starting=false;
 function gateKey(){ if (AUTHMODE==='student'&&STUDENT) return STUDENT.cid; const c=$('#pkCls').value; return c&&!c.startsWith('n:')?c:''; }
 function activeGate(){
   const now=Date.now()+SOFF, k=gateKey();
-  for (const key of [k,'all']){ if (!key) continue; const g=GATE[key]; if (g && +g.until>now) return {key,sid:g.sid||'',plays:+g.plays||0,until:+g.until,left:+g.until-now}; }
+  for (const key of [k,'all']){ if (!key) continue; const g=GATE[key]; if (g && +g.until>now) return {key,sid:g.sid||'',plays:+g.plays||0,lim:+g.lim||0,until:+g.until,left:+g.until-now}; }
   return null;
 }
 function playsUsed(g){
@@ -75,12 +75,13 @@ function renderHistory(){
 renderHistory();
 function endGame(win){
   $('#rewardBox').hidden=true;
-  W.state='end'; W.paused=true; W.loc=null; W.prep=null; $('#prep').hidden=true; $('#locIntro').hidden=true; $('#reviveIntro').hidden=true;
+  W.state='end'; W.paused=true; W.loc=null; W.prep=null; $('#timeCard').hidden=true; $('#prep').hidden=true; $('#locIntro').hidden=true; $('#reviveIntro').hidden=true;
   $('#locCard').hidden=true; $('#gateCard').hidden=true; $('#bossbar').hidden=true; $('#prompt').hidden=true;
-  $('#endEyebrow').textContent=win?'승리':'게임 오버';
+  const tu=!win&&!!W.timeUp, wc=tu?Math.max(0,W.wave+(W.gate||W.prep?1:0)):0;
+  $('#endEyebrow').textContent=win?'승리':tu?'시간 종료':'게임 오버';
   W.won=!!win;
-  $('#endTitle').textContent=win?(PEACE_RUN?PEACE_TXT[MAPK].winTitle:MAPS[MAPK].winTitle):(MAPK==='defense'&&W.door<=0?'성문이 무너졌어요':'체력이 모두 닳았어요');
-  $('#endMsg').textContent=win?(PEACE_RUN?PEACE_TXT[MAPK].winMsg:MAPS[MAPK].winMsg):'퀴즈를 맞히면 회복하거나 더 강해질 수 있어요. 아래 틀린 문제를 복습하고 다시 도전해 보세요.';
+  $('#endTitle').textContent=win?(PEACE_RUN?PEACE_TXT[MAPK].winTitle:MAPS[MAPK].winTitle):tu?'시간이 다 됐어요!':(MAPK==='defense'&&W.door<=0?'성문이 무너졌어요':'체력이 모두 닳았어요');
+  $('#endMsg').textContent=win?(PEACE_RUN?PEACE_TXT[MAPK].winMsg:MAPS[MAPK].winMsg):tu?`${WAVES.length}웨이브 중 ${wc}웨이브를 깼어요. 깬 웨이브마다 100점을 더 받아요. 아래 틀린 문제를 복습해 보세요.`:'퀴즈를 맞히면 회복하거나 더 강해질 수 있어요. 아래 틀린 문제를 복습하고 다시 도전해 보세요.';
   $('#sKills').textContent=W.kills; $('#sCorrect').textContent=`${W.correct}/${W.asked}`;
   const s=Math.floor(W.t); $('#sTime').textContent=`${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;
   const rv=$('#review');
@@ -93,10 +94,10 @@ function endGame(win){
   const unit=DATA.units.find(u=>u.id===playUnit);
   const fixedN=W.wrong.filter(w=>w.fixed).length;
   const dlv=MAPK==='island'&&W.isl?W.isl.delivered:0, stars=PEACE_RUN&&W.isl?(W.isl.stars|0):0;
-  const score=Math.round((W.correct*100+fixedN*50+W.kills*10+dlv*50+stars*30+(win?500:0)+(PARTY.on?PARTY.bonus:0))*(MODE==='hero'?HERO.score:LEVELS[LEVEL].score));
-  $('#sScoreNote').textContent=`정답 100점 · 다시 맞힘 +50점(${fixedN}개) · 처치 10점`+(MAPK==='island'?` · 배달 50점(${dlv}개)`:'')+(stars?` · 별 30점(${stars}개)`:'')+(PEACE_RUN?' · 평화 모드':'')+(PARTY.on?` · 거점 지키기 +${PARTY.bonus}점`:'')+' · 승리 500점'+(PARTY.on||MODE==='hero'?' · 영웅 ×1.5':LEVEL!=='normal'?` · ${LEVELS[LEVEL].name} ×${LEVELS[LEVEL].score}`:'');
+  const score=Math.round((W.correct*100+fixedN*50+W.kills*10+dlv*50+stars*30+(win?500:0)+wc*100+(PARTY.on?PARTY.bonus:0))*(MODE==='hero'?HERO.score:LEVELS[LEVEL].score));
+  $('#sScoreNote').textContent=`정답 100점 · 다시 맞힘 +50점(${fixedN}개) · 처치 10점`+(MAPK==='island'?` · 배달 50점(${dlv}개)`:'')+(stars?` · 별 30점(${stars}개)`:'')+(PEACE_RUN?' · 평화 모드':'')+(PARTY.on?` · 거점 지키기 +${PARTY.bonus}점`:'')+(tu?` · 깬 웨이브 100점(${wc}개)`:' · 승리 500점')+(PARTY.on||MODE==='hero'?' · 영웅 ×1.5':LEVEL!=='normal'?` · ${LEVELS[LEVEL].name} ×${LEVELS[LEVEL].score}`:'');
   if (MAPK==='island'&&W.isl) $('#endMsg').textContent=`택배 ${W.isl.delivered}개 배달`+(stars?` · 제시간 배달 ★${stars}`:'')+(W.isl.lost?` · 도둑에게 ${W.isl.lost}개 잃어버림`:'')+'. '+$('#endMsg').textContent;
-  const newSkill=PARTY.on?loadSkill():updateSkill(win);
+  const newSkill=PARTY.on||tu?loadSkill():updateSkill(win);
   const d=new Date();
   const when=`${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
   lastResult={diff:DIFF,mode:MODE,lv:PARTY.on?'hero':LEVEL,nick:NICK,cls:CI.cls,cid:CI.cid,sch:CI.sch,grade:CI.grade,year:CI.year,label:CI.label,unit:unit?unit.name:'',unitId:playUnit,win,score,correct:W.correct,asked:W.asked,kills:W.kills,

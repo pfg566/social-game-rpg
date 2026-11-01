@@ -478,3 +478,12 @@ body.party #nextCard{display:none}
 /* 비밀번호 만들기: 두 칸 같은 너비 */
 #pwBox .who-row.login{display:grid;grid-template-columns:1fr 1fr}
 #pwBox .who-row.login .nickfield{width:auto;flex:1}
+
+/* 한 판 시간 제한: 화면 위 가운데, 큰 글씨 (퀴즈 창 위에도 보여요) */
+.timetop{position:fixed;top:calc(env(safe-area-inset-top,0px) + 12px);left:50%;transform:translateX(-50%);z-index:60;pointer-events:none;
+  display:flex;align-items:baseline;gap:10px;padding:6px 20px 8px;background:var(--paper,#fffdf6);border:4px solid var(--ink);border-radius:16px;box-shadow:0 4px 0 var(--ink)}
+.timetop small{font-size:15px;font-weight:800;color:var(--muted)}
+.timetop b{font-family:var(--display);font-size:clamp(30px,4.2vw,44px);line-height:1;font-variant-numeric:tabular-nums;color:var(--ink)}
+.timetop.hurry{background:#ffe3e3;border-color:#d0453f;box-shadow:0 4px 0 #a3221d;animation:tpulse 1s ease-in-out infinite}
+.timetop.hurry b,.timetop.hurry small{color:#b3261e}
+@keyframes tpulse{50%{transform:translateX(-50%) scale(1.07)}}
