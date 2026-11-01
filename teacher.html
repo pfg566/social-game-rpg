@@ -125,6 +125,23 @@ input.rename{border:2px solid var(--line);border-radius:6px;padding:2px 6px;widt
 .link.plain{color:var(--ink)}
 .empty-li{color:var(--muted);border-style:dashed!important}
 .list li small{color:var(--muted);font-weight:600}
+
+/* 시상식 */
+.aw-bar{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;margin-bottom:8px}
+.aw-help{color:var(--muted);margin:4px 0 12px}
+.aw-stage{position:fixed;inset:0;z-index:100;background:radial-gradient(circle at 50% 30%,#2b3a66,#121a33);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px;padding:24px;overflow:auto}
+.aw-stage[hidden]{display:none}
+.aw-top{text-align:center}.aw-top h1{font-size:clamp(32px,5vw,60px);margin:0;color:#fff}.aw-top p{margin:6px 0 0;opacity:.8;font-size:18px}
+.aw-cards{display:flex;flex-wrap:wrap;gap:24px;justify-content:center}
+.aw-card{width:min(300px,80vw);perspective:1000px;cursor:pointer;background:none;border:0;padding:0;color:inherit;font:inherit}
+.aw-in{position:relative;width:100%;height:300px;transition:transform .8s;transform-style:preserve-3d}
+.aw-card.open .aw-in{transform:rotateY(180deg)}
+.aw-f,.aw-b{position:absolute;inset:0;border-radius:22px;backface-visibility:hidden;-webkit-backface-visibility:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:18px;text-align:center;border:5px solid #ffd34d;box-shadow:0 10px 30px rgba(0,0,0,.4)}
+.aw-f{background:linear-gradient(160deg,#ffcf3a,#ff9d2e);color:#18213a}
+.aw-f .ic{font-size:72px;line-height:1}.aw-f b{font-size:28px;font-family:var(--display);font-weight:400}.aw-f small{font-size:15px;font-weight:700;opacity:.8}
+.aw-b{background:#fffdf3;color:#18213a;transform:rotateY(180deg)}
+.aw-b .ic{font-size:44px}.aw-b .nm{font-size:40px;font-family:var(--display);line-height:1.15}.aw-b .aw{font-size:18px;font-weight:800;color:#b46b00}.aw-b small{font-size:15px;color:#5d6782;font-weight:700}
+.aw-act{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
 </style>
 </head>
 <body>
@@ -163,6 +180,7 @@ input.rename{border:2px solid var(--line);border-radius:6px;padding:2px 6px;widt
         <label class="f"><span>어느 반을 열까요?</span><select id="pbCls"></select></label>
         <label class="f"><span>단원</span><select id="pbUnit"><option value="">불러오는 중…</option></select></label>
         <label class="f"><span>맵</span><select id="pbMap"></select></label>
+        <label class="f"><span>한 판 시간</span><select id="pbLim"><option value="2">2분</option><option value="3">3분</option><option value="4">4분</option><option value="5" selected>5분</option><option value="6">6분</option><option value="7">7분</option><option value="0">제한 없음</option></select></label>
         <label class="f"><span>한 사람당</span><select id="pbPlays"><option value="1" selected>1판</option><option value="2">2판</option><option value="3">3판</option><option value="999">제한 없음</option></select></label>
         <div class="pb-dur"><span>열어 둘 시간</span><div><button class="btn" data-pmin="10">10분</button><button class="btn" data-pmin="15">15분</button><button class="btn primary" data-pmin="20">20분</button><button class="btn" data-pmin="30">30분</button><button class="btn" data-pmin="50">50분</button></div></div>
       </div>
@@ -178,6 +196,7 @@ input.rename{border:2px solid var(--line);border-radius:6px;padding:2px 6px;widt
 
     <div class="tabs" role="tablist" id="tabs">
       <button class="tab" role="tab" data-tab="students" aria-selected="true">학생별</button>
+      <button class="tab" role="tab" data-tab="awards" aria-selected="false">🏆 시상식</button>
       <button class="tab" role="tab" data-tab="records" aria-selected="false">전체 기록</button>
       <button class="tab" role="tab" data-tab="missed" aria-selected="false">많이 틀린 문제</button>
       <button class="tab" role="tab" data-tab="balance" aria-selected="false">난이도 분석</button>
@@ -186,6 +205,15 @@ input.rename{border:2px solid var(--line);border-radius:6px;padding:2px 6px;widt
       <button class="tab" role="tab" data-tab="manage" aria-selected="false">관리</button>
     </div>
 
+    <section class="card panel" id="pAwards" hidden>
+      <div class="aw-bar">
+        <label class="f"><span>학급</span><select id="awCls"></select></label>
+        <label class="f"><span>게임 시간</span><select id="awSid"></select></label>
+        <button class="btn primary" id="awShow" disabled>🎉 시상식 화면 열기</button>
+      </div>
+      <p class="aw-help">'게임 열기' 한 번이 한 게임 시간이에요. 학생이 게임을 끝낼 때마다 아래 순위가 바로 바뀌어요. 시상식 화면에서는 최고점상과, 매번 무작위로 정해지는 특별상 2개를 카드로 하나씩 열어 발표할 수 있어요.</p>
+      <div class="tablewrap"><table id="awTbl"></table></div>
+    </section>
     <section class="card panel" id="pStudents"><div class="tablewrap"><table id="tblStudents"></table></div></section>
     <section class="card panel" id="pRecords" hidden><div class="tablewrap"><table id="tblRecords"></table></div></section>
     <section class="card panel" id="pMissed" hidden><div class="miss" id="missList"></div></section>
@@ -464,7 +492,69 @@ $('#tabs').addEventListener('click',e=>{ const b=e.target.closest('[data-tab]');
   document.querySelectorAll('.tab').forEach(t=>t.setAttribute('aria-selected',String(t===b)));
   $('#pClasses').hidden=tab!=='classes';
   $('#pRoster').hidden=tab!=='roster'; if (tab==='roster'&&!RS.cls&&$('#rsCls').options.length>1){ $('#rsCls').selectedIndex=1; rsWatch(); }
+  $('#pAwards').hidden=tab!=='awards'; if (tab==='awards') awInit();
   $('#pStudents').hidden=tab!=='students'; $('#pRecords').hidden=tab!=='records'; $('#pMissed').hidden=tab!=='missed'; $('#pManage').hidden=tab!=='manage'; $('#pBalance').hidden=tab!=='balance'; });
+
+/* ---------- 🏆 시상식 ---------- */
+const AW={cls:'',sid:'',ref:null,all:{},roll:0,inited:false};
+function best(L,k,min){ const c=L.filter(e=>(+e[k]||0)>=min); return c.length?c.sort((a,b)=>(+b[k])-(+a[k])||b.s-a.s)[0]:null; }
+const AW_SPECIAL=[
+ {ic:'💀',name:'구사일생상',desc:'체력이 바닥까지 갔다가 살아남은 학생',pick:L=>{ const c=L.filter(e=>(e.w|0)>0&&(+e.mh)<=35); return c.length?c.sort((a,b)=>(+a.mh)-(+b.mh)||b.s-a.s)[0]:null; },why:e=>`체력 ${e.mh}%까지 떨어졌다가 승리!`},
+ {ic:'💨',name:'회피왕',desc:'화살·도약 공격을 아슬아슬하게 가장 많이 피한 학생',pick:L=>best(L,'ev',1),why:e=>`아슬아슬하게 ${e.ev}번 피했어요`},
+ {ic:'🛡️',name:'철벽상',desc:'막기로 막아 낸 피해가 가장 많은 학생',pick:L=>best(L,'bl',10),why:e=>`막기로 피해 ${e.bl}을 막았어요`},
+ {ic:'🍀',name:'행운상',desc:'지식 카드 코인을 가장 많이 뽑은 학생',pick:L=>best(L,'cc',1),why:e=>`카드에서 코인 ${e.cc}개!`},
+ {ic:'🧹',name:'청소부상',desc:'몬스터를 가장 많이 잡은 학생',pick:L=>best(L,'k',1),why:e=>`몬스터 ${e.k}마리`},
+ {ic:'💥',name:'보스 사냥꾼상',desc:'보스에게 가장 큰 피해를 준 학생',pick:L=>best(L,'bd',1),why:e=>`보스에게 피해 ${e.bd}`},
+ {ic:'✨',name:'필살기 장인상',desc:'필살기를 가장 많이 쓴 학생',pick:L=>best(L,'u',1),why:e=>`필살기 ${e.u}번`},
+ {ic:'🧊',name:'무적상',desc:'승리한 학생 중 받은 피해가 가장 적은 학생',pick:L=>{ const c=L.filter(e=>(e.w|0)>0&&(+e.tk)>=0); return c.length?c.sort((a,b)=>(+a.tk)-(+b.tk)||b.s-a.s)[0]:null; },why:e=>`받은 피해 단 ${e.tk}!`},
+ {ic:'🎲',name:'추첨상',desc:'참여한 친구 중 운 좋은 한 명',pick:(L,rng)=>L.length?L[Math.floor(rng()*L.length)]:null,why:e=>'오늘의 행운!'},
+];
+function awRng(seed){ let h=1779033703^seed.length; for (let i=0;i<seed.length;i++){ h=Math.imul(h^seed.charCodeAt(i),3432918353); h=h<<13|h>>>19; }
+  return ()=>{ h=Math.imul(h^h>>>16,2246822507); h=Math.imul(h^h>>>13,3266489909); h^=h>>>16; return (h>>>0)/4294967296; }; }
+function awInit(){
+  const el=$('#awCls'), cur=el.value||AW.cls;
+  el.innerHTML='<option value="">학급 선택</option>'+sortedSchools().map(sid=>{ const ks=sortedClasses(sid).filter(k=>!CLS[k].hidden); if (!ks.length) return '';
+    return `<optgroup label="${esc(SCH[sid].name)}">`+ks.map(k=>`<option value="${k}">${CLS[k].grade}학년 ${CLS[k].cls}반</option>`).join('')+'</optgroup>'; }).join('');
+  if (cur && [...el.options].some(o=>o.value===cur)) el.value=cur;
+  else { const open=Object.keys(PG||{}).filter(k=>k!=='all'&&(+PG[k].until||0)>pNow()); if (open[0]&&[...el.options].some(o=>o.value===open[0])) el.value=open[0]; }
+  if (!AW.inited){ AW.inited=true;
+    el.addEventListener('change',awWatch); $('#awSid').addEventListener('change',()=>{ AW.sid=$('#awSid').value; AW.roll=0; awRender(); });
+    $('#awShow').addEventListener('click',awStage); $('#awClose').addEventListener('click',()=>{ $('#awStage').hidden=true; });
+    $('#awReroll').addEventListener('click',()=>{ AW.roll++; awStage(); }); $('#awAll').addEventListener('click',()=>document.querySelectorAll('.aw-card').forEach(c=>c.classList.add('open')));
+    $('#awCards').addEventListener('click',e=>{ const c=e.target.closest('.aw-card'); if (c) c.classList.add('open'); }); }
+  if (el.value!==AW.cls) awWatch(); else awRender();
+}
+function awWatch(){
+  if (AW.ref) AW.ref.off(); AW.cls=$('#awCls').value; AW.all={}; AW.sid=''; AW.ref=null;
+  if (!AW.cls){ awRender(); return; }
+  AW.ref=db.ref('board/'+AW.cls); AW.ref.on('value',s=>{ AW.all=s.val()||{}; awRender(); },()=>{ $('#awTbl').innerHTML='<tr><td class="empty">순위를 불러오지 못했어요. 새 보안 규칙을 올렸는지 확인해 주세요.</td></tr>'; });
+}
+function awList(){ return Object.entries(AW.all[AW.sid]||{}).map(([num,e])=>({num,...e,rate:e.a?Math.round(e.c/e.a*100):0})).sort((a,b)=>(b.s-a.s)||(b.rate-a.rate)); }
+function awRender(){
+  const sids=Object.keys(AW.all).map(sid=>{ const es=Object.values(AW.all[sid]||{}); return {sid,n:es.length,t:Math.max(0,...es.map(e=>+e.t||0))}; }).sort((a,b)=>b.t-a.t);
+  if (!AW.sid || !AW.all[AW.sid]) AW.sid=sids[0]?sids[0].sid:'';
+  const fmt=t=>{ const d=new Date(t); return `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`; };
+  $('#awSid').innerHTML=sids.length?sids.map(x=>`<option value="${esc(x.sid)}"${x.sid===AW.sid?' selected':''}>${fmt(x.t)} · ${x.n}명</option>`).join(''):'<option value="">아직 기록 없음</option>';
+  const L=awList(); $('#awShow').disabled=!L.length;
+  $('#awTbl').innerHTML=!AW.cls?'<tr><td class="empty">학급을 고르세요.</td></tr>':!L.length?'<tr><td class="empty">이 학급은 아직 기록이 없어요. 학생이 게임을 끝내면 여기에 바로 나와요.</td></tr>':
+    '<thead><tr><th>순위</th><th>번호</th><th>이름</th><th class="num">최고 점수</th><th class="num">정답률</th><th class="num">판</th><th class="num">승리</th><th class="num">처치</th><th class="num">피한 공격</th><th class="num">카드 코인</th></tr></thead><tbody>'+
+    L.map((e,i)=>`<tr><td>${i+1}</td><td>${esc(e.num)}번</td><td>${esc(e.n||'')}</td><td class="num"><b>${(e.s|0).toLocaleString('ko-KR')}</b></td><td class="num">${e.rate}% (${e.c|0}/${e.a|0})</td><td class="num">${e.g|0}</td><td class="num">${e.w|0}</td><td class="num">${e.k|0}</td><td class="num">${e.ev|0}</td><td class="num">${e.cc|0}</td></tr>`).join('')+'</tbody>';
+}
+function awPick(){
+  const L=awList(); if (!L.length) return [];
+  const top=L[0], out=[{ic:'🏆',name:'최고점상',desc:'이번 시간 가장 높은 점수',e:top,why:`${(top.s|0).toLocaleString('ko-KR')}점 · 정답률 ${top.rate}%`}];
+  const rng=awRng(AW.sid+'#'+AW.roll), pool=AW_SPECIAL.map(a=>({a,r:rng()})).sort((x,y)=>x.r-y.r).map(x=>x.a);
+  const used=new Set([top.num]);
+  for (const a of pool){ if (out.length>=3) break; const w=a.pick(L.filter(e=>!used.has(e.num)),rng); if (!w) continue; used.add(w.num); out.push({ic:a.ic,name:a.name,desc:a.desc,e:w,why:a.why(w)}); }
+  return out;
+}
+function awStage(){
+  const A=awPick(); if (!A.length) return;
+  $('#awWho').textContent=`${cLabel(AW.cls)} · ${awList().length}명 참여 · 카드를 눌러 발표해요`;
+  $('#awCards').innerHTML=A.map(x=>`<button class="aw-card"><div class="aw-in"><div class="aw-f"><span class="ic">${x.ic}</span><b>${esc(x.name)}</b><small>${esc(x.desc)}</small></div>
+    <div class="aw-b"><span class="ic">${x.ic}</span><span class="aw">${esc(x.name)}</span><span class="nm">${esc(x.e.num)}번 ${esc(x.e.n||'')}</span><small>${esc(x.why)}</small></div></div></button>`).join('');
+  $('#awStage').hidden=false;
+}
 
 /* CSV */
 $('#csv').addEventListener('click',()=>{
@@ -517,7 +607,7 @@ function renderPlay(){
   const now=pNow(), open=Object.keys(PG).filter(k=>(+PG[k].until||0)>now).sort((a,b)=>PG[a].until-PG[b].until);
   const key=open.map(k=>k+Math.ceil((PG[k].until-now)/1000)).join('|')+JSON.stringify(PLA).length; if (key===pbKey) return; pbKey=key;
   $('#pbList').innerHTML=open.length?open.map(k=>{ const g=PG[k], s=Math.ceil((g.until-now)/1000), m=Math.floor(s/60), pl=+g.plays||0;
-    const plTxt=!pl||pl>=999?'판 수 제한 없음':`한 사람당 ${pl}판`;
+    const plTxt=(!pl||pl>=999?'판 수 제한 없음':`한 사람당 ${pl}판`)+` · ${+g.lim?`한 판 ${+g.lim}분`:'한 판 시간 제한 없음'}`;
     return `<li class="open"><span><b>${esc(playLabel(k))}</b> · 열림 <b class="t">${m}:${String(s%60).padStart(2,'0')}</b> 남음 · ${plTxt} · 🗺️ ${gateWhat(g)}</span><span><button class="link plain" data-pset="${k}">위에서 고른 단원·맵으로 바꾸기</button> ${pl&&pl<999?`<button class="link plain" data-pall="${k}">모두에게 한 판 더</button> `:''}<button class="link plain" data-padd="${k}">+10분</button> <button class="link" data-pclose="${k}">지금 닫기</button></span>${doneList(k)}</li>`; }).join('')
     :'<li class="empty-li">지금은 모든 반이 닫혀 있어요. 학생은 게임을 시작할 수 없어요.</li>';
 }
@@ -525,10 +615,12 @@ const okMsg=m=>{ $('#pbMsg').className='msg ok'; $('#pbMsg').textContent=m; pbKe
 const errMsg=()=>{ $('#pbMsg').className='msg err'; $('#pbMsg').textContent='바꾸지 못했어요. 새 보안 규칙을 올렸는지 확인해 주세요.'; };
 document.querySelector('.pb-dur').addEventListener('click',async e=>{ const b=e.target.closest('[data-pmin]'); if (!b) return; const k=$('#pbCls').value; if (!k) return;
   try{ localStorage.setItem('gsd-pb',k); }catch(_){}
-  const min=+b.dataset.pmin, plays=+$('#pbPlays').value;
+  const min=+b.dataset.pmin, plays=+$('#pbPlays').value, lim=+$('#pbLim').value||0;
+  try{ localStorage.setItem('gsd-pblim',String(lim)); }catch(_){}
   const unit=$('#pbUnit').value, map=$('#pbMap').value;
-  try{ await db.ref('playgate/'+k).set({until:Math.round(pNow()+min*60000),sid:'g'+Date.now().toString(36),plays,by:String((auth.currentUser||{}).email||'').slice(0,80),...(unit&&map?{unit,map}:{})});
-    okMsg(`${playLabel(k)}에 게임을 ${min}분 동안 열었어요. (${gateWhat({unit,map})}) ${plays>=999?'판 수 제한은 없어요.':`한 사람당 ${plays}판씩 할 수 있어요.`}`); }catch(err){ errMsg(); } });
+  try{ await db.ref('playgate/'+k).set({until:Math.round(pNow()+min*60000),sid:'g'+Date.now().toString(36),plays,lim,by:String((auth.currentUser||{}).email||'').slice(0,80),...(unit&&map?{unit,map}:{})});
+    okMsg(`${playLabel(k)}에 게임을 ${min}분 동안 열었어요. (${gateWhat({unit,map})}) ${plays>=999?'판 수 제한은 없어요.':`한 사람당 ${plays}판씩 할 수 있어요.`} ${lim?`한 판은 ${lim}분이에요(퀴즈 푸는 시간 포함).`:'한 판 시간 제한은 없어요.'}`); }catch(err){ errMsg(); } });
+try{ const v=localStorage.getItem('gsd-pblim'); if (v!==null && [...$('#pbLim').options].some(o=>o.value===v)) $('#pbLim').value=v; }catch(_){}
 $('#pbList').addEventListener('click',async e=>{
   const ps=e.target.closest('[data-pset]');
   if (ps){ const k=ps.dataset.pset, unit=$('#pbUnit').value, map=$('#pbMap').value; if (!unit||!map) return; try{ await db.ref('playgate/'+k).update({unit,map}); okMsg(`${playLabel(k)}의 단원·맵을 바꿨어요. (${gateWhat({unit,map})}) 이미 시작한 판은 그대로예요.`); }catch(err){ errMsg(); } return; }
@@ -846,5 +938,10 @@ $('#delBtn').addEventListener('click',async()=>{
 });
 })();
 </script>
+<div class="aw-stage" id="awStage" hidden>
+  <div class="aw-top"><h1>🏆 이번 시간 시상식</h1><p id="awWho"></p></div>
+  <div class="aw-cards" id="awCards"></div>
+  <div class="aw-act"><button class="btn" id="awReroll">🎲 특별상 다시 뽑기</button><button class="btn" id="awAll">모두 열기</button><button class="btn ghost" id="awClose">닫기</button></div>
+</div>
 </body>
 </html>

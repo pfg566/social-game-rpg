@@ -108,6 +108,7 @@ function endGame(win){
     job:JOB+(JOB==='mage'?':'+MELEM:''),map:MAPK,ease:easeIdx(),cs:combatStats()};
   $('#endWho').textContent=`${CI.label} ${NICK} · ${lastResult.unit} · ${when}`;
   saveResult(lastResult);
+  try{ boardWrite(lastResult); }catch(e){}
   grantRewards({...lastResult,newSkill},fixedN);
   $('#sScore').textContent=score;
   $('#copyStatus').textContent=''; $('#copyText').hidden=true;
