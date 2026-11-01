@@ -55,7 +55,8 @@ function buildZones(){
   [['crate_A_big',27,15.5,5],['crate_A_big',27.9,16.3,5],['crate_long_A',29,13.8,5],['barrel',26,13.6,5],['barrel',25.3,14.4,5],['resource_lumber',20,18.5,4],['resource_stone',29.5,20.5,4],['wheelbarrow',22.5,18.8,5],['sack',26.5,17.8,6]]
     .forEach(([n,x,z,s])=>place(n,x,z,s,rnd(0,6),false));
   /* 광장 */
-  place('tent',-6.5,7.5,5,.6,.8); place('weaponrack',6,8.5,6,-.4,false); place('target',7.5,1,6,-1.2,false);
+  place('tent',-10.5,-1.5,5,.9,.8); place('weaponrack',9.6,-1.2,6,-.9,false); place('target',11.5,-4.5,6,-1.4,false);
+  zonesDecor();
   let n=0; for (let i=0;i<120&&n<18;i++){ const x=rnd(-33,33), z=rnd(-33,33); if (!freeSpot(x,z,3)) continue;
     place(Math.random()<.5?'tree_single_A':'tree_single_B',x,z,rnd(3.2,4.2),rnd(0,6),.25); n++; }
   n=0; for (let i=0;i<120&&n<16;i++){ const x=rnd(-34,34), z=rnd(-34,34); if (!freeSpot(x,z,2.5)) continue;
@@ -63,6 +64,42 @@ function buildZones(){
   /* 거점 사람들 */
   addNpc('rogue',4.2,-16.8,-.4); addNpc('mage',-22.2,9.4,.9); addNpc('barbarian',22.2,9.4,-.9);
   }
+}
+/* 세 거점 맵 꾸미기: 길가 가로등 · 덤불 · 꽃밭 */
+function lampPost(x,z){
+  const wood=std(0x6b4a2f,{roughness:.9}), metal=std(0x3a3f4a,{roughness:.6});
+  const post=new THREE.Mesh(new THREE.CylinderGeometry(.09,.13,2.6,8),wood); post.position.set(x,1.3,z); post.castShadow=true; scene.add(post);
+  const arm=new THREE.Mesh(new THREE.BoxGeometry(.5,.08,.08),metal); arm.position.set(x+.2,2.55,z); scene.add(arm);
+  const lamp=new THREE.Mesh(new THREE.BoxGeometry(.32,.38,.32),new THREE.MeshBasicMaterial({color:0xffc66a})); lamp.position.set(x+.42,2.32,z); scene.add(lamp);
+  const cap=new THREE.Mesh(new THREE.ConeGeometry(.28,.2,4),metal); cap.rotation.y=Math.PI/4; cap.position.set(x+.42,2.6,z); scene.add(cap);
+  addCol(x,z,.5,.5);
+}
+const BUSH_MATS=[0x1d5a24,0x26601f,0x1b4f30,0x2e6a1f].map(c=>new THREE.MeshLambertMaterial({color:c,flatShading:true}));
+const bushGeo=new THREE.IcosahedronGeometry(1,0);
+function bush(x,z,s){
+  for (let i=0;i<3;i++){ const m=new THREE.Mesh(bushGeo,BUSH_MATS[(i+Math.floor(x*7))&3]); const r=s*rnd(.45,.7); m.scale.set(r,r*.8,r); m.position.set(x+rnd(-.5,.5)*s,r*.55,z+rnd(-.5,.5)*s); m.rotation.y=rnd(0,6); m.castShadow=true; m.receiveShadow=true; scene.add(m); }
+}
+function flowerPatch(x,z,n,cols){
+  const g=new THREE.SphereGeometry(.13,6,4), stem=new THREE.CylinderGeometry(.025,.025,.35,4);
+  const mf=new THREE.InstancedMesh(g,new THREE.MeshLambertMaterial({color:0xffffff}),n), ms=new THREE.InstancedMesh(stem,toonMat({color:0x3f7d2c}),n);
+  const d=new THREE.Object3D(), c=new THREE.Color();
+  for (let i=0;i<n;i++){ const a=Math.random()*6.283, r=Math.sqrt(Math.random())*1.4, px=x+Math.cos(a)*r, pz=z+Math.sin(a)*r, h=rnd(.25,.42);
+    d.position.set(px,h,pz); d.scale.setScalar(rnd(.8,1.3)); d.updateMatrix(); mf.setMatrixAt(i,d.matrix); mf.setColorAt(i,c.setHex(cols[i%cols.length]));
+    d.position.set(px,h/2,pz); d.scale.set(1,h/.35,1); d.updateMatrix(); ms.setMatrixAt(i,d.matrix); }
+  mf.instanceColor.needsUpdate=true; scene.add(mf); scene.add(ms);
+}
+function zonesDecor(){
+  const FL=[[0xff8fb3,0xffffff,0xffd35c],[0xb48cff,0xffffff,0x8fd0ff],[0xffd35c,0xff8a5c,0xffffff]];
+  // 큰길 입구마다 가로등 한 쌍
+  [[-2.6,-3.4],[2.6,-3.4],[-6.9,3.4],[-5.2,8.6],[6.9,3.4],[5.2,8.6],[-2.4,-14.2],[2.4,-14.2],[-16.4,8],[-15.4,12.8],[16.4,8],[15.4,12.8]].forEach(([x,z])=>lampPost(x,z));
+  // 길가 덤불과 꽃밭 (길 옆으로 살짝 떨어진 곳)
+  const spots=[];
+  pathSegs.forEach((sg,i)=>{ if (i%5) return; const dx=sg.x2-sg.x1, dz=sg.z2-sg.z1, L=Math.hypot(dx,dz)||1; for (const side of [-1,1]){ const off=rnd(3,4.6); spots.push([sg.x1-dz/L*side*off, sg.z1+dx/L*side*off]); } });
+  let nb=0, nf=0;
+  spots.forEach(([x,z],i)=>{ if (!freeSpot(x,z,2.2) || Math.abs(x)>32 || Math.abs(z)>32) return;
+    if (i%3===0 && nf<16){ flowerPatch(x,z,26,FL[nf%3]); nf++; } else if (nb<34){ bush(x,z,rnd(1,1.5)); nb++; } });
+  // 거점 둘레 꽃밭
+  [['hq',0],['lab',1],['fac',2]].forEach(([k,c])=>{ const Z=ZONES[k]; for (let i=0;i<5;i++){ const a=i/5*6.283+rnd(0,.6), r=Z.r+2.2, x=Z.x+Math.cos(a)*r, z=Z.z+Math.sin(a)*r; if (freeSpot(x,z,2)) flowerPatch(x,z,22,FL[c]); } });
 }
 /* 맵은 처음 쓸 때 한 번만 만들어요 (건물 · 나무 · 사람 · 풀). 시작할 때 4개를 한꺼번에 만들지 않아서 가볍고 빨라요 */
 const MAP_BUILD={zones:()=>buildZones(),general:()=>buildGeneral(),defense:()=>buildDefense(),island:()=>buildIsland()}, MAP_BUILT={};

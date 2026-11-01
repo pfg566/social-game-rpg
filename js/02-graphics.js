@@ -248,7 +248,7 @@ within('zones',()=>[['hq',0x3b6fd9],['lab',0x21966f],['fac',0xea7d1f]].forEach((
 }));
 
 /* 광장과 흙길 */
-const PLAZA={x:0,z:3,r:5};
+const PLAZA={x:0,z:3,r:7};
 within('zones',()=>{
   const m=new THREE.Mesh(new THREE.CircleGeometry(PLAZA.r,48),toonMat({map:stoneTex('#928c7f','#625b4f','#a29c8e')}));
   m.rotation.x=-Math.PI/2; m.position.set(PLAZA.x,.03,PLAZA.z); m.receiveShadow=true; scene.add(m);
@@ -273,7 +273,44 @@ function pathTo(zone){
   const Z=ZONES[zone], dx=Z.x-PLAZA.x, dz=Z.z-PLAZA.z, D=Math.hypot(dx,dz), ux=dx/D, uz=dz/D;
   dirtStrip(PLAZA.x+ux*(PLAZA.r-.3), PLAZA.z+uz*(PLAZA.r-.3), Z.x-ux*(Z.r-.3), Z.z-uz*(Z.r-.3), pathSegs);
 }
-within('zones',()=>['hq','lab','fac'].forEach(pathTo));
+/* 세 거점 맵 길: 부드럽게 굽은 큰길(광장 → 거점) + 거점끼리 잇는 둘레길 */
+function smoothRoad(ctrl,w,segs,pebbles){
+  const curve=new THREE.CatmullRomCurve3(ctrl.map(([x,z])=>new THREE.Vector3(x,0,z)),false,'centripetal');
+  const L=curve.getLength(), N=Math.max(8,Math.ceil(L/.7)), pts=curve.getSpacedPoints(N), pos=[], uv=[], idx=[], nrm=[];
+  for (let i=0;i<=N;i++){ const p=pts[i], q=pts[Math.min(N,i+1)], o=pts[Math.max(0,i-1)]; let tx=q.x-o.x, tz=q.z-o.z; const tl=Math.hypot(tx,tz)||1; tx/=tl; tz/=tl;
+    const nx=-tz, nz=tx, ww=w*(1+.04*Math.sin(i*.37)), v=i*L/N/6;
+    pos.push(p.x+nx*ww/2,0,p.z+nz*ww/2, p.x-nx*ww/2,0,p.z-nz*ww/2); nrm.push(0,1,0,0,1,0); uv.push(0,v,1,v);
+    if (i<N){ const a=i*2; idx.push(a,a+2,a+1, a+1,a+2,a+3); segs.push({x1:p.x,z1:p.z,x2:q.x,z2:q.z}); } }
+  const g=new THREE.BufferGeometry(); g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3)); g.setAttribute('normal',new THREE.Float32BufferAttribute(nrm,3)); g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2)); g.setIndex(idx);
+  const t=dirtTex.clone(); t.needsUpdate=true; t.repeat.set(1,1);
+  const m=new THREE.Mesh(g,toonMat({map:t,side:THREE.DoubleSide,polygonOffset:true,polygonOffsetFactor:-1,polygonOffsetUnits:-1})); m.position.y=.022+(w<3?-.002:0); m.receiveShadow=true; scene.add(m);
+  if (pebbles!==false) for (let i=2;i<N-1;i+=3){ const p=pts[i], q=pts[i+1]; let tx=q.x-p.x, tz=q.z-p.z; const tl=Math.hypot(tx,tz)||1; tx/=tl; tz/=tl;
+    for (const side of [-1,1]){ if (Math.random()<.5) continue; const e=w/2+.18; const s=new THREE.Mesh(pebbleGeo,pebbleMat);
+      s.position.set(p.x-tz*side*e+rnd(-.2,.2),.08,p.z+tx*side*e+rnd(-.2,.2)); s.rotation.set(rnd(0,3),rnd(0,3),0); s.scale.setScalar(rnd(.6,1.3)); s.castShadow=true; s.receiveShadow=true; scene.add(s); } }
+  return pts;
+}
+const ZROADS={main:[
+  [[0,-3.4],[.9,-8.6],[0,-14.6]],
+  [[-6.4,5.6],[-10.6,8.9],[-15.8,10.4]],
+  [[6.4,5.6],[10.6,8.9],[15.8,10.4]]],
+ ring:[
+  [[-11.4,-21.5],[-19,-17],[-25.5,-9],[-27.5,-1],[-25.4,3.6]],
+  [[11.4,-21.5],[19,-17],[25.5,-9],[27.5,-1],[25.4,3.6]],
+  [[-16.4,20.2],[-9,25.4],[0,26.6],[9,25.4],[16.4,20.2]]]};
+within('zones',()=>{ ZROADS.main.forEach(c=>smoothRoad(c,3.8,pathSegs)); ZROADS.ring.forEach(c=>smoothRoad(c,2.7,pathSegs)); });
+/* 광장 분수 */
+within('zones',()=>{
+  const stone=toonMat({map:stoneTex('#a39d90','#6c665a','#b3ad9f')}), dark=std(0x8d8577,{roughness:.95});
+  const basin=new THREE.Mesh(new THREE.CylinderGeometry(2.6,2.8,.7,40),stone); basin.position.set(PLAZA.x,.35,PLAZA.z); basin.castShadow=basin.receiveShadow=true; scene.add(basin);
+  const lip=new THREE.Mesh(new THREE.TorusGeometry(2.62,.16,8,48),dark); lip.rotation.x=Math.PI/2; lip.position.set(PLAZA.x,.72,PLAZA.z); scene.add(lip);
+  const water=new THREE.Mesh(new THREE.CircleGeometry(2.45,40),new THREE.MeshBasicMaterial({color:0x5cb8e0})); water.rotation.x=-Math.PI/2; water.position.set(PLAZA.x,.715,PLAZA.z); scene.add(water);
+  const col=new THREE.Mesh(new THREE.CylinderGeometry(.32,.45,1.9,12),stone); col.position.set(PLAZA.x,1.4,PLAZA.z); col.castShadow=true; scene.add(col);
+  const bowl=new THREE.Mesh(new THREE.CylinderGeometry(1.05,.45,.38,24),stone); bowl.position.set(PLAZA.x,2.4,PLAZA.z); bowl.castShadow=true; scene.add(bowl);
+  const top=new THREE.Mesh(new THREE.SphereGeometry(.34,16,10),new THREE.MeshBasicMaterial({color:0x8fd8f5})); top.position.set(PLAZA.x,2.75,PLAZA.z); scene.add(top);
+  addCol(PLAZA.x,PLAZA.z,4.6,4.6);
+  // 광장 둘레 돌 테두리
+  const ring=new THREE.Mesh(new THREE.TorusGeometry(PLAZA.r,.22,8,96),dark); ring.rotation.x=Math.PI/2; ring.position.set(PLAZA.x,.05,PLAZA.z); ring.scale.z=.6; ring.receiveShadow=true; scene.add(ring);
+});
 function nearSegs(segs,x,z,m){ return segs.some(s=>{ const vx=s.x2-s.x1, vz=s.z2-s.z1, t=Math.max(0,Math.min(1,((x-s.x1)*vx+(z-s.z1)*vz)/(vx*vx+vz*vz))); return Math.hypot(x-(s.x1+vx*t),z-(s.z1+vz*t))<m; }); }
 function nearPath(x,z,m){ return pathSegs.some(s=>{ const vx=s.x2-s.x1, vz=s.z2-s.z1, t=Math.max(0,Math.min(1,((x-s.x1)*vx+(z-s.z1)*vz)/(vx*vx+vz*vz))); return Math.hypot(x-(s.x1+vx*t),z-(s.z1+vz*t))<m; }); }
 function freeSpot(x,z,m){ return !zoneAt(x,z) && Math.hypot(x-PLAZA.x,z-PLAZA.z)>PLAZA.r+1.5 && !nearPath(x,z,m) && !colliders.some(b=>x>b.x0-1.5&&x<b.x1+1.5&&z>b.z0-1.5&&z<b.z1+1.5); }
