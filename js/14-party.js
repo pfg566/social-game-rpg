@@ -108,7 +108,7 @@ function listen(path,ev,cb){ const r=pRef(path), f=r.on(ev,cb,()=>{}); PARTY.ref
 let PP={open:false,mode:'quiz',rooms:{},listRef:null,listCb:null};
 function ppNote(t,kind){ const e=$('#ppNote'); e.textContent=t||''; e.className='pp-note'+(kind?' '+kind:''); }
 /* 선생님 잠금: 퀴즈 점령 방 · 몹 막기 방을 따로 잠글 수 있어요 (선생님 계정은 시험해 볼 수 있게 열려 있어요) */
-let PARTY_LOCK={quiz:false,fight:false};
+let PARTY_LOCK={quiz:true,fight:true};   // 기본은 잠김 · 선생님 화면에서 열어요
 const modeLocked=m=>!isAdmin && !!PARTY_LOCK[m==='fight'?'fight':'quiz'];
 const allLocked=()=>modeLocked('quiz')&&modeLocked('fight');
 function applyPartyLock(){
@@ -689,3 +689,4 @@ document.querySelectorAll('[data-pmode]').forEach(b=>b.addEventListener('click',
 $('#ppLeave').addEventListener('click',async()=>{ await leaveRoom(); });
 $('#ppStart').addEventListener('click',hostStart);
 setInterval(()=>{ if (PP.open && !PARTY.rid) renderRooms(); if (PARTY.room && !PARTY.on) renderRoom(PARTY.room); },3000);
+applyPartyLock();

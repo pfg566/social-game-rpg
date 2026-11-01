@@ -270,7 +270,7 @@ input.rename{border:2px solid var(--line);border-radius:6px;padding:2px 6px;widt
         </div>
         <div class="card box">
           <h3>파티 모드 잠그기</h3>
-          <p>퀴즈 점령 방과 몹 막기 방을 따로 잠글 수 있어요. 잠그면 학생 화면에서 그 방을 만들거나 들어갈 수 없어요. 바로 반영되고, 이미 시작한 판은 끝까지 할 수 있어요. 선생님 계정은 잠가도 시험해 볼 수 있어요.</p>
+          <p>퀴즈 점령 방과 몹 막기 방을 따로 잠글 수 있어요. 잠그면 학생 화면에서 그 방을 만들거나 들어갈 수 없어요. 처음에는 둘 다 잠겨 있으니 쓰실 때 열어 주세요. 바로 반영되고, 이미 시작한 판은 끝까지 할 수 있어요. 선생님 계정은 잠가도 시험해 볼 수 있어요.</p>
           <div class="row"><span class="pill lose" id="pqState">불러오는 중</span><button class="btn" id="pqToggle" disabled>🧠 퀴즈 점령 잠그기</button></div>
           <div class="row"><span class="pill lose" id="pfState">불러오는 중</span><button class="btn" id="pfToggle" disabled>⚔️ 몹 막기 잠그기</button></div>
           <p class="msg" id="plMsg" role="status"></p>
@@ -793,7 +793,7 @@ const gateWhat=g=>{ const u=unitById(g.unit); return g.unit?`${u?esc(u.name):'�
 const PL={partyQuizOff:false,partyFightOff:false};
 function loadPartyLock(){
   [['partyQuizOff','#pqState','#pqToggle','🧠 퀴즈 점령'],['partyFightOff','#pfState','#pfToggle','⚔️ 몹 막기']].forEach(([k,st,bt,nm])=>{
-    db.ref('settings/'+k).on('value',snap=>{ PL[k]=snap.val()===true; const off=PL[k];
+    db.ref('settings/'+k).on('value',snap=>{ PL[k]=snap.val()!==false; const off=PL[k];
       $(st).textContent=off?'잠김':'열림'; $(st).className='pill '+(off?'lose':'win'); $(bt).textContent=off?`${nm} 열기`:`${nm} 잠그기`; $(bt).disabled=false; },
       ()=>{ $(st).textContent='확인 불가'; $('#plMsg').className='msg err'; $('#plMsg').textContent='설정을 불러오지 못했어요. 새 보안 규칙을 올렸는지 확인해 주세요.'; });
     $(bt).addEventListener('click',async()=>{ $(bt).disabled=true; const next=!PL[k];
