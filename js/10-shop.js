@@ -274,6 +274,7 @@ function shopMsg(t,kind){ const e=$('#shopMsg'); e.textContent=t||''; e.classNam
 function shopSetJob(j){ SHOP.job=j; SHOP.try={...equippedLook(j)}; if (!JOB_SLOTS[j].includes(SHOP.tab)) SHOP.tab='outfit'; SHOP.sel=SHOP.try[SHOP.tab]; SHOP.armed=false; }
 function openShop(){
   if (!assetsReady) return;
+  if (STUDENT&&fbDb){ loadWardrobe(); profRef().once('value').then(s=>{ const v=s.val(); if (v){ PROFILE=v; if (typeof renderProfileCard==='function') renderProfileCard(); if (!$('#shop').hidden) renderShop(); } }).catch(()=>{}); }
   SHOP.open=true; SHOP.tab='outfit'; shopSetJob(JOB); SHOP.rot=0;
   clearWorld(); const st=MAPS[MAPK].start; P.x=st[0]; P.z=st[1];
   if (knight && knight.anim.dead){ knight.anim.revive(); } endPose=false;

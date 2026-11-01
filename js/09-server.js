@@ -302,6 +302,7 @@ async function enterStudentFromSession(u){
 async function grantRewards(r,fixedN){
   const box=$('#rewardBox');
   if (!STUDENT||!PROFILE){ box.className='rewardbox guest'; box.innerHTML='<b>연습 모드</b><span>코드로 로그인하면 경험치와 코인이 쌓여요.</span>'; box.hidden=false; return; }
+  try{ const fresh=(await withTimeout(profRef().once('value'),8000)).val(); if (fresh) PROFILE=fresh; }catch(e){}   // 선생님이 코인을 초기화했을 수 있어서 최신으로
   // 경험치·코인도 퀴즈 중심: 정답 · 빠른 정답 · 정답률 보너스가 대부분, 처치는 1마리 1점
   const quizXp=20*(r.correct|0)+40*fixedN, accXp=Math.round(quizXp*(r.acc||0)), spXp=Math.round((r.sp||0)/2);
   let xp=10*r.asked+quizXp+accXp+spXp+(r.kills|0)+(r.win?60:0);

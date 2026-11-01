@@ -278,6 +278,14 @@ input.rename{border:2px solid var(--line);border-radius:6px;padding:2px 6px;widt
     <section id="pManage" hidden>
       <div class="manage">
         <div class="card box">
+          <h3>코인 · 아이템 초기화</h3>
+          <p>고른 학급 학생들의 코인을 0으로 만들고, 산 아이템과 꾸미기를 처음 상태로 되돌려요. <b>레벨·경험치·게임 기록·순위는 그대로</b>예요. 되돌릴 수 없으니 학생들이 게임을 하지 않을 때 해 주세요.</p>
+          <div class="row"><select id="rsetCls"></select></div>
+          <div class="row"><label><input type="checkbox" id="rsetCoin" checked> 코인을 0으로</label> <label><input type="checkbox" id="rsetItem" checked> 산 아이템·꾸미기 처음으로</label></div>
+          <div class="row"><input id="rsetTxt" placeholder="'초기화'라고 적어 주세요" maxlength="6"><button class="btn danger" id="rsetGo">초기화하기</button></div>
+          <p class="msg" id="rsetMsg" role="status"></p>
+        </div>
+        <div class="card box">
           <h3>함께 볼 선생님</h3>
           <p>여기 추가한 구글 계정도 결과를 보고 문제를 관리할 수 있어요.</p>
           <div class="row"><input id="adminEmail" type="email" placeholder="example@gmail.com"><button class="btn" id="adminAdd">추가</button></div>
@@ -494,6 +502,35 @@ $('#tabs').addEventListener('click',e=>{ const b=e.target.closest('[data-tab]');
   $('#pRoster').hidden=tab!=='roster'; if (tab==='roster'&&!RS.cls&&$('#rsCls').options.length>1){ $('#rsCls').selectedIndex=1; rsWatch(); }
   $('#pAwards').hidden=tab!=='awards'; if (tab==='awards') awInit();
   $('#pStudents').hidden=tab!=='students'; $('#pRecords').hidden=tab!=='records'; $('#pMissed').hidden=tab!=='missed'; $('#pManage').hidden=tab!=='manage'; $('#pBalance').hidden=tab!=='balance'; });
+
+
+/* ---------- 코인 · 아이템 초기화 ---------- */
+function fillResetSelect(){
+  const el=$('#rsetCls'); if (!el) return; const cur=el.value;
+  el.innerHTML='<option value="">학급 선택</option>'+sortedSchools().map(sid=>{ const ks=sortedClasses(sid).filter(k=>!CLS[k].hidden); if (!ks.length) return '';
+    return `<optgroup label="${esc(SCH[sid].name)}"><option value="sch:${sid}">${esc(SCH[sid].name)} 전체 학급</option>`+ks.map(k=>`<option value="${k}">${CLS[k].year}학년도 ${CLS[k].grade}학년 ${CLS[k].cls}반</option>`).join('')+'</optgroup>'; }).join('');
+  if ([...el.options].some(o=>o.value===cur)) el.value=cur;
+}
+$('#rsetGo').addEventListener('click',async()=>{
+  const m=(t,k)=>{ $('#rsetMsg').className='msg'+(k?' '+k:''); $('#rsetMsg').textContent=t; };
+  const v=$('#rsetCls').value, coin=$('#rsetCoin').checked, item=$('#rsetItem').checked;
+  if (!v){ m('학급을 골라 주세요.','err'); return; }
+  if (!coin&&!item){ m('초기화할 것을 하나 이상 골라 주세요.','err'); return; }
+  if ($('#rsetTxt').value.trim()!=='초기화'){ m("확인 칸에 '초기화'라고 적어 주세요.",'err'); return; }
+  const cids=v.startsWith('sch:')?sortedClasses(v.slice(4)).filter(k=>!CLS[k].hidden):[v];
+  $('#rsetGo').disabled=true; m('초기화하는 중…');
+  try{
+    let n=0; const up={};
+    for (const cid of cids){
+      if (coin){ const ps=(await db.ref('profiles/'+cid).once('value')).val()||{}; for (const num in ps){ up[`profiles/${cid}/${num}/coins`]=0; up[`profiles/${cid}/${num}/updatedAt`]=firebase.database.ServerValue.TIMESTAMP; n++; } }
+      if (item) up['wardrobe/'+cid]=null;
+    }
+    await db.ref().update(up);
+    $('#rsetTxt').value='';
+    m(`${cids.map(c=>cLabel(c)).join(', ')}: ${coin?`학생 ${n}명 코인 0`:''}${coin&&item?' · ':''}${item?'아이템·꾸미기 처음으로':''} 완료했어요.`,'ok');
+  }catch(e){ m('초기화하지 못했어요. 보안 규칙이 최신인지 확인해 주세요. ('+(e&&e.code||e)+')','err'); }
+  finally{ $('#rsetGo').disabled=false; }
+});
 
 /* ---------- 🏆 시상식 ---------- */
 const AW={cls:'',sid:'',ref:null,all:{},roll:0,inited:false};
@@ -743,7 +780,7 @@ const CODE_CH='abcdefghjkmnpqrstuvwxyz23456789';
 function newCode(){ const a=new Uint32Array(6); crypto.getRandomValues(a); return [...a].map(x=>CODE_CH[x%CODE_CH.length]).join(''); }
 const lvOf=xp=>{ let lv=1,need=150,rest=Math.max(0,xp|0); while(rest>=need){ rest-=need; lv++; need=150+50*(lv-1);} return lv; };
 let RS={cls:'',roster:{},profiles:{},pw:{},refs:[]}, regenArmed='';
-function fillRosterSelect(){
+function fillRosterSelect(){ try{ fillResetSelect(); }catch(e){}
   const el=$('#rsCls'), cur=el.value;
   el.innerHTML='<option value="">학급 선택</option>'+sortedSchools().map(sid=>{ const ks=sortedClasses(sid); if (!ks.length) return '';
     return `<optgroup label="${esc(SCH[sid].name)}">`+ks.map(k=>`<option value="${k}">${CLS[k].year}학년도 ${CLS[k].grade}학년 ${CLS[k].cls}반${CLS[k].hidden?' (숨김)':''}</option>`).join('')+'</optgroup>'; }).join('');
