@@ -522,7 +522,7 @@ function hostBroadcast(){
   pRef(livePath()+'/g').set(g).catch(()=>{});
 }
 function hostEnd(win,reason){
-  if (PH.end) return; PH.end={win:!!win,reason,bonus:Math.round(PH.held*2)};
+  if (PH.end) return; PH.end={win:!!win,reason,bonus:Math.round(PH.held*.5)};
   hostBroadcast();
   partyEnd(win,reason,PH.end.bonus);
   const ip=idxPath(), lp=livePath();

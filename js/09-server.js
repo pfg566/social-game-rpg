@@ -302,7 +302,9 @@ async function enterStudentFromSession(u){
 async function grantRewards(r,fixedN){
   const box=$('#rewardBox');
   if (!STUDENT||!PROFILE){ box.className='rewardbox guest'; box.innerHTML='<b>연습 모드</b><span>코드로 로그인하면 경험치와 코인이 쌓여요.</span>'; box.hidden=false; return; }
-  let xp=10*r.asked+20*r.correct+40*fixedN+5*r.kills+(r.win?100:0);
+  // 경험치·코인도 퀴즈 중심: 정답 · 빠른 정답 · 정답률 보너스가 대부분, 처치는 1마리 1점
+  const quizXp=20*(r.correct|0)+40*fixedN, accXp=Math.round(quizXp*(r.acc||0)), spXp=Math.round((r.sp||0)/2);
+  let xp=10*r.asked+quizXp+accXp+spXp+(r.kills|0)+(r.win?60:0);
   const newBest=(PROFILE.plays|0)>0 && r.score>(PROFILE.best|0);
   if (newBest) xp+=80;
   const lvS=r.mode==='hero'?1.5:((LEVELS[r.lv]||LEVELS.normal).score); xp*=lvS;
@@ -317,7 +319,7 @@ async function grantRewards(r,fixedN){
     skill:Math.round((r.newSkill??PROFILE.skill??1)*100)/100,updatedAt:firebase.database.ServerValue.TIMESTAMP};
   if (tries){ upd.elems=ELEM_ORDER.filter(e=>own.includes(e)).join(','); upd.awk=awk; }
   const lines=[`<b>+${xp} 경험치 · +${coins} 코인</b>`];
-  const why=[]; if (r.asked) why.push(`문제 ${r.asked}개 도전`); if (fixedN) why.push(`틀린 문제 ${fixedN}개 다시 맞힘`); if (newBest) why.push('내 최고 점수 경신!'); if (lvS!==1) why.push(`${r.mode==='hero'?'영웅':(LEVELS[r.lv]||LEVELS.normal).name} ×${lvS}`); if (W.cardCoins) why.push(`지식 카드 코인 +${Math.min(100,W.cardCoins)}`);
+  const why=[]; if (r.asked) why.push(`문제 ${r.asked}개 도전`); if (fixedN) why.push(`틀린 문제 ${fixedN}개 다시 맞힘`); if (newBest) why.push('내 최고 점수 경신!'); if (spXp) why.push(`빠른 정답 +${spXp}`); if (accXp) why.push(`정답률 ${r.asked?Math.round(r.correct/r.asked*100):0}% 보너스 +${accXp}`); if (lvS!==1) why.push(`${r.mode==='hero'?'영웅':(LEVELS[r.lv]||LEVELS.normal).name} ×${lvS}`); if (W.cardCoins) why.push(`지식 카드 코인 +${Math.min(100,W.cardCoins)}`);
   if (why.length) lines.push(`<span>${why.join(' · ')}</span>`);
   if (after.lv>before.lv) lines.push(`<span class="lvup">레벨 업! Lv.${before.lv} → Lv.${after.lv}</span>`);
   awoke.forEach(e=>lines.push(`<span class="awake">✨ 각성! 마법사가 <b>${{fire:'🔥 불',ice:'❄️ 얼음',bolt:'⚡ 번개'}[e]}</b> 원소를 깨우쳤어요</span>`));

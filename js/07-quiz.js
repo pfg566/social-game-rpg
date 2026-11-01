@@ -93,9 +93,19 @@ function settle(ok,item,source){
   jobQuiz(ok,source,extras);
   return {fx,extras};
 }
+/* 빨리 맞힐수록 보너스 (최대 50점): 주어진 시간의 앞 1/4 안에 맞히면 50점, 시간이 끝날 때 0점 */
+const SPEED_MAX=50;
+function speedPts(frac){ const k=Math.max(0,Math.min(1,frac/.75)); return Math.round(SPEED_MAX*k/5)*5; }
+/* 정답률 보너스: 문제 5개 이상 풀었을 때, 정답 점수에 더해요 */
+function accBonusK(correct,asked){ if (asked<5) return 0; const r=correct/asked; return r>=.9?.5:r>=.8?.3:r>=.7?.15:0; }
 function showResult(ok,timeout,item){
   Q.ok=ok;
-  const {fx,extras}=settle(ok,item,Q.source); if (ok) SFX.correct(); else SFX.wrong();
+  let sp=0;
+  if (ok && Q.source && Q.source.type!=='revive'){
+    const left = Q.source.type==='loc' ? (W.locLeftFrac||0) : Math.max(0,1-((performance.now()-Q.start)/1000-QUIZ_LOCK_MS/1000)/Math.max(1,Q.dur));
+    sp=speedPts(left); W.speedPts=(W.speedPts||0)+sp; }
+  const {fx,extras}=settle(ok,item,Q.source);
+  if (sp>0) extras.unshift(`⚡ 빠른 정답 +${sp}점`); if (ok) SFX.correct(); else SFX.wrong();
   const v=$('#qverdict'); v.className='verdict '+(ok?'good':'bad');
   v.textContent=(ok?'정답! ':(timeout?'시간 초과… ':'아쉬워요… '))+fx.label+(fx.dur?` (${fx.dur}초)`:'');
   const ex=$('#qextra'); ex.hidden=!extras.length; ex.textContent=extras.join(' ');
@@ -180,7 +190,7 @@ function goLoc(){
 }
 $('#locGo').addEventListener('click',goLoc);
 function finishLoc(zone){
-  const item=W.loc.item; W.loc=null; $('#locCard').hidden=true; $('#locCard').classList.remove('hurry');
+  const item=W.loc.item; W.locLeftFrac=Math.max(0,(W.loc.until-W.t)/Math.max(1,LOC_TIME)); W.loc=null; $('#locCard').hidden=true; $('#locCard').classList.remove('hurry');
   W.nextQuiz=W.t+timedEvery();
   const ok=zone===item.a;
   W.paused=true; for (const k in keys) keys[k]=false;
