@@ -7,7 +7,7 @@
 <style>body{margin:0}[hidden]{display:none!important}img{max-width:100%}</style>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jua&family=IBM+Plex+Sans+KR:wght@400;600;700&display=swap">
-<link rel="stylesheet" href="style.css?v=20261102f">
+<link rel="stylesheet" href="style.css?v=20261102h">
 </head>
 <body>
 
@@ -31,6 +31,15 @@
 </div>
 
 <button class="btn boardbtn" id="boardBtn" hidden>🏆 이번 시간 순위</button>
+<button class="btn boardbtn notesbtn" id="notesBtn" hidden>📒 내 오답 노트</button>
+<div class="screen boardpop" id="notesPop" hidden>
+  <div class="panel card" role="dialog" aria-labelledby="notesTitle">
+    <div class="bd-head"><h2 id="notesTitle">📒 내 오답 노트</h2><button class="btn small ghost" id="notesClose">닫기</button></div>
+    <p class="bd-sub">게임에서 끝내 못 맞힌 문제가 모여요. 먼저 스스로 풀어 보고 '정답 보기'를 눌러요. 다음 게임에서 맞히면 '이제 맞혀요'로 옮겨져요.</p>
+    <div class="nt-tabs" id="notesTabs"></div>
+    <div id="notesList"></div>
+  </div>
+</div>
 <div class="screen boardpop" id="boardPop" hidden>
   <div class="panel card" role="dialog" aria-labelledby="boardTitle">
     <div class="bd-head"><h2 id="boardTitle">🏆 이번 시간 순위</h2><button class="btn small ghost" id="boardClose">닫기</button></div>
@@ -397,23 +406,24 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="firebase-config.js"></script>
-<script src="js/01-data.js?v=20261102f"></script>
-<script src="js/02-graphics.js?v=20261102f"></script>
-<script src="js/02m-mood.js?v=20261102f"></script>
-<script src="js/03-world.js?v=20261102f"></script>
-<script src="js/04-island.js?v=20261102f"></script>
-<script src="js/05-play.js?v=20261102f"></script>
-<script src="js/06-jobs.js?v=20261102f"></script>
-<script src="js/06p-player.js?v=20261102f"></script>
-<script src="js/07-quiz.js?v=20261102f"></script>
-<script src="js/07b-prep.js?v=20261102f"></script>
-<script src="js/08-hud.js?v=20261102f"></script>
-<script src="js/09-server.js?v=20261102f"></script>
-<script src="js/10-shop.js?v=20261102f"></script>
-<script src="js/11-gate-editor.js?v=20261102f"></script>
-<script src="js/12-lobby.js?v=20261102f"></script>
-<script src="js/13-loop.js?v=20261102f"></script>
-<script src="js/14-party.js?v=20261102f"></script>
-<script src="js/15-board.js?v=20261102f"></script>
+<script src="js/01-data.js?v=20261102h"></script>
+<script src="js/02-graphics.js?v=20261102h"></script>
+<script src="js/02m-mood.js?v=20261102h"></script>
+<script src="js/03-world.js?v=20261102h"></script>
+<script src="js/04-island.js?v=20261102h"></script>
+<script src="js/05-play.js?v=20261102h"></script>
+<script src="js/06-jobs.js?v=20261102h"></script>
+<script src="js/06p-player.js?v=20261102h"></script>
+<script src="js/07-quiz.js?v=20261102h"></script>
+<script src="js/07b-prep.js?v=20261102h"></script>
+<script src="js/08-hud.js?v=20261102h"></script>
+<script src="js/09-server.js?v=20261102h"></script>
+<script src="js/10-shop.js?v=20261102h"></script>
+<script src="js/11-gate-editor.js?v=20261102h"></script>
+<script src="js/12-lobby.js?v=20261102h"></script>
+<script src="js/13-loop.js?v=20261102h"></script>
+<script src="js/14-party.js?v=20261102h"></script>
+<script src="js/15-board.js?v=20261102h"></script>
+<script src="js/16-notes.js?v=20261102h"></script>
 </body>
 </html>

@@ -142,6 +142,20 @@ input.rename{border:2px solid var(--line);border-radius:6px;padding:2px 6px;widt
 .aw-b{background:#fffdf3;color:#18213a;transform:rotateY(180deg)}
 .aw-b .ic{font-size:44px}.aw-b .nm{font-size:40px;font-family:var(--display);line-height:1.15}.aw-b .aw{font-size:18px;font-weight:800;color:#b46b00}.aw-b small{font-size:15px;color:#5d6782;font-weight:700}
 .aw-act{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
+
+/* 복습 화면 */
+.rv-stage{justify-content:safe center}
+.rv-card{width:min(1000px,94vw);background:#fffdf3;color:#18213a;border-radius:24px;border:5px solid #ffd34d;padding:28px 36px;box-shadow:0 14px 40px rgba(0,0,0,.4)}
+.rv-head{display:flex;flex-wrap:wrap;gap:8px 18px;font-size:18px;font-weight:700;color:#5d6782}
+.rv-miss{margin-left:auto;color:#c0392b}
+.rv-q{font-family:var(--display);font-size:clamp(24px,3vw,40px);line-height:1.35;margin:12px 0 16px}
+.rv-opts{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.rv-opts li{display:flex;gap:14px;align-items:center;font-size:clamp(18px,2vw,26px);padding:8px 14px;border:3px solid #d3dae6;border-radius:14px;background:#fff}
+.rv-opts li b{display:grid;place-items:center;min-width:40px;height:40px;border-radius:10px;background:#18213a;color:#fff;font-size:20px}
+.rv-opts li.ok{border-color:#23a35d;background:#e6f7ee}
+.rv-opts li.ok b{background:#23a35d}
+.rv-ans{margin-top:16px;padding:14px 18px;border-radius:14px;background:#fff4cf;font-size:clamp(18px,2vw,24px)}
+.rv-ans p{margin:6px 0 0}
 </style>
 </head>
 <body>
@@ -216,7 +230,11 @@ input.rename{border:2px solid var(--line);border-radius:6px;padding:2px 6px;widt
     </section>
     <section class="card panel" id="pStudents"><div class="tablewrap"><table id="tblStudents"></table></div></section>
     <section class="card panel" id="pRecords" hidden><div class="tablewrap"><table id="tblRecords"></table></div></section>
-    <section class="card panel" id="pMissed" hidden><div class="miss" id="missList"></div></section>
+    <section class="card panel" id="pMissed" hidden>
+      <div class="aw-bar"><label class="f"><span>복습할 문제 수</span><select id="rvCount"><option value="5">5문제</option><option value="10" selected>10문제</option><option value="20">20문제</option></select></label><button class="btn primary" id="rvGo">📺 복습 시작</button></div>
+      <p class="aw-help">위 필터(학교·학급·단원·기간)로 고른 기록에서 많이 틀린 문제부터 TV 화면에 하나씩 크게 보여 줘요. 스페이스바나 → 키로 '정답 보기 → 다음 문제'로 넘어가요.</p>
+      <div class="miss" id="missList"></div>
+    </section>
     <section class="card panel" id="pBalance" hidden>
       <div class="bal-filters">
         <label class="f"><span>맵</span><select id="bMap"><option value="">모든 맵</option><option value="zones">세 거점 맵</option><option value="general">들판 마을 맵</option><option value="defense">성벽 디펜스 맵</option><option value="island">서비스업 섬 맵</option></select></label>
@@ -330,6 +348,15 @@ input.rename{border:2px solid var(--line);border-radius:6px;padding:2px 6px;widt
   </main>
 </div>
 
+<div class="aw-stage rv-stage" id="rvStage" hidden>
+  <div class="rv-card">
+    <div class="rv-head" id="rvHead"></div>
+    <p class="rv-q" id="rvQ"></p>
+    <ol class="rv-opts" id="rvOpts"></ol>
+    <div class="rv-ans" id="rvAns" hidden></div>
+  </div>
+  <div class="aw-act"><button class="btn" id="rvPrev">◀ 이전</button><button class="btn primary" id="rvShow">정답 보기</button><button class="btn ghost" id="rvClose">닫기</button></div>
+</div>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
@@ -483,6 +510,7 @@ function renderMissed(){
   VIEW.forEach(r=>r.wrongList.forEach(q=>{ cnt.set(q,(cnt.get(q)||0)+1); if (!who.has(q)) who.set(q,new Set()); who.get(q).add(r.k+'|'+r.nick); }));
   const list=[...cnt.entries()].sort((a,b)=>b[1]-a[1]).slice(0,20);
   const studs=new Set(VIEW.map(r=>r.k+'|'+r.nick)).size||1;
+  MISSED=list.map(([q,n])=>{ const s=who.get(q).size; return {q,n,s,p:Math.round(s/studs*100)}; }); if ($('#rvGo')) $('#rvGo').disabled=!MISSED.length;
   $('#missList').innerHTML = list.length ? '<p style="margin:0 0 4px;font-size:13px;color:var(--muted)">게임이 끝날 때까지 못 맞힌 문제예요. 막대는 그 문제를 못 맞힌 학생의 비율이에요.</p>'+
     list.map(([q,n])=>{ const s=who.get(q).size, p=Math.round(s/studs*100); return `<div class="missrow"><b>${n}</b><p>${esc(q)}</p><div title="학생 ${s}명 (${p}%)"><div class="missbar"><i style="width:${p}%"></i></div><small style="color:var(--muted)">학생 ${s}명 · ${p}%</small></div></div>`; }).join('')
     : '<div class="empty">못 맞힌 문제가 없어요.</div>';
@@ -531,6 +559,42 @@ $('#rsetGo').addEventListener('click',async()=>{
   }catch(e){ m('초기화하지 못했어요. 보안 규칙이 최신인지 확인해 주세요. ('+(e&&e.code||e)+')','err'); }
   finally{ $('#rsetGo').disabled=false; }
 });
+
+/* ---------- 📺 많이 틀린 문제 복습 화면 ---------- */
+let QLOOK=new Map(), MISSED=[];
+function buildQLook(v){
+  QLOOK=new Map(); const units=v&&v.units?arrOf(v.units):(v&&v.mc?[{name:'기본 단원',bank:v}]:[]);
+  for (const u of units){ if (!u) continue; const b=u.bank||{}, z=u.zcfg||{};
+    const zn=arrOf(z.n).length===3?arrOf(z.n):['본사','연구소','생산 공장'], zc=arrOf(z.c).length===2?arrOf(z.c):['공장이 들어선 지역','공장이 빠져나간 지역'];
+    const zq=typeof z.q==='string'&&z.q.trim()?z.q:(z.n?'어느 쪽에 해당할까?':'이런 변화는 어느 지역에서 나타날까?'), nm=String(u.name||'');
+    arrOf(b.mc).forEach(x=>{ if (x&&x.q){ const o=arrOf(x.o); QLOOK.set(x.q,{kind:'4지선다',q:x.q,opts:o,ans:o[0],e:x.e||'',unit:nm}); } });
+    arrOf(b.ox).forEach(x=>{ if (x&&x.q) QLOOK.set(x.q,{kind:'O/X',q:x.q,opts:['O (맞다)','X (틀리다)'],ans:x.a?'O (맞다)':'X (틀리다)',e:x.e||'',unit:nm}); });
+    arrOf(b.cls).forEach(x=>{ if (x&&x.q) QLOOK.set(x.q,{kind:'분류',q:`“${x.q}” ${zq}`,opts:zc,ans:zc[x.a?1:0],e:x.e||'',unit:nm}); });
+    arrOf(b.loc).forEach(x=>{ if (x&&x.q) QLOOK.set(x.q,{kind:'위치 퀴즈',q:x.q,opts:zn,ans:zn[['hq','lab','fac'].indexOf(x.a)]||'',e:x.e||'',unit:nm}); });
+  }
+}
+const RV={list:[],i:0,open:false,shown:false};
+function rvStart(){
+  const n=+$('#rvCount').value||10; RV.list=MISSED.slice(0,n); if (!RV.list.length) return;
+  RV.i=0; RV.shown=false; RV.open=true; $('#rvStage').hidden=false; rvRender();
+}
+function rvRender(){
+  const x=RV.list[RV.i]; if (!x) return; const it=QLOOK.get(x.q);
+  let opts=it?[...it.opts]:[];
+  if (it&&it.kind==='4지선다'){ const seed=x.q.length; let h=7; for (const ch of x.q) h=(h*31+ch.charCodeAt(0))|0; opts=opts.map((o,j)=>({o,r:((Math.sin((h%1000)*12.9898+j*78.233)*43758.5453)%1+1)%1})).sort((a,b)=>a.r-b.r).map(a=>a.o); }
+  $('#rvHead').innerHTML=`<span>복습 ${RV.i+1} / ${RV.list.length}</span><span>${it?esc(it.kind)+' · '+esc(it.unit):''}</span><span class="rv-miss">학생 ${x.s}명(${x.p}%)이 틀렸어요</span>`;
+  $('#rvQ').textContent=it?it.q:x.q;
+  $('#rvOpts').innerHTML=opts.map((o,j)=>`<li class="${RV.shown&&it&&o===it.ans?'ok':''}"><b>${j+1}</b>${esc(o)}</li>`).join('');
+  $('#rvAns').hidden=!RV.shown;
+  $('#rvAns').innerHTML=it?`<b>정답: ${esc(it.ans)}</b>${it.e?`<p>${esc(it.e)}</p>`:''}`:'<b>문제은행에서 이 문제를 찾지 못했어요 (문제가 고쳐졌을 수 있어요).</b>';
+  $('#rvShow').textContent=RV.shown?(RV.i<RV.list.length-1?'다음 문제 ▶':'복습 끝'):'정답 보기';
+  $('#rvPrev').disabled=RV.i===0;
+}
+function rvNext(){ if (!RV.shown){ RV.shown=true; rvRender(); return; } if (RV.i<RV.list.length-1){ RV.i++; RV.shown=false; rvRender(); } else rvClose(); }
+function rvPrev(){ if (RV.i>0){ RV.i--; RV.shown=false; rvRender(); } }
+function rvClose(){ RV.open=false; $('#rvStage').hidden=true; }
+$('#rvGo').addEventListener('click',rvStart); $('#rvShow').addEventListener('click',rvNext); $('#rvPrev').addEventListener('click',rvPrev); $('#rvClose').addEventListener('click',rvClose);
+addEventListener('keydown',e=>{ if (!RV.open) return; if (e.key===' '||e.key==='Enter'||e.key==='ArrowRight'){ e.preventDefault(); rvNext(); } else if (e.key==='ArrowLeft'){ e.preventDefault(); rvPrev(); } else if (e.key==='Escape') rvClose(); });
 
 /* ---------- 🏆 시상식 ---------- */
 const AW={cls:'',sid:'',ref:null,all:{},roll:0,inited:false};
@@ -745,7 +809,7 @@ $('#ckAdd').addEventListener('click',async()=>{
 ['#clSch','#clYear'].forEach(s=>$(s).addEventListener('change',()=>{ clsDelArmed=''; yearDelArmed=''; renderClasses(); }));
 async function deleteClasses(cids){
   const up={};
-  for (const cid of cids){ up['classes/'+cid]=null; up['roster/'+cid]=null; up['profiles/'+cid]=null; up['wardrobe/'+cid]=null; up['playgate/'+cid]=null; up['playlog/'+cid]=null; up['loginIdx/'+cid]=null; up['partylog/'+cid]=null;
+  for (const cid of cids){ up['classes/'+cid]=null; up['roster/'+cid]=null; up['profiles/'+cid]=null; up['wardrobe/'+cid]=null; up['playgate/'+cid]=null; up['playlog/'+cid]=null; up['loginIdx/'+cid]=null; up['notes/'+cid]=null; up['partylog/'+cid]=null;
     const snap=await db.ref('results').orderByChild('cid').equalTo(cid).once('value');
     snap.forEach(c=>{ const v=c.val(); if (v&&v.cid===cid) up['results/'+c.key]=null; }); }
   const keys=Object.keys(up);
@@ -896,7 +960,7 @@ const MAPINFO={zones:{n:'세 거점 맵',need:['mc','ox','cls','loc']},general:{
 let UNITS=[], UACTIVE='';
 const arrOf=x=>Array.isArray(x)?x.filter(Boolean):(x&&typeof x==='object'?Object.values(x):[]);
 function watchUnits(){
-  db.ref('bank').on('value',snap=>{ const v=snap.val();
+  db.ref('bank').on('value',snap=>{ const v=snap.val(); try{ buildQLook(v); }catch(e){}
     if (v && v.units){ UNITS=arrOf(v.units).filter(u=>u&&u.id).map(u=>{ const b=u.bank||{}; return {id:u.id,name:String(u.name||'이름 없는 단원'),map:MAPINFO[u.map]?u.map:'zones',cnt:{mc:arrOf(b.mc).length,ox:arrOf(b.ox).length,cls:arrOf(b.cls).length,loc:arrOf(b.loc).length}}; }); UACTIVE=v.active||''; }
     else if (v && v.mc){ UNITS=[{id:'u1',name:'기본 단원',map:'zones',cnt:{mc:arrOf(v.mc).length,ox:arrOf(v.ox).length,cls:arrOf(v.cls).length,loc:arrOf(v.loc).length}}]; UACTIVE='u1'; }
     else { UNITS=[]; }

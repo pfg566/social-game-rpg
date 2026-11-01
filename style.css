@@ -517,3 +517,18 @@ body.party #nextCard{display:none}
   #title.step-login .title-tag{text-align:left;margin-left:6px}
   #title.step-login .panel{grid-area:panel;align-self:center;justify-self:end;width:100%;max-width:420px;box-shadow:0 18px 50px rgba(24,33,58,.35),6px 6px 0 var(--ink)}
 }
+
+/* 내 오답 노트 */
+.notesbtn{bottom:calc(env(safe-area-inset-bottom,0px) + 146px);background:var(--paper)}
+.nt-tabs{display:flex;gap:6px;margin:0 0 10px}
+.nt-tabs button{flex:1;padding:8px;border:3px solid var(--ink);border-radius:10px;background:#fff;font:inherit;font-weight:800;cursor:pointer}
+.nt-tabs button.on{background:var(--ink);color:#fff}
+.nt-item{border:2px solid rgba(24,33,58,.15);border-radius:12px;padding:10px 12px;margin:0 0 8px;background:#fff}
+.nt-top{display:flex;gap:8px;align-items:center;font-size:12px;color:var(--muted)}
+.nt-kind{background:var(--ink);color:#fff;border-radius:6px;padding:1px 7px;font-weight:700}
+.nt-n{margin-left:auto;color:#c0392b;font-weight:800}
+.nt-q{margin:6px 0;font-size:16px;font-weight:700;line-height:1.45}
+.nt-opts{margin:0 0 6px;padding-left:22px;font-size:14px}
+.nt-ans summary{cursor:pointer;font-weight:800;color:#2f6fed}
+.nt-ans p{margin:6px 0 0;font-size:14px}
+@media (max-width:760px){ .notesbtn{top:calc(env(safe-area-inset-top,0px) + 62px);bottom:auto} }
