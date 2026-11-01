@@ -144,6 +144,7 @@ function startGame(){
   setTimeout(()=>{ W.snapCam=true; },0);
   if (PEACE_RUN) $('#hint').textContent='🕊️ 평화 모드 · WASD 이동 · Shift '+(JOB==='knight'?'막기':'구르기')+' · '+(MAPK==='island'?'상자에 다가가면 집어요 · 배달 깔개에 서면 배달':'빛나는 수정에 다가가 퀴즈를 맞혀 포탑을 깨워요');
   reset(); canvas.focus({preventScroll:true});
+  try{ applyMood(pickMood(PARTY.on?PARTY.rid:'')); }catch(e){}
   // 한 판 시간 제한: 선생님이 '게임 열기'에서 정한 분(퀴즈 푸는 시간 포함, 실제 시계 기준)
   { const g=!PARTY.on&&typeof activeGate==='function'?activeGate():null, lim=g&&g.lim>0?g.lim:0;
     W.lim=lim; W.limEnd=lim?performance.now()+lim*60000:0; W.limWarn=0; W.timeUp=false; $('#timeCard').hidden=!lim; $('#timeCard').classList.remove('hurry'); }

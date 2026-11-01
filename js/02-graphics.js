@@ -16,16 +16,17 @@ scene.fog = new THREE.Fog(HORIZON, 38, 135);
 const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 600);
 
 /* 후처리: 빛 번짐(블룸) + 감마 보정 */
-let composer=null, bloom=null;
+let composer=null, bloom=null, GRADE=null;
 try{
   if (THREE.EffectComposer && THREE.UnrealBloomPass && THREE.GammaCorrectionShader){
     composer=new THREE.EffectComposer(renderer);
     composer.addPass(new THREE.RenderPass(scene,camera));
     bloom=new THREE.UnrealBloomPass(new THREE.Vector2(512,512),.55,.65,.8);
     composer.addPass(bloom);
-    composer.addPass(new THREE.ShaderPass({uniforms:{tDiffuse:{value:null}},
+    GRADE=new THREE.ShaderPass({uniforms:{tDiffuse:{value:null},uSat:{value:1.08},uTint:{value:new THREE.Vector3(1.03,1,.985)},uLift:{value:new THREE.Vector3(.012,.008,.03)},uCon:{value:1.03},uVig:{value:.42}},
       vertexShader:'varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }',
-      fragmentShader:'uniform sampler2D tDiffuse; varying vec2 vUv; void main(){ vec4 c=texture2D(tDiffuse,vUv); float l=dot(c.rgb,vec3(.2126,.7152,.0722)); c.rgb=mix(vec3(l),c.rgb,1.08); c.rgb+=vec3(.012,.008,.03)*(1.0-clamp(l*2.0,0.0,1.0)); c.rgb*=vec3(1.03,1.0,.985); c.rgb=(c.rgb-0.18)*1.03+0.18; vec2 d=vUv-.5; c.rgb*=1.0-dot(d,d)*.42; gl_FragColor=c; }'}));
+      fragmentShader:'uniform sampler2D tDiffuse; uniform float uSat; uniform vec3 uTint; uniform vec3 uLift; uniform float uCon; uniform float uVig; varying vec2 vUv; void main(){ vec4 c=texture2D(tDiffuse,vUv); float l=dot(c.rgb,vec3(.2126,.7152,.0722)); c.rgb=mix(vec3(l),c.rgb,uSat); c.rgb+=uLift*(1.0-clamp(l*2.0,0.0,1.0)); c.rgb*=uTint; c.rgb=(c.rgb-0.18)*uCon+0.18; vec2 d=vUv-.5; c.rgb*=1.0-dot(d,d)*uVig; gl_FragColor=c; }'});
+    composer.addPass(GRADE);
     composer.addPass(new THREE.ShaderPass(THREE.GammaCorrectionShader));
   }
 }catch(e){ composer=null; }
@@ -35,8 +36,9 @@ addEventListener('resize', resize); resize();
 function renderFrame(){ if (composer) composer.render(); else renderer.render(scene,camera); }
 
 /* 하늘 */
+let SKY=null;
 {
-  const m=new THREE.ShaderMaterial({side:THREE.BackSide,depthWrite:false,fog:false,
+  const m=SKY=new THREE.ShaderMaterial({side:THREE.BackSide,depthWrite:false,fog:false,
     uniforms:{top:{value:new THREE.Color(0x5b93d8)},mid:{value:new THREE.Color(0xaccdee)},bot:{value:new THREE.Color(HORIZON)}},
     vertexShader:'varying vec3 vP; void main(){ vP=(modelMatrix*vec4(position,1.0)).xyz; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }',
     fragmentShader:'uniform vec3 top; uniform vec3 mid; uniform vec3 bot; varying vec3 vP; void main(){ float h=normalize(vP).y; vec3 c=h<0.18?mix(bot,mid,clamp(h/0.18,0.0,1.0)):mix(mid,top,clamp((h-0.18)/0.6,0.0,1.0)); gl_FragColor=vec4(pow(c,vec3(2.2)),1.0); }'});
@@ -44,7 +46,7 @@ function renderFrame(){ if (composer) composer.render(); else renderer.render(sc
 }
 
 /* 빛과 그림자 */
-scene.add(new THREE.HemisphereLight(0xe6eeff, 0x5d6e40, 0.6));
+const HEMI=new THREE.HemisphereLight(0xe6eeff, 0x5d6e40, 0.6); scene.add(HEMI);
 const sun = new THREE.DirectionalLight(0xffe2b4, 1.2);
 sun.position.set(22,38,14); sun.castShadow=true;
 sun.shadow.mapSize.set(2048,2048);
@@ -89,11 +91,11 @@ function makeMotes(){
   for (let i=0;i<N;i++){ pos[i*3]=rnd(-38,38); pos[i*3+1]=rnd(.4,5.5); pos[i*3+2]=rnd(-38,38); seed[i]=Math.random(); const c=pal[i%4]; col.set(c,i*3); }
   const g=new THREE.BufferGeometry(); g.setAttribute('position',new THREE.BufferAttribute(pos,3)); g.setAttribute('aSeed',new THREE.BufferAttribute(seed,1)); g.setAttribute('aCol',new THREE.BufferAttribute(col,3));
   const m=new THREE.ShaderMaterial({transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,
-    uniforms:{uTime:{value:0},uPR:{value:1},uSize:{value:.22}},
-    vertexShader:'uniform float uTime; uniform float uPR; uniform float uSize; attribute float aSeed; attribute vec3 aCol; varying float vA; varying vec3 vC;'+
+    uniforms:{uTime:{value:0},uPR:{value:1},uSize:{value:.22},uTint:{value:new THREE.Vector3(1,1,1)}},
+    vertexShader:'uniform float uTime; uniform float uPR; uniform float uSize; uniform vec3 uTint; attribute float aSeed; attribute vec3 aCol; varying float vA; varying vec3 vC;'+
       'void main(){ vec3 p=position; float t=uTime*(.25+aSeed*.2); p+=vec3(sin(t+aSeed*40.)*1.2, sin(t*1.7+aSeed*13.)*.6, cos(t*.8+aSeed*27.)*1.2);'+
       'vec4 mv=modelViewMatrix*vec4(p,1.); gl_Position=projectionMatrix*mv; gl_PointSize=uSize*uPR*(520./-mv.z);'+
-      'vA=.35+.65*pow(.5+.5*sin(uTime*(1.5+aSeed*2.)+aSeed*60.),2.); vC=aCol; }',
+      'vA=.35+.65*pow(.5+.5*sin(uTime*(1.5+aSeed*2.)+aSeed*60.),2.); vC=aCol*uTint; }',
     fragmentShader:'varying float vA; varying vec3 vC; void main(){ vec2 d=gl_PointCoord-.5; float r=length(d); float a=smoothstep(.5,.0,r); a*=a; gl_FragColor=vec4(vC*a*vA*1.3,a*vA); }'});
   const p=new THREE.Points(g,m); p.frustumCulled=false; p.userData.max=N; scene.add(p); MOTES=p;
 }

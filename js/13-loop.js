@@ -236,7 +236,7 @@ function frame(now){
   fx.update(dt); updateCombatFx(dt); updateDreamy(real); qualityTick(now);
 
   // 해 · 카메라
-  sun.position.set(P.x+22,38,P.z+14); sun.target.position.set(P.x,0,P.z); sun.target.updateMatrixWorld();
+  { const o=sun.userData.off||[22,38,14]; sun.position.set(P.x+o[0],o[1],P.z+o[2]); } sun.target.position.set(P.x,0,P.z); sun.target.updateMatrixWorld();
   const inLobby=lobbyTick(real,dt);
   if (!shopCamera(real) && !inLobby){
     const target=new THREE.Vector3(P.x,0,P.z);
@@ -247,6 +247,7 @@ function frame(now){
 
   hurtT=Math.max(0,hurtT-dt); $('#hurt').style.opacity=hurtT>0?1:0;
   if (W.state==='play'){
+    limitTick(); if (W.state!=='play'){ renderFrame(); return; }
     updateHUD(); updateSkillHUD(); partyHUD();
     const pr=$('#prompt');
     let msg='';

@@ -36,7 +36,7 @@ function lobbyTick(real,dt){
   if (!on || !LOBBY.g) return false;
   const LX=LOBBY_AT.x, LZ=LOBBY_AT.z;
   LOBBY.g.position.set(LX,0,LZ);
-  sun.position.set(LX+22,38,LZ+14); sun.target.position.set(LX,0,LZ); sun.target.updateMatrixWorld();
+  { const o=sun.userData.off||[22,38,14]; sun.position.set(LX+o[0],o[1],LZ+o[2]); } sun.target.position.set(LX,0,LZ); sun.target.updateMatrixWorld();
   // 고른 직업 캐릭터 하나만 가운데에. 바꾸면 '뿅' 하고 나타나며 만세해요
   if (LOBBY.last!==JOB){ const c=LOBBY.chars[JOB]; if (c){ LOBBY.popT=0; c.root.scale.setScalar(.01); if (LOBBY.last){ c.anim.once('cheer',1.5,true); fx.burst(LX,1.5,LZ,0xffd34d,22,4); fx.rise(LX,LZ,0xffe9a0,16); } } LOBBY.last=JOB; }
   LOBBY.popT=Math.min(1,(LOBBY.popT??1)+dt*3.2);
