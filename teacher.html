@@ -616,7 +616,7 @@ $('#ckAdd').addEventListener('click',async()=>{
 ['#clSch','#clYear'].forEach(s=>$(s).addEventListener('change',()=>{ clsDelArmed=''; yearDelArmed=''; renderClasses(); }));
 async function deleteClasses(cids){
   const up={};
-  for (const cid of cids){ up['classes/'+cid]=null; up['roster/'+cid]=null; up['profiles/'+cid]=null; up['wardrobe/'+cid]=null; up['playgate/'+cid]=null; up['playlog/'+cid]=null; up['partylog/'+cid]=null;
+  for (const cid of cids){ up['classes/'+cid]=null; up['roster/'+cid]=null; up['profiles/'+cid]=null; up['wardrobe/'+cid]=null; up['playgate/'+cid]=null; up['playlog/'+cid]=null; up['loginIdx/'+cid]=null; up['partylog/'+cid]=null;
     const snap=await db.ref('results').orderByChild('cid').equalTo(cid).once('value');
     snap.forEach(c=>{ const v=c.val(); if (v&&v.cid===cid) up['results/'+c.key]=null; }); }
   const keys=Object.keys(up);
@@ -650,7 +650,7 @@ $('#legacyDel').addEventListener('click',async()=>{ const keys=renderLegacy(); c
 const CODE_CH='abcdefghjkmnpqrstuvwxyz23456789';
 function newCode(){ const a=new Uint32Array(6); crypto.getRandomValues(a); return [...a].map(x=>CODE_CH[x%CODE_CH.length]).join(''); }
 const lvOf=xp=>{ let lv=1,need=150,rest=Math.max(0,xp|0); while(rest>=need){ rest-=need; lv++; need=150+50*(lv-1);} return lv; };
-let RS={cls:'',roster:{},profiles:{},refs:[]}, regenArmed='';
+let RS={cls:'',roster:{},profiles:{},pw:{},refs:[]}, regenArmed='';
 function fillRosterSelect(){
   const el=$('#rsCls'), cur=el.value;
   el.innerHTML='<option value="">학급 선택</option>'+sortedSchools().map(sid=>{ const ks=sortedClasses(sid); if (!ks.length) return '';
@@ -658,9 +658,10 @@ function fillRosterSelect(){
   if ([...el.options].some(o=>o.value===cur)) el.value=cur; else if (cur){ el.value=''; RS.cls=''; rsWatch(); }
 }
 function rsWatch(){
-  RS.refs.forEach(r=>r.off()); RS.refs=[]; RS.roster={}; RS.profiles={};
+  RS.refs.forEach(r=>r.off()); RS.refs=[]; RS.roster={}; RS.profiles={}; RS.pw={};
   const c=$('#rsCls').value; RS.cls=c; if (!c){ renderRoster(); return; }
-  const r1=db.ref('roster/'+c), r2=db.ref('profiles/'+c); RS.refs=[r1,r2];
+  const r1=db.ref('roster/'+c), r2=db.ref('profiles/'+c), r3=db.ref('loginIdx/'+c); RS.refs=[r1,r2,r3];
+  r3.on('value',s=>{ RS.pw=s.val()||{}; renderRoster(); },()=>{});
   r1.on('value',s=>{ RS.roster=s.val()||{}; renderRoster(); },e=>rsMsg('명단을 불러오지 못했어요. 새 보안 규칙을 올렸는지 확인해 주세요.','err'));
   r2.on('value',s=>{ RS.profiles=s.val()||{}; renderRoster(); },()=>{});
 }
@@ -670,10 +671,11 @@ function renderRoster(){
   $('#rsPrint').disabled=!nums.length;
   if (!c){ $('#rsTable').innerHTML=`<tr><td class="empty">${Object.keys(CLS).length?'학급을 고르세요.':'먼저 \'학급 관리\' 탭에서 학교와 학급을 추가하세요.'}</td></tr>`; return; }
   if (!nums.length){ $('#rsTable').innerHTML='<tr><td class="empty">아직 이 반의 명단이 없어요. 위에 학생 수나 명단을 넣고 코드를 만들어 주세요.</td></tr>'; return; }
-  $('#rsTable').innerHTML='<thead><tr><th>번호</th><th>명단 이름</th><th>게임 이름</th><th>코드</th><th class="num">레벨</th><th class="num">코인</th><th class="num">플레이</th><th>누적 정답률</th><th>마지막 플레이</th><th></th></tr></thead><tbody>'+
+  $('#rsTable').innerHTML='<thead><tr><th>번호</th><th>명단 이름</th><th>게임 이름</th><th>코드</th><th>비밀번호</th><th class="num">레벨</th><th class="num">코인</th><th class="num">플레이</th><th>누적 정답률</th><th>마지막 플레이</th><th></th></tr></thead><tbody>'+
     nums.map(n=>{ const r=RS.roster[n]||{}, p=RS.profiles[n]; const rate=p&&p.asked?Math.round(p.correct/p.asked*100):null;
       return `<tr><td>${esc(n)}번</td><td>${esc(r.name||'')}</td><td>${p?esc(p.name):'<span style="color:var(--muted)">아직 접속 안 함</span>'}</td>
       <td><code class="code">${r.code?esc(r.code.toUpperCase()):'-'}</code></td>
+      <td>${RS.pw[n]&&r.code&&RS.pw[n]===r.code?'<span class="pill win">만듦</span>':'<span style="color:var(--muted)">아직 (코드로 들어와요)</span>'}</td>
       <td class="num">${p?'Lv.'+lvOf(p.xp):'-'}</td><td class="num">${p?(p.coins|0).toLocaleString('ko-KR'):'-'}</td><td class="num">${p?p.plays|0:'-'}</td>
       <td class="num">${rate==null?'-':rateBar(rate)}</td><td>${p&&p.plays?fmtT(p.updatedAt):'-'}</td>
       <td><button class="link" data-regen="${esc(n)}">${regenArmed===n?'정말 새 코드로?':'코드 새로'}</button>${p?` <button class="link" data-rename="${esc(n)}">이름 고치기</button>`:''}</td></tr>`; }).join('')+'</tbody>';
@@ -699,9 +701,9 @@ $('#rsMake').addEventListener('click',async()=>{
 $('#rsTable').addEventListener('click',async e=>{
   const g=e.target.closest('[data-regen]'), rn=e.target.closest('[data-rename]');
   if (g){ const n=g.dataset.regen;
-    if (regenArmed!==n){ regenArmed=n; renderRoster(); rsMsg(`${n}번의 코드를 새로 만들면 예전 코드로는 들어올 수 없어요. 기록은 그대로 남아요. 한 번 더 누르면 바뀌어요.`); return; }
+    if (regenArmed!==n){ regenArmed=n; renderRoster(); rsMsg(`${n}번의 코드를 새로 만들면 예전 코드와 비밀번호로는 들어올 수 없어요(비밀번호를 잊은 학생에게 써요). 기록은 그대로 남아요. 한 번 더 누르면 바뀌어요.`); return; }
     regenArmed='';
-    try{ await db.ref(`roster/${RS.cls}/${n}`).update({code:newCode(),issuedAt:Date.now()}); rsMsg(`${n}번의 코드를 새로 만들었어요.`,'ok'); }
+    try{ await db.ref().update({[`roster/${RS.cls}/${n}/code`]:newCode(),[`roster/${RS.cls}/${n}/issuedAt`]:Date.now(),[`loginIdx/${RS.cls}/${n}`]:null}); rsMsg(`${n}번의 코드를 새로 만들었어요. 비밀번호도 지워졌으니 새 코드로 처음처럼 들어와 새 비밀번호를 만들면 돼요.`,'ok'); }
     catch(err){ rsMsg('바꾸지 못했어요.','err'); } }
   if (rn){ const n=rn.dataset.rename, p=RS.profiles[n]; const cell=rn.closest('tr').children[2];
     cell.innerHTML=`<input class="rename" maxlength="12" value="${esc(p.name)}"> <button class="link" data-save-name="${esc(n)}">저장</button>`; cell.querySelector('input').focus(); }

@@ -474,3 +474,7 @@ body.party #nextCard{display:none}
 /* 파티 잠금 */
 .partybtn.locked{opacity:.6}
 [data-pmode].locked{opacity:.45;cursor:not-allowed;text-decoration:line-through}
+
+/* 비밀번호 만들기: 두 칸 같은 너비 */
+#pwBox .who-row.login{display:grid;grid-template-columns:1fr 1fr}
+#pwBox .who-row.login .nickfield{width:auto;flex:1}

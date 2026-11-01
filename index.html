@@ -7,7 +7,7 @@
 <style>body{margin:0}[hidden]{display:none!important}img{max-width:100%}</style>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jua&family=IBM+Plex+Sans+KR:wght@400;600;700&display=swap">
-<link rel="stylesheet" href="style.css?v=20261101c">
+<link rel="stylesheet" href="style.css?v=20261101d">
 </head>
 <body>
 
@@ -111,10 +111,20 @@
     <div class="loginonly" id="loginBox">
       <div class="who-row login">
         <label class="nickfield"><span>번호</span><input id="lgNum" type="number" min="1" max="60" inputmode="numeric" placeholder="7"></label>
-        <label class="nickfield"><span>내 코드 (6자리)</span><input id="lgCode" maxlength="6" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="AB12CD"></label>
+        <label class="nickfield"><span id="lgCodeLbl">처음이면 코드 (6자리)</span><input id="lgCode" maxlength="6" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="AB12CD"></label>
       </div>
       <div class="login-actions"><button class="btn ghost" id="lgBtn">로그인</button><button class="link" id="guestBtn" hidden>테스트 모드 (선생님 전용)</button></div>
+      <p class="namehint" id="lgHint">처음 들어올 때만 선생님께 받은 코드를 넣어요. 그다음부터는 내가 만든 비밀번호로 들어와요.</p>
       <p class="nickerr" id="lgErr" hidden></p>
+    </div>
+    <div class="loginonly" id="pwBox" hidden>
+      <p class="namehint">다음부터 쓸 <b>비밀번호</b>를 만들어 주세요. 6자 이상, 영어·숫자·기호 아무거나 괜찮아요. 친구에게 알려 주지 마세요!</p>
+      <div class="who-row login">
+        <label class="nickfield"><span>새 비밀번호</span><input id="pw1" type="password" maxlength="30" autocomplete="new-password"></label>
+        <label class="nickfield"><span>한 번 더</span><input id="pw2" type="password" maxlength="30" autocomplete="new-password"></label>
+      </div>
+      <div class="login-actions"><button class="btn ghost" id="pwSave">비밀번호 저장</button></div>
+      <p class="nickerr" id="pwErr" hidden></p>
     </div>
     <div class="loginonly" id="nameBox" hidden>
       <p class="namehint">처음 오셨네요! 게임에서 쓸 이름(또는 별명)을 정해 주세요. 나중에 선생님만 바꿀 수 있어요.</p>
@@ -372,21 +382,21 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="firebase-config.js"></script>
-<script src="js/01-data.js?v=20261101c"></script>
-<script src="js/02-graphics.js?v=20261101c"></script>
-<script src="js/03-world.js?v=20261101c"></script>
-<script src="js/04-island.js?v=20261101c"></script>
-<script src="js/05-play.js?v=20261101c"></script>
-<script src="js/06-jobs.js?v=20261101c"></script>
-<script src="js/06p-player.js?v=20261101c"></script>
-<script src="js/07-quiz.js?v=20261101c"></script>
-<script src="js/07b-prep.js?v=20261101c"></script>
-<script src="js/08-hud.js?v=20261101c"></script>
-<script src="js/09-server.js?v=20261101c"></script>
-<script src="js/10-shop.js?v=20261101c"></script>
-<script src="js/11-gate-editor.js?v=20261101c"></script>
-<script src="js/12-lobby.js?v=20261101c"></script>
-<script src="js/13-loop.js?v=20261101c"></script>
-<script src="js/14-party.js?v=20261101c"></script>
+<script src="js/01-data.js?v=20261101d"></script>
+<script src="js/02-graphics.js?v=20261101d"></script>
+<script src="js/03-world.js?v=20261101d"></script>
+<script src="js/04-island.js?v=20261101d"></script>
+<script src="js/05-play.js?v=20261101d"></script>
+<script src="js/06-jobs.js?v=20261101d"></script>
+<script src="js/06p-player.js?v=20261101d"></script>
+<script src="js/07-quiz.js?v=20261101d"></script>
+<script src="js/07b-prep.js?v=20261101d"></script>
+<script src="js/08-hud.js?v=20261101d"></script>
+<script src="js/09-server.js?v=20261101d"></script>
+<script src="js/10-shop.js?v=20261101d"></script>
+<script src="js/11-gate-editor.js?v=20261101d"></script>
+<script src="js/12-lobby.js?v=20261101d"></script>
+<script src="js/13-loop.js?v=20261101d"></script>
+<script src="js/14-party.js?v=20261101d"></script>
 </body>
 </html>

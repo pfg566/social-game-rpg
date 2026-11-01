@@ -126,7 +126,8 @@ const pwOf=code=>'sg#'+String(code).toLowerCase()+'#26';
 function levelOf(xp){ let lv=1, need=150, rest=Math.max(0,xp|0); while (rest>=need){ rest-=need; lv++; need=150+50*(lv-1); } return {lv,rest,need}; }
 function profRef(){ return fbDb.ref(`profiles/${STUDENT.cid}/${STUDENT.num}`); }
 function showAuthUI(){
-  $('#classPick').hidden=AUTHMODE==='student'||AUTHMODE==='name';
+  $('#pwBox').hidden=AUTHMODE!=='setpw';
+  $('#classPick').hidden=AUTHMODE==='student'||AUTHMODE==='name'||AUTHMODE==='setpw';
   $('#loginBox').hidden=AUTHMODE!=='login';
   $('#guestBox').hidden=AUTHMODE!=='guest';
   $('#nameBox').hidden=AUTHMODE!=='name';
@@ -152,7 +153,7 @@ function renderProfileCard(){
 }
 function lgError(msg){ const e=$('#lgErr'); e.hidden=!msg; e.textContent=msg||''; }
 try{ $('#lgNum').value=localStorage.getItem('gsd-lgnum')||''; }catch(e){}
-$('#lgCode').addEventListener('input',e=>{ e.target.value=e.target.value.replace(/[^a-zA-Z0-9]/g,'').toUpperCase().slice(0,6); lgError(''); });
+$('#lgCode').addEventListener('input',e=>{ if (e.target.type!=='password'){ const v=e.target.value.replace(/\s/g,''); if (v!==e.target.value) e.target.value=v; } lgError(''); });   // 비밀번호는 대소문자를 그대로 둬요 (코드는 화면에서만 대문자로 보여요)
 $('#guestBtn').addEventListener('click',()=>{ if (!isAdmin) return; AUTHMODE='guest'; showAuthUI(); $('#nick').focus(); });
 $('#backLogin').addEventListener('click',()=>{ AUTHMODE='login'; showAuthUI(); $('#lgCode').focus(); });
 function guestEnter(){
@@ -165,17 +166,21 @@ $('#nick').addEventListener('keydown',e=>{ if (e.key==='Enter'){ e.preventDefaul
 $('#gcBack').addEventListener('click',()=>{ GUEST_IN=false; AUTHMODE='guest'; showAuthUI(); $('#nick').focus(); });
 $('#lgCode').addEventListener('keydown',e=>{ if (e.key==='Enter'){ e.preventDefault(); studentLogin(); } });
 $('#lgBtn').addEventListener('click',()=>studentLogin());
-$('#pcLogout').addEventListener('click',async()=>{ STUDENT=null; PROFILE=null; WARDROBE=null; applyLook(guestLook()); AUTHMODE='login'; showAuthUI(); $('#lgCode').value=''; try{ await fbAuth.signOut(); }catch(e){} });
+$('#pcLogout').addEventListener('click',async()=>{ STUDENT=null; PROFILE=null; WARDROBE=null; applyLook(guestLook()); AUTHMODE='login'; PENDING_PW=''; showAuthUI(); $('#lgCode').value=''; lgModeKey=''; lgModeCheck(); try{ await fbAuth.signOut(); }catch(e){} });
 
 let loggingIn=false;
 async function studentLogin(){
   if (loggingIn) return;
   if (!fbAuth){ lgError('저장 서버에 연결되지 않아 로그인할 수 없어요. 잠시 뒤 다시 해 보고, 계속 안 되면 선생님께 알려 주세요.'); return; }
-  const c=$('#pkCls').value, n=String(parseInt($('#lgNum').value,10)||''), code=$('#lgCode').value.trim().toLowerCase();
+  const c=$('#pkCls').value, n=String(parseInt($('#lgNum').value,10)||''), raw=$('#lgCode').value.trim();
   if (LEGACY||!c||c.startsWith('n:')){ lgError('학급을 먼저 골라 주세요.'); return; }
   if (!n||+n<1||+n>60){ lgError('번호를 확인해 주세요.'); return; }
-  if (!/^[a-z0-9]{6}$/.test(code)){ lgError('코드는 영어와 숫자 6자리예요.'); return; }
   loggingIn=true; $('#lgBtn').disabled=true; $('#lgBtn').textContent='확인 중…'; lgError('');
+  // 비밀번호를 만든 학생인지 먼저 확인해요
+  let idx=null; try{ idx=(await withTimeout(fbDb.ref(`loginIdx/${c}/${n}`).once('value'),8000)).val(); }catch(e){ idx=null; }
+  if (idx){ loggingIn=false; $('#lgBtn').disabled=false; $('#lgBtn').textContent='로그인'; return pwLogin(c,n,String(idx),raw); }
+  const code=raw.toLowerCase();
+  if (!/^[a-z0-9]{6}$/.test(code)){ loggingIn=false; $('#lgBtn').disabled=false; $('#lgBtn').textContent='로그인'; lgError('처음 들어올 때는 선생님께 받은 코드 6자리를 넣어요.'); return; }
   const email=emailOf(c,n,code), pw=pwOf(code);
   let created=false;
   try{
@@ -198,16 +203,79 @@ async function studentLogin(){
       return;
     }
     try{ localStorage.setItem('gsd-cid',c); localStorage.setItem('gsd-lgnum',n); }catch(_){}
+    PENDING_PW=code;   // 코드로 들어왔으면 비밀번호를 만들게 해요
     if (!val){ AUTHMODE='name'; showAuthUI(); $('#pfName').focus(); return; }
-    PROFILE=val; AUTHMODE='student'; showAuthUI(); loadWardrobe();
+    PROFILE=val; AUTHMODE='setpw'; showAuthUI(); $('#pw1').focus(); loadWardrobe();
   }catch(e){
     const k=e&&e.code;
     lgError(k==='auth/operation-not-allowed'?'선생님: Firebase에서 이메일/비밀번호 로그인을 켜야 해요.'
       : k==='auth/too-many-requests'?'로그인 시도가 너무 많아요. 잠시 뒤 다시 해 주세요.'
       : k==='auth/network-request-failed'?'인터넷 연결을 확인해 주세요.'
+      : k==='auth/email-already-in-use'?'이미 비밀번호를 만든 학생이에요. 비밀번호로 들어오고, 잊었으면 선생님께 코드를 새로 받아요.'
       : '로그인하지 못했어요. ('+(k||'오류')+')');
   }finally{ loggingIn=false; $('#lgBtn').disabled=false; $('#lgBtn').textContent='로그인'; }
 }
+/* 비밀번호로 들어오기 */
+let PENDING_PW='';
+async function pwLogin(c,n,code,pw){
+  if (!pw){ lgError('비밀번호를 넣어 주세요.'); return; }
+  loggingIn=true; $('#lgBtn').disabled=true; $('#lgBtn').textContent='확인 중…'; lgError('');
+  const email=emailOf(c,n,code);
+  try{
+    let viaCode=false;
+    try{ await fbAuth.signInWithEmailAndPassword(email,pw); }
+    catch(e){ const k=e&&e.code;
+      if (!/invalid-credential|wrong-password|invalid-login-credentials|user-not-found/.test(String(k))) throw e;
+      // 비밀번호 저장이 중간에 실패했던 학생: 코드로도 한 번 받아 줘요
+      if (pw.toLowerCase()===code){ try{ await fbAuth.signInWithEmailAndPassword(email,pwOf(code)); viaCode=true; }catch(_){ throw e; } } else throw e; }
+    STUDENT={cid:c,num:n};
+    let val;
+    try{ val=(await withTimeout(profRef().once('value'),10000)).val(); }
+    catch(e){ STUDENT=null; try{ await fbAuth.signOut(); }catch(_){} lgError('선생님이 코드를 새로 만들었어요. 새 코드로 다시 들어와 주세요.'); return; }
+    try{ localStorage.setItem('gsd-cid',c); localStorage.setItem('gsd-lgnum',n); }catch(_){}
+    if (viaCode) PENDING_PW=code;
+    if (!val){ AUTHMODE='name'; showAuthUI(); $('#pfName').focus(); return; }
+    PROFILE=val; AUTHMODE=viaCode?'setpw':'student'; showAuthUI(); loadWardrobe();
+  }catch(e){ const k=e&&e.code;
+    lgError(/invalid-credential|wrong-password|invalid-login-credentials|user-not-found/.test(String(k))?'비밀번호가 맞지 않아요. 대문자·소문자도 확인해 주세요.'
+      : k==='auth/too-many-requests'?'틀린 횟수가 많아 잠시 막혔어요. 조금 뒤에 다시 해 주세요.'
+      : k==='auth/network-request-failed'?'인터넷 연결을 확인해 주세요.' : '로그인하지 못했어요. ('+(k||'오류')+')');
+  }finally{ loggingIn=false; $('#lgBtn').disabled=false; $('#lgBtn').textContent='로그인'; }
+}
+/* 처음 코드로 들어온 학생: 비밀번호 만들기 */
+async function savePw(){
+  const a=$('#pw1').value, b=$('#pw2').value, err=t=>{ $('#pwErr').hidden=!t; $('#pwErr').textContent=t||''; };
+  if (a.length<6){ err('비밀번호는 6자 이상이에요.'); return; }
+  if (a!==b){ err('두 칸이 서로 달라요. 다시 확인해 주세요.'); return; }
+  if (a.toLowerCase()===PENDING_PW){ err('코드와 다른 비밀번호로 만들어 주세요.'); return; }
+  const u=fbAuth&&fbAuth.currentUser; if (!u||!STUDENT||!PENDING_PW){ err('다시 로그인해 주세요.'); return; }
+  $('#pwSave').disabled=true; err('');
+  const ref=fbDb.ref(`loginIdx/${STUDENT.cid}/${STUDENT.num}`);
+  try{
+    await withTimeout(ref.set(PENDING_PW),8000);
+    try{ await withTimeout(u.updatePassword(a),10000); }
+    catch(e){ try{ await ref.remove(); }catch(_){} throw e; }
+    PENDING_PW=''; $('#pw1').value=''; $('#pw2').value='';
+    AUTHMODE='student'; showAuthUI(); flashLoginNote('비밀번호를 만들었어요! 다음부터는 학급·번호·비밀번호로 들어와요.');
+  }catch(e){ const k=e&&(e.code||e.message);
+    err(/weak-password/.test(String(k))?'너무 쉬운 비밀번호예요. 더 길게 만들어 주세요.':/requires-recent-login/.test(String(k))?'다시 로그인한 뒤 바로 만들어 주세요.':/permission/i.test(String(k))?'저장하지 못했어요. 선생님께 보안 규칙이 최신인지 알려 주세요.':'저장하지 못했어요. 잠시 뒤 다시 해 주세요.'); }
+  finally{ $('#pwSave').disabled=false; }
+}
+function flashLoginNote(t){ try{ showBanner(t); }catch(e){} }
+$('#pwSave').addEventListener('click',savePw);
+$('#pw2').addEventListener('keydown',e=>{ if (e.key==='Enter'){ e.preventDefault(); savePw(); } });
+/* 학급·번호를 고르면 코드 칸인지 비밀번호 칸인지 알려 줘요 */
+let lgModeKey='';
+async function lgModeCheck(){
+  const c=$('#pkCls').value, n=String(parseInt($('#lgNum').value,10)||''); const key=c+'|'+n; if (key===lgModeKey) return; lgModeKey=key;
+  let pw=false; if (fbDb && c && !c.startsWith('n:') && n){ try{ pw=!!(await withTimeout(fbDb.ref(`loginIdx/${c}/${n}`).once('value'),6000)).val(); }catch(e){} }
+  if (lgModeKey!==key) return;
+  const f=$('#lgCode'); f.type=pw?'password':'text'; f.maxLength=pw?30:6; f.placeholder=pw?'내 비밀번호':'AB12CD'; f.autocapitalize=pw?'off':'characters';
+  $('#lgCodeLbl').textContent=pw?'비밀번호':'처음이면 코드 (6자리)';
+  $('#lgHint').textContent=pw?'비밀번호를 잊었으면 선생님께 코드를 새로 받아 처음처럼 들어와요.':'처음 들어올 때만 선생님께 받은 코드를 넣어요. 그다음부터는 내가 만든 비밀번호로 들어와요.';
+}
+['change','input','blur'].forEach(ev=>$('#lgNum').addEventListener(ev,()=>{ clearTimeout(lgModeCheck.t); lgModeCheck.t=setTimeout(lgModeCheck,300); }));
+$('#pkCls').addEventListener('change',()=>{ lgModeKey=''; lgModeCheck(); });
 $('#pfSave').addEventListener('click',()=>saveName());
 $('#pfName').addEventListener('keydown',e=>{ if (e.key==='Enter'){ e.preventDefault(); saveName(); } });
 async function saveName(){
@@ -216,7 +284,7 @@ async function saveName(){
   const TS=firebase.database.ServerValue.TIMESTAMP;
   const p={name:nm.slice(0,12),xp:0,coins:0,plays:0,wins:0,best:0,skill:1,correct:0,asked:0,fixed:0,createdAt:TS,updatedAt:TS};
   $('#pfSave').disabled=true;
-  try{ await withTimeout(profRef().set(p),10000); PROFILE={...p,createdAt:Date.now(),updatedAt:Date.now()}; AUTHMODE='student'; showAuthUI(); loadWardrobe(); }
+  try{ await withTimeout(profRef().set(p),10000); PROFILE={...p,createdAt:Date.now(),updatedAt:Date.now()}; AUTHMODE=PENDING_PW?'setpw':'student'; showAuthUI(); loadWardrobe(); if (PENDING_PW) $('#pw1').focus(); }
   catch(e){ $('#pfErr').hidden=false; $('#pfErr').textContent='저장하지 못했어요. 보안 규칙이 최신인지 선생님께 알려 주세요.'; }
   finally{ $('#pfSave').disabled=false; }
 }
