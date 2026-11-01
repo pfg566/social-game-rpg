@@ -280,6 +280,7 @@ function freeSpot(x,z,m){ return !zoneAt(x,z) && Math.hypot(x-PLAZA.x,z-PLAZA.z)
 
 /* 거점 이름판 */
 const labels = [];
+const LABEL_SPRITES=[];   // 거점 이름판 (로비·로그인 화면에서는 숨겨요)
 function label(title, sub, color, x, y, z){
   const cv=document.createElement('canvas'); cv.width=512; cv.height=150;
   const tex=new THREE.CanvasTexture(cv); tex.encoding=THREE.sRGBEncoding;
@@ -293,7 +294,7 @@ function label(title, sub, color, x, y, z){
     tex.needsUpdate=true; };
   draw(); labels.push(draw);
   const api={set(t,s2){ title=t; sub=s2; draw(); }};
-  const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,fog:false,toneMapped:false})); sp.scale.set(8.2,2.4,1); sp.position.set(x,y,z); scene.add(sp);
+  const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,fog:false,toneMapped:false})); sp.scale.set(8.2,2.4,1); sp.position.set(x,y,z); scene.add(sp); LABEL_SPRITES.push(sp);
   return api;
 }
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(()=>labels.forEach(d=>d()));

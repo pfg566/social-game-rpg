@@ -8,9 +8,9 @@ function ensureLobby(){
   const ringGeo=new THREE.RingGeometry(.62,.9,40);
   { const stone=toonMat({map:stoneTex('#a39d90','#6c665a','#b3ad9f')}); const top=cs(new THREE.Mesh(new THREE.CylinderGeometry(2.1,2.3,STAGE_Y,48),stone)); top.position.y=STAGE_Y/2; g.add(top);
     const rim=cs(new THREE.Mesh(new THREE.TorusGeometry(2.1,.12,8,64),std(0x8d8577))); rim.rotation.x=Math.PI/2; rim.position.y=STAGE_Y; g.add(rim);
-    const lawn=new THREE.Mesh(new THREE.CircleGeometry(9,48),toonMat({color:0x6f9a46})); lawn.rotation.x=-Math.PI/2; lawn.position.y=.08; lawn.receiveShadow=true; g.add(lawn);
+    const lawn=new THREE.Mesh(new THREE.CircleGeometry(16,48),toonMat({map:grassTex})); lawn.rotation.x=-Math.PI/2; lawn.position.y=.08; lawn.receiveShadow=true; g.add(lawn);
     for (let i=0;i<9;i++){ const a=i/9*Math.PI*2+.3, r=rnd(5.5,8); const t=GL.tree_single_A&&GL.tree_single_A.scene.clone(true); if (!t||Math.sin(a)>.35) continue; prepMesh(t); t.scale.setScalar(rnd(3,4)); t.position.set(Math.cos(a)*r,0,Math.sin(a)*r); g.add(t); }
-    const sp=new THREE.PointLight(0xfff1c8,.8,9,2); sp.position.set(0,4,2.5); g.add(sp); }
+    const sp=new THREE.PointLight(0xfff1c8,.8,9,2); sp.position.set(0,4,2.5); g.add(sp); LOBBY.light=sp; }
   LOBBY_JOBS.forEach((j,i)=>{
     const c=makePlayerChar(j);
     c.root.position.x=(i-1)*1.85; g.add(c.root); c.anim.setBase('idle');
@@ -29,14 +29,18 @@ async function dressLobby(){
   applyLook();
 }
 function lobbyActive(){ return W.state!=='play' && !$('#title').hidden && !$('#title').classList.contains('step-login') && !SHOP.open; }
+function loginActive(){ return W.state!=='play' && !$('#title').hidden && $('#title').classList.contains('step-login') && !SHOP.open; }
 function lobbyTick(real,dt){
-  const on=lobbyActive(); if (on) ensureLobby();
+  const login=loginActive(), on=lobbyActive()||login; if (on) ensureLobby();
   if (LOBBY.g) LOBBY.g.visible=on;
+  LABEL_SPRITES.forEach(s=>{ s.visible=!on; });
   pg.visible=!on;
   if (!on || !LOBBY.g) return false;
   const LX=LOBBY_AT.x, LZ=LOBBY_AT.z;
   LOBBY.g.position.set(LX,0,LZ);
   { const o=sun.userData.off||[22,38,14]; sun.position.set(LX+o[0],o[1],LZ+o[2]); } sun.target.position.set(LX,0,LZ); sun.target.updateMatrixWorld();
+  if (LOBBY.light && !login) LOBBY.light.intensity=.8;
+  if (login) return loginTick(real,dt);
   // 고른 직업 캐릭터 하나만 가운데에. 바꾸면 '뿅' 하고 나타나며 만세해요
   if (LOBBY.last!==JOB){ const c=LOBBY.chars[JOB]; if (c){ LOBBY.popT=0; c.root.scale.setScalar(.01); if (LOBBY.last){ c.anim.once('cheer',1.5,true); fx.burst(LX,1.5,LZ,0xffd34d,22,4); fx.rise(LX,LZ,0xffe9a0,16); } } LOBBY.last=JOB; }
   LOBBY.popT=Math.min(1,(LOBBY.popT??1)+dt*3.2);
@@ -59,6 +63,23 @@ function lobbyTick(real,dt){
   else { const jb=document.querySelector('.jobbar').getBoundingClientRect(); const top=60, bot=jb.top-6; cx=jb.left+jb.width/2; cy=(top+bot)/2; h=Math.max(160,bot-top); }
   const dd=Math.max(5,Math.min(18,2.5*H0/(h*tn))), k=2*dd*tn/H0, ox=(cx-W0/2)*k, oy=(H0/2-cy)*k;
   camera.position.set(LX-ox,1.75-oy+.9,LZ+dd); camera.lookAt(LX-ox,1.75-oy,LZ);
+  return true;
+}
+/* 로그인 화면: 궁수 · 기사 · 마법사가 나란히 서 있고, 카메라가 천천히 좌우로 흔들려요 (로그인 카드는 오른쪽) */
+function loginTick(real,dt){
+  const LX=LOBBY_AT.x, LZ=LOBBY_AT.z;
+  LOBBY_JOBS.forEach((j,i)=>{ const c=LOBBY.chars[j]; if (!c) return;
+    c.root.visible=true; c.ring.visible=c.glow.visible=false; c.root.scale.setScalar(1.05);
+    c.root.position.set((i-1)*1.55,STAGE_Y,i===1?.35:-.15); c.root.rotation.y=(i-1)*-.28+Math.sin(real*.5+i)*.06; c.mixer.update(dt); });
+  LOBBY.last=null;
+  const W0=innerWidth, H0=innerHeight, tn=Math.tan(camera.fov*Math.PI/360), wide=W0>=900;
+  const panel=document.querySelector('#title .panel'), pr=panel?panel.getBoundingClientRect():null;
+  const free=wide&&pr?pr.left:W0, cx=free/2, cy=H0*(wide?.6:.42);
+  if (LOBBY.light) LOBBY.light.intensity=.25;
+  const dd=wide?11.5:13, a=reduceMotion()?0:Math.sin(real*.11)*.32;
+  const rx=Math.cos(a), rz=-Math.sin(a), k=2*dd*tn/H0, ox=(cx-W0/2)*k, oy=(H0/2-cy)*k;
+  const lx=LX-rx*ox, lz=LZ-rz*ox, ly=1.15-oy;
+  camera.position.set(lx+Math.sin(a)*dd, ly+2.6, lz+Math.cos(a)*dd); camera.lookAt(lx,ly,lz);
   return true;
 }
 /* 화면을 좌우로 끌면 캐릭터를 돌려 볼 수 있어요 */
