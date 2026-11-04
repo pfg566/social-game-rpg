@@ -80,7 +80,8 @@ const CLS_OPTS = ['공장이 들어선 지역','공장이 빠져나간 지역'];
 const ZCFG_DEFAULT={n:['본사','연구소','생산 공장'],s:['선진국 대도시 · 경영·관리','고급 인력 · 기술 개발','낮은 임금 · 넓은 땅'],c:['공장이 들어선 지역','공장이 빠져나간 지역'],q:'이런 변화는 어느 지역에서 나타날까?'};
 const ZCFG_PRESETS={
   spatial:{label:'공간적 분업 (기본)',cfg:ZCFG_DEFAULT},
-  welfare:{label:'사회 복지 제도',cfg:{n:['사회 보험','공공 부조','사회 서비스'],s:['고용 보험 · 국민연금 · 건강 보험','기초 생활 보장 · 기초 연금','노인 돌봄 · 가사·간병'],c:['금전적 지원','비금전적 지원'],q:'이 제도는 어떤 지원일까?'}}
+  welfare:{label:'사회 복지 제도',cfg:{n:['사회 보험','공공 부조','사회 서비스'],s:['고용 보험 · 국민연금 · 건강 보험','기초 생활 보장 · 기초 연금','노인 돌봄 · 가사·간병'],c:['금전적 지원','비금전적 지원'],q:'이 제도는 어떤 지원일까?'}},
+  climate:{label:'기후 변화 · 공해 산업',cfg:{n:['기후 변화 원인','기후 변화 영향','해결 노력'],s:['온실가스 · 화석 연료 · 삼림 파괴','빙하 · 해수면 · 가뭄 · 홍수','국가 제도 · 국제 협약'],c:['선진국','개발 도상국'],q:'선진국일까, 개발 도상국일까?'}}
 };
 function zcfgOf(u){ const z=(u&&u.zcfg)||{}; const pick=(a,d,n,max)=>Array.from({length:n},(_,i)=>{ const arr=Array.isArray(a)?a:(a&&typeof a==='object'?Object.values(a):null); const v=arr?String(arr[i]??'').trim().slice(0,max):''; return v||d[i]; });
   return {n:pick(z.n,ZCFG_DEFAULT.n,3,10),s:pick(z.s,ZCFG_DEFAULT.s,3,22),c:pick(z.c,ZCFG_DEFAULT.c,2,14),q:(typeof z.q==='string'&&z.q.trim().slice(0,30))||(z.n?'어느 쪽에 해당할까?':ZCFG_DEFAULT.q)}; }
@@ -111,6 +112,10 @@ const WAVESETS = {
   {name:'해골 병사', n:4, hp:60, spd:2.2, dmg:8, color:0xe0434a},
   {name:'해골 도적단', n:6, hp:90, spd:2.6, dmg:10, color:0x8b5cf6},
   {name:'해골 장군', n:3, hp:90, spd:2.5, dmg:10, color:0x8b5cf6, boss:{...BOSS_BASE}}],
+ glacier:[
+  {name:'매연 해골', n:4, hp:60, spd:2.2, dmg:8, color:0xe0434a},
+  {name:'온실가스 해골 무리', n:6, hp:90, spd:2.6, dmg:10, color:0x8b5cf6},
+  {name:'온실가스 해골 대왕', n:3, hp:90, spd:2.5, dmg:10, color:0x8b5cf6, boss:{...BOSS_BASE}}],
  island_peace:[
   {name:'1단계 · 아침 배송', n:0, hp:60, spd:2, dmg:0, color:0xe0434a, parcels:3},
   {name:'2단계 · 점심 배송', n:0, hp:60, spd:2, dmg:0, color:0xe0434a, parcels:4},
@@ -146,6 +151,11 @@ const MAPS = {
   rules:['<b>택배:</b> 물류 센터(북쪽 부두)에 상자가 와요. 다가가면 집어 들고 4지선다나 O/X 문제가 나와요. 맞히면 빨리 달려요','<b>배달:</b> 주황 화살표와 빛기둥을 따라 배달지 문 앞 깔개에 서면 배달 완료. 체력도 조금 회복돼요','<b>도둑 해골:</b> 주황색 해골은 바닥의 상자를 훔쳐 바다로 달아나요. 쓰러뜨리면 상자를 되찾아요','<b>정비 시간:</b> 웨이브가 끝나면 문제 3개를 풀어요. 맞힐 때마다 강화 카드(공격력·체력·방어막 등)를 하나 골라요','<b>지식의 수정:</b> 정비가 끝나면 빛나는 수정의 퀴즈를 맞혀 다음 웨이브를 열어요','<b>돌발 퀴즈:</b> 50초마다 4지선다 문제가 나와요',BOSS_RULE,'정답은 강화, 오답은 약화 · 틀린 문제는 다시 나와요 · 체력 0이면 게임 오버'],
   gateText:'잠김 · 빛나는 지식의 수정에서 퀴즈를 맞히면 다음 웨이브가 열려요', clearText:'웨이브 클리어! 지식의 수정에서 다음 웨이브를 여세요',
   winTitle:'섬 마을 배송 완료!', winMsg:'전자 상거래와 택배 산업이 섬 마을을 세계와 이어 줬어요. 아래 틀린 문제를 한 번 더 읽어 보고 마무리해요.'},
+ glacier:{name:'녹는 빙하 맵', need:['mc','ox'], start:[0,3.5], recharge:30,
+  desc:'북극곰이 사는 빙하가 녹고 있어요. 매연 해골을 막고, 퀴즈를 맞혀 빙하를 다시 얼려 북극곰을 지키세요.',
+  rules:['<b>빙하 6개:</b> 북극곰이 사는 빙하는 시간이 지나면 조금씩 녹아요. 매연 해골이 닿으면 더 빨리 녹아요. 모두 녹으면 게임 오버','<b>다시 얼리기:</b> 퀴즈를 맞히면 모든 빙하가 조금씩 다시 얼어요. 냉각 수정에서 맞히면 가장 많이 녹은 빙하가 크게 얼어요. 틀리면 잠깐 더 빨리 녹아요','<b>정비 시간:</b> 웨이브가 끝나면 문제 3개를 풀어요. 맞힐 때마다 강화 카드를 골라요 (빙하 다시 얼리기 카드도 나와요)','<b>냉각 수정:</b> 정비가 끝나면 빛나는 수정의 퀴즈를 맞혀 다음 웨이브를 열어요','<b>돌발 퀴즈:</b> 50초마다 4지선다 문제가 나와요','<b>지식 카드:</b> 몬스터가 떨어뜨려요. 주우면 O/X 문제 · 맞히면 코인 뽑기',BOSS_RULE,'남은 빙하가 많을수록 점수를 더 받아요'],
+  gateText:'잠김 · 빛나는 냉각 수정의 퀴즈를 맞히면 다음 웨이브가 열려요', clearText:'웨이브 클리어! 냉각 수정에서 다음 웨이브를 여세요',
+  winTitle:'북극곰을 지켜 냈어요!', winMsg:'빙하가 녹지 않게 끝까지 지켜 냈어요. 아래 틀린 문제를 한 번 더 읽어 보고 마무리해요.'},
  defense:{name:'성벽 디펜스 맵', need:['mc','ox'], start:[0,-1], recharge:22,
   desc:'해골 군단이 남쪽에서 성문으로 몰려와요. 퀴즈로 성벽 포탑을 깨우고, 성문이 무너지지 않게 지키세요.',
   rules:['<b>성문:</b> 몬스터가 성문을 부숴요. 성문 체력이 0이 되면 게임 오버','<b>포탑 수정:</b> 성벽 앞 수정 3개. 맞히면 그 포탑이 20초 동안 자동으로 공격하고, 정비가 끝난 뒤에는 다음 웨이브도 열려요','<b>웨이브 3개:</b> 몬스터가 왼쪽·가운데·오른쪽 길로 여러 무리로 나눠 와요. 주황색 돌격병은 나를 무시하고 성문으로만 달려가요','<b>정비 시간:</b> 웨이브가 끝나면 문제 3개를 풀고 강화 카드를 골라요. 성문 수리·포탑 가동 카드도 나와요','<b>돌발 퀴즈:</b> 50초마다 · 맞히면 성문 수리 +10%','<b>지식 카드:</b> 몬스터가 떨어뜨려요. 주우면 O/X 문제 · 맞히면 코인 뽑기(꽝 · 조금 · 아주 가끔 대박!)',BOSS_RULE+' 내려찍기는 성문도 부숴요','성문에 붙은 몬스터는 가까이 가면 나를 쫓아와요. 끌어내서 처치하세요'],
@@ -181,6 +191,7 @@ let LEVEL='normal'; try{ const l=localStorage.getItem('gsd-level'); if (LEVELS[l
 const EXTRA_WAVE={
  zones:{name:'무역 장벽 해골 대부대', n:7, hp:95, spd:2.6, dmg:11, color:0x8b5cf6},
  general:{name:'해골 대부대', n:7, hp:95, spd:2.6, dmg:11, color:0x8b5cf6},
+ glacier:{name:'매연 해골 대부대', n:7, hp:95, spd:2.6, dmg:11, color:0x8b5cf6},
  island:{name:'해적 해골 습격', n:4, hp:90, spd:2.5, dmg:10, color:0x8b5cf6, parcels:5, thieves:[{at:4,n:2},{at:18,n:2}]},
  defense:{name:'해골 대군세', n:0, hp:90, spd:2.4, dmg:10, color:0x8b5cf6, groups:[{n:6,at:0},{n:5,at:8,runner:true},{n:6,at:16},{n:4,at:24,runner:true}]}};
 function wavesFor(key){ const base=WAVESETS[key]; const ex=EXTRA_WAVE[key]; if (!base||!ex||LEVELS[LEVEL].waves<4) return base; return base.slice(0,-1).concat([ex],base.slice(-1)); }

@@ -30,6 +30,7 @@ function updateHUD(){
   }
   $('#gateCard').hidden=!W.gate||!!W.prep;
   if (MAPK==='island' && W.isl){ const S=W.isl, show=S.quota>0; $('#parcelRow').hidden=!show; if (show){ const cp=S.carry; $('#parcelTxt').textContent=`${S.done-0} / ${S.quota}`+(S.lost?` · 잃어버림 ${S.lost}`:'')+(PEACE_RUN&&S.stars?` · ★${S.stars}`:'')+(PEACE_RUN&&cp&&cp.due?(W.t<=cp.due?` · ⏱ ${Math.ceil(cp.due-W.t)}초`:' · ⏱ 늦었어요'):''); $('#parcelBar').style.width=(S.done/S.quota*100)+'%'; } }
+  glHUD();
   if (MAPK==='defense'){ const dk=Math.max(0,W.door); $('#doorTxt').textContent=`${Math.ceil(dk)} / ${W.doorMax}`; $('#doorBar').style.width=(dk/W.doorMax*100)+'%'; }
   if (W.loc){
     const rem=W.loc.until-W.t;
@@ -53,7 +54,7 @@ function reset(){
   $('#locCard').hidden=true; $('#gateCard').hidden=true;
   TURRETS.forEach(t=>{ t.until=0; t.cd=0; }); bolts.forEach(b=>scene.remove(b.mesh)); bolts=[]; doorFlash=0;
   $('#doorRow').hidden=MAPK!=='defense';
-  $('#parcelRow').hidden=true; islReset();
+  $('#parcelRow').hidden=true; islReset(); glacierReset();
 }
 let NICK='', BAN='', CI=null;
 try{ NICK=localStorage.getItem('gsd-nick')||''; }catch(e){}
@@ -144,7 +145,7 @@ function startGame(){
   setTimeout(()=>{ W.snapCam=true; },0);
   if (PEACE_RUN) $('#hint').textContent='🕊️ 평화 모드 · WASD 이동 · Shift '+(JOB==='knight'?'막기':'구르기')+' · '+(MAPK==='island'?'상자에 다가가면 집어요 · 배달 깔개에 서면 배달':'빛나는 수정에 다가가 퀴즈를 맞혀 포탑을 깨워요');
   reset(); canvas.focus({preventScroll:true});
-  try{ applyMood(pickMood(PARTY.on?PARTY.rid:'')); }catch(e){}
+  try{ applyMood(!PARTY.on&&MAPK==='glacier'?'arctic':pickMood(PARTY.on?PARTY.rid:'')); }catch(e){}
   // 한 판 시간 제한: 선생님이 '게임 열기'에서 정한 분(퀴즈 푸는 시간 포함, 실제 시계 기준)
   { const g=!PARTY.on&&typeof activeGate==='function'?activeGate():null, lim=g&&g.lim>0?g.lim:0;
     W.lim=lim; W.limEnd=lim?performance.now()+lim*60000:0; W.limWarn=0; W.timeUp=false; $('#timeCard').hidden=!lim; $('#timeCard').classList.remove('hurry'); }

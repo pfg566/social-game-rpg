@@ -20,6 +20,7 @@ function resolve(p,r){
   }
   p.x=Math.max(-34,Math.min(34,p.x)); p.z=Math.max(-34,Math.min(34,p.z));
   if (MAPK==='island'){ const d=Math.hypot(p.x,p.z); if (d>ISL_R){ p.x*=ISL_R/d; p.z*=ISL_R/d; } }
+  if (MAPK==='glacier'){ const d=Math.hypot(p.x,p.z); if (d>GL_R){ p.x*=GL_R/d; p.z*=GL_R/d; } }
 }
 
 /* ---------- 몬스터 ---------- */
@@ -42,6 +43,7 @@ function spawnMob(def,isBoss,at){
   if (!isBoss && color===0x8b5cf6 && !def.runner && !def.ranged) c.mats.forEach(m=>{ if (m.color) m.color.multiply(new THREE.Color(0xd9c8ff)); });
   if (!isBoss && def.leaper){ c.mats.forEach(m=>{ if (m.color) m.color.multiply(new THREE.Color(0xffe27a)); }); c.root.scale.setScalar(.92); }
   if (!isBoss && def.runner){ c.mats.forEach(m=>{ if (m.color) m.color.multiply(new THREE.Color(0xffa060)); }); c.root.scale.setScalar(.88); }
+  glTintMob(c);
   const g=new THREE.Group(); g.add(c.root);
   let shieldMesh=null, slamMesh=null, eyeLight=null;
   if (isBoss){
@@ -52,12 +54,15 @@ function spawnMob(def,isBoss,at){
     eyeLight=new THREE.PointLight(0x7fd6ff,1.4,10,2); eyeLight.position.y=4.2; g.add(eyeLight);
   }
   let x,z,tries=0;
-  if (MAPK==='defense' && !at){
+  if (MAPK==='glacier' && !at){
+    do { const a=Math.random()*Math.PI*2, r=rnd(21,25.5); x=Math.cos(a)*r; z=Math.sin(a)*r; tries++; } while ((colliders.some(b=>x>b.x0-2&&x<b.x1+2&&z>b.z0-2&&z<b.z1+2)||Math.hypot(x-P.x,z-P.z)<9) && tries<40);
+  } else if (MAPK==='defense' && !at){
     do { x=rnd(-26,26); z=rnd(21,32); tries++; } while (colliders.some(b=>x>b.x0-2&&x<b.x1+2&&z>b.z0-2&&z<b.z1+2) && tries<40);
   } else do { const a=Math.random()*Math.PI*2, r=at?3+Math.random()*2:14+Math.random()*16, cx=at?at.x:P.x, cz=at?at.z:P.z; x=cx+Math.cos(a)*r; z=cz+Math.sin(a)*r; tries++; }
   while ((Math.abs(x)>32||Math.abs(z)>32||(MAPK==='island'&&Math.hypot(x,z)>ISL_R-1.5)||colliders.some(b=>x>b.x0-2&&x<b.x1+2&&z>b.z0-2&&z<b.z1+2)) && tries<60);
   x=Math.max(-32,Math.min(32,x)); z=Math.max(-32,Math.min(32,z));
   if (MAPK==='island'){ const dd=Math.hypot(x,z); if (dd>ISL_R-1.5){ x*=(ISL_R-1.5)/dd; z*=(ISL_R-1.5)/dd; } }
+  if (MAPK==='glacier'){ const dd=Math.hypot(x,z); if (dd>GL_R-1){ x*=(GL_R-1)/dd; z*=(GL_R-1)/dd; } }
   g.position.set(x,0,z); g.rotation.y=Math.atan2(P.x-x,P.z-z); scene.add(g);
   fx.burst(x,.4,z,isBoss?0x8a8f99:0xc9c2b0,isBoss?30:12,isBoss?6:3);
   const K=MODE==='hero'?{hp:HERO.hp,dmg:HERO.dmg,spd:HERO.spd}:(()=>{ const L=LEVELS[LEVEL].k||{hp:1,dmg:1,spd:1}; return {hp:DIFF*EASEF.hp*L.hp,dmg:DIFF*EASEF.dmg*L.dmg,spd:(.9+.1*DIFF)*EASEF.spd*L.spd}; })();

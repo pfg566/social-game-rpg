@@ -237,7 +237,7 @@ input.rename{border:2px solid var(--line);border-radius:6px;padding:2px 6px;widt
     </section>
     <section class="card panel" id="pBalance" hidden>
       <div class="bal-filters">
-        <label class="f"><span>맵</span><select id="bMap"><option value="">모든 맵</option><option value="zones">세 거점 맵</option><option value="general">들판 마을 맵</option><option value="defense">성벽 디펜스 맵</option><option value="island">서비스업 섬 맵</option></select></label>
+        <label class="f"><span>맵</span><select id="bMap"><option value="">모든 맵</option><option value="zones">세 거점 맵</option><option value="general">들판 마을 맵</option><option value="defense">성벽 디펜스 맵</option><option value="island">서비스업 섬 맵</option><option value="glacier">녹는 빙하 맵</option></select></label>
         <label class="f"><span>난이도</span><select id="bEase"><option value="">모두</option><option value="0">보통</option><option value="1">쉬움</option><option value="2">아주 쉬움</option><option value="-1">영웅 모드</option></select></label>
         <p class="bal-note" id="bNote"></p>
       </div>
@@ -956,7 +956,7 @@ $('#freeToggle').addEventListener('click',async()=>{
 });
 
 /* 게임 열기: 단원과 맵 고르기 */
-const MAPINFO={zones:{n:'세 거점 맵',need:['mc','ox','cls','loc']},general:{n:'들판 마을 맵',need:['mc','ox']},defense:{n:'성벽 디펜스 맵',need:['mc','ox']},island:{n:'서비스업 섬 맵',need:['mc','ox']}};
+const MAPINFO={zones:{n:'세 거점 맵',need:['mc','ox','cls','loc']},general:{n:'들판 마을 맵',need:['mc','ox']},defense:{n:'성벽 디펜스 맵',need:['mc','ox']},island:{n:'서비스업 섬 맵',need:['mc','ox']},glacier:{n:'녹는 빙하 맵',need:['mc','ox']}};
 let UNITS=[], UACTIVE='';
 const arrOf=x=>Array.isArray(x)?x.filter(Boolean):(x&&typeof x==='object'?Object.values(x):[]);
 function watchUnits(){

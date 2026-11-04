@@ -57,6 +57,8 @@ button:focus-visible{outline:3px solid var(--sun);outline-offset:2px}
 .gate{padding:8px 14px;font-family:var(--display);font-size:17px;text-align:center;background:var(--sun)}
 .door-row{display:grid;gap:4px}
 .hpbar.door{background:#efe0c4}
+.hpbar.ice{background:#dcecf5}
+.hpbar.ice i{background:linear-gradient(90deg,#3a8fd0,#8fdcff)}
 .hpbar.parcel{background:#f3e6cc}
 .hpbar.parcel i{background:linear-gradient(90deg,#c27a1a,#f0b44a)}
 .hpbar.door i{background:linear-gradient(90deg,#9a5b1e,#d9932f)}

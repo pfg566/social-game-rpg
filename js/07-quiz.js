@@ -90,6 +90,7 @@ function settle(ok,item,source){
     if (ok){ W.gate=false; W.nextWaveAt=W.t+2; extras.push(`웨이브 ${W.wave+2}가 열려요!`); }
     else extras.push(MAPK==='zones'?'다른 거점 기둥에서 다시 도전해 보세요.':'다른 수정에서 다시 도전해 보세요.');
   }
+  glQuiz(ok,source,extras);
   jobQuiz(ok,source,extras);
   return {fx,extras};
 }

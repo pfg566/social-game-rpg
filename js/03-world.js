@@ -108,7 +108,7 @@ function ensureMap(k){
   if (!WORLD_READY || MAP_BUILT[k] || !MAP_BUILD[k]) return;
   MAP_BUILT[k]=true;
   within(k,MAP_BUILD[k]);
-  within(k,()=>buildGrass(60000,GRASS_OK[k]));
+  if (GRASS_OK[k]) within(k,()=>buildGrass(60000,GRASS_OK[k]));
   applyQuality(QCUR);
 }
 function buildWorld(){

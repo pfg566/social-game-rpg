@@ -14,6 +14,7 @@ const UPCARDS=[
  {k:'shield',icon:'🛡️', name:'방어막 +40',     desc:'다음에 받는 피해 40을 막아 줘요', go(){ W.qshield=Math.min(100,(W.qshield||0)+40); }},
  {k:'ult',   icon:'✨', name:'필살기 한 칸',   desc:'필살기 게이지를 한 칸 채워요', ok:()=>(W.ult||0)<ULT_NEED, go(){ W.ult=Math.min(ULT_NEED,(W.ult||0)+1); }},
  {k:'turret',icon:'🏹', name:'포탑 모두 가동', desc:'다음 웨이브가 시작되면 포탑 3개가 25초 동안 자동으로 쏴요', map:'defense', ok:()=>!W.up.turret, go(){ W.up.turret=25; }},
+ {k:'ice',   icon:'🧊', name:'빙하 다시 얼리기 +30%', desc:'녹고 있는 빙하가 모두 다시 얼어요', map:'glacier', ok:()=>!!W.gl&&glAlive().some(b=>b.ice<95), go(){ glFreeze(30,false); }},
  {k:'door',  icon:'🏰', name:'성문 수리 +30%', desc:'부서진 성문을 고쳐요', map:'defense', ok:()=>W.door<W.doorMax*.9, go(){ W.door=Math.min(W.doorMax,W.door+Math.round(W.doorMax*.3)); }},
 ];
 let PREP_CARDS=[];

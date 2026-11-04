@@ -55,6 +55,7 @@ function frame(now){
       const pdx=P.x-m.x, pdz=P.z-m.z, pd=Math.hypot(pdx,pdz)||1;
       let dx=pdx, dz=pdz, d=pd, atDoor=false;
       if (MAPK==='defense' && (m.runner || PEACE_RUN || pd>(m.boss?9:7))){ dx=DOOR.x-m.x; dz=DOOR.z-m.z; d=Math.hypot(dx,dz)||1; atDoor=d<m.r+2.6; }
+      else if (MAPK==='glacier' && !PEACE_RUN){ const b=glTarget(m); if (b && (m.runner || pd>(m.boss?9:7))){ dx=b.x-m.x; dz=b.z-m.z; d=Math.hypot(dx,dz)||1; atDoor=d<b.r+m.r+.5; m.glB=b; } else m.glB=null; }
       m.atDoor=atDoor;
       if (m.boss){
         const B=m.def.boss;
@@ -65,6 +66,7 @@ function frame(now){
           if (m.slamT<=0){
             fx.shock(m.slamX,m.slamZ,B.slamR); fx.burst(m.slamX,.3,m.slamZ,0x9aa3b5,26,7); shake=.45; m.recover=.35;
             if (Math.hypot(P.x-m.slamX,P.z-m.slamZ)<B.slamR){ if (W.t>W.invuln){ const sd=Math.round(B.slamDmg*(MODE==='hero'?HERO.dmg:DIFF*EASEF.dmg)); hurtPlayer(sd,{x:m.slamX,z:m.slamZ}); } flashPrompt(`내려찍기에 맞았어요! 체력 -${B.slamDmg}`,1.5); }
+            glBossSlam(m.slamX,m.slamZ,B.slamR);
             if (MAPK==='defense' && Math.hypot(DOOR.x-m.slamX,DOOR.z-m.slamZ)<B.slamR+1){ const dd=B.slamDmg*2; W.door-=dd; doorFlash=.35; fx.num(DOOR.x,5.6,DOOR.z+.6,'-'+dd,'#ffb36b'); flashPrompt(`내려찍기가 성문을 부쉈어요! 성문 -${dd}`,1.8); }
             m.slamCd=B.slamEvery;
           }
@@ -83,7 +85,8 @@ function frame(now){
       m.g.rotation.y=Math.atan2(dx,dz);
       m.atkCd=Math.max(0,m.atkCd-dt);
       if (!PEACE_RUN && pd<m.r+.75 && m.atkCd<=0 && W.t>W.invuln){ if (m.anim) m.anim.once('attack',1.6); hurtPlayer(m.dmg,{x:m.x,z:m.z,mob:m}); m.atkCd=1; }
-      if (atDoor){ m.doorCd=(m.doorCd||0)-dt;
+      if (atDoor && MAPK==='glacier') glMobHit(m,dt);
+      else if (atDoor){ m.doorCd=(m.doorCd||0)-dt;
         const dh=Math.round(m.dmg*DOOR_HIT);
         if (m.doorCd<=0){ m.doorCd=1.2; W.door-=dh; doorFlash=.2; SFX.door(); if (m.anim) m.anim.once('attack',1.6,true);
           fx.burst(m.x+(DOOR.x-m.x)*.6,1.6,DOOR.z+.2,0xc9a06a,6,3); fx.num(m.x+(DOOR.x-m.x)*.6,4.4,DOOR.z+.5,'-'+dh,'#ffb36b');
@@ -93,7 +96,7 @@ function frame(now){
     }
     mobs=mobs.filter(m=>{ if (m.dying===0){ removeMob(m); return false; } return true; });
     if (MAPK==='defense'){ updateTurrets(dt); updateBolts(dt); }
-    islandTick(dt);
+    islandTick(dt); glacierTick(dt);
 
     // 웨이브 진행 · 잠금
     if (W.nextWaveAt>=0 && W.t>=W.nextWaveAt) startWave(W.wave+1);
@@ -124,7 +127,8 @@ function frame(now){
       }
       let near=null;
       if (!W.loc && !W.paused) for (const s of stations){ if (W.t>=s.readyAt && stationOn(s) && Math.hypot(P.x-s.g.position.x,P.z-s.g.position.z)<2.3) near=s; }
-      if (P.hp<=0 || (MAPK==='defense' && W.door<=0)){ if (P.hp<0) P.hp=0; if (W.door<0) W.door=0; if (!tryRevive()) endGame(false); }
+      if (glacierLost()){ if (P.hp<0) P.hp=0; endGame(false); }
+      else if (P.hp<=0 || (MAPK==='defense' && W.door<=0)){ if (P.hp<0) P.hp=0; if (W.door<0) W.door=0; if (!tryRevive()) endGame(false); }
       else if (W.paused){ /* 위치 퀴즈 결과 표시 중 */ }
       else if (pickedCard){
         SFX.card(); scene.remove(pickedCard.m); fx.burst(pickedCard.x,1.2,pickedCard.z,0xffc531,14,4); cards=cards.filter(c=>c!==pickedCard);
