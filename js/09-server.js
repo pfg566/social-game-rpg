@@ -254,7 +254,14 @@ async function savePw(){
   try{
     await withTimeout(ref.set(PENDING_PW),8000);
     try{ await withTimeout(u.updatePassword(a),10000); }
-    catch(e){ try{ await ref.remove(); }catch(_){} throw e; }
+    catch(e){
+      // 오래전에 로그인한 상태면 코드로 한 번 더 확인한 뒤 바꿔요
+      let ok=false;
+      if (/requires-recent-login/.test(String(e&&(e.code||e.message)))){
+        try{ const cr=await fbAuth.signInWithEmailAndPassword(u.email,pwOf(PENDING_PW)); const nu=(cr&&cr.user)||fbAuth.currentUser; await withTimeout(nu.updatePassword(a),10000); ok=true; }catch(_){}
+      }
+      if (!ok){ try{ await ref.remove(); }catch(_){} throw e; }
+    }
     PENDING_PW=''; $('#pw1').value=''; $('#pw2').value='';
     AUTHMODE='student'; showAuthUI(); flashLoginNote('비밀번호를 만들었어요! 다음부터는 학급·번호·비밀번호로 들어와요.');
   }catch(e){ const k=e&&(e.code||e.message);
@@ -290,10 +297,13 @@ async function saveName(){
 }
 async function enterStudentFromSession(u){
   if (STUDENT||AUTHMODE==='student') return;
-  const m=u.email.match(/^([a-z0-9]{4,10})-(\d+)-[a-z0-9]{6}@/); if (!m) return;
+  const m=u.email.match(/^([a-z0-9]{4,10})-(\d+)-([a-z0-9]{6})@/); if (!m) return;
   STUDENT={cid:m[1],num:m[2]};
   try{ const val=(await withTimeout(profRef().once('value'),10000)).val();
-    if (!val){ AUTHMODE='name'; } else { PROFILE=val; AUTHMODE='student'; loadWardrobe(); }
+    // 예전부터 로그인돼 있던 학생: 아직 비밀번호가 없으면 여기서 만들게 해요
+    let hasPw=true; try{ hasPw=!!(await withTimeout(fbDb.ref(`loginIdx/${m[1]}/${m[2]}`).once('value'),6000)).val(); }catch(_){}
+    if (!hasPw) PENDING_PW=m[3];
+    if (!val){ AUTHMODE='name'; } else { PROFILE=val; AUTHMODE=hasPw?'student':'setpw'; loadWardrobe(); }
     showAuthUI();
   }catch(e){ STUDENT=null; try{ await fbAuth.signOut(); }catch(_){} }
 }
