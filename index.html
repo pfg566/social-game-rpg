@@ -7,7 +7,7 @@
 <style>body{margin:0}[hidden]{display:none!important}img{max-width:100%}</style>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jua&family=IBM+Plex+Sans+KR:wght@400;600;700&display=swap">
-<link rel="stylesheet" href="style.css?v=20261105c">
+<link rel="stylesheet" href="style.css?v=20261106a">
 </head>
 <body>
 
@@ -49,6 +49,14 @@
     <p class="bd-note">같은 반 · 이번 게임 시간에 참여한 친구들만 보여요. 점수는 가장 잘한 판 기준이에요.</p>
   </div>
 </div>
+<div class="run-hud card" id="runHud" hidden><span id="runHearts">❤️❤️❤️</span><b id="runProg">문제 1/12</b><span id="runCombo"></span><span id="runCoins">🪙 0</span></div>
+<div class="run-q card" id="runQ" hidden><div class="run-qtext" id="runQText"></div><div class="run-opts" id="runOpts"></div><div class="run-bar"><i id="runBar"></i></div></div>
+<div class="run-res card" id="runRes" hidden></div>
+<div class="run-help card" id="runHelp" hidden>← → (A D) 줄 바꾸기 · 스페이스 점프 · 정답 색깔 문이 있는 줄로 통과!</div>
+<div class="run-hud card" id="stHud" hidden><span id="stLives">❤️❤️❤️</span><b id="stProg"></b><span id="stScore">0점</span></div>
+<div class="run-q card" id="stQ" hidden><div class="run-qtext" id="stQText"></div><div class="run-opts" id="stOpts"></div><div class="run-bar"><i id="stBar"></i></div><div class="st-lock"><span id="stLock"></span><b id="stTime"></b></div></div>
+<div class="run-res card" id="stMsg" hidden></div>
+<div class="st-rank card" id="stRank" hidden><h2>🏆 발판 서바이벌 순위</h2><ol id="stRankList"></ol><p id="stRankMe"></p><button class="btn" id="stRankGo">내 결과 보기</button></div>
 <div class="timetop" id="timeCard" hidden><small>남은 시간</small><b id="timeTxt">5:00</b></div>
 
 <div class="stack" id="stack">
@@ -198,6 +206,7 @@
     <p class="bankinfo lobby" id="bankInfo"></p>
     <div class="title-actions lobby">
       <button class="btn" id="startBtn">게임 시작</button>
+      <button class="btn stagebtn" id="stageBtn" hidden>🟦 발판 서바이벌 · 입장하기</button>
       <button class="btn ghost partybtn" id="partyBtn">👥 파티 모드 · 점령전 (최대 5명)</button>
       <p class="gatenote" id="gateNote" hidden></p>
     </div>
@@ -337,7 +346,7 @@
         <button class="btn small ghost" id="edUnitRename">이름 바꾸기</button>
         <button class="btn small ghost" id="edUnitActive">수업 단원으로 지정</button>
       </div>
-      <label class="fld"><span>맵</span><select id="edMap"><option value="zones">세 거점 맵 · 거점 이름을 단원에 맞게 바꿔요 (4가지 유형 모두 필요)</option><option value="general">들판 마을 맵 · 어느 단원이든 (4지선다 + O/X만 있으면 돼요)</option><option value="defense">성벽 디펜스 맵 · 어느 단원이든 (4지선다 + O/X만 있으면 돼요)</option><option value="island">서비스업 섬 맵 · 택배를 배달하며 싸워요 (4지선다 + O/X만 있으면 돼요)</option><option value="glacier">녹는 빙하 맵 · 북극곰의 빙하를 지켜요 (4지선다 + O/X만 있으면 돼요)</option></select></label>
+      <label class="fld"><span>맵</span><select id="edMap"><option value="zones">세 거점 맵 · 거점 이름을 단원에 맞게 바꿔요 (4가지 유형 모두 필요)</option><option value="general">들판 마을 맵 · 어느 단원이든 (4지선다 + O/X만 있으면 돼요)</option><option value="defense">성벽 디펜스 맵 · 어느 단원이든 (4지선다 + O/X만 있으면 돼요)</option><option value="island">서비스업 섬 맵 · 택배를 배달하며 싸워요 (4지선다 + O/X만 있으면 돼요)</option><option value="glacier">녹는 빙하 맵 · 북극곰의 빙하를 지켜요 (4지선다 + O/X만 있으면 돼요)</option><option value="runner">정답 러너 · 달리면서 정답 문으로 통과해요 (4지선다 + O/X만 있으면 돼요)</option></select></label>
       <div class="zcfgbox" id="edZcfg" hidden>
         <div class="zc-head"><b>세 거점 이름</b><span>빠른 설정:</span><span id="edZPresets"></span></div>
         <div class="zc-grid">
@@ -407,25 +416,27 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="firebase-config.js"></script>
-<script src="js/01-data.js?v=20261105c"></script>
-<script src="js/02-graphics.js?v=20261105c"></script>
-<script src="js/02m-mood.js?v=20261105c"></script>
-<script src="js/03-world.js?v=20261105c"></script>
-<script src="js/04-island.js?v=20261105c"></script>
-<script src="js/04g-glacier.js?v=20261105c"></script>
-<script src="js/05-play.js?v=20261105c"></script>
-<script src="js/06-jobs.js?v=20261105c"></script>
-<script src="js/06p-player.js?v=20261105c"></script>
-<script src="js/07-quiz.js?v=20261105c"></script>
-<script src="js/07b-prep.js?v=20261105c"></script>
-<script src="js/08-hud.js?v=20261105c"></script>
-<script src="js/09-server.js?v=20261105c"></script>
-<script src="js/10-shop.js?v=20261105c"></script>
-<script src="js/11-gate-editor.js?v=20261105c"></script>
-<script src="js/12-lobby.js?v=20261105c"></script>
-<script src="js/13-loop.js?v=20261105c"></script>
-<script src="js/14-party.js?v=20261105c"></script>
-<script src="js/15-board.js?v=20261105c"></script>
-<script src="js/16-notes.js?v=20261105c"></script>
+<script src="js/01-data.js?v=20261106a"></script>
+<script src="js/02-graphics.js?v=20261106a"></script>
+<script src="js/02m-mood.js?v=20261106a"></script>
+<script src="js/03-world.js?v=20261106a"></script>
+<script src="js/04-island.js?v=20261106a"></script>
+<script src="js/04g-glacier.js?v=20261106a"></script>
+<script src="js/04r-runner.js?v=20261106a"></script>
+<script src="js/04s-stage.js?v=20261106a"></script>
+<script src="js/05-play.js?v=20261106a"></script>
+<script src="js/06-jobs.js?v=20261106a"></script>
+<script src="js/06p-player.js?v=20261106a"></script>
+<script src="js/07-quiz.js?v=20261106a"></script>
+<script src="js/07b-prep.js?v=20261106a"></script>
+<script src="js/08-hud.js?v=20261106a"></script>
+<script src="js/09-server.js?v=20261106a"></script>
+<script src="js/10-shop.js?v=20261106a"></script>
+<script src="js/11-gate-editor.js?v=20261106a"></script>
+<script src="js/12-lobby.js?v=20261106a"></script>
+<script src="js/13-loop.js?v=20261106a"></script>
+<script src="js/14-party.js?v=20261106a"></script>
+<script src="js/15-board.js?v=20261106a"></script>
+<script src="js/16-notes.js?v=20261106a"></script>
 </body>
 </html>

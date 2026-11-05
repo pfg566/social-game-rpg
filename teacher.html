@@ -213,6 +213,7 @@ input.rename{border:2px solid var(--line);border-radius:6px;padding:2px 6px;widt
     <div class="tabs" role="tablist" id="tabs">
       <button class="tab" role="tab" data-tab="students" aria-selected="true">학생별</button>
       <button class="tab" role="tab" data-tab="awards" aria-selected="false">🏆 시상식</button>
+      <button class="tab" role="tab" data-tab="stage" aria-selected="false">🟦 발판 서바이벌</button>
       <button class="tab" role="tab" data-tab="records" aria-selected="false">전체 기록</button>
       <button class="tab" role="tab" data-tab="missed" aria-selected="false">많이 틀린 문제</button>
       <button class="tab" role="tab" data-tab="balance" aria-selected="false">난이도 분석</button>
@@ -221,6 +222,18 @@ input.rename{border:2px solid var(--line);border-radius:6px;padding:2px 6px;widt
       <button class="tab" role="tab" data-tab="manage" aria-selected="false">관리</button>
     </div>
 
+    <section class="card panel" id="pStage" hidden>
+      <div class="aw-bar">
+        <label class="f"><span>학급</span><select id="stCls"></select></label>
+        <label class="f"><span>단원</span><select id="stUnit"></select></label>
+        <label class="f"><span>문제 수</span><select id="stN"><option value="8">8문제</option><option value="10" selected>10문제</option><option value="12">12문제</option><option value="15">15문제</option></select></label>
+        <label class="f"><span>문제 시간</span><select id="stSpd"><option value="slow">여유 (4지선다 20초 · O/X 14초)</option><option value="mid" selected>보통 (4지선다 15초 · O/X 10초)</option><option value="fast">빠르게 (4지선다 12초 · O/X 8초)</option></select></label>
+      </div>
+      <div class="aw-bar"><button class="btn" id="stOpen">① 입장 열기</button><button class="btn primary" id="stGo">② 시작</button><button class="btn" id="stStop">끝내기</button></div>
+      <p class="aw-help">① 입장 열기를 누르면 그 반 학생들의 게임 화면에 '🟦 발판 서바이벌 입장' 버튼이 생겨요. 학생들이 들어오면 ② 시작을 눌러요(늦게 들어온 학생도 중간부터 함께해요). 발판 배치는 학생마다 달라서 친구를 따라가도 소용없고, 정답 발판에 빨리 서서 답을 잠글수록 점수를 더 받아요. 목숨 3개, 다 잃어도 정답을 맞히면 부활해요. 게임 열기·판 수 제한과 상관없이 열려요.</p>
+      <div id="stStatus" class="miss-scope">학급을 고르세요.</div>
+      <div class="tablewrap"><table id="stTbl"></table></div>
+    </section>
     <section class="card panel" id="pAwards" hidden>
       <div class="aw-bar">
         <label class="f"><span>학급</span><select id="awCls"></select></label>
@@ -240,7 +253,7 @@ input.rename{border:2px solid var(--line);border-radius:6px;padding:2px 6px;widt
     </section>
     <section class="card panel" id="pBalance" hidden>
       <div class="bal-filters">
-        <label class="f"><span>맵</span><select id="bMap"><option value="">모든 맵</option><option value="zones">세 거점 맵</option><option value="general">들판 마을 맵</option><option value="defense">성벽 디펜스 맵</option><option value="island">서비스업 섬 맵</option><option value="glacier">녹는 빙하 맵</option></select></label>
+        <label class="f"><span>맵</span><select id="bMap"><option value="">모든 맵</option><option value="zones">세 거점 맵</option><option value="general">들판 마을 맵</option><option value="defense">성벽 디펜스 맵</option><option value="island">서비스업 섬 맵</option><option value="glacier">녹는 빙하 맵</option><option value="runner">정답 러너</option></select></label>
         <label class="f"><span>난이도</span><select id="bEase"><option value="">모두</option><option value="0">보통</option><option value="1">쉬움</option><option value="2">아주 쉬움</option><option value="-1">영웅 모드</option></select></label>
         <p class="bal-note" id="bNote"></p>
       </div>
@@ -537,6 +550,7 @@ $('#tabs').addEventListener('click',e=>{ const b=e.target.closest('[data-tab]');
   $('#pClasses').hidden=tab!=='classes';
   $('#pRoster').hidden=tab!=='roster'; if (tab==='roster'&&!RS.cls&&$('#rsCls').options.length>1){ $('#rsCls').selectedIndex=1; rsWatch(); }
   $('#pAwards').hidden=tab!=='awards'; if (tab==='awards') awInit();
+  $('#pStage').hidden=tab!=='stage'; if (tab==='stage') stInit();
   $('#pStudents').hidden=tab!=='students'; $('#pRecords').hidden=tab!=='records'; $('#pMissed').hidden=tab!=='missed'; $('#pManage').hidden=tab!=='manage'; $('#pBalance').hidden=tab!=='balance'; });
 
 
@@ -963,12 +977,80 @@ $('#freeToggle').addEventListener('click',async()=>{
   finally{ $('#freeToggle').disabled=false; }
 });
 
+/* ---------- 🟦 발판 서바이벌 (반 전체) ---------- */
+let BANKRAW=null;
+const ST={inited:false,cls:'',meta:null,p:{},refs:[],timer:0};
+const ST_SPD={slow:{dm:20,dx:14},mid:{dm:15,dx:10},fast:{dm:12,dx:8}}, ST_RV=6, ST_INTRO=8;
+function stInit(){
+  const el=$('#stCls'), cur=el.value||ST.cls;
+  el.innerHTML='<option value="">학급 선택</option>'+sortedSchools().map(sid=>{ const ks=sortedClasses(sid).filter(k=>!CLS[k].hidden); if (!ks.length) return '';
+    return `<optgroup label="${esc(SCH[sid].name)}">`+ks.map(k=>`<option value="${k}">${CLS[k].grade}학년 ${CLS[k].cls}반</option>`).join('')+'</optgroup>'; }).join('');
+  if (cur && [...el.options].some(o=>o.value===cur)) el.value=cur;
+  const us=$('#stUnit'), uc=us.value||UACTIVE;
+  us.innerHTML=UNITS.filter(u=>u.cnt.mc+u.cnt.ox>0).map(u=>`<option value="${esc(u.id)}">${esc(u.name)} (4지선다 ${u.cnt.mc} · O/X ${u.cnt.ox})</option>`).join('');
+  if (uc && [...us.options].some(o=>o.value===uc)) us.value=uc;
+  if (!ST.inited){ ST.inited=true; el.addEventListener('change',stWatch);
+    $('#stOpen').addEventListener('click',stOpenRoom); $('#stGo').addEventListener('click',stStart); $('#stStop').addEventListener('click',stStop);
+    ST.timer=setInterval(stRender,1000); }
+  stWatch();
+}
+function stWatch(){
+  ST.refs.forEach(r=>r.off()); ST.refs=[]; ST.cls=$('#stCls').value; ST.meta=null; ST.p={}; stRender();
+  if (!ST.cls) return;
+  const m=db.ref(`stage/${ST.cls}/meta`); m.on('value',s=>{ ST.meta=s.val(); if (ST.meta&&ST.meta.t0&&ST.meta.t0!==ST.qsKey){ ST.qsKey=ST.meta.t0; db.ref(`stage/${ST.cls}/qs`).once('value').then(q=>{ ST.qsCache=arrOf(q.val()); }); } stRender(); }); ST.refs.push(m);
+  const p=db.ref(`stage/${ST.cls}/p`); p.on('value',s=>{ ST.p=s.val()||{}; stRender(); }); ST.refs.push(p);
+}
+function stMsg(t,ok){ const e=$('#stStatus'); e.className='miss-scope'+(ok===false?' warn':''); e.innerHTML=t; }
+async function stOpenRoom(){
+  if (!ST.cls){ stMsg('학급을 먼저 골라 주세요.',false); return; }
+  try{ await db.ref(`stage/${ST.cls}`).set({meta:{state:'wait',at:firebase.database.ServerValue.TIMESTAMP}}); }
+  catch(e){ stMsg('열지 못했어요. 새 보안 규칙(database.rules.json)을 올렸는지 확인해 주세요.',false); }
+}
+function stPickQs(uid,n){
+  const units=BANKRAW&&BANKRAW.units?arrOf(BANKRAW.units):[], u=units.find(x=>x&&x.id===uid); if (!u) return [];
+  const b=u.bank||{}, sh=a=>a.map(x=>[Math.random(),x]).sort((p,q)=>p[0]-q[0]).map(p=>p[1]);
+  const mc=sh(arrOf(b.mc).filter(x=>x&&x.q&&arrOf(x.o).length>=4).map(x=>({k:'mc',q:String(x.q),o:arrOf(x.o).slice(0,4).map(String),e:String(x.e||'')})));
+  const ox=sh(arrOf(b.ox).filter(x=>x&&x.q).map(x=>({k:'ox',q:String(x.q),a:!!x.a,e:String(x.e||'')})));
+  const out=[];
+  for (let i=0;i<n;i++){ const wantMc=(i%5)!==1&&(i%5)!==3; const src=wantMc&&mc.length?mc:ox.length?ox:mc; if (!src.length) break; out.push(src.shift()); }
+  return out;
+}
+async function stStart(){
+  if (!ST.cls){ stMsg('학급을 먼저 골라 주세요.',false); return; }
+  const n=+$('#stN').value||10, sp=ST_SPD[$('#stSpd').value]||ST_SPD.mid, uid=$('#stUnit').value;
+  const qs=stPickQs(uid,n); if (!qs.length){ stMsg('이 단원에는 4지선다나 O/X 문제가 없어요.',false); return; }
+  const un=(UNITS.find(u=>u.id===uid)||{}).name||'';
+  try{ await db.ref(`stage/${ST.cls}`).update({qs,ans:null,meta:{state:'run',t0:firebase.database.ServerValue.TIMESTAMP,n:qs.length,dm:sp.dm,dx:sp.dx,rv:ST_RV,unit:un}}); }
+  catch(e){ stMsg('시작하지 못했어요. 새 보안 규칙(database.rules.json)을 올렸는지 확인해 주세요.',false); }
+}
+async function stStop(){ if (!ST.cls) return; try{ await db.ref(`stage/${ST.cls}/meta/state`).set('end'); }catch(e){} }
+function stRender(){
+  if ($('#pStage').hidden) return;
+  const m=ST.meta, ps=Object.entries(ST.p||{}).map(([u,p])=>({u,...p})).sort((a,b)=>(b.s|0)-(a.s|0)||(b.l|0)-(a.l|0));
+  if (!ST.cls) stMsg('학급을 고르세요.');
+  else if (!m) stMsg('아직 열지 않았어요. ① 입장 열기를 눌러 주세요.');
+  else if (m.state==='wait') stMsg(`<b>입장 중</b> · 지금 ${ps.length}명 들어왔어요. 모두 들어오면 ② 시작을 눌러요.`,true);
+  else if (m.state==='end') stMsg('<b>끝났어요.</b> 학생 화면에 순위가 떠요. 다시 하려면 ① 입장 열기부터 눌러요.');
+  else if (m.state==='run'){
+    let t=(pNow()-(m.t0||pNow()))/1000, txt='';
+    if (t<ST_INTRO) txt=`곧 시작해요 (${Math.ceil(ST_INTRO-t)}초)`;
+    else { t-=ST_INTRO; txt=`모든 문제가 끝났어요. 학생 화면에 순위가 떠요. (참여 ${ps.length}명)`; const qs=ST.qsCache||[];
+      for (let i=0;i<Math.min(m.n|0,qs.length);i++){ const d=qs[i].k==='mc'?m.dm:m.dx;
+        if (t<d){ txt=`문제 ${i+1}/${m.n} 푸는 중 · ${Math.ceil(d-t)}초 남음 · 참여 ${ps.length}명<br>${esc(qs[i].q)}`; break; }
+        if (t<d+m.rv){ txt=`문제 ${i+1}/${m.n} 정답 발표 중 · 참여 ${ps.length}명`; break; } t-=d+m.rv; } }
+    stMsg(`<b>${esc(m.unit||'')}</b> · ${txt}`,true);
+  }
+  $('#stTbl').innerHTML=ps.length?'<thead><tr><th>순위</th><th>이름</th><th>목숨</th><th>점수</th><th>정답</th></tr></thead><tbody>'+
+    ps.map((p,i)=>`<tr><td>${i+1}</td><td>${esc(String(p.num?p.num+'번 ':'')+(p.n||''))}</td><td>${(p.l|0)>0?'❤️'.repeat(p.l|0):'👻'}</td><td>${p.s|0}</td><td>${p.c|0}</td></tr>`).join('')+'</tbody>'
+    :'<tbody><tr><td class="empty">아직 들어온 학생이 없어요.</td></tr></tbody>';
+}
+
 /* 게임 열기: 단원과 맵 고르기 */
-const MAPINFO={zones:{n:'세 거점 맵',need:['mc','ox','cls','loc']},general:{n:'들판 마을 맵',need:['mc','ox']},defense:{n:'성벽 디펜스 맵',need:['mc','ox']},island:{n:'서비스업 섬 맵',need:['mc','ox']},glacier:{n:'녹는 빙하 맵',need:['mc','ox']}};
+const MAPINFO={zones:{n:'세 거점 맵',need:['mc','ox','cls','loc']},general:{n:'들판 마을 맵',need:['mc','ox']},defense:{n:'성벽 디펜스 맵',need:['mc','ox']},island:{n:'서비스업 섬 맵',need:['mc','ox']},glacier:{n:'녹는 빙하 맵',need:['mc','ox']},runner:{n:'정답 러너',need:['mc','ox']}};
 let UNITS=[], UACTIVE='';
 const arrOf=x=>Array.isArray(x)?x.filter(Boolean):(x&&typeof x==='object'?Object.values(x):[]);
 function watchUnits(){
-  db.ref('bank').on('value',snap=>{ const v=snap.val(); try{ buildQLook(v); }catch(e){}
+  db.ref('bank').on('value',snap=>{ const v=snap.val(); BANKRAW=v; try{ buildQLook(v); }catch(e){}
     if (v && v.units){ UNITS=arrOf(v.units).filter(u=>u&&u.id).map(u=>{ const b=u.bank||{}; return {id:u.id,name:String(u.name||'이름 없는 단원'),map:MAPINFO[u.map]?u.map:'zones',cnt:{mc:arrOf(b.mc).length,ox:arrOf(b.ox).length,cls:arrOf(b.cls).length,loc:arrOf(b.loc).length}}; }); UACTIVE=v.active||''; }
     else if (v && v.mc){ UNITS=[{id:'u1',name:'기본 단원',map:'zones',cnt:{mc:arrOf(v.mc).length,ox:arrOf(v.ox).length,cls:arrOf(v.cls).length,loc:arrOf(v.loc).length}}]; UACTIVE='u1'; }
     else { UNITS=[]; }

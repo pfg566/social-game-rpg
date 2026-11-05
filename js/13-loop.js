@@ -16,6 +16,8 @@ function frame(now){
     if (rem<=0) answer(-1);
   }
 
+  if (MAPK==='runner' && W.state==='play' && !PARTY.on){ runnerFrame(dt,real,now); return; }
+  if (MAPK==='stage' && W.state==='play' && !PARTY.on){ stageFrame(dt,real,now); return; }
   if (PARTY.on && W.state==='play' && W.paused){ W.t+=dt; W.effects=W.effects.filter(e=>e.until>W.t); partyTick(dt); }
   if (W.state==='play' && !W.paused){
     W.t+=dt;

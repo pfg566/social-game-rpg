@@ -191,7 +191,7 @@ const ground=new THREE.Mesh(new THREE.PlaneGeometry(220,220),toonMat({map:grassT
 ground.rotation.x=-Math.PI/2; ground.receiveShadow=true; scene.add(ground);
 
 /* 맵마다 장면 묶음 · 충돌 상자 · 기둥 · 사람을 따로 두고, 고른 맵만 보여 줘요 */
-const MAP_KEYS=['zones','general','defense','island','glacier'];
+const MAP_KEYS=['zones','general','defense','island','glacier','runner','stage'];
 const MAPSTATE={}, mapGroups={};
 MAP_KEYS.forEach(k=>{ MAPSTATE[k]={colliders:[],stations:[],npcs:[]}; mapGroups[k]=new THREE.Group(); scene.add(mapGroups[k]); });
 let MAPK='zones';

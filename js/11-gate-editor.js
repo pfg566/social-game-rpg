@@ -75,13 +75,15 @@ function renderHistory(){
 renderHistory();
 function endGame(win){
   $('#rewardBox').hidden=true;
+  if (MAPK==='runner') runEndUI();
+  if (MAPK==='stage') stgEndUI();
   W.state='end'; W.paused=true; W.loc=null; W.prep=null; $('#timeCard').hidden=true; $('#prep').hidden=true; $('#locIntro').hidden=true; $('#reviveIntro').hidden=true;
   $('#locCard').hidden=true; $('#gateCard').hidden=true; $('#bossbar').hidden=true; $('#prompt').hidden=true;
   const tu=!win&&!!W.timeUp, wc=tu?Math.max(0,W.wave+(W.gate||W.prep?1:0)):0;
   $('#endEyebrow').textContent=win?'승리':tu?'시간 종료':'게임 오버';
   W.won=!!win;
-  $('#endTitle').textContent=win?(PEACE_RUN?PEACE_TXT[MAPK].winTitle:MAPS[MAPK].winTitle):tu?'시간이 다 됐어요!':(MAPK==='defense'&&W.door<=0?'성문이 무너졌어요':MAPK==='glacier'&&W.gl&&!glAlive().length?'빙하가 모두 녹았어요':'체력이 모두 닳았어요');
-  $('#endMsg').textContent=win?(PEACE_RUN?PEACE_TXT[MAPK].winMsg:MAPS[MAPK].winMsg):tu?`${WAVES.length}웨이브 중 ${wc}웨이브를 깼어요. 깬 웨이브마다 100점을 더 받아요. 아래 틀린 문제를 복습해 보세요.`:'퀴즈를 맞히면 회복하거나 더 강해질 수 있어요. 아래 틀린 문제를 복습하고 다시 도전해 보세요.';
+  $('#endTitle').textContent=win?(PEACE_RUN?PEACE_TXT[MAPK].winTitle:MAPS[MAPK].winTitle):tu?'시간이 다 됐어요!':(MAPK==='defense'&&W.door<=0?'성문이 무너졌어요':MAPK==='glacier'&&W.gl&&!glAlive().length?'빙하가 모두 녹았어요':MAPK==='runner'?'하트를 모두 잃었어요':MAPK==='stage'?'목숨을 모두 잃었어요':'체력이 모두 닳았어요');
+  $('#endMsg').textContent=win?(PEACE_RUN?PEACE_TXT[MAPK].winMsg:MAPS[MAPK].winMsg):tu?(MAPK==='runner'?`${RUN.n}문제 중 ${RUN.done}문제를 지나왔어요. 아래 틀린 문제를 복습해 보세요.`:`${WAVES.length}웨이브 중 ${wc}웨이브를 깼어요. 깬 웨이브마다 100점을 더 받아요. 아래 틀린 문제를 복습해 보세요.`):MAPK==='runner'?'틀린 문제를 다시 읽어 보고 한 번 더 달려 봐요.':MAPK==='stage'?'틀린 문제를 다시 읽어 보고 다음 판에 도전해요.':'퀴즈를 맞히면 회복하거나 더 강해질 수 있어요. 아래 틀린 문제를 복습하고 다시 도전해 보세요.';
   $('#sKills').textContent=W.kills; $('#sCorrect').textContent=`${W.correct}/${W.asked}`;
   const s=Math.floor(W.t); $('#sTime').textContent=`${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;
   const rv=$('#review');
@@ -93,13 +95,13 @@ function endGame(win){
   }
   const unit=DATA.units.find(u=>u.id===playUnit);
   const fixedN=W.wrong.filter(w=>w.fixed).length;
-  const gls=glScore();
+  const gls=glScore(), rnb=MAPK==='runner'?{pts:RUN.coinsN*2+RUN.maxCombo*20,c:RUN.coinsN,m:RUN.maxCombo}:null;
   const dlv=MAPK==='island'&&W.isl?W.isl.delivered:0, stars=PEACE_RUN&&W.isl?(W.isl.stars|0):0;
   // 점수는 퀴즈 중심: 정답 · 빠른 정답 · 정답률 보너스가 대부분이고, 몬스터 처치는 조금만
   const spd=Math.round(W.speedPts||0), accK=accBonusK(W.correct,W.asked), quizPts=W.correct*100+fixedN*50+spd, accPts=Math.round(quizPts*accK);
   const rateP=W.asked?Math.round(W.correct/W.asked*100):0;
-  const score=Math.round((quizPts+accPts+W.kills*2+dlv*30+stars*30+gls.pts+(win?300:0)+wc*50+(PARTY.on?PARTY.bonus:0))*(MODE==='hero'?HERO.score:LEVELS[LEVEL].score));
-  $('#sScoreNote').textContent=`정답 100점 · 빠른 정답 +${spd}점 · 다시 맞힘 50점(${fixedN}개) · 정답률 ${rateP}% 보너스 +${Math.round(accK*100)}%(${accPts}점) · 처치 2점`+(MAPK==='island'?` · 배달 30점(${dlv}개)`:'')+(MAPK==='glacier'?` · 남은 빙하 ${gls.alive}개×30 + 평균 ${gls.avg}%(${gls.pts}점)`:'')+(stars?` · 별 30점(${stars}개)`:'')+(PEACE_RUN?' · 평화 모드':'')+(PARTY.on?` · 거점 지키기 +${PARTY.bonus}점`:'')+(tu?` · 깬 웨이브 50점(${wc}개)`:' · 승리 300점')+(PARTY.on||MODE==='hero'?' · 영웅 ×1.5':LEVEL!=='normal'?` · ${LEVELS[LEVEL].name} ×${LEVELS[LEVEL].score}`:'');
+  const score=Math.round((quizPts+accPts+W.kills*2+dlv*30+stars*30+gls.pts+(rnb?rnb.pts:0)+(win?300:0)+wc*50+(PARTY.on?PARTY.bonus:0))*(MODE==='hero'?HERO.score:LEVELS[LEVEL].score));
+  $('#sScoreNote').textContent=`정답 100점 · 빠른 정답 +${spd}점 · 다시 맞힘 50점(${fixedN}개) · 정답률 ${rateP}% 보너스 +${Math.round(accK*100)}%(${accPts}점) · 처치 2점`+(MAPK==='island'?` · 배달 30점(${dlv}개)`:'')+(rnb?` · 최고 ${rnb.m}연속×20 + 코인 ${rnb.c}개×2(${rnb.pts}점)`:'')+(MAPK==='glacier'?` · 남은 빙하 ${gls.alive}개×30 + 평균 ${gls.avg}%(${gls.pts}점)`:'')+(stars?` · 별 30점(${stars}개)`:'')+(PEACE_RUN?' · 평화 모드':'')+(PARTY.on?` · 거점 지키기 +${PARTY.bonus}점`:'')+(tu?` · 깬 웨이브 50점(${wc}개)`:' · 승리 300점')+(PARTY.on||MODE==='hero'?' · 영웅 ×1.5':LEVEL!=='normal'?` · ${LEVELS[LEVEL].name} ×${LEVELS[LEVEL].score}`:'');
   if (MAPK==='island'&&W.isl) $('#endMsg').textContent=`택배 ${W.isl.delivered}개 배달`+(stars?` · 제시간 배달 ★${stars}`:'')+(W.isl.lost?` · 도둑에게 ${W.isl.lost}개 잃어버림`:'')+'. '+$('#endMsg').textContent;
   const newSkill=PARTY.on||tu?loadSkill():updateSkill(win);
   const d=new Date();
@@ -180,7 +182,7 @@ function setMap(k){
   MAPK=k;
   ensureMap(k);
   for (const g in mapGroups) mapGroups[g].visible=g===k;
-  bgGroup.visible=k!=='island'&&k!=='glacier'; ground.visible=k!=='glacier';
+  bgGroup.visible=k!=='island'&&k!=='glacier'&&k!=='runner'&&k!=='stage'; ground.visible=k!=='glacier'&&k!=='runner'&&k!=='stage';
   colliders=MAPSTATE[k].colliders; stations=MAPSTATE[k].stations; npcs=MAPSTATE[k].npcs;
   WAVES=wavesFor(k==='zones'?(MAPS.zones.waves||'zones'):k);
   const M=MAPS[k];
@@ -192,7 +194,7 @@ function setMap(k){
 }
 let FREE_PLAY=false, PLAYMAP=null, PICK={};
 try{ PICK=JSON.parse(localStorage.getItem('gsd-pick')||'{}')||{}; }catch(e){ PICK={}; }
-const MAP_ORDER=['zones','general','defense','island','glacier'];
+const MAP_ORDER=['zones','general','defense','island','glacier','runner'];
 const mapOK=(u,k)=>!!(u&&MAPS[k]&&MAPS[k].need.every(t=>u.bank[t]&&u.bank[t].length>0));
 function playChoice(){
   const byId=id=>DATA.units.find(u=>u.id===id), ready=DATA.units.filter(isReady);
