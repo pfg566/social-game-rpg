@@ -55,7 +55,7 @@ function frame(now){
       const pdx=P.x-m.x, pdz=P.z-m.z, pd=Math.hypot(pdx,pdz)||1;
       let dx=pdx, dz=pdz, d=pd, atDoor=false;
       if (MAPK==='defense' && (m.runner || PEACE_RUN || pd>(m.boss?9:7))){ dx=DOOR.x-m.x; dz=DOOR.z-m.z; d=Math.hypot(dx,dz)||1; atDoor=d<m.r+2.6; }
-      else if (MAPK==='glacier' && !PEACE_RUN){ const b=glTarget(m); if (b && (m.runner || pd>(m.boss?9:7))){ dx=b.x-m.x; dz=b.z-m.z; d=Math.hypot(dx,dz)||1; atDoor=d<b.r+m.r+.5; m.glB=b; } else m.glB=null; }
+      else if (MAPK==='glacier' && !PEACE_RUN){ const b=glTarget(m); if (b && (m.runner || pd>(m.boss?GL_CHASE+2:GL_CHASE))){ dx=b.x-m.x; dz=b.z-m.z; d=Math.hypot(dx,dz)||1; atDoor=d<b.r+m.r+.5; m.glB=b; } else m.glB=null; }
       m.atDoor=atDoor;
       if (m.boss){
         const B=m.def.boss;
@@ -107,7 +107,7 @@ function frame(now){
         else if (!q.first) flashPrompt('해골 지원군이 몰려와요!',2); } }
     if (W.nextWaveAt<0 && !W.gate && W.wave>=0 && mobs.length===0 && !W.spawnQ.length && islWaveDone()){
       if (W.wave<WAVES.length-1){
-        P.hp=Math.min(P.max,P.hp+Math.round(P.max*.2));
+        P.hp=Math.min(P.max,P.hp+Math.round(P.max*.2)); glWaveHeal();
         if (NEWQ()){ showBanner('웨이브 클리어! 정비 시간'); startPrep(); }
         else { W.gate=true; stations.forEach(s=>s.readyAt=W.t); showBanner(MAPS[MAPK].clearText); }
       } else endGame(true);

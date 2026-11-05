@@ -3,7 +3,7 @@
    파일은 01 → 13 순서로 불러와요. 모든 파일이 같은 전역 공간을 함께 써요. */
 const GL_R=27.5, GL_BASE={x:0,z:0,r:6};
 const GL_STATIONS=[[0,-11],[-10,6.5],[10,6.5]];
-const GL_MELT=.2, GL_MELT_WAVE=.05, GL_WARM_K=2.2, GL_WARM_T=8, GL_FREEZE=6, GL_FREEZE_ST=14, GL_MOB_K=.9;
+const GL_MELT=.09, GL_MELT_WAVE=.025, GL_WARM_K=1.6, GL_WARM_T=5, GL_FREEZE=10, GL_FREEZE_ST=25, GL_MOB_K=.45, GL_CHASE=12;
 const GL_BLOCKS=[];      // 빙하 6개 (모양 · 곰 · 물웅덩이 · 체력바)
 let glWater=null, glSea=null;
 
@@ -134,9 +134,9 @@ function glQuiz(ok,source,extras){
   if (ok){
     const st=source&&source.type==='station';
     const n=glFreeze(st?GL_FREEZE_ST:GL_FREEZE,st);
-    if (n>0) extras.push(st?`가장 많이 녹은 빙하가 다시 얼었어요! +${n}%`:`모든 빙하가 조금씩 다시 얼었어요 (+${GL_FREEZE}%)`);
+    if (n>0) extras.push(st?`가장 많이 녹은 빙하가 다시 얼었어요! +${n}%`:`모든 빙하가 다시 얼었어요 (+${GL_FREEZE}%)`);
   } else if (source && source.type!=='revive'){
-    W.gl.warmUntil=W.t+GL_WARM_T; extras.push(`오답이라 ${GL_WARM_T}초 동안 빙하가 더 빨리 녹아요`);
+    W.gl.warmUntil=W.t+GL_WARM_T; extras.push(`오답이라 ${GL_WARM_T}초 동안 빙하가 조금 더 빨리 녹아요`);
   }
 }
 function glMobHit(m,dt){
@@ -146,7 +146,7 @@ function glMobHit(m,dt){
     fx.burst(b.x+(m.x-b.x)*.4,1.4,b.z+(m.z-b.z)*.4,0x9a9aa4,6,3); fx.num(b.x,3.6,b.z,'-'+dmg+'%','#8fd8ff');
     if (W.t>=W.gl.warnAt){ W.gl.warnAt=W.t+6; flashPrompt('매연 해골이 빙하를 녹이고 있어요! 가까이 가서 끌어내세요',2.2); } }
 }
-function glBossSlam(x,z,r){ if (MAPK!=='glacier'||!W.gl) return; for (const b of GL_BLOCKS){ if (b.alive && Math.hypot(b.x-x,b.z-z)<r+2.5){ glMelt(b,20,true); flashPrompt('보스의 내려찍기에 빙하가 깨졌어요! -20%',1.8); } } }
+function glBossSlam(x,z,r){ if (MAPK!=='glacier'||!W.gl) return; for (const b of GL_BLOCKS){ if (b.alive && Math.hypot(b.x-x,b.z-z)<r+2.5){ glMelt(b,10,true); flashPrompt('보스의 내려찍기에 빙하가 깨졌어요! -10%',1.8); } } }
 function glacierTick(dt){
   if (MAPK!=='glacier' || !W.gl) return;
   if (glWater) glWater.uniforms.uTime.value+=dt;
@@ -167,6 +167,7 @@ function glacierTick(dt){
     b.bar.g.position.set(b.x,b.alive?4.9*(.35+.65*b.ice/100)+.6:-50,b.z); b.bar.g.quaternion.copy(camera.quaternion);
   }
 }
+function glWaveHeal(){ if (MAPK==='glacier'&&W.gl){ const n=glFreeze(15,false); if (n>0) setTimeout(()=>flashPrompt('웨이브를 막아 냈어요! 빙하가 모두 15% 다시 얼었어요',2.4),1200); } }
 function glacierLost(){ return MAPK==='glacier' && W.gl && W.state==='play' && !glAlive().length; }
 function glScore(){ if (MAPK!=='glacier'||!W.gl) return {alive:0,pts:0,avg:0}; const alive=glAlive().length, avg=Math.round(glAvg()); return {alive,avg,pts:alive*30+avg}; }
 function glHUD(){
