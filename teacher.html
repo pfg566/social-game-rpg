@@ -156,6 +156,8 @@ input.rename{border:2px solid var(--line);border-radius:6px;padding:2px 6px;widt
 .rv-opts li.ok b{background:#23a35d}
 .rv-ans{margin-top:16px;padding:14px 18px;border-radius:14px;background:#fff4cf;font-size:clamp(18px,2vw,24px)}
 .rv-ans p{margin:6px 0 0}
+.miss-scope{margin:0 0 10px;padding:10px 12px;border-radius:10px;background:rgba(127,140,170,.12);font-size:14px;line-height:1.6}
+.miss-scope.warn{background:rgba(255,170,60,.16);border:1px solid rgba(255,170,60,.55)}
 </style>
 </head>
 <body>
@@ -232,6 +234,7 @@ input.rename{border:2px solid var(--line);border-radius:6px;padding:2px 6px;widt
     <section class="card panel" id="pRecords" hidden><div class="tablewrap"><table id="tblRecords"></table></div></section>
     <section class="card panel" id="pMissed" hidden>
       <div class="aw-bar"><label class="f"><span>복습할 문제 수</span><select id="rvCount"><option value="5">5문제</option><option value="10" selected>10문제</option><option value="20">20문제</option></select></label><button class="btn primary" id="rvGo">📺 복습 시작</button></div>
+      <div id="missScope" class="miss-scope"></div>
       <p class="aw-help">위 필터(학교·학급·단원·기간)로 고른 기록에서 많이 틀린 문제부터 TV 화면에 하나씩 크게 보여 줘요. 스페이스바나 → 키로 '정답 보기 → 다음 문제'로 넘어가요.</p>
       <div class="miss" id="missList"></div>
     </section>
@@ -506,6 +509,11 @@ function renderRecords(){
     : '<tr><td class="empty">이 조건에 맞는 기록이 없어요.</td></tr>';
 }
 function renderMissed(){
+  { const cs=$('#fCls'), us=$('#fUnit'), rs=$('#fRange'), lab=el=>el&&el.selectedIndex>=0?el.options[el.selectedIndex].text:'';
+    const allCls=!cs.value, ks=new Set(VIEW.map(r=>r.k)).size;
+    $('#missScope').className='miss-scope'+(allCls&&ks>1?' warn':'');
+    $('#missScope').innerHTML=`지금 모은 기록: <b>${esc(allCls?'모든 학급':lab(cs))}</b> · <b>${esc(us.value?lab(us):'모든 단원')}</b> · <b>${esc(lab(rs))}</b> · 기록 ${VIEW.length}개`+
+      (allCls&&ks>1?`<br>⚠️ 지금은 ${ks}개 반(다른 학교 포함)의 기록이 함께 섞여 있어요. 우리 반만 복습하려면 위쪽 <b>학급</b> 칸에서 반을 골라 주세요.`:''); }
   const cnt=new Map(), who=new Map();
   VIEW.forEach(r=>r.wrongList.forEach(q=>{ cnt.set(q,(cnt.get(q)||0)+1); if (!who.has(q)) who.set(q,new Set()); who.get(q).add(r.k+'|'+r.nick); }));
   const list=[...cnt.entries()].sort((a,b)=>b[1]-a[1]).slice(0,20);
