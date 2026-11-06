@@ -77,13 +77,14 @@ function endGame(win){
   $('#rewardBox').hidden=true;
   if (MAPK==='runner') runEndUI();
   if (MAPK==='stage') stgEndUI();
+  if (MAPK==='teamwar') twEndUI();
   W.state='end'; W.paused=true; W.loc=null; W.prep=null; $('#timeCard').hidden=true; $('#prep').hidden=true; $('#locIntro').hidden=true; $('#reviveIntro').hidden=true;
   $('#locCard').hidden=true; $('#gateCard').hidden=true; $('#bossbar').hidden=true; $('#prompt').hidden=true;
   const tu=!win&&!!W.timeUp, wc=tu?Math.max(0,W.wave+(W.gate||W.prep?1:0)):0;
   $('#endEyebrow').textContent=win?'승리':tu?'시간 종료':'게임 오버';
   W.won=!!win;
-  $('#endTitle').textContent=win?(PEACE_RUN?PEACE_TXT[MAPK].winTitle:MAPS[MAPK].winTitle):tu?'시간이 다 됐어요!':(MAPK==='defense'&&W.door<=0?'성문이 무너졌어요':MAPK==='glacier'&&W.gl&&!glAlive().length?'빙하가 모두 녹았어요':MAPK==='runner'?'하트를 모두 잃었어요':MAPK==='stage'?'목숨을 모두 잃었어요':'체력이 모두 닳았어요');
-  $('#endMsg').textContent=win?(PEACE_RUN?PEACE_TXT[MAPK].winMsg:MAPS[MAPK].winMsg):tu?(MAPK==='runner'?`${RUN.n}문제 중 ${RUN.done}문제를 지나왔어요. 아래 틀린 문제를 복습해 보세요.`:`${WAVES.length}웨이브 중 ${wc}웨이브를 깼어요. 깬 웨이브마다 100점을 더 받아요. 아래 틀린 문제를 복습해 보세요.`):MAPK==='runner'?'틀린 문제를 다시 읽어 보고 한 번 더 달려 봐요.':MAPK==='stage'?'틀린 문제를 다시 읽어 보고 다음 판에 도전해요.':'퀴즈를 맞히면 회복하거나 더 강해질 수 있어요. 아래 틀린 문제를 복습하고 다시 도전해 보세요.';
+  $('#endTitle').textContent=win?(PEACE_RUN?PEACE_TXT[MAPK].winTitle:MAPS[MAPK].winTitle):tu?'시간이 다 됐어요!':(MAPK==='defense'&&W.door<=0?'성문이 무너졌어요':MAPK==='glacier'&&W.gl&&!glAlive().length?'빙하가 모두 녹았어요':MAPK==='runner'?'하트를 모두 잃었어요':MAPK==='stage'?'목숨을 모두 잃었어요':MAPK==='teamwar'?'아쉬운 패배':'체력이 모두 닳았어요');
+  $('#endMsg').textContent=win?(PEACE_RUN?PEACE_TXT[MAPK].winMsg:MAPS[MAPK].winMsg):tu?(MAPK==='runner'?`${RUN.n}문제 중 ${RUN.done}문제를 지나왔어요. 아래 틀린 문제를 복습해 보세요.`:`${WAVES.length}웨이브 중 ${wc}웨이브를 깼어요. 깬 웨이브마다 100점을 더 받아요. 아래 틀린 문제를 복습해 보세요.`):MAPK==='runner'?'틀린 문제를 다시 읽어 보고 한 번 더 달려 봐요.':MAPK==='stage'?'틀린 문제를 다시 읽어 보고 다음 판에 도전해요.':MAPK==='teamwar'?'잘 싸웠어요! 다음 판에는 조원들과 작전을 짜 봐요.':'퀴즈를 맞히면 회복하거나 더 강해질 수 있어요. 아래 틀린 문제를 복습하고 다시 도전해 보세요.';
   $('#sKills').textContent=W.kills; $('#sCorrect').textContent=`${W.correct}/${W.asked}`;
   const s=Math.floor(W.t); $('#sTime').textContent=`${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;
   const rv=$('#review');
@@ -182,7 +183,7 @@ function setMap(k){
   MAPK=k;
   ensureMap(k);
   for (const g in mapGroups) mapGroups[g].visible=g===k;
-  bgGroup.visible=k!=='island'&&k!=='glacier'&&k!=='runner'&&k!=='stage'; ground.visible=k!=='glacier'&&k!=='runner'&&k!=='stage';
+  bgGroup.visible=!['island','glacier','runner','stage','teamwar'].includes(k); ground.visible=!['glacier','runner','stage','teamwar'].includes(k);
   colliders=MAPSTATE[k].colliders; stations=MAPSTATE[k].stations; npcs=MAPSTATE[k].npcs;
   WAVES=wavesFor(k==='zones'?(MAPS.zones.waves||'zones'):k);
   const M=MAPS[k];

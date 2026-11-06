@@ -156,6 +156,10 @@ input.rename{border:2px solid var(--line);border-radius:6px;padding:2px 6px;widt
 .rv-opts li.ok b{background:#23a35d}
 .rv-ans{margin-top:16px;padding:14px 18px;border-radius:14px;background:#fff4cf;font-size:clamp(18px,2vw,24px)}
 .rv-ans p{margin:6px 0 0}
+.tw-board{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0}
+.tw-bsc{flex:1;min-width:140px;color:#fff;border-radius:14px;padding:12px 16px;text-align:center;box-shadow:0 3px 0 rgba(0,0,0,.2)}
+.tw-bsc b{display:block;font-size:16px}.tw-bsc span{font-size:40px;font-weight:800}.tw-bsc small{display:block;font-size:13px;opacity:.9}
+.tw-tfeed{font-size:14px;line-height:1.7;margin:6px 0 10px;max-height:150px;overflow:auto}
 .miss-scope{margin:0 0 10px;padding:10px 12px;border-radius:10px;background:rgba(127,140,170,.12);font-size:14px;line-height:1.6}
 .miss-scope.warn{background:rgba(255,170,60,.16);border:1px solid rgba(255,170,60,.55)}
 </style>
@@ -214,6 +218,7 @@ input.rename{border:2px solid var(--line);border-radius:6px;padding:2px 6px;widt
       <button class="tab" role="tab" data-tab="students" aria-selected="true">학생별</button>
       <button class="tab" role="tab" data-tab="awards" aria-selected="false">🏆 시상식</button>
       <button class="tab" role="tab" data-tab="stage" aria-selected="false">🟦 발판 서바이벌</button>
+      <button class="tab" role="tab" data-tab="tw" aria-selected="false">⚔️ 조별 점령전</button>
       <button class="tab" role="tab" data-tab="records" aria-selected="false">전체 기록</button>
       <button class="tab" role="tab" data-tab="missed" aria-selected="false">많이 틀린 문제</button>
       <button class="tab" role="tab" data-tab="balance" aria-selected="false">난이도 분석</button>
@@ -222,6 +227,20 @@ input.rename{border:2px solid var(--line);border-radius:6px;padding:2px 6px;widt
       <button class="tab" role="tab" data-tab="manage" aria-selected="false">관리</button>
     </div>
 
+    <section class="card panel" id="pTw" hidden>
+      <div class="aw-bar">
+        <label class="f"><span>학급</span><select id="twCls"></select></label>
+        <label class="f"><span>팀</span><select id="twNt"><option value="2">2팀 (빨강 · 파랑)</option><option value="4" selected>4개 조</option></select></label>
+        <label class="f"><span>조 편성</span><select id="twMode"><option value="auto" selected>자동 나누기</option><option value="manual">선생님이 직접</option></select></label>
+        <label class="f"><span>한 판</span><select id="twDur"><option value="180">3분</option><option value="240">4분</option><option value="300" selected>5분</option></select></label>
+      </div>
+      <div class="aw-bar"><button class="btn" id="twOpen">① 입장 열기</button><button class="btn" id="twShuffle">조 다시 섞기</button><button class="btn primary" id="twGo">② 시작</button><button class="btn" id="twStop">끝내기</button></div>
+      <p class="aw-help">① 입장 열기를 누르면 그 반 학생들 게임 화면에 '⚔️ 조별 점령전 입장' 버튼이 생겨요. 들어온 학생은 자동으로 인원이 적은 조에 들어가고, '선생님이 직접'이면 아래 표에서 조를 바꿀 수 있어요. <b>판이 진행되는 동안 이 화면(탭)을 열어 두세요</b> — 점령·점수·아이템을 이 화면이 계산해요. TV에 띄우면 점수판으로 쓸 수 있어요.</p>
+      <div id="twStatus" class="miss-scope">학급을 고르세요.</div>
+      <div class="tw-board" id="twBoard"></div>
+      <div class="tw-tfeed" id="twTFeed"></div>
+      <div class="tablewrap"><table id="twTbl"></table></div>
+    </section>
     <section class="card panel" id="pStage" hidden>
       <div class="aw-bar">
         <label class="f"><span>학급</span><select id="stCls"></select></label>
@@ -551,6 +570,7 @@ $('#tabs').addEventListener('click',e=>{ const b=e.target.closest('[data-tab]');
   $('#pRoster').hidden=tab!=='roster'; if (tab==='roster'&&!RS.cls&&$('#rsCls').options.length>1){ $('#rsCls').selectedIndex=1; rsWatch(); }
   $('#pAwards').hidden=tab!=='awards'; if (tab==='awards') awInit();
   $('#pStage').hidden=tab!=='stage'; if (tab==='stage') stInit();
+  $('#pTw').hidden=tab!=='tw'; if (tab==='tw') twInit();
   $('#pStudents').hidden=tab!=='students'; $('#pRecords').hidden=tab!=='records'; $('#pMissed').hidden=tab!=='missed'; $('#pManage').hidden=tab!=='manage'; $('#pBalance').hidden=tab!=='balance'; });
 
 
@@ -976,6 +996,125 @@ $('#freeToggle').addEventListener('click',async()=>{
   catch(e){ $('#freeMsg').className='msg err'; $('#freeMsg').textContent='바꾸지 못했어요. 새 보안 규칙을 올렸는지 확인해 주세요.'; }
   finally{ $('#freeToggle').disabled=false; }
 });
+
+/* ---------- ⚔️ 조별 점령전 (이 화면이 판을 진행해요) ---------- */
+const TWT_PTS=[{x:0,z:0,r:5.5,v:2,n:'가운데'},{x:0,z:-21,r:4,v:1,n:'북쪽'},{x:21,z:0,r:4,v:1,n:'동쪽'},{x:0,z:21,r:4,v:1,n:'남쪽'},{x:-21,z:0,r:4,v:1,n:'서쪽'}];
+const TWT_SPOTS=[[-10,-10],[10,-10],[10,10],[-10,10],[0,-11],[11,0],[0,11],[-11,0],[-14,-3],[14,3],[3,-14],[-3,14]];
+const TWT_COL=['#e5484d','#3b82f6','#22a35a','#e8a400'], TWT_NAME=['빨강 조','파랑 조','초록 조','노랑 조'], TWT_EMO=['🔴','🔵','🟢','🟡'];
+const TWT_ITEMS=['hammer','shoes','bubble','tornado','banana'], TWT_INTRO=5;
+const TWH={inited:false,cls:'',meta:null,pi:{},pl:{},refs:[],timer:0,last:0,st:null,cap:{},ko:{},out:{},itm:{},nextItem:0,itemN:0,goldAt:0,lastStr:'',feed:[],t0:0};
+function twInit(){
+  const el=$('#twCls'), cur=el.value||TWH.cls;
+  el.innerHTML='<option value="">학급 선택</option>'+sortedSchools().map(sid=>{ const ks=sortedClasses(sid).filter(k=>!CLS[k].hidden); if (!ks.length) return '';
+    return `<optgroup label="${esc(SCH[sid].name)}">`+ks.map(k=>`<option value="${k}">${CLS[k].grade}학년 ${CLS[k].cls}반</option>`).join('')+'</optgroup>'; }).join('');
+  if (cur && [...el.options].some(o=>o.value===cur)) el.value=cur;
+  if (!TWH.inited){ TWH.inited=true; el.addEventListener('change',twWatchT);
+    $('#twOpen').addEventListener('click',twOpenRoom); $('#twGo').addEventListener('click',twStart); $('#twStop').addEventListener('click',()=>twEnd(true)); $('#twShuffle').addEventListener('click',twShuffle);
+    TWH.timer=setInterval(twHostTick,250); }
+  twWatchT();
+}
+const twRef=p=>db.ref(`tw/${TWH.cls}/${p}`);
+function twWatchT(){
+  TWH.refs.forEach(([r,ev,cb])=>r.off(ev,cb)); TWH.refs=[]; TWH.cls=$('#twCls').value; TWH.meta=null; TWH.pi={}; TWH.pl={}; TWH.st=null; twRenderT();
+  if (!TWH.cls) return;
+  const L=(p,ev,cb)=>{ const r=twRef(p); r.on(ev,cb); TWH.refs.push([r,ev,cb]); };
+  L('meta','value',s=>{ const m=s.val(); TWH.meta=m; if (m&&m.t0&&m.t0!==TWH.t0){ TWH.t0=m.t0; twHostInit(); } twRenderT(); });
+  L('pi','child_added',s=>{ TWH.pi[s.key]=s.val(); twAssign(s.key); twRenderT(); });
+  L('pi','child_changed',s=>{ TWH.pi[s.key]=s.val(); twRenderT(); });
+  const onPl=s=>{ const a=String(s.val()).split(','); TWH.pl[s.key]={x:+a[1]/10,z:+a[2]/10,tm:+a[4],fl:+a[6]}; };
+  L('pl','child_added',onPl); L('pl','child_changed',onPl); L('pl','child_removed',s=>{ delete TWH.pl[s.key]; });
+  L('req','child_added',s=>twReq(s)); L('req','child_changed',s=>twReq(s));
+  L('ev','child_added',s=>{ const e=s.val(); if (!e) return; if (e.k==='ko'){ TWH.ko[e.a]=(TWH.ko[e.a]|0)+1; TWH.out[e.v]=(TWH.out[e.v]|0)+1; } if (e.k==='item') TWH.itm[e.a]=(TWH.itm[e.a]|0)+1; if (e.m) twTFeed(e.m); });
+}
+function twTFeed(m){ TWH.feed.unshift(m); TWH.feed.length=Math.min(TWH.feed.length,8); $('#twTFeed').innerHTML=TWH.feed.map(esc).join('<br>'); }
+function twMsgT(t,warn){ const e=$('#twStatus'); e.className='miss-scope'+(warn?' warn':''); e.innerHTML=t; }
+async function twOpenRoom(){
+  if (!TWH.cls){ twMsgT('학급을 먼저 골라 주세요.',true); return; }
+  try{ await db.ref(`tw/${TWH.cls}`).set({meta:{state:'wait',nt:+$('#twNt').value,mode:$('#twMode').value,dur:+$('#twDur').value,tm:{}}}); TWH.feed=[]; $('#twTFeed').innerHTML=''; }
+  catch(e){ twMsgT('열지 못했어요. 새 보안 규칙(database.rules.json)을 올렸는지 확인해 주세요.',true); }
+}
+function twTeamCount(){ const nt=(TWH.meta&&TWH.meta.nt)||2, c=Array(nt).fill(0), tm=(TWH.meta&&TWH.meta.tm)||{}; for (const k in tm) if (c[tm[k]]!=null) c[tm[k]]++; return c; }
+function twAssign(u){
+  const p=TWH.pi[u], m=TWH.meta; if (!p||!m||m.state==='end') return; const num=String(p.num|0), tm=m.tm||{}; if (tm[num]!=null) return;
+  const c=twTeamCount(), t=c.indexOf(Math.min(...c)); m.tm=Object.assign({},tm,{[num]:t}); twRef(`meta/tm/${num}`).set(t);
+}
+function twShuffle(){
+  const m=TWH.meta; if (!m){ twMsgT('먼저 ① 입장 열기를 눌러 주세요.',true); return; }
+  const nt=m.nt||2, nums=Object.values(TWH.pi).map(p=>String(p.num|0)).sort(()=>Math.random()-.5), tm={}; nums.forEach((n,i)=>tm[n]=i%nt);
+  twRef('meta/tm').set(tm);
+}
+function twSetTeam(num,t){ twRef(`meta/tm/${num}`).set(+t); }
+async function twStart(){
+  const m=TWH.meta; if (!m||m.state==='end'){ twMsgT('먼저 ① 입장 열기를 눌러 주세요.',true); return; }
+  if (m.mode==='auto' && m.state==='wait') twShuffle();
+  await twRef('meta').update({state:'run',t0:firebase.database.ServerValue.TIMESTAMP,dur:+$('#twDur').value});
+}
+function twHostInit(){ Object.assign(TWH,{cap:{},ko:{},out:{},itm:{},nextItem:8,itemN:0,goldAt:20,lastStr:'',last:pNow(),st:{sc:[0,0,0,0],p:TWT_PTS.map(()=>[-1,-1,0]),it:{},gold:-1,fev:0,left:(TWH.meta&&TWH.meta.dur)||300,intro:TWT_INTRO}}); }
+function twReq(s){
+  const r=s.val(), u=s.key; if (!r) return; twRef(`req/${u}`).remove(); const st=TWH.st; if (!r||!st||!st.it||!st.it[r.i]) return;
+  const k=st.it[r.i][2]; delete st.it[r.i]; twRef(`inv/${u}`).set(k);
+}
+function twHostTick(){
+  const m=TWH.meta; if (!m||m.state!=='run'||!TWH.st||!m.t0||$('#pTw').hidden&&false) return;
+  const now=pNow(), dt=Math.min(1.5,Math.max(0,(now-TWH.last)/1000)); TWH.last=now;
+  const el=(now-m.t0)/1000, st=TWH.st, nt=m.nt||2, dur=m.dur||300;
+  st.intro=Math.max(0,TWT_INTRO-el); const gt=Math.max(0,el-TWT_INTRO); st.left=Math.max(0,Math.ceil(dur-gt));
+  if (st.intro<=0 && !st.end){
+    st.fev=st.left<=30?1:0;
+    const owned=Array(4).fill(0); st.p.forEach(p=>{ if (p[0]>=0) owned[p[0]]++; });
+    st.p.forEach((p,i)=>{ const P=TWT_PTS[i], cnt=Array(4).fill(0), who=Array(4).fill(null).map(()=>[]);
+      for (const u in TWH.pl){ const q=TWH.pl[u]; if (q.fl&1||q.tm<0||q.tm>=nt) continue; if (Math.hypot(q.x-P.x,q.z-P.z)<P.r){ cnt[q.tm]++; who[q.tm].push(u); } }
+      const pres=cnt.map((c,t)=>c>0?t:-1).filter(t=>t>=0);
+      if (pres.length===1){ const T=pres[0], n=Math.min(3,cnt[T]), rate=28*(1+.5*(n-1))*(p[0]>=0&&p[0]!==T&&owned[p[0]]>=3?1.5:1);
+        who[T].forEach(u=>TWH.cap[u]=(TWH.cap[u]||0)+dt);
+        if (p[0]===T){ p[2]=Math.min(100,p[2]+rate*dt); p[1]=T; }
+        else if (p[1]!==T && p[2]>0){ p[2]=Math.max(0,p[2]-rate*dt); if (p[2]<=0){ if (p[0]>=0) twEv(`${TWT_EMO[p[0]]} ${TWT_NAME[p[0]]}의 ${P.n} 거점이 풀렸어요!`,p[0]); p[0]=-1; p[1]=T; } }
+        else { p[1]=T; p[2]=Math.min(100,p[2]+rate*dt); if (p[2]>=100 && p[0]!==T){ p[0]=T; twEv(`${TWT_EMO[T]} ${TWT_NAME[T]}가 ${P.n} 거점을 점령했어요!`,T); } }
+      } else if (!pres.length && p[0]>=0 && p[2]<100){ p[2]=Math.min(100,p[2]+10*dt); p[1]=p[0]; }
+      if (p[0]>=0) st.sc[p[0]]+=P.v*(st.gold===i?3:1)*(st.fev?2:1)*dt;
+    });
+    if (gt>=TWH.goldAt){ let g; do { g=Math.floor(Math.random()*TWT_PTS.length); } while (g===st.gold && TWT_PTS.length>1); st.gold=g; TWH.goldAt+=60; twEv(`✨ ${TWT_PTS[g].n} 거점이 황금 거점이 됐어요! (점수 ×3)`,-1); }
+    if (gt>=TWH.nextItem){ TWH.nextItem+=30; const used=new Set(Object.values(st.it).map(v=>v[0]+','+v[1])); const free=TWT_SPOTS.filter(s=>!used.has(s[0]+','+s[1])).sort(()=>Math.random()-.5);
+      for (let k=0;k<3&&Object.keys(st.it).length<5&&free.length;k++){ const s=free.shift(); st.it['i'+(++TWH.itemN)]=[s[0],s[1],TWT_ITEMS[Math.floor(Math.random()*TWT_ITEMS.length)]]; } twEv('🎁 아이템 상자가 나타났어요!',-1); }
+    if (st.left<=0) twEnd(false);
+  }
+  const out={sc:st.sc.map(v=>Math.floor(v)),p:st.p.map(p=>[p[0],p[1],Math.round(p[2])]),it:st.it,gold:st.gold,fev:st.fev,left:st.left,intro:Math.round(st.intro*10)/10};
+  if (st.end) out.end=st.end;
+  const str=JSON.stringify(out); if (str!==TWH.lastStr){ TWH.lastStr=str; twRef('st').set(out); }
+  twRenderT();
+}
+function twEv(m,c){ twRef('ev').push({t:Date.now(),k:'host',m,c}); }
+async function twEnd(manual){
+  const m=TWH.meta; if (!m||m.state!=='run'||!TWH.st) { if (manual&&m) twRef('meta/state').set('end'); return; }
+  const st=TWH.st, nt=m.nt||2; const sc=st.sc.slice(0,nt), win=sc.indexOf(Math.max(...sc));
+  const best=(obj,low)=>{ let b=null; for (const u in TWH.pi){ const v=obj[u]|0; if (!b||(low?v<b[1]:v>b[1])) b=[u,v]; } return b; };
+  const capR={}; for (const u in TWH.cap) capR[u]=Math.round(TWH.cap[u]);
+  const mvp={}; const c=best(capR); if (c&&c[1]>0) mvp.cap=c; const k=best(TWH.ko); if (k&&k[1]>0) mvp.ko=k; const it=best(TWH.itm); if (it&&it[1]>0) mvp.item=it; const sv=best(TWH.out,true); if (sv) mvp.surv=sv;
+  st.end={win,mvp,sc:st.sc.map(Math.floor)};
+  const out={sc:st.sc.map(Math.floor),p:st.p.map(p=>[p[0],p[1],Math.round(p[2])]),it:{},gold:-1,fev:0,left:0,intro:0,end:st.end}; TWH.lastStr=JSON.stringify(out);
+  await twRef('st').set(out); await twRef('meta/state').set('end');
+  twEv(`🏆 ${TWT_EMO[win]} ${TWT_NAME[win]} 승리!`,win);
+}
+function twRenderT(){
+  if ($('#pTw').hidden) return;
+  const m=TWH.meta, st=TWH.st, nt=(m&&m.nt)||2;
+  if (!TWH.cls) twMsgT('학급을 고르세요.');
+  else if (!m) twMsgT('아직 열지 않았어요. ① 입장 열기를 눌러 주세요.');
+  else if (m.state==='wait') twMsgT(`<b>입장 중</b> · ${Object.keys(TWH.pi).length}명 들어왔어요 · ${nt===2?'2팀':'4개 조'} · ${m.mode==='manual'?'선생님이 직접 편성':'자동 나누기'} · 모두 들어오면 ② 시작`);
+  else if (m.state==='run'){ const l=st?st.left:0; twMsgT(st&&st.intro>0?`<b>곧 시작해요 ${Math.ceil(st.intro)}</b>`:`<b>진행 중</b> · 남은 시간 ${Math.floor(l/60)}:${String(l%60).padStart(2,'0')}${st&&st.fev?' · 🔥 피버 ×2':''}${st&&st.gold>=0?` · ✨ 황금: ${TWT_PTS[st.gold].n}`:''} · 이 화면을 닫지 마세요`); }
+  else twMsgT('<b>끝났어요.</b> 학생 화면에 결과와 MVP가 떠요. 다시 하려면 ① 입장 열기부터 눌러요.');
+  const sc=(st&&st.sc)||[0,0,0,0], pts=st?st.p:[];
+  $('#twBoard').innerHTML=m?[...Array(nt).keys()].map(i=>`<div class="tw-bsc" style="background:${TWT_COL[i]}"><b>${TWT_EMO[i]} ${TWT_NAME[i]}</b><span>${Math.floor(sc[i])}</span><small>거점 ${pts.filter(p=>p[0]===i).length}개</small></div>`).join(''):'';
+  if (document.activeElement&&document.activeElement.closest&&document.activeElement.closest('#twTbl')) return;
+  const tblKey=JSON.stringify([m&&m.tm,m&&m.state,Object.keys(TWH.pi).length,TWH.ko,TWH.itm,TWH.out,Math.floor(Date.now()/2000)]); if (tblKey===TWH.tblKey) return; TWH.tblKey=tblKey;
+  const tm=(m&&m.tm)||{}, list=Object.entries(TWH.pi).map(([u,p])=>({u,...p})).sort((a,b)=>(a.num|0)-(b.num|0));
+  const nm=u=>(TWH.pi[u]&&TWH.pi[u].n)||'';
+  $('#twTbl').innerHTML=list.length?'<thead><tr><th>번호</th><th>이름</th><th>조</th><th>점령(초)</th><th>밀어내기</th><th>아이템</th><th>날아감</th></tr></thead><tbody>'+
+    list.map(p=>{ const num=String(p.num|0), t=tm[num]; const sel=m&&m.state!=='end'?`<select data-twnum="${num}">${[...Array(nt).keys()].map(i=>`<option value="${i}"${+t===i?' selected':''}>${TWT_EMO[i]} ${TWT_NAME[i]}</option>`).join('')}</select>`:(t!=null?TWT_EMO[t]+' '+TWT_NAME[t]:'-');
+      return `<tr><td>${num}</td><td>${esc(p.n||'')}</td><td>${sel}</td><td>${Math.round(TWH.cap[p.u]||0)}</td><td>${TWH.ko[p.u]|0}</td><td>${TWH.itm[p.u]|0}</td><td>${TWH.out[p.u]|0}</td></tr>`; }).join('')+'</tbody>'
+    :'<tbody><tr><td class="empty">아직 들어온 학생이 없어요.</td></tr></tbody>';
+  $('#twTbl').querySelectorAll('select[data-twnum]').forEach(s=>s.onchange=()=>twSetTeam(s.dataset.twnum,s.value));
+}
 
 /* ---------- 🟦 발판 서바이벌 (반 전체) ---------- */
 let BANKRAW=null;

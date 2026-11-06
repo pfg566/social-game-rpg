@@ -7,7 +7,7 @@
 <style>body{margin:0}[hidden]{display:none!important}img{max-width:100%}</style>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jua&family=IBM+Plex+Sans+KR:wght@400;600;700&display=swap">
-<link rel="stylesheet" href="style.css?v=20261106a">
+<link rel="stylesheet" href="style.css?v=20261106b">
 </head>
 <body>
 
@@ -57,6 +57,11 @@
 <div class="run-q card" id="stQ" hidden><div class="run-qtext" id="stQText"></div><div class="run-opts" id="stOpts"></div><div class="run-bar"><i id="stBar"></i></div><div class="st-lock"><span id="stLock"></span><b id="stTime"></b></div></div>
 <div class="run-res card" id="stMsg" hidden></div>
 <div class="st-rank card" id="stRank" hidden><h2>🏆 발판 서바이벌 순위</h2><ol id="stRankList"></ol><p id="stRankMe"></p><button class="btn" id="stRankGo">내 결과 보기</button></div>
+<div class="tw-hud" id="twHud" hidden><div class="tw-scores" id="twScores"></div><div class="tw-time" id="twTime">5:00</div><div class="tw-gold" id="twGold"></div></div>
+<div class="tw-me card" id="twMe" hidden><div class="tw-g"><div class="tw-gbar"><i id="twGauge"></i></div><span id="twGTxt">밀림 게이지 0%</span></div><div class="tw-slot" id="twItem"></div><div class="tw-slot" id="twSkill"></div><div class="tw-fx" id="twFx"></div></div>
+<div class="tw-feed" id="twFeed" hidden></div>
+<div class="run-res card tw-wait" id="twWait" hidden></div>
+<div class="st-rank card" id="twEnd" hidden><h2 id="twEndTitle"></h2><div class="tw-scores" id="twEndSc"></div><ul class="tw-mvp" id="twEndMvp"></ul><p id="twEndMe"></p><button class="btn" id="twEndGo">내 결과 받기</button></div>
 <div class="timetop" id="timeCard" hidden><small>남은 시간</small><b id="timeTxt">5:00</b></div>
 
 <div class="stack" id="stack">
@@ -206,6 +211,7 @@
     <p class="bankinfo lobby" id="bankInfo"></p>
     <div class="title-actions lobby">
       <button class="btn" id="startBtn">게임 시작</button>
+      <button class="btn twbtn" id="twBtn" hidden>⚔️ 조별 점령전 · 입장하기</button>
       <button class="btn stagebtn" id="stageBtn" hidden>🟦 발판 서바이벌 · 입장하기</button>
       <button class="btn ghost partybtn" id="partyBtn">👥 파티 모드 · 점령전 (최대 5명)</button>
       <p class="gatenote" id="gateNote" hidden></p>
@@ -416,27 +422,28 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="firebase-config.js"></script>
-<script src="js/01-data.js?v=20261106a"></script>
-<script src="js/02-graphics.js?v=20261106a"></script>
-<script src="js/02m-mood.js?v=20261106a"></script>
-<script src="js/03-world.js?v=20261106a"></script>
-<script src="js/04-island.js?v=20261106a"></script>
-<script src="js/04g-glacier.js?v=20261106a"></script>
-<script src="js/04r-runner.js?v=20261106a"></script>
-<script src="js/04s-stage.js?v=20261106a"></script>
-<script src="js/05-play.js?v=20261106a"></script>
-<script src="js/06-jobs.js?v=20261106a"></script>
-<script src="js/06p-player.js?v=20261106a"></script>
-<script src="js/07-quiz.js?v=20261106a"></script>
-<script src="js/07b-prep.js?v=20261106a"></script>
-<script src="js/08-hud.js?v=20261106a"></script>
-<script src="js/09-server.js?v=20261106a"></script>
-<script src="js/10-shop.js?v=20261106a"></script>
-<script src="js/11-gate-editor.js?v=20261106a"></script>
-<script src="js/12-lobby.js?v=20261106a"></script>
-<script src="js/13-loop.js?v=20261106a"></script>
-<script src="js/14-party.js?v=20261106a"></script>
-<script src="js/15-board.js?v=20261106a"></script>
-<script src="js/16-notes.js?v=20261106a"></script>
+<script src="js/01-data.js?v=20261106b"></script>
+<script src="js/02-graphics.js?v=20261106b"></script>
+<script src="js/02m-mood.js?v=20261106b"></script>
+<script src="js/03-world.js?v=20261106b"></script>
+<script src="js/04-island.js?v=20261106b"></script>
+<script src="js/04g-glacier.js?v=20261106b"></script>
+<script src="js/04r-runner.js?v=20261106b"></script>
+<script src="js/04s-stage.js?v=20261106b"></script>
+<script src="js/04t-teamwar.js?v=20261106b"></script>
+<script src="js/05-play.js?v=20261106b"></script>
+<script src="js/06-jobs.js?v=20261106b"></script>
+<script src="js/06p-player.js?v=20261106b"></script>
+<script src="js/07-quiz.js?v=20261106b"></script>
+<script src="js/07b-prep.js?v=20261106b"></script>
+<script src="js/08-hud.js?v=20261106b"></script>
+<script src="js/09-server.js?v=20261106b"></script>
+<script src="js/10-shop.js?v=20261106b"></script>
+<script src="js/11-gate-editor.js?v=20261106b"></script>
+<script src="js/12-lobby.js?v=20261106b"></script>
+<script src="js/13-loop.js?v=20261106b"></script>
+<script src="js/14-party.js?v=20261106b"></script>
+<script src="js/15-board.js?v=20261106b"></script>
+<script src="js/16-notes.js?v=20261106b"></script>
 </body>
 </html>

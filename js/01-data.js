@@ -116,6 +116,7 @@ const WAVESETS = {
   {name:'매연 해골', n:4, hp:55, spd:2.1, dmg:7, color:0xe0434a},
   {name:'온실가스 해골 무리', n:5, hp:80, spd:2.4, dmg:9, color:0x8b5cf6},
   {name:'온실가스 해골 대왕', n:2, hp:80, spd:2.4, dmg:9, color:0x8b5cf6, boss:{...BOSS_BASE, hp:620}}],
+ teamwar:[{name:'조별 점령전', n:0, hp:1, spd:1, dmg:0, color:0xe0434a}],
  stage:[{name:'발판 서바이벌', n:0, hp:1, spd:1, dmg:0, color:0xe0434a}],
  runner:[{name:'정답 러너', n:0, hp:1, spd:1, dmg:0, color:0xe0434a}],
  island_peace:[
@@ -153,6 +154,7 @@ const MAPS = {
   rules:['<b>택배:</b> 물류 센터(북쪽 부두)에 상자가 와요. 다가가면 집어 들고 4지선다나 O/X 문제가 나와요. 맞히면 빨리 달려요','<b>배달:</b> 주황 화살표와 빛기둥을 따라 배달지 문 앞 깔개에 서면 배달 완료. 체력도 조금 회복돼요','<b>도둑 해골:</b> 주황색 해골은 바닥의 상자를 훔쳐 바다로 달아나요. 쓰러뜨리면 상자를 되찾아요','<b>정비 시간:</b> 웨이브가 끝나면 문제 3개를 풀어요. 맞힐 때마다 강화 카드(공격력·체력·방어막 등)를 하나 골라요','<b>지식의 수정:</b> 정비가 끝나면 빛나는 수정의 퀴즈를 맞혀 다음 웨이브를 열어요','<b>돌발 퀴즈:</b> 50초마다 4지선다 문제가 나와요',BOSS_RULE,'정답은 강화, 오답은 약화 · 틀린 문제는 다시 나와요 · 체력 0이면 게임 오버'],
   gateText:'잠김 · 빛나는 지식의 수정에서 퀴즈를 맞히면 다음 웨이브가 열려요', clearText:'웨이브 클리어! 지식의 수정에서 다음 웨이브를 여세요',
   winTitle:'섬 마을 배송 완료!', winMsg:'전자 상거래와 택배 산업이 섬 마을을 세계와 이어 줬어요. 아래 틀린 문제를 한 번 더 읽어 보고 마무리해요.'},
+ teamwar:{name:'조별 점령전', need:['mc','ox'], start:[0,12], recharge:30, desc:'선생님이 연 조별 점령전이에요.', rules:[], gateText:'', clearText:'', winTitle:'우리 조 승리!', winMsg:'조별 점령전을 마쳤어요. 함께 싸운 조원들에게 박수!'},
  stage:{name:'발판 서바이벌', need:['mc','ox'], start:[0,0], recharge:30, desc:'선생님이 연 반 전체 퀴즈 게임이에요.', rules:[], gateText:'', clearText:'', winTitle:'끝까지 살아남았어요!', winMsg:'발판 서바이벌을 마쳤어요. 아래 틀린 문제를 한 번 더 읽어 보고 마무리해요.'},
  runner:{name:'정답 러너', need:['mc','ox'], start:[-1.5,0], recharge:30,
   desc:'앞으로 달리면서 문제를 읽고, 정답 색깔 문이 있는 줄로 옮겨 통과하세요. 몬스터와 싸우지 않아요.',

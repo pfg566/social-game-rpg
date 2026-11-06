@@ -54,7 +54,7 @@ function reset(){
   $('#locCard').hidden=true; $('#gateCard').hidden=true;
   TURRETS.forEach(t=>{ t.until=0; t.cd=0; }); bolts.forEach(b=>scene.remove(b.mesh)); bolts=[]; doorFlash=0;
   $('#doorRow').hidden=MAPK!=='defense';
-  $('#parcelRow').hidden=true; islReset(); glacierReset(); runnerReset(); stageReset();
+  $('#parcelRow').hidden=true; islReset(); glacierReset(); runnerReset(); stageReset(); twReset();
 }
 let NICK='', BAN='', CI=null;
 try{ NICK=localStorage.getItem('gsd-nick')||''; }catch(e){}
@@ -134,7 +134,7 @@ function startGame(){
   EASEF = EASES[MODE==='hero'?0:Math.min(2,Math.max(0,(CI&&CI.ease)|0))];
   LOC_TIME = MODE==='hero' ? HERO.loc : Math.round(25*(DIFF<1? 1+(1-DIFF)*.8 : 1))+EASEF.loc;
   document.body.classList.toggle('hero',MODE==='hero');
-  { applyPlay(); const pu=DATA.units.find(u=>u.id===playUnit); applyZoneCfg(zcfgOf(pu)); setMap(PARTY.on?'conquest':STG.joining?'stage':(PLAYMAP||mapOf(pu))); }
+  { applyPlay(); const pu=DATA.units.find(u=>u.id===playUnit); applyZoneCfg(zcfgOf(pu)); setMap(PARTY.on?'conquest':STG.joining?'stage':TWC.joining?'teamwar':(PLAYMAP||mapOf(pu))); }
   PEACE_RUN=PEACE && PEACE_MAPS.includes(MAPK);
   if (PEACE_RUN) WAVES=WAVESETS[MAPK+'_peace'];
   document.body.classList.toggle('peace',PEACE_RUN); document.body.classList.toggle('aim-mouse',JOB==='archer'&&!PEACE_RUN);
@@ -147,7 +147,7 @@ function startGame(){
   reset(); canvas.focus({preventScroll:true});
   try{ applyMood(!PARTY.on&&MAPK==='glacier'?'arctic':pickMood(PARTY.on?PARTY.rid:'')); }catch(e){}
   // 한 판 시간 제한: 선생님이 '게임 열기'에서 정한 분(퀴즈 푸는 시간 포함, 실제 시계 기준)
-  { const g=!PARTY.on&&MAPK!=='stage'&&typeof activeGate==='function'?activeGate():null, lim=g&&g.lim>0?g.lim:0;
+  { const g=!PARTY.on&&MAPK!=='stage'&&MAPK!=='teamwar'&&typeof activeGate==='function'?activeGate():null, lim=g&&g.lim>0?g.lim:0;
     W.lim=lim; W.limEnd=lim?performance.now()+lim*60000:0; W.limWarn=0; W.timeUp=false; $('#timeCard').hidden=!lim; $('#timeCard').classList.remove('hurry'); }
 }
 /* 남은 시간 (매 프레임, 퀴즈 중에도 흘러요) */
