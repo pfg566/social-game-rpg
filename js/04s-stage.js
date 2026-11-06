@@ -105,7 +105,7 @@ function stgItem(i){ const q=STG.qs[i]; return q.k==='mc'?{kind:'mc',q:q.q,o:q.o
 function stgSetupQ(i){
   STG.qi=i; STG.locked=-1; STG.slotHold=-1; STG.holdT=0; STG.answered=false; STG.lockFrac=0; STG.dropK=0;
   stgClearGhosts(); stgSlabsUp(false);
-  if (STG.falling||Math.abs(P.x)>STG_HALF||Math.abs(P.z)>STG_HALF){ P.x=0; P.z=0; } STG.falling=false; STG.fallY=0;
+  P.x=0; P.z=0; W.snapCam=true; STG.falling=false; STG.fallY=0;   // 문제마다 모두 가운데에서 출발해요
   const q=STG.qs[i], rng=stgRng(stgHash(myUid()+':'+STG.meta.t0+':'+i));
   STG.texs.forEach(t=>t.dispose()); STG.texs=[];
   if (q.k==='mc'){
@@ -122,7 +122,7 @@ function stgSetupQ(i){
   const box=$('#stOpts'); box.className='run-opts'+(q.k==='ox'?' two':'');
   if (q.k==='mc') box.innerHTML=STG.perm.map((oi,slot)=>`<div class="run-opt" style="--c:${STG_COL[slot]}"><b>${slot+1}</b><span>${esc(q.o[oi])}<small> · ${STG_POS[slot]}</small></span></div>`).join('');
   else box.innerHTML=[0,1].map(slot=>{ const v=slot===0?STG.oxLeft:1-STG.oxLeft; return `<div class="run-opt" style="--c:${STG_OXCOL[v]}"><b>${v?'X':'O'}</b><span>${slot?'오른쪽 발판':'왼쪽 발판'}</span></div>`; }).join('');
-  $('#stQ').hidden=false; $('#stLock').textContent=STG.lives>0?'정답 발판에 1.5초 서 있으면 답이 잠겨요. 빨리 잠글수록 점수 UP!':'👻 관전 중 · 이 문제를 맞히면 부활해요!';
+  $('#stQ').hidden=false; $('#stLock').textContent=STG.lives>0?'정답 발판으로 달려가요! 시간이 끝날 때 서 있는 발판이 내 답 · 일찍 도착할수록 점수 UP':'👻 관전 중 · 이 문제를 맞히면 부활해요!';
   $('#stMsg').hidden=true;
 }
 /* 내가 서 있는 칸 → 보기 번호 */
@@ -134,31 +134,26 @@ function stgSlotOfOpt(opt){ const q=STG.qs[STG.qi]; if (opt<0) return -1; return
 function stgCorrectOpt(){ const q=STG.qs[STG.qi]; return q.k==='mc'?0:(q.a?0:1); }
 function stgSendAns(opt,frac){ const u=myUid(); if (!u) return; fbDb.ref(`stage/${STG.cid}/ans/${STG.qi}/${u}`).set({c:opt,f:Math.round(frac*100)/100,d:STG.lives<=0?1:0}).catch(()=>{}); }
 function stgQTick(dt,C){
+  // 잠금 없음: 시간이 끝날 때 서 있는 발판이 답. 빠른 보너스는 그 발판에 마지막으로 도착한 시각으로 계산해요
   const slot=stgSlotAt(P.x,P.z);
-  if (STG.locked<0){
-    if (slot>=0 && slot===STG.slotHold){ STG.holdT+=dt; if (STG.holdT>=STG_LOCK){ STG.locked=slot; STG.lockFrac=Math.max(0,C.left/C.dur); stgSendAns(stgOptOfSlot(slot),STG.lockFrac); SFX.card&&SFX.card();
-        const q=STG.qs[STG.qi]; $('#stLock').textContent=`🔒 ${q.k==='mc'?(slot+1)+'번':(stgOptOfSlot(slot)?'X':'O')} 발판으로 결정! 결과를 기다려요`; fx.rise(P.x,P.z,0xffffff,16); } }
-    else { STG.slotHold=slot; STG.holdT=0; }
-  } else {
-    // 잠긴 뒤에는 그 발판 안에서만 움직여요
-    const q=STG.qs[STG.qi], s=STG.locked;
-    if (q.k==='mc'){ const [sx,sz]=STG_SLOT[s]; P.x=sx<0?Math.min(-.8,P.x):Math.max(.8,P.x); P.z=sz<0?Math.min(-.8,P.z):Math.max(.8,P.z); }
-    else P.x=s?Math.max(.8,P.x):Math.min(-.8,P.x);
-  }
+  if (slot!==STG.slotHold){ STG.slotHold=slot; STG.lockFrac=slot>=0?Math.max(0,C.left/C.dur):0;
+    const q=STG.qs[STG.qi];
+    $('#stLock').textContent=slot<0?(STG.lives>0?'정답 발판으로 달려가요! 일찍 도착할수록 점수 UP':'👻 관전 중 · 이 문제를 맞히면 부활해요!')
+      :`지금 ${q.k==='mc'?(slot+1)+'번':(stgOptOfSlot(slot)?'X':'O')} 발판 · 시간이 끝날 때 서 있는 발판이 내 답이에요`; }
   const k=Math.max(0,Math.min(1,C.left/C.dur)); $('#stBar').style.width=(k*100)+'%'; $('#stBar').classList.toggle('hurry',k<.3);
   $('#stTime').textContent=Math.ceil(C.left)+'초';
-  STG.ring.visible=STG.locked<0&&STG.holdT>0; if (STG.ring.visible){ STG.ring.position.set(P.x,.08,P.z); STG.ring.material.uniforms.uK.value=STG.holdT/STG_LOCK; }
+  STG.ring.visible=false;
 }
 function stgReveal(){
   const i=STG.qi, item=stgItem(i), C=stgCorrectOpt();
-  let opt, frac=0;
-  if (STG.locked>=0){ opt=stgOptOfSlot(STG.locked); frac=STG.lockFrac; } else { opt=stgOptOfSlot(stgSlotAt(P.x,P.z)); if (opt>=0) stgSendAns(opt,0); }
+  const slot=stgSlotAt(P.x,P.z), opt=stgOptOfSlot(slot), frac=slot>=0&&slot===STG.slotHold?STG.lockFrac:0;
+  if (opt>=0) stgSendAns(opt,frac);
   const ok=opt===C, dead=STG.lives<=0;
   settle(ok,item,{type:'stage'});
   let msg='';
   if (ok){ SFX.correct();
     if (dead){ STG.lives=1; msg='부활! ❤️ 1개로 다시 시작해요'; }
-    else { const bonus=Math.round(50*frac/5)*5; STG.score+=100+bonus; STG.correct++; W.speedPts=(W.speedPts||0)+bonus; msg=`정답! +${100+bonus}점`+(bonus?` (빨리 잠금 +${bonus})`:''); }
+    else { const bonus=Math.round(50*frac/5)*5; STG.score+=100+bonus; STG.correct++; W.speedPts=(W.speedPts||0)+bonus; msg=`정답! +${100+bonus}점`+(bonus?` (일찍 도착 +${bonus})`:''); }
   } else { SFX.wrong();
     if (!dead){ STG.lives--; msg=opt<0?'발판을 고르지 않았어요… ❤️ -1':'아쉬워요… ❤️ -1'; } else msg='아쉬워요… 다음 문제에서 다시 도전!';
     if (opt>=0||!dead) { STG.falling=true; STG.fallV=0; }
@@ -168,7 +163,7 @@ function stgReveal(){
   m.innerHTML=`<b>${msg}</b><small>정답: ${esc(correctText(item))}</small><p>${esc(item.e||'')}</p>`;
   $('#stQ').hidden=true; STG.ring.visible=false;
   stgWriteMe();
-  stgLoadGhosts(i);
+  setTimeout(()=>{ if (STG.qi===i) stgLoadGhosts(i); },1300);   // 친구들 답이 모두 올라올 때까지 잠깐 기다려요
 }
 /* 친구들: 결과가 나올 때만, 내 발판 배치 위에 보여요 */
 function stgClearGhosts(){ STG.ghosts.forEach(g=>scene.remove(g.g)); STG.ghosts=[]; }
@@ -178,7 +173,7 @@ async function stgLoadGhosts(i){
   let names={}; try{ names=(await fbDb.ref(`stage/${STG.cid}/p`).once('value')).val()||{}; }catch(e){}
   if (STG.qi!==i||!v) return;
   const me=myUid(), C=stgCorrectOpt(); let k=0, right=0, all=0;
-  for (const u in v){ const a=v[u]; if (!a||typeof a.c!=='number') continue; all++; if (a.c===C) right++; if (u===me) continue; if (k>=30) continue; k++;
+  for (const u in v){ const a=v[u]; if (!a||typeof a.c!=='number'||a.c<0) continue; all++; if (a.c===C) right++; if (u===me) continue; if (k>=30) continue; k++;
     const slot=stgSlotOfOpt(a.c), q=STG.qs[i], rng=stgRng(stgHash(u+i));
     let x,z; if (q.k==='mc'){ const [sx,sz]=STG_SLOT[slot]; x=sx*rnd(1.3,6.6); z=sz*rnd(1.3,6.6); } else { x=(slot?1:-1)*rnd(1.3,6.8); z=rnd(-7,7); }
     const hue=rng(), col=new THREE.Color().setHSL(hue,.55,.62);
