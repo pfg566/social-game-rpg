@@ -6,7 +6,7 @@
 const STG_COL=['#e5484d','#3b82f6','#22a35a','#e8a400'], STG_OXCOL=['#3b82f6','#e5484d'];
 const STG_SLOT=[[-1,-1],[1,-1],[-1,1],[1,1]], STG_POS=['왼쪽 위','오른쪽 위','왼쪽 아래','오른쪽 아래'];
 const STG_HALF=7.6, STG_LOCK=1.5, STG_INTRO=8;
-const STG={cid:'',metaRef:null,meta:null,qs:null,qsKey:'',joining:false,on:false,qi:-1,phase:'',lives:3,score:0,correct:0,perm:null,oxLeft:0,
+const STG={av:{},live:{},liveRef:null,names:{},posT:0,posLast:'',nameT:0,cid:'',metaRef:null,meta:null,qs:null,qsKey:'',joining:false,on:false,qi:-1,phase:'',lives:3,score:0,correct:0,perm:null,oxLeft:0,
   slotHold:-1,holdT:0,locked:-1,lockFrac:0,answered:false,ghosts:[],fallY:0,falling:false,rvShown:-1,slabs:[],oxSlabs:[],texs:[],ended:false,rank:null,off:0,pT:0,joinN:0,dropK:0,wasDead:false};
 let stageSea=null;
 
@@ -81,12 +81,12 @@ function stageReset(){
   ['#stHud','#stQ','#stMsg','#stRank'].forEach(s=>{ const e=$(s); if (e) e.hidden=true; });
   if (MAPK!=='stage'){ STG.on=false; return; }
   STG.on=true; Object.assign(STG,{qi:-1,phase:'',lives:3,score:0,correct:0,perm:null,slotHold:-1,holdT:0,locked:-1,lockFrac:0,answered:false,falling:false,fallY:0,rvShown:-1,ended:false,rank:null,pT:0,dropK:0,wasDead:false});
-  stgClearGhosts(); stgSlabsUp(true);
+  stgRemoveAvatars(); stgSlabsUp(true); stgListenLive(); STG.nameT=0; STG.posLast='';
   P.x=0; P.z=0; W.nextWaveAt=-1; W.nextQuiz=1e9;
   document.body.classList.add('stagemode'); $('#stHud').hidden=false;
   stgWriteMe();
 }
-function stgWriteMe(){ const u=myUid(); if (!u||!STG.cid) return; fbDb.ref(`stage/${STG.cid}/p/${u}`).set({n:myName().slice(0,12),num:STUDENT?+STUDENT.num:0,l:STG.lives,s:STG.score,c:STG.correct,a:W.asked|0,job:JOB,t:firebase.database.ServerValue.TIMESTAMP}).catch(()=>{}); }
+function stgWriteMe(){ const u=myUid(); if (!u||!STG.cid) return; fbDb.ref(`stage/${STG.cid}/p/${u}`).set({n:myName().slice(0,12),num:STUDENT?+STUDENT.num:0,l:STG.lives,s:STG.score,c:STG.correct,a:W.asked|0,job:JOB,look:equippedLook(JOB),t:firebase.database.ServerValue.TIMESTAMP}).catch(()=>{}); }
 
 /* 지금 몇 번째 문제 · 어떤 단계인지 (선생님이 시작한 시각 기준으로 모두 같아요) */
 function stgClock(){
@@ -166,22 +166,52 @@ function stgReveal(){
   setTimeout(()=>{ if (STG.qi===i) stgLoadGhosts(i); },1300);   // 친구들 답이 모두 올라올 때까지 잠깐 기다려요
 }
 /* 친구들: 결과가 나올 때만, 내 발판 배치 위에 보여요 */
-function stgClearGhosts(){ STG.ghosts.forEach(g=>scene.remove(g.g)); STG.ghosts=[]; }
-const STG_GHOST_GEO={b:new THREE.CylinderGeometry(.34,.42,1.1,12),h:new THREE.SphereGeometry(.36,14,10)};
+/* 친구들: 항상 보여요. 친구 화면에서 서 있는 자리를 그대로 보여 주는데, 발판 배치가 학생마다 달라서 따라가도 소용없어요.
+   정답 발표 때는 친구가 고른 보기가 '내 화면'에서 놓인 발판으로 옮겨 가고, 틀린 친구는 발판과 함께 떨어져요. */
+function stgClearGhosts(){ for (const u in STG.av){ const A=STG.av[u]; A.rv=null; A.y=0; } }
+function stgAvatar(u){
+  let A=STG.av[u]; if (A) return A;
+  const info=STG.names[u]; if (!info) return null;
+  const job=JOBS[info.job]?info.job:'knight', ch=makePlayerChar(job), g=new THREE.Group(); g.add(ch.root); scene.add(g);
+  dressP2(ch,{...DEFAULTS[job],...(info.look||{})}).catch(()=>{});
+  const tag=nameTag(info.n||'친구'); tag.position.y=3.05; g.add(tag); ch.anim.setBase('idle');
+  A={u,g,ch,x:0,z:0,f:0,y:0,rv:null,seen:0}; STG.av[u]=A; return A;
+}
+function stgRemoveAvatars(){ for (const u in STG.av){ const A=STG.av[u]; scene.remove(A.g); A.ch.mixer.stopAllAction(); } STG.av={}; }
+function stgListenLive(){
+  stgUnlisten(); const c=STG.cid, me=myUid(); const r=fbDb.ref(`stage/${c}/pos`);
+  const cb=s=>{ if (s.key===me) return; const a=String(s.val()||'').split(','); if (a.length<3) return; STG.live[s.key]={x:+a[0]/10,z:+a[1]/10,f:+a[2]/100,t:performance.now()}; };
+  r.on('child_added',cb,()=>{}); r.on('child_changed',cb,()=>{}); STG.liveRef=[r,cb];
+}
+function stgUnlisten(){ if (STG.liveRef){ const [r,cb]=STG.liveRef; r.off('child_added',cb); r.off('child_changed',cb); STG.liveRef=null; } STG.live={}; }
+function stgSendPos(dt){
+  STG.posT-=dt; if (STG.posT>0) return; STG.posT=.2;
+  const s=[Math.round(P.x*10),Math.round(P.z*10),Math.round(Math.atan2(P.fx,P.fz)*100)].join(','); if (s===STG.posLast) return; STG.posLast=s;
+  fbDb.ref(`stage/${STG.cid}/pos/${myUid()}`).set(s).catch(()=>{});
+}
+function stgAvatarTick(dt){
+  const now=performance.now();
+  for (const u in STG.live){ const L=STG.live[u], A=stgAvatar(u); if (!A) continue;
+    A.g.visible=now-L.t<30000||!!A.rv;
+    let tx=L.x, tz=L.z, ty=0;
+    if (A.rv){ tx=A.rv.x; tz=A.rv.z; if (!A.rv.ok&&A.rv.fall){ A.rv.vy+=24*dt; A.y-=A.rv.vy*dt; } ty=A.y; }
+    const ox=A.x, oz=A.z, k=Math.min(1,dt*(A.rv?6:12)); A.x+=(tx-A.x)*k; A.z+=(tz-A.z)*k;
+    const mv=Math.hypot(A.x-ox,A.z-oz)/Math.max(dt,1e-3);
+    if (mv>.4){ const f=Math.atan2(A.x-ox,A.z-oz); let df=f-A.f; df=Math.atan2(Math.sin(df),Math.cos(df)); A.f+=df*Math.min(1,dt*12); }
+    A.g.position.set(A.x,Math.max(-40,ty),A.z); A.ch.root.rotation.y=A.f;
+    A.ch.anim.setBase(mv>1.2?'run':'idle'); A.ch.mixer.update(dt);
+  }
+}
 async function stgLoadGhosts(i){
   let v=null; try{ v=(await fbDb.ref(`stage/${STG.cid}/ans/${i}`).once('value')).val(); }catch(e){}
-  let names={}; try{ names=(await fbDb.ref(`stage/${STG.cid}/p`).once('value')).val()||{}; }catch(e){}
   if (STG.qi!==i||!v) return;
-  const me=myUid(), C=stgCorrectOpt(); let k=0, right=0, all=0;
-  for (const u in v){ const a=v[u]; if (!a||typeof a.c!=='number'||a.c<0) continue; all++; if (a.c===C) right++; if (u===me) continue; if (k>=30) continue; k++;
-    const slot=stgSlotOfOpt(a.c), q=STG.qs[i], rng=stgRng(stgHash(u+i));
-    let x,z; if (q.k==='mc'){ const [sx,sz]=STG_SLOT[slot]; x=sx*rnd(1.3,6.6); z=sz*rnd(1.3,6.6); } else { x=(slot?1:-1)*rnd(1.3,6.8); z=rnd(-7,7); }
-    const hue=rng(), col=new THREE.Color().setHSL(hue,.55,.62);
-    const g=new THREE.Group(); g.position.set(x,0,z);
-    const mat=toonMat({color:col.getHex(),transparent:true,opacity:.92});
-    const b=new THREE.Mesh(STG_GHOST_GEO.b,mat); b.position.y=.55; g.add(b); const h=new THREE.Mesh(STG_GHOST_GEO.h,mat); h.position.y=1.42; g.add(h);
-    const nm=(names[u]&&names[u].n)||'친구'; const tag=nameTag(nm); tag.position.y=2.25; g.add(tag);
-    scene.add(g); STG.ghosts.push({g,ok:a.c===C,v:0}); fx.burst(x,1,z,col.getHex(),6,2); }
+  const me=myUid(), C=stgCorrectOpt(), q=STG.qs[i]; let right=0, all=0;
+  for (const u in v){ const a=v[u]; if (!a||typeof a.c!=='number'||a.c<0) continue; all++; if (a.c===C) right++; if (u===me) continue;
+    const A=stgAvatar(u); if (!A) continue;
+    const slot=stgSlotOfOpt(a.c), rng=stgRng(stgHash(u+':'+i));
+    let x,z; if (q.k==='mc'){ const [sx,sz]=STG_SLOT[slot]; x=sx*(1.4+rng()*5.2); z=sz*(1.4+rng()*5.2); } else { x=(slot?1:-1)*(1.4+rng()*5.4); z=-6.8+rng()*13.6; }
+    A.rv={x,z,ok:a.c===C,vy:0,fall:false}; A.y=0; A.g.visible=true;
+    setTimeout(()=>{ if (A.rv) A.rv.fall=true; },700); }
   const rate=all?Math.round(right/all*100):0;
   const m=$('#stMsg'); if (!m.hidden && all) m.insertAdjacentHTML('beforeend',`<p class="st-rate">반 전체 정답률 ${rate}% (${right}/${all}명)</p>`);
 }
@@ -191,7 +221,6 @@ function stgRvTick(dt){
   const C=stgCorrectOpt(), q=STG.qs[STG.qi], cs=stgSlotOfOpt(C), y=-STG.dropK*STG.dropK*30;
   if (q.k==='mc') STG.slabs.forEach((s,slot)=>{ if (slot!==cs) s.g.position.y=y; });
   else STG.oxSlabs.forEach((s,slot)=>{ if (slot!==cs) s.g.position.y=y; });
-  for (const gh of STG.ghosts){ if (!gh.ok){ gh.v+=24*dt; gh.g.position.y-=gh.v*dt; } }
 }
 async function stgShowRank(){
   if (STG.rank) return; STG.rank=true;
@@ -203,7 +232,7 @@ async function stgShowRank(){
   $('#stRankMe').textContent=myR?`나는 ${list.length}명 중 ${myR}등 · ${STG.score}점 · 정답 ${STG.correct}개`:'';
   $('#stRank').hidden=false;
 }
-function stgEndUI(){ document.body.classList.remove('stagemode'); ['#stHud','#stQ','#stMsg','#stRank'].forEach(s=>{ const e=$(s); if (e) e.hidden=true; }); STG.ring.visible=false; }
+function stgEndUI(){ stgUnlisten(); stgRemoveAvatars(); document.body.classList.remove('stagemode'); ['#stHud','#stQ','#stMsg','#stRank'].forEach(s=>{ const e=$(s); if (e) e.hidden=true; }); STG.ring.visible=false; }
 function stgFinish(){ $('#stRank').hidden=true; if (W.state==='play') endGame(STG.lives>0); }
 function stageFrame(dt,real,now){
   if (!W.paused) W.t+=dt;
@@ -226,13 +255,16 @@ function stageFrame(dt,real,now){
     m.innerHTML=C.ph==='intro'?`<b>곧 시작해요! ${Math.ceil(C.left)}</b><p>문제가 뜨면 정답 발판으로 달려가요. 발판 배치는 친구마다 달라요!</p>`:`<b>선생님이 곧 시작해요</b><p>지금 ${STG.joinN}명 들어왔어요 · WASD로 발판 위를 걸어 보세요</p>`; }
   else if (C.ph==='done'||C.ph==='gone'){ stgShowRank(); }
   STG.phase=C.ph;
+  STG.nameT-=dt; if (STG.nameT<=0){ STG.nameT=4; fbDb.ref(`stage/${STG.cid}/p`).once('value').then(s=>{ const v=s.val()||{}; STG.names=v; STG.joinN=Object.keys(v).length; }).catch(()=>{}); }
+  if (C.ph!=='done'&&C.ph!=='gone'&&!STG.falling) stgSendPos(dt);
+  stgAvatarTick(dt);
   // 캐릭터
   pg.position.set(P.x,STG.fallY,P.z); { let dy=Math.atan2(P.fx,P.fz)-pg.rotation.y; dy=Math.atan2(Math.sin(dy),Math.cos(dy)); pg.rotation.y+=dy*Math.min(1,dt*14); }
   pg.traverse&&0;
   if (knight){ const A=knight.anim; setBaseSynced(A,moving?'run':'idle',moving?1.15:1); knight.mixer.update(dt); }
   if (STG.falling && STG.fallY<-14 && C.ph!=='rv'){ STG.falling=false; STG.fallY=0; P.x=0; P.z=0; }
   for (const c of clouds){ c.position.x+=c.userData.v*dt; if (c.position.x>130) c.position.x=-130; }
-  fx.update(dt); updateDreamy(real); qualityTick(now);
+  fx.update(dt); updateCombatFx(dt); updateDreamy(real); qualityTick(now);
   { const o=sun.userData.off||[22,38,14]; sun.position.set(P.x+o[0],o[1],P.z+o[2]); sun.target.position.set(P.x,0,P.z); sun.target.updateMatrixWorld(); }
   const tgt=new THREE.Vector3(P.x*.3,19,P.z*.3+12.5); camera.position.lerp(tgt,W.snapCam?1:Math.min(1,dt*6)); W.snapCam=false; camera.lookAt(P.x*.3,0,P.z*.3-3.2);
   if (shake>0){ shake=Math.max(0,shake-dt); camera.position.x+=rnd(-1,1)*shake*.6; camera.position.y+=rnd(-1,1)*shake*.6; }

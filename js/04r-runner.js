@@ -180,7 +180,7 @@ function runnerFrame(dt,real,now){
   pg.position.set(P.x,RUN.y,P.z); pg.rotation.set(0,Math.PI-RUN.lean*.25,0);
   if (knight){ const A=knight.anim; setBaseSynced(A,'run',Math.min(2.4,Math.max(1,RUN.spd*(RUN.stun>0?.45:1)/6.5))); knight.mixer.update(W.paused?0:dt); }
   for (const c of clouds){ c.position.x+=c.userData.v*dt; if (c.position.x>130) c.position.x=-130; }
-  fx.update(dt); updateDreamy(real); qualityTick(now);
+  fx.update(dt); updateCombatFx(dt); updateDreamy(real); qualityTick(now);
   { const o=sun.userData.off||[22,38,14]; sun.position.set(P.x+o[0],o[1],P.z+o[2]); sun.target.position.set(P.x,0,P.z); sun.target.updateMatrixWorld(); }
   const cx=P.x*.45, tgt=new THREE.Vector3(cx,6.6,P.z+10.5);
   camera.position.lerp(tgt,W.snapCam?1:Math.min(1,dt*8)); W.snapCam=false; camera.lookAt(P.x*.55,1.6,P.z-9);
