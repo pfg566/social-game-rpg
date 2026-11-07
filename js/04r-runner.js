@@ -175,6 +175,7 @@ function runHUD(){
   if (!RUN.gate) $('#runProg').textContent=`문제 ${Math.min(RUN.n,RUN.done+1)}/${RUN.n}`;
 }
 function runnerFrame(dt,real,now){
+  if (knight && (knight.anim.dead||endPose)){ knight.anim.revive(); endPose=false; }   // 지난 판에서 쓰러진(누운) 자세가 남지 않게
   if (!W.paused){ W.t+=dt; runUpdate(dt); }
   lobbyTick(real,dt);
   pg.position.set(P.x,RUN.y,P.z); pg.rotation.set(0,Math.PI-RUN.lean*.25,0);

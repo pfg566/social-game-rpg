@@ -235,6 +235,7 @@ async function stgShowRank(){
 function stgEndUI(){ stgUnlisten(); stgRemoveAvatars(); document.body.classList.remove('stagemode'); ['#stHud','#stQ','#stMsg','#stRank'].forEach(s=>{ const e=$(s); if (e) e.hidden=true; }); STG.ring.visible=false; }
 function stgFinish(){ $('#stRank').hidden=true; if (W.state==='play') endGame(STG.lives>0); }
 function stageFrame(dt,real,now){
+  if (knight && (knight.anim.dead||endPose)){ knight.anim.revive(); endPose=false; }   // 지난 판에서 쓰러진(누운) 자세가 남지 않게
   if (!W.paused) W.t+=dt;
   lobbyTick(real,dt);
   const C=stgClock();
