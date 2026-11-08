@@ -102,7 +102,7 @@ function initFirebase(){
     $('#teacherLogin').textContent = isAdmin||!plain ? '로그아웃' : '문제 관리 로그인';
     flushPending();
     autoOpenEditor();
-  }).catch(()=>{ loadBank(); });
+  }).catch(()=>{ loadBank(); editCoverOff(); });
 }
 $('#teacherLogin').addEventListener('click',async e=>{
   e.preventDefault(); if (!fbAuth) return;
@@ -116,11 +116,19 @@ function loadSettings(){
   fbDb.ref('settings').on('value',snap=>{ const v=snap.val()||{}; HERO_OPEN=v.heroMode===true; FREE_PLAY=v.freePlay===true; PARTY_LOCK={quiz:v.partyQuizOff!==false,fight:v.partyFightOff!==false}; /* 선생님이 열기 전에는 잠겨 있어요 */ if (W.state!=='play'){ applyPlay(); renderLevels(); } try{ applyPartyLock(); }catch(e){} },()=>{ HERO_OPEN=false; });
 }
 let BANK_LOADED=false;
+/* 문제 관리 탭(index.html?edit=1): 게임 첫 화면(학생 로그인)은 처음부터 가리고 '불러오는 중'만 보여 줘요 */
+const EDIT_MODE=/[?&]edit=1/.test(location.search);
+if (EDIT_MODE){ document.body.classList.add('editmode');
+  const c=document.createElement('div'); c.id='editCover';
+  c.style.cssText='position:fixed;inset:0;z-index:9998;display:grid;place-items:center;background:#f3efe4;font-family:inherit;font-size:18px;font-weight:800;color:#18213a';
+  c.innerHTML='<div style="text-align:center">📝 문제 관리 화면을 여는 중…<br><small style="font-weight:600;font-size:13px;color:#666">선생님 로그인을 확인하고 있어요</small></div>'; document.body.appendChild(c);
+  setTimeout(()=>{ if (document.getElementById('editCover')){ editCoverOff(); if (!isAdmin) editLoginPrompt(); } },15000); }
+function editCoverOff(){ const c=document.getElementById('editCover'); if (c) c.remove(); }
 /* 선생님 결과판의 '📝 문제 추가·수정'에서 열면(index.html?edit=1) 문제 관리 화면을 바로 보여 줘요 */
 function autoOpenEditor(){
   if (!/[?&]edit=1/.test(location.search)) return;
-  if (!isAdmin){ editLoginPrompt(); return; }
-  let n=0; const t=setInterval(()=>{ n++; if (BANK_LOADED||n>40){ clearInterval(t); try{ openEditor(); }catch(e){} } },150);
+  if (!isAdmin){ editCoverOff(); editLoginPrompt(); return; }
+  let n=0; const t=setInterval(()=>{ n++; if (BANK_LOADED||n>40){ clearInterval(t); try{ openEditor(); }catch(e){} editCoverOff(); } },150);
 }
 /* 문제 관리 탭인데 선생님 로그인이 안 되어 있으면: 학생 로그인 창 대신 선생님 로그인 안내를 크게 보여 줘요 */
 function editLoginPrompt(){

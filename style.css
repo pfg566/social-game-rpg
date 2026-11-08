@@ -676,3 +676,5 @@ body.twmode #hud, body.twmode #skillbar, body.twmode #hint, body.twmode #touch, 
 .pc-title{display:inline-block;width:max-content;font-size:11px!important;font-weight:800;color:#8a5a00!important;background:#fff1b8;border:1.5px solid #e0b23a;border-radius:999px;padding:0 7px;margin:1px 0}
 .bd-title{font-size:10.5px;color:#8a5a00;background:#fff1b8;border-radius:999px;padding:0 5px;font-weight:700}
 .rewardbox .ach-pop b,.rewardbox .explore b{font-size:inherit;font-family:inherit;font-weight:800}.ach-pop b{font-size:14.5px!important}
+
+body.editmode #title{visibility:hidden}
