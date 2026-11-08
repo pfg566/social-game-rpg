@@ -192,7 +192,8 @@ function renderProfileCard(){ try{ if (typeof refreshModeBadges==='function') se
   $('#pcCoins').textContent=availCoins().toLocaleString('ko-KR');
 }
 function lgError(msg){ const e=$('#lgErr'); e.hidden=!msg; e.textContent=msg||''; }
-try{ $('#lgNum').value=localStorage.getItem('gsd-lgnum')||''; }catch(e){}
+// 번호 칸은 항상 빈칸으로 시작해요 (번호가 미리 들어 있으면 비밀번호 칸 대신 코드 칸이 먼저 떠서 헷갈려요)
+$('#lgNum').value=''; try{ localStorage.removeItem('gsd-lgnum'); }catch(e){}
 $('#lgCode').addEventListener('input',e=>{ if (e.target.type!=='password'){ const v=e.target.value.replace(/\s/g,''); if (v!==e.target.value) e.target.value=v; } lgError(''); });   // 비밀번호는 대소문자를 그대로 둬요 (코드는 화면에서만 대문자로 보여요)
 $('#guestBtn').addEventListener('click',()=>{ if (!isAdmin) return; AUTHMODE='guest'; showAuthUI(); $('#nick').focus(); });
 $('#backLogin').addEventListener('click',()=>{ AUTHMODE='login'; showAuthUI(); $('#lgCode').focus(); });
@@ -206,7 +207,7 @@ $('#nick').addEventListener('keydown',e=>{ if (e.key==='Enter'){ e.preventDefaul
 $('#gcBack').addEventListener('click',()=>{ GUEST_IN=false; AUTHMODE='guest'; showAuthUI(); $('#nick').focus(); });
 $('#lgCode').addEventListener('keydown',e=>{ if (e.key==='Enter'){ e.preventDefault(); studentLogin(); } });
 $('#lgBtn').addEventListener('click',()=>studentLogin());
-$('#pcLogout').addEventListener('click',async()=>{ STUDENT=null; PROFILE=null; WARDROBE=null; applyLook(guestLook()); AUTHMODE='login'; PENDING_PW=''; showAuthUI(); $('#lgCode').value=''; lgModeKey=''; lgModeCheck(); try{ await fbAuth.signOut(); }catch(e){} });
+$('#pcLogout').addEventListener('click',async()=>{ STUDENT=null; PROFILE=null; WARDROBE=null; applyLook(guestLook()); AUTHMODE='login'; PENDING_PW=''; showAuthUI(); $('#lgCode').value=''; $('#lgNum').value=''; lgModeKey=''; lgModeCheck(); try{ await fbAuth.signOut(); }catch(e){} });
 
 let loggingIn=false;
 async function studentLogin(){
@@ -243,7 +244,7 @@ async function studentLogin(){
       lgError(/timeout/.test(String(e&&e.message))?'서버가 응답하지 않아요. 잠시 뒤 다시 해 주세요.':'학급·번호·코드가 맞지 않아요. 선생님께 받은 코드 카드를 확인해 주세요.');
       return;
     }
-    try{ localStorage.setItem('gsd-cid',c); localStorage.setItem('gsd-lgnum',n); }catch(_){}
+    try{ localStorage.setItem('gsd-cid',c); }catch(_){}
     PENDING_PW=code;   // 코드로 들어왔으면 비밀번호를 만들게 해요
     if (!val){ AUTHMODE='name'; showAuthUI(); $('#pfName').focus(); return; }
     PROFILE=val; AUTHMODE='setpw'; showAuthUI(); $('#pw1').focus(); loadWardrobe();
@@ -274,7 +275,7 @@ async function pwLogin(c,n,code,pw){
     let val;
     try{ val=(await withTimeout(profRef().once('value'),10000)).val(); }
     catch(e){ STUDENT=null; try{ await fbAuth.signOut(); }catch(_){} lgError('선생님이 코드를 새로 만들었어요. 새 코드로 다시 들어와 주세요.'); return; }
-    try{ localStorage.setItem('gsd-cid',c); localStorage.setItem('gsd-lgnum',n); }catch(_){}
+    try{ localStorage.setItem('gsd-cid',c); }catch(_){}
     if (viaCode) PENDING_PW=code;
     if (!val){ AUTHMODE='name'; showAuthUI(); $('#pfName').focus(); return; }
     PROFILE=val; AUTHMODE=viaCode?'setpw':'student'; showAuthUI(); loadWardrobe();
