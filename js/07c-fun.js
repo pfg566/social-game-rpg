@@ -208,6 +208,7 @@ async function dexWrite(){
     const unitQs=MC.concat(OX,typeof CLS!=='undefined'?CLS:[],typeof LOC!=='undefined'?LOC:[]).filter(it=>it&&it.q);
     const got=unitQs.filter(it=>have.has(noteKey(String(it.q).slice(0,300)))).length;
     const el=$('#sDex'); if (el){ el.hidden=false; el.innerHTML=`📚 <b>지식 도감</b> ${fresh?`새 카드 <b>+${fresh}</b> · `:''}이 단원 ${got}/${unitQs.length}장 모음${got>=unitQs.length&&unitQs.length?' 🎉 완성!':''}`; }
+    if (unitQs.length>=10 && got>=unitQs.length && typeof achGrant==='function') setTimeout(()=>achGrant(['dex']),1500);
   }catch(e){}
 }
 

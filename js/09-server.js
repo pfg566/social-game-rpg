@@ -18,7 +18,8 @@ function toRecord(r,uid){
   return {uid,cls:String(r.cls).slice(0,4),cid:String(r.cid||'').slice(0,10),sch:String(r.sch||'').slice(0,30),grade:+r.grade||0,year:+r.year||0,nick:String(r.nick).slice(0,20),unit:String(r.unit).slice(0,80),unitId:String(r.unitId).slice(0,20),
     win:!!r.win,score:r.score|0,correct:r.correct|0,asked:r.asked|0,kills:r.kills|0,timeSec:r.timeSec|0,
     wrong:r.wrong.join('\n').slice(0,3000),ts:firebase.database.ServerValue.TIMESTAMP,mode:r.mode==='hero'?'hero':(r.lv==='easy'||r.lv==='hard')?r.lv:'normal',diff:Math.round((r.diff||1)*100)/100,
-    ...(r.cs?{job:String(r.job||'').slice(0,12),map:String(r.map||'').slice(0,10),ease:Math.max(-1,Math.min(2,r.ease|0)),cs:r.cs}:{})};
+    ...(r.cs?{job:String(r.job||'').slice(0,12),map:String(r.map||'').slice(0,10),ease:Math.max(-1,Math.min(2,r.ease|0)),cs:r.cs}:{}),
+    ...(r.gm?{mp:Math.max(0,Math.min(1000000,r.mp|0)),gm:String(r.gm).slice(0,12)}:{})};
 }
 function withTimeout(p,ms){ return Promise.race([p,new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),ms))]); }
 async function pushResult(r){
@@ -29,6 +30,8 @@ async function pushResult(r){
   catch(e){
     // 예전 보안 규칙(모드·난이도 칸이 없는 규칙)이면 그 두 칸을 빼고 다시 저장
     if (!/permission|PERMISSION/i.test(String(e&&(e.code||e.message)))) throw e;
+    // 모드 기록 칸(mp·gm)이 없는 예전 규칙이면 그 칸만 빼고 다시
+    if (rec.gm!==undefined){ delete rec.mp; delete rec.gm; try{ await withTimeout(fbDb.ref('results').push(rec),10000); return; }catch(e0){ if (!/permission|PERMISSION/i.test(String(e0&&(e0.code||e0.message)))) throw e0; } }
     if (rec.mode==='easy'||rec.mode==='hard'){ rec.mode='normal'; try{ await withTimeout(fbDb.ref('results').push(rec),10000); return; }catch(e1){ if (!/permission|PERMISSION/i.test(String(e1&&(e1.code||e1.message)))) throw e1; } }
     if (rec.cs){ delete rec.job; delete rec.map; delete rec.ease; delete rec.cs;
       try{ await withTimeout(fbDb.ref('results').push(rec),10000); return; }
@@ -151,9 +154,10 @@ function showAuthUI(){
   renderJobPick();
   watchPlog(); try{ watchPartyLog(); }catch(e){} updateGateUI(); try{ applyPlay(); }catch(e){}
 }
-function renderProfileCard(){
+function renderProfileCard(){ try{ if (typeof refreshModeBadges==='function') setTimeout(refreshModeBadges,0); }catch(e){}
   const L=levelOf(PROFILE.xp);
   $('#pcName').textContent=PROFILE.name||'이름 없음';
+  { const t=$('#pcTitle'); if (t){ const tt=PROFILE.title&&typeof titleText==='function'?titleText(PROFILE.title):''; t.hidden=!tt; t.textContent=tt; } }
   { const ci=classInfo(STUDENT.cid); $('#pcWho').textContent=`${ci?ci.label:''} ${STUDENT.num}번`; }
   $('#pcLv').textContent=`Lv.${L.lv}`;
   $('#pcXp').style.width=Math.round(L.rest/L.need*100)+'%';
@@ -318,17 +322,24 @@ async function enterStudentFromSession(u){
 }
 
 /* 게임이 끝나면 노력에 따라 보상 */
+const XP_CAP=1000, COIN_CAP=500, XP_TRY_MAX=30;   // 한 판 상한: 문제가 많이 나오는 모드만 계속해도 끝없이 쌓이지 않게
 async function grantRewards(r,fixedN){
   const box=$('#rewardBox');
   if (!STUDENT||!PROFILE){ box.className='rewardbox guest'; box.innerHTML='<b>연습 모드</b><span>코드로 로그인하면 경험치와 코인이 쌓여요.</span>'; box.hidden=false; return; }
   try{ const fresh=(await withTimeout(profRef().once('value'),8000)).val(); if (fresh) PROFILE=fresh; }catch(e){}   // 선생님이 코인을 초기화했을 수 있어서 최신으로
-  // 경험치·코인도 퀴즈 중심: 정답 · 빠른 정답 · 정답률 보너스가 대부분, 처치는 1마리 1점
-  const quizXp=20*(r.correct|0)+40*fixedN, accXp=Math.round(quizXp*(r.acc||0)), spXp=Math.round((r.sp||0)/2);
-  let xp=10*r.asked+quizXp+accXp+spXp+(r.kills|0)+(r.win?60:0);
+  // 경험치·코인: 공식 점수와 같은 기준(서로 다른 문제 정답 · 다시 맞힘 · 정답률) + 도전한 문제(30개까지) + 모드 기록 조금(최대 150)
+  const uniq=r.uniq!=null?r.uniq|0:r.correct|0;
+  const quizXp=20*uniq+40*fixedN, accXp=Math.round(quizXp*(r.acc||0)), tryXp=10*Math.min(r.asked|0,XP_TRY_MAX), modeXp=Math.min(150,Math.round((r.mp|0)/10));
+  let xp=tryXp+quizXp+accXp+modeXp;
   const newBest=(PROFILE.plays|0)>0 && r.score>(PROFILE.best|0);
   if (newBest) xp+=80;
-  const lvS=r.mode==='hero'?1.5:((LEVELS[r.lv]||LEVELS.normal).score); xp*=lvS;
-  xp=Math.min(1800,Math.round(xp)); const cardC=Math.min(100,W.cardCoins|0); const coins=Math.min(1000,Math.min(900,Math.round(xp/2))+cardC);
+  const rawXp=Math.round(xp); xp=Math.min(XP_CAP,rawXp); const capped=rawXp>XP_CAP;
+  const cardC=Math.min(100,W.cardCoins|0);
+  // 모드 탐험 보너스 · 모드 최고 기록
+  const wk=weekKey(), ex=exploredModes(), canEx=!!r.gm&&PLAY_MODES.some(m=>m.id===r.gm);
+  const explore=canEx && !ex.includes(r.gm) && (r.asked|0)>=EXPLORE_MIN_Q;
+  const coins=Math.min(COIN_CAP,Math.round(xp/2))+cardC+(explore?EXPLORE_COINS:0);
+  const mbOld=PROFILE.mb&&+PROFILE.mb[r.gm]||0, mbNew=r.gm&&(r.mp|0)>mbOld;
   const before=levelOf(PROFILE.xp|0), after=levelOf((PROFILE.xp|0)+xp);
   // 각성: 오른 레벨마다 한 번씩 굴려요
   let own=ownedElems(), awk=PROFILE.awk|0; const awoke=[]; let tries=0;
@@ -337,16 +348,29 @@ async function grantRewards(r,fixedN){
   const upd={xp:(PROFILE.xp|0)+xp,coins:(PROFILE.coins|0)+coins,plays:(PROFILE.plays|0)+1,wins:(PROFILE.wins|0)+(r.win?1:0),
     best:Math.max(PROFILE.best|0,r.score|0),correct:(PROFILE.correct|0)+r.correct,asked:(PROFILE.asked|0)+r.asked,fixed:(PROFILE.fixed|0)+fixedN,
     skill:Math.round((r.newSkill??PROFILE.skill??1)*100)/100,updatedAt:firebase.database.ServerValue.TIMESTAMP};
+  if (explore) upd.mw={w:wk,m:[...ex,r.gm].join(',').slice(0,200)};
+  if (mbNew) upd.mb={...(PROFILE.mb||{}),[r.gm]:Math.min(1000000,r.mp|0)};
   if (tries){ upd.elems=ELEM_ORDER.filter(e=>own.includes(e)).join(','); upd.awk=awk; }
   const lines=[`<b>+${xp} 경험치 · +${coins} 코인</b>`];
-  const why=[]; if (r.asked) why.push(`문제 ${r.asked}개 도전`); if (fixedN) why.push(`틀린 문제 ${fixedN}개 다시 맞힘`); if (newBest) why.push('내 최고 점수 경신!'); if (spXp) why.push(`빠른 정답 +${spXp}`); if (accXp) why.push(`정답률 ${r.asked?Math.round(r.correct/r.asked*100):0}% 보너스 +${accXp}`); if (lvS!==1) why.push(`${r.mode==='hero'?'영웅':(LEVELS[r.lv]||LEVELS.normal).name} ×${lvS}`); if (W.cardCoins) why.push(`지식 카드 코인 +${Math.min(100,W.cardCoins)}`);
+  const why=[]; if (r.asked) why.push(`문제 ${r.asked}개 도전`); if (uniq) why.push(`서로 다른 문제 ${uniq}개 맞힘`); if (fixedN) why.push(`틀린 문제 ${fixedN}개 다시 맞힘`); if (accXp) why.push(`정답률 ${r.asked?Math.round(r.correct/r.asked*100):0}% 보너스 +${accXp}`); if (modeXp) why.push(`모드 기록 +${modeXp}`); if (newBest) why.push('내 최고 점수 경신!'); if (capped) why.push(`한 판 최대 ${XP_CAP} 경험치`);
   if (why.length) lines.push(`<span>${why.join(' · ')}</span>`);
+  if (explore) lines.push(`<span class="explore">🎁 모드 탐험 보너스! 이번 주 처음 해 본 <b>${modeIcon(r.gm)} ${esc(modeName(r.gm))}</b> · 코인 +${EXPLORE_COINS} (탐험 ${ex.length+1}개째)</span>`);
+  else if (canEx && !ex.includes(r.gm)) lines.push(`<span class="explore miss">🎁 이 모드에서 문제를 ${EXPLORE_MIN_Q}개 이상 풀면 탐험 보너스 코인 +${EXPLORE_COINS}을 받아요</span>`);
   if (after.lv>before.lv) lines.push(`<span class="lvup">레벨 업! Lv.${before.lv} → Lv.${after.lv}</span>`);
   awoke.forEach(e=>lines.push(`<span class="awake">✨ 각성! 마법사가 <b>${{fire:'🔥 불',ice:'❄️ 얼음',bolt:'⚡ 번개'}[e]}</b> 원소를 깨우쳤어요</span>`));
   if (tries && !awoke.length) lines.push(`<span class="awake miss">이번 레벨업에서는 각성하지 못했어요${awk>=AWAKE_PITY?' · 다음 레벨업엔 꼭 각성해요!':''}</span>`);
   lines.push(`<div class="xpbar"><i style="width:${Math.round(after.rest/after.need*100)}%"></i></div><small>Lv.${after.lv} · 경험치 ${after.rest} / ${after.need} · 코인 ${Math.max(0,upd.coins-((WARDROBE&&WARDROBE.spent)|0)).toLocaleString('ko-KR')}</small>`);
   box.className='rewardbox'; box.innerHTML=lines.join(''); box.hidden=false;
-  try{ await withTimeout(profRef().update(upd),10000); PROFILE={...PROFILE,...upd,updatedAt:Date.now()}; renderProfileCard(); renderJobPick(); lastReward={xp,coins}; if (awoke.length){ SFX.wave(); } }
+  const isPerm=e=>/permission|PERMISSION/i.test(String(e&&(e.code||e.message)));
+  const save=async()=>{ try{ await withTimeout(profRef().update(upd),10000); }
+    catch(e){ if (!isPerm(e)||!(upd.mw||upd.mb)) throw e;
+      // 예전 보안 규칙(mw·mb 칸 없음): 탐험 보너스 · 모드 기록만 빼고 저장
+      if (upd.mw) upd.coins-=EXPLORE_COINS; delete upd.mw; delete upd.mb; await withTimeout(profRef().update(upd),10000);
+      box.insertAdjacentHTML('beforeend','<small class="warn">탐험 보너스와 모드 기록은 선생님이 보안 규칙을 새로 올린 뒤부터 저장돼요.</small>'); } };
+  try{ await save(); PROFILE={...PROFILE,...upd,updatedAt:Date.now()}; refreshModeBadges(); renderProfileCard(); renderJobPick(); lastReward={xp,coins}; if (awoke.length){ SFX.wave(); }
+    // 업적: 저장된 뒤의 기록으로 확인
+    try{ const okN=LAST_PLAYC?PLAY_MODES.filter(m=>mapOK(LAST_PLAYC.u,m.map)).length:PLAY_MODES.length;
+      achGrant(achCheck(PROFILE,{qsMax:W.qsMax|0,asked:r.asked|0,correct:r.correct|0,exploreAll:!!upd.mw&&String(upd.mw.m).split(',').length>=okN}),box); }catch(e){} }
   catch(e){ box.insertAdjacentHTML('beforeend','<small class="warn">보상을 저장하지 못했어요. 너무 빨리 끝난 판(10초 미만)이나 게임 시간이 끝나고 15분이 지난 판은 저장되지 않아요.</small>'); }
 }
 

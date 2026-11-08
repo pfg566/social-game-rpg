@@ -5,9 +5,11 @@
    옷: 기사(기사 · 바바리안) · 궁수(레인저 · 도적) · 마법사(마법사 · 드루이드). 색 버전은 옷 아이템으로 따로 있어요.
    머리색 아이템은 머리카락만 바꿔요(옷 · 무기는 그대로). */
 const JOB_LIST=['knight','archer','mage'];
-const JOB_SLOTS={knight:['outfit','hat','cape','weapon','shield','hair','trail'],archer:['outfit','hat','cape','weapon','hair'],mage:['outfit','hat','cape','weapon','shield','hair']};
+const JOB_SLOTS={knight:['outfit','hat','cape','weapon','shield','hair','trail'],archer:['outfit','hat','cape','weapon','hair','trail'],mage:['outfit','hat','cape','weapon','shield','hair','trail']};
 const SLOTS=['outfit','hat','cape','weapon','shield','hair','trail'];
 const SLOT_INFO={outfit:{label:'옷',icon:'👕'},hat:{label:'모자',icon:'⛑️'},cape:{label:'망토',icon:'🧣'},weapon:{label:'무기',icon:'⚔️'},shield:{label:'왼손',icon:'🛡️'},hair:{label:'머리색',icon:'💇'},trail:{label:'칼 궤적',icon:'✨'}};
+const TRAIL_LABEL={knight:'칼 궤적',archer:'화살 꼬리',mage:'구슬 꼬리'};
+const slotLabel=(job,s)=>s==='trail'?TRAIL_LABEL[job]||SLOT_INFO.trail.label:SLOT_INFO[s].label;
 const JOB_NAME={knight:'🛡️ 기사',archer:'🏹 궁수',mage:'🔮 마법사'};
 
 /* 옷을 가져오는 2.0 모델: 몸 · 팔 · 다리(+망토 등) */
@@ -36,14 +38,14 @@ const CATALOG=[
   {id:'kcape_p300',job:'knight',slot:'cape',name:'기사 망토',own:true,desc:'갑옷과 같은 색 망토 (바바리안 옷에는 안 보여요)'},
   {id:'barbcape_p300',job:'knight',slot:'cape',name:'털 망토',part:'barb',mesh:'Barbarian_Cape'},
   {id:'sword_p0',job:'knight',slot:'weapon',name:'한손검',w:'sword_1handed',t:'knight_texture'},
-  {id:'mug_p150',job:'knight',slot:'weapon',name:'머그잔',w:'mug_full',t:'barbarian_texture',desc:'이걸로 싸울 수 있을까?'},
-  {id:'knife_p200',job:'knight',slot:'weapon',name:'단검',w:'dagger',t:'rogue_texture'},
+  {id:'mug_p300',was:'mug_p150',job:'knight',slot:'weapon',name:'머그잔',w:'mug_full',t:'barbarian_texture',desc:'이걸로 싸울 수 있을까?'},
+  {id:'knife_p300',was:'knife_p200',job:'knight',slot:'weapon',name:'단검',w:'dagger',t:'rogue_texture'},
   {id:'axe_p300',job:'knight',slot:'weapon',name:'한손 도끼',w:'axe_1handed',t:'barbarian_texture',ry:Math.PI},
   {id:'sword2_p500',job:'knight',slot:'weapon',name:'양손 대검',w:'sword_2handed',t:'knight_texture'},
   {id:'axe2_p600',job:'knight',slot:'weapon',name:'양손 도끼',w:'axe_2handed',t:'barbarian_texture'},
   {id:'gsword_p2000',was:'gsword_p800',job:'knight',slot:'weapon',name:'황금 대검',w:'sword_2handed_color',t:'knight_texture',desc:'손잡이가 금빛인 대검'},
-  {id:'rshield_p150',job:'knight',slot:'shield',name:'둥근 방패',w:'shield_round',t:'knight_texture',hand:'l'},
-  {id:'badge_p200',job:'knight',slot:'shield',name:'문장 방패',w:'shield_badge',t:'knight_texture',hand:'l'},
+  {id:'rshield_p250',was:'rshield_p150',job:'knight',slot:'shield',name:'둥근 방패',w:'shield_round',t:'knight_texture',hand:'l'},
+  {id:'badge_p300',was:'badge_p200',job:'knight',slot:'shield',name:'문장 방패',w:'shield_badge',t:'knight_texture',hand:'l'},
   {id:'rect_p250',job:'knight',slot:'shield',name:'사각 방패',w:'shield_square',t:'knight_texture',hand:'l'},
   {id:'barbsh_p250',job:'knight',slot:'shield',name:'나무 방패',w:'shield_round_barbarian',t:'barbarian_texture',hand:'l'},
   {id:'rshieldc_p300',job:'knight',slot:'shield',name:'붉은 둥근 방패',w:'shield_round_color',t:'knight_texture',hand:'l'},
@@ -55,7 +57,7 @@ const CATALOG=[
   {id:'axeoff_p450',job:'knight',slot:'shield',name:'쌍도끼',w:'axe_1handed',t:'barbarian_texture',hand:'l',ry:Math.PI},
   {id:'spikec_p500',job:'knight',slot:'shield',name:'붉은 가시 방패',w:'shield_spikes_color',t:'knight_texture',hand:'l'},
   {id:'gold_p0',job:'knight',slot:'trail',name:'금빛 궤적',color:0xfff1c4},
-  {id:'ice_p200',job:'knight',slot:'trail',name:'얼음 궤적',color:0x8fe3ff},
+  {id:'ice_p300',was:'ice_p200',job:'knight',slot:'trail',name:'얼음 궤적',color:0x8fe3ff},
   {id:'leaf_p250',job:'knight',slot:'trail',name:'바람 궤적',color:0x9dff9a},
   {id:'fire_p300',job:'knight',slot:'trail',name:'불꽃 궤적',color:0xff8a3d},
   {id:'star_p400',job:'knight',slot:'trail',name:'별빛 궤적',color:0xd9a8ff},
@@ -96,11 +98,29 @@ const CATALOG=[
   {id:'istaff_p500',job:'mage',slot:'weapon',name:'얼음 지팡이',w:'staff',t:'mage_texture_alt_A',desc:'하늘빛 보석 지팡이'},
   {id:'fstaff_p500',job:'mage',slot:'weapon',name:'불꽃 지팡이',w:'staff',t:'mage_texture_alt_B',desc:'주황빛 보석 지팡이'},
   {id:'staff_p600',job:'mage',slot:'weapon',name:'드루이드 지팡이',w:'druid_staff',t:'druid_texture',desc:'사슴뿔 나무 지팡이'},
-  {id:'potb_p200',job:'mage',slot:'shield',name:'파란 물약',w:'potion_large_blue',t:'druid_texture',hand:'l'},
-  {id:'potr_p200',job:'mage',slot:'shield',name:'빨간 물약',w:'potion_large_red',t:'druid_texture',hand:'l'},
-  {id:'potg_p200',job:'mage',slot:'shield',name:'초록 물약',w:'potion_large_green',t:'druid_texture',hand:'l'},
+  {id:'potb_p300',was:'potb_p200',job:'mage',slot:'shield',name:'파란 물약',w:'potion_large_blue',t:'druid_texture',hand:'l'},
+  {id:'potr_p300',was:'potr_p200',job:'mage',slot:'shield',name:'빨간 물약',w:'potion_large_red',t:'druid_texture',hand:'l'},
+  {id:'potg_p300',was:'potg_p200',job:'mage',slot:'shield',name:'초록 물약',w:'potion_large_green',t:'druid_texture',hand:'l'},
   {id:'bookc_p300',job:'mage',slot:'shield',name:'닫힌 마법책',w:'spellbook_closed',t:'mage_texture',hand:'l'},
   {id:'book_p500',job:'mage',slot:'shield',name:'펼친 마법책',w:'spellbook_open',t:'mage_texture',hand:'l'},
+  {id:'atrnone_p0',job:'archer',slot:'trail',name:'꼬리 없음',none:true,desc:'화살이 그냥 날아가요'},
+  {id:'atrice_p300',job:'archer',slot:'trail',name:'얼음 꼬리',color:0x8fe3ff,desc:'화살 뒤로 빛가루가 남아요'},
+  {id:'atrleaf_p300',job:'archer',slot:'trail',name:'바람 꼬리',color:0x9dff9a,desc:'화살 뒤로 빛가루가 남아요'},
+  {id:'atrfire_p400',job:'archer',slot:'trail',name:'불꽃 꼬리',color:0xff8a3d,desc:'화살 뒤로 빛가루가 남아요'},
+  {id:'atrstar_p500',job:'archer',slot:'trail',name:'별빛 꼬리',color:0xd9a8ff,desc:'화살 뒤로 빛가루가 남아요'},
+  {id:'atrrain_p1000',job:'archer',slot:'trail',name:'무지개 꼬리',rainbow:true,desc:'쏠 때마다 색이 바뀌어요'},
+  {id:'mtrnone_p0',job:'mage',slot:'trail',name:'원소 색 꼬리',none:true,desc:'구슬 뒤 빛가루가 원소 색이에요 (구슬 색은 원소를 따라가요)'},
+  {id:'mtrice_p300',job:'mage',slot:'trail',name:'얼음 꼬리',color:0x8fe3ff,desc:'구슬 뒤 빛가루 색만 바뀌어요'},
+  {id:'mtrleaf_p300',job:'mage',slot:'trail',name:'바람 꼬리',color:0x9dff9a,desc:'구슬 뒤 빛가루 색만 바뀌어요'},
+  {id:'mtrgold_p400',job:'mage',slot:'trail',name:'금빛 꼬리',color:0xffe08a,desc:'구슬 뒤 빛가루 색만 바뀌어요'},
+  {id:'mtrstar_p500',job:'mage',slot:'trail',name:'별빛 꼬리',color:0xd9a8ff,desc:'구슬 뒤 빛가루 색만 바뀌어요'},
+  {id:'mtrrain_p1000',job:'mage',slot:'trail',name:'무지개 꼬리',rainbow:true,desc:'빛가루 색이 계속 바뀌어요'},
+  /* ===== 업적 보상: 코인으로는 못 사요 (세 직업 모두) ===== */
+  {id:'xtexp_p0',job:'all',slot:'trail',name:'탐험가의 바람',color:0x46e6c8,ach:'explorer',desc:'업적 🧭 탐험가 보상'},
+  {id:'xtdex_p0',job:'all',slot:'trail',name:'지식의 금빛',color:0xffd23a,ach:'dex',desc:'업적 📚 도감 마스터 보상'},
+  {id:'xtphx_p0',job:'all',slot:'trail',name:'불사조 궤적',color:0xff4d2e,ach:'fix30',desc:'업적 🔁 오답 정복자 보상'},
+  {id:'xhfire_p0',job:'all',slot:'hair',name:'불꽃 머리',hair:'#ff6a2a',sw:'#ff6a2a',ach:'streak10',desc:'업적 🔥 불꽃 연속왕 보상 · 머리카락 색만 바뀌어요'},
+  {id:'xhdoc_p0',job:'all',slot:'hair',name:'박사의 보랏빛 머리',hair:'#8a5cff',sw:'#8a5cff',ach:'q1000',desc:'업적 🎓 사회 박사 보상 · 머리카락 색만 바뀌어요'},
   /* ===== 함께 쓰는 '없음' ===== */
   {id:'nohat_p0',job:'all',slot:'hat',name:'맨머리'},
   {id:'nocape_p0',job:'all',slot:'cape',name:'망토 없음'},
@@ -116,17 +136,17 @@ const CAT={}; CATALOG.forEach(it=>CAT[it.id]=it); CATALOG.forEach(it=>{ if (it.w
 const priceOf=id=>{ const m=/_p(\d+)$/.exec(id||''); return m?+m[1]:0; };
 const DEFAULTS={
   knight:{outfit:'knight_p0',hat:'nohat_p0',cape:'nocape_p0',weapon:'sword_p0',shield:'noshield_p0',hair:'khair_p0',trail:'gold_p0'},
-  archer:{outfit:'ranger_p0',hat:'nohat_p0',cape:'nocape_p0',weapon:'bow_p0',hair:'ahair_p0'},
-  mage:{outfit:'magerobe_p0',hat:'nohat_p0',cape:'nocape_p0',weapon:'mstaff_p0',shield:'noshield_p0',hair:'mhair_p0'}
+  archer:{outfit:'ranger_p0',hat:'nohat_p0',cape:'nocape_p0',weapon:'bow_p0',hair:'ahair_p0',trail:'atrnone_p0'},
+  mage:{outfit:'magerobe_p0',hat:'nohat_p0',cape:'nocape_p0',weapon:'mstaff_p0',shield:'noshield_p0',hair:'mhair_p0',trail:'mtrnone_p0'}
 };
 const fitsJob=(id,job,slot)=>{ const it=CAT[id]; return !!it && it.slot===slot && (it.job===job||it.job==='all') && JOB_SLOTS[job].includes(slot); };
 /* 저장된 착용: equip/<직업>_<칸>. 예전(직업 없이 칸만) 기록은 기사 것으로 읽어요 */
 function lookOf(job,eq){ const L={...DEFAULTS[job]}; eq=eq||{};
   for (const s of JOB_SLOTS[job]){ let id=eq[job+'_'+s]; if (id===undefined && job==='knight') id=eq[s]; if (fitsJob(id,job,s)) L[s]=id; } return L; }
 function guestEquip(){ try{ return JSON.parse(localStorage.getItem('gsd-look2')||'{}'); }catch(e){ return {}; } }
-function guestLook(job){ job=job||JOB; const L=lookOf(job,guestEquip()); JOB_SLOTS[job].forEach(s=>{ if (priceOf(L[s])>0 && !isAdmin) L[s]=DEFAULTS[job][s]; }); return L; }
+function guestLook(job){ job=job||JOB; const L=lookOf(job,guestEquip()); JOB_SLOTS[job].forEach(s=>{ if ((priceOf(L[s])>0||(CAT[L[s]]&&CAT[L[s]].ach)) && !isAdmin) L[s]=DEFAULTS[job][s]; }); return L; }
 function equippedLook(job){ job=job||JOB; return STUDENT&&WARDROBE ? lookOf(job,WARDROBE.equip) : guestLook(job); }
-function owns(id){ const it=CAT[id]; return priceOf(id)===0 || !!(WARDROBE&&WARDROBE.inv&&(WARDROBE.inv[id]||(it&&it.was&&WARDROBE.inv[it.was]))) || (!STUDENT && typeof isAdmin!=='undefined' && isAdmin); }
+function owns(id){ const it=CAT[id]; if (it&&it.ach) return hasAch(it.ach) || (!STUDENT && typeof isAdmin!=='undefined' && isAdmin); return priceOf(id)===0 || !!(WARDROBE&&WARDROBE.inv&&(WARDROBE.inv[id]||(it&&it.was&&WARDROBE.inv[it.was]))) || (!STUDENT && typeof isAdmin!=='undefined' && isAdmin); }
 function availCoins(){ return PROFILE ? Math.max(0,(PROFILE.coins|0)-((WARDROBE&&WARDROBE.spent)|0)) : 0; }
 
 /* ---------- 파일 불러오기 (필요할 때 한 번만) ---------- */
@@ -258,6 +278,9 @@ function trailColor(type){
   if (t.id==='gold_p0') return SLASH_TYPES[type].color;
   return t.color;
 }
+/* 화살 · 구슬 꼬리 색 (없으면 null) */
+function projTrailColor(){ const t=CAT[(LOOK||{}).trail]; if (!t||t.none||t.slot!=='trail') return null;
+  if (t.rainbow) return new THREE.Color().setHSL((performance.now()/700)%1,.9,.62).getHex(); return t.color; }
 function wardRef(){ return fbDb.ref(`wardrobe/${STUDENT.cid}/${STUDENT.num}`); }
 async function loadWardrobe(){
   if (!STUDENT||!fbDb){ WARDROBE=null; applyLook(); return; }
@@ -269,13 +292,13 @@ async function loadWardrobe(){
 }
 
 /* ---------- 상점 화면 ---------- */
-const SHOP={open:false,job:'knight',tab:'outfit',sel:null,armed:false,rot:0,try:null,busy:false,drag:null};
+const SHOP={ach:false,achSel:null,open:false,job:'knight',tab:'outfit',sel:null,armed:false,rot:0,try:null,busy:false,drag:null};
 function shopMsg(t,kind){ const e=$('#shopMsg'); e.textContent=t||''; e.className='ed-status'+(kind?' '+kind:''); }
 function shopSetJob(j){ SHOP.job=j; SHOP.try={...equippedLook(j)}; if (!JOB_SLOTS[j].includes(SHOP.tab)) SHOP.tab='outfit'; SHOP.sel=SHOP.try[SHOP.tab]; SHOP.armed=false; }
 function openShop(){
   if (!assetsReady) return;
   if (STUDENT&&fbDb){ loadWardrobe(); profRef().once('value').then(s=>{ const v=s.val(); if (v){ PROFILE=v; if (typeof renderProfileCard==='function') renderProfileCard(); if (!$('#shop').hidden) renderShop(); } }).catch(()=>{}); }
-  SHOP.open=true; SHOP.tab='outfit'; shopSetJob(JOB); SHOP.rot=0;
+  SHOP.open=true; SHOP.ach=false; SHOP.tab='outfit'; shopSetJob(JOB); SHOP.rot=0;
   clearWorld(); const st=MAPS[MAPK].start; P.x=st[0]; P.z=st[1];
   if (knight && knight.anim.dead){ knight.anim.revive(); } endPose=false;
   applyLook();
@@ -286,14 +309,16 @@ function renderShop(){
   const coins=availCoins(), J=SHOP.job;
   $('#shopCoins').textContent=STUDENT&&PROFILE?coins.toLocaleString('ko-KR'):'-';
   $('#shopNote').textContent=STUDENT&&PROFILE?'코인은 세 직업이 함께 쓰고, 산 물건과 착용은 직업마다 따로예요. 눌러서 미리 입어 볼 수 있어요.':'연습 모드에서는 기본 아이템만 쓸 수 있어요. 코드로 로그인하면 코인으로 살 수 있어요.';
-  $('#shopJobs').innerHTML=JOB_LIST.map(j=>`<button class="tab" data-sjob="${j}" aria-selected="${j===J}">${JOB_NAME[j]}</button>`).join('');
-  $('#shopTabs').innerHTML=JOB_SLOTS[J].map(s=>`<button class="tab" data-stab="${s}" aria-selected="${s===SHOP.tab}">${SLOT_INFO[s].icon} ${SLOT_INFO[s].label}</button>`).join('');
+  $('#shopJobs').innerHTML=JOB_LIST.map(j=>`<button class="tab" data-sjob="${j}" aria-selected="${!SHOP.ach&&j===J}">${JOB_NAME[j]}</button>`).join('')+`<button class="tab ach-tab" data-sjob="ach" aria-selected="${!!SHOP.ach}">🏅 업적 · 칭호${achNewCount()?` <em>${achNewCount()}</em>`:''}</button>`;
+  $('#shopTabs').hidden=!!SHOP.ach;
+  if (SHOP.ach){ renderAchView(); return; }
+  $('#shopTabs').innerHTML=JOB_SLOTS[J].map(s=>`<button class="tab" data-stab="${s}" aria-selected="${s===SHOP.tab}">${SLOT_INFO[s].icon} ${slotLabel(J,s)}</button>`).join('');
   const eq=equippedLook(J);
   $('#shopGrid').innerHTML=CATALOG.filter(it=>it.slot===SHOP.tab&&(it.job===J||it.job==='all')&&(!it.hidden||owns(it.id))).map(it=>{
     const pr=priceOf(it.id), own=owns(it.id), on=CAT[eq[it.slot]]===it;
-    const st=on?'착용 중':own?(pr?'보유':'기본'):`${pr.toLocaleString('ko-KR')} 코인`;
-    const sw=it.sw?`<span class="sw" style="background:${it.sw}"></span>`:it.slot==='trail'?`<span class="sw" style="background:${it.rainbow?'linear-gradient(90deg,#ff6b6b,#ffd34d,#7be38a,#5cc8f0,#b38cff)':'#'+it.color.toString(16).padStart(6,'0')}"></span>`:'';
-    return `<button class="item${it.id===SHOP.sel?' sel':''}${on?' on':''}${own?' own':''}" data-item="${it.id}">${sw}<b>${esc(it.name)}</b><span class="pr">${st}</span></button>`; }).join('');
+    const st=on?'착용 중':own?(it.ach?'🏅 업적 보상':pr?'보유':'기본'):it.ach?'🔒 업적':`${pr.toLocaleString('ko-KR')} 코인`;
+    const sw=it.sw?`<span class="sw" style="background:${it.sw}"></span>`:it.slot==='trail'?`<span class="sw" style="background:${it.rainbow?'linear-gradient(90deg,#ff6b6b,#ffd34d,#7be38a,#5cc8f0,#b38cff)':it.none?'repeating-linear-gradient(45deg,#ddd 0 4px,#fff 4px 8px)':'#'+it.color.toString(16).padStart(6,'0')}"></span>`:'';
+    return `<button class="item${it.id===SHOP.sel?' sel':''}${on?' on':''}${own?' own':''}${it.ach?' achit':''}" data-item="${it.id}">${sw}<b>${esc(it.name)}</b><span class="pr">${st}</span></button>`; }).join('');
   const it=CAT[SHOP.sel], btn=$('#shopBuy');
   if (!it || it.slot!==SHOP.tab){ $('#shopSel').innerHTML='<small>아이템을 눌러 미리 입어 보세요.</small>'; btn.hidden=true; return; }
   btn.hidden=false;
@@ -302,6 +327,7 @@ function renderShop(){
   btn.disabled=SHOP.busy; btn.classList.remove('warn');
   if (on){ btn.textContent='착용 중'; btn.disabled=true; }
   else if (own) btn.textContent='착용하기';
+  else if (it.ach){ const A=achDef(it.ach); btn.textContent=`🔒 업적 ${A?A.icon+' '+A.title:''}을(를) 달성하면 받아요`; btn.disabled=true; }
   else if (!STUDENT||!PROFILE){ btn.textContent='로그인하면 살 수 있어요'; btn.disabled=true; }
   else if (coins<pr){ btn.textContent=`코인이 ${(pr-coins).toLocaleString('ko-KR')} 부족해요`; btn.disabled=true; }
   else if (SHOP.armed){ btn.textContent=`정말 살까요? 한 번 더 누르세요 (${pr.toLocaleString('ko-KR')} 코인)`; btn.classList.add('warn'); }
@@ -320,7 +346,7 @@ async function shopAction(){
     }catch(e){ shopMsg(/permission|PERMISSION/i.test(String(e&&(e.code||e.message)))?'저장하지 못했어요. 선생님께 보안 규칙이 최신인지 알려 주세요.':'저장하지 못했어요. 잠시 뒤 다시 해 주세요.','err'); }
     SHOP.busy=false; renderShop(); return;
   }
-  if (!STUDENT||!PROFILE||availCoins()<pr) return;
+  if (it.ach||!STUDENT||!PROFILE||availCoins()<pr) return;
   if (!SHOP.armed){ SHOP.armed=true; renderShop(); return; }
   SHOP.armed=false; SHOP.busy=true; renderShop();
   const sp=((WARDROBE&&WARDROBE.spent)|0)+pr;
@@ -333,14 +359,15 @@ async function shopAction(){
 }
 $('#shopBtn').addEventListener('click',openShop);
 $('#shopClose').addEventListener('click',closeShop);
-$('#shopJobs').addEventListener('click',e=>{ const b=e.target.closest('[data-sjob]'); if (!b) return; shopSetJob(b.dataset.sjob); shopMsg(''); applyLook(); renderShop(); });
+$('#shopJobs').addEventListener('click',e=>{ const b=e.target.closest('[data-sjob]'); if (!b) return;
+  if (b.dataset.sjob==='ach'){ SHOP.ach=true; SHOP.achSel=null; shopMsg(''); renderShop(); return; } SHOP.ach=false; shopSetJob(b.dataset.sjob); shopMsg(''); applyLook(); renderShop(); });
 $('#shopTabs').addEventListener('click',e=>{ const b=e.target.closest('[data-stab]'); if (!b) return; SHOP.tab=b.dataset.stab; SHOP.sel=SHOP.try[SHOP.tab]; SHOP.armed=false; renderShop(); });
 $('#shopGrid').addEventListener('click',e=>{ const b=e.target.closest('[data-item]'); if (!b) return; const it=CAT[b.dataset.item];
   SHOP.sel=it.id; SHOP.armed=false; SHOP.try[it.slot]=it.id; applyLook(); shopMsg('');
   if (it.slot==='trail'){ setTimeout(()=>{ if (SHOP.open) slashFx(0); },60); }
   else if (knight) knight.anim.once('cheer',1.6,true);
   renderShop(); });
-$('#shopBuy').addEventListener('click',shopAction);
+$('#shopBuy').addEventListener('click',()=>SHOP.ach?achTitleAction():shopAction());
 $('#shop').addEventListener('pointerdown',e=>{ if (e.target.closest('.shop-panel')) return; SHOP.drag={x:e.clientX,r:SHOP.rot}; });
 addEventListener('pointermove',e=>{ if (SHOP.drag) SHOP.rot=SHOP.drag.r+(e.clientX-SHOP.drag.x)*.012; });
 addEventListener('pointerup',()=>{ SHOP.drag=null; });

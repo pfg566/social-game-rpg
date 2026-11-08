@@ -15,7 +15,7 @@ async function boardWrite(r){
       ev:add('ev',cs.evaded), bl:add('bl',cs.blocked), cc:add('cc',W.cardCoins), bd:add('bd',cs.boss), u:add('u',cs.ults),
       mh:win?Math.min(cur&&cur.mh!=null?+cur.mh:101,cs.minHp==null?101:+cs.minHp):(cur&&cur.mh!=null?+cur.mh:101),
       tk:win?(cur&&+cur.tk>=0?Math.min(+cur.tk,cs.taken|0):(cs.taken|0)):(cur&&cur.tk!=null?+cur.tk:-1),
-      br:cur&&cur.br!=null?+cur.br:base, j:String(JOB).slice(0,8), t:firebase.database.ServerValue.TIMESTAMP};
+      br:cur&&cur.br!=null?+cur.br:base, j:String(JOB).slice(0,8), ...(PROFILE.title?{tt:String(PROFILE.title).slice(0,12)}:{}), t:firebase.database.ServerValue.TIMESTAMP};
     await withTimeout(me.set(e),8000);
   }catch(err){ /* 순위표는 덤이라 실패해도 조용히 넘어가요 */ }
 }
@@ -42,7 +42,7 @@ function boardRender(){
   const medal=r=>r===1?'🥇':r===2?'🥈':r===3?'🥉':r;
   $('#boardSub').textContent=rows.length?`${rows.length}명 참여 · 게임이 끝날 때마다 바로 바뀌어요`:'';
   $('#boardList').innerHTML=rows.length?`<table class="bd-tbl"><thead><tr><th>순위</th><th>이름</th><th>최고 점수</th><th>정답률</th><th>판</th></tr></thead><tbody>`+
-    show.map(x=>`<tr class="${x.num===me?'me':''}${x.rank<=3?' top':''}"><td>${medal(x.rank)}</td><td>${esc(x.n||'')}</td><td><b>${(x.s|0).toLocaleString('ko-KR')}</b></td><td>${x.rate}% <small>(${x.c|0}/${x.a|0})</small></td><td>${x.g|0}</td></tr>`).join('')+'</tbody></table>'
+    show.map(x=>`<tr class="${x.num===me?'me':''}${x.rank<=3?' top':''}"><td>${medal(x.rank)}</td><td>${x.tt&&typeof titleText==='function'&&titleText(x.tt)?`<small class="bd-title">${esc(titleText(x.tt))}</small> `:''}${esc(x.n||'')}</td><td><b>${(x.s|0).toLocaleString('ko-KR')}</b></td><td>${x.rate}% <small>(${x.c|0}/${x.a|0})</small></td><td>${x.g|0}</td></tr>`).join('')+'</tbody></table>'
     :'<p class="bd-empty">아직 이번 시간에 게임을 끝낸 친구가 없어요. 첫 번째가 되어 보세요!</p>';
 }
 $('#boardBtn').addEventListener('click',boardOpen);

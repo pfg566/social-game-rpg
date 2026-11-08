@@ -385,6 +385,18 @@ body.hero .vitals{border-color:#c27a00;box-shadow:4px 4px 0 #c27a00}
 .pm-btn small{font-size:10.5px;color:var(--muted);line-height:1.25}
 .pm-col.battle .pm-btn.on{border-color:#e5484d;background:#fff5f3;box-shadow:0 0 0 2px rgba(229,72,77,.25)}
 .pm-col.peace .pm-btn.on{border-color:#22a35a;background:#f4fcf6;box-shadow:0 0 0 2px rgba(34,163,90,.25)}
+.pm-btn{position:relative}
+.pm-btn.fresh{box-shadow:0 0 0 2px #f5c542 inset,0 1px 0 rgba(24,33,58,.12)}
+.pm-gift{position:absolute;top:-7px;right:-4px;font-style:normal;font-size:10.5px;font-weight:800;background:#ffcf33;color:#5a3d00;border:1.5px solid #18213a;border-radius:999px;padding:0 5px;line-height:15px;animation:pmGift 1.6s ease-in-out infinite}
+@keyframes pmGift{0%,100%{transform:translateY(0)}50%{transform:translateY(-2px)}}
+.pm-best{color:#7a5a00!important;font-weight:700}
+.pm-explore{margin:2px 0 6px!important;font-size:12px;background:#fff6d6;border:1.5px dashed #e0b23a;border-radius:9px;padding:4px 8px;line-height:1.4}
+.modebox{margin:8px 0 0;padding:8px 14px;border:2px dashed var(--ink);border-radius:12px;background:#f3f6ff}
+.modebox .mb-top{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.modebox .mb-top span{font-weight:800}
+.modebox .mb-top b{font-family:var(--display);font-weight:400;font-size:26px;line-height:1}
+.mb-new{font-style:normal;font-weight:800;color:#c2410c}
+.modebox .mb-note{display:block;font-size:11.5px;color:var(--muted);margin-top:2px}
 .pm-btn:disabled{opacity:.42;cursor:not-allowed}
 .pp-lock{margin:0!important;font-size:12.5px;font-weight:700;color:var(--muted);background:#f1ede1;border-radius:8px;padding:5px 9px}
 .jobbar{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 16px);width:min(540px,calc(100vw - 2*var(--pw) - 72px));min-width:300px;padding:10px 12px;box-shadow:5px 5px 0 var(--ink);box-sizing:border-box}
@@ -636,3 +648,31 @@ body.twmode #hud, body.twmode #skillbar, body.twmode #hint, body.twmode #touch, 
 .am-card .run-qtext{font-size:18px;margin-bottom:6px}
 .am-card .run-opt{min-height:36px;font-size:14px;padding:5px 8px}
 .am-card .run-opt b{font-size:20px}
+
+.rewardbox .explore{display:block;margin-top:4px;padding:3px 8px;border-radius:8px;background:#fff1b8;color:#5a3d00;font-weight:700}
+.rewardbox .explore.miss{background:#f4f4f4;color:#666;font-weight:600}
+/* 업적 · 칭호 */
+.ach-tab em{font-style:normal;background:#e5484d;color:#fff;border-radius:999px;padding:0 6px;font-size:11px;margin-left:2px}
+.ach-sum{grid-column:1/-1;margin:0 0 2px;font-size:13px;background:#fff6d6;border:1.5px dashed #e0b23a;border-radius:9px;padding:5px 9px}
+.ach-card{grid-column:1/-1;display:flex;gap:10px;align-items:flex-start;text-align:left;font:inherit;color:var(--ink);background:#f4f4f6;border:2px solid transparent;border-radius:11px;padding:7px 10px;cursor:pointer;opacity:.78}
+.ach-card.own{background:#fff;opacity:1;box-shadow:0 1px 0 rgba(24,33,58,.15)}
+.ach-card.sel{border-color:var(--ink)}
+.ach-card.on{border-color:#e0a21a;background:#fffaf0}
+.ach-card.fresh{box-shadow:0 0 0 3px #ffcf33}
+.ach-card>i{font-style:normal;font-size:24px;line-height:1.1}
+.ach-card>span{display:grid;gap:1px;min-width:0;flex:1}
+.ach-card b{font-size:14px} .ach-card b em{font-style:normal;font-size:11px;color:#a26a00;margin-left:4px}
+.ach-card small{font-size:11.5px;color:var(--muted)}
+.ach-bar{display:block;height:6px;border-radius:9px;background:#dfe3ea;overflow:hidden;margin-top:3px}
+.ach-bar i{display:block;height:100%;background:linear-gradient(90deg,#f5b82e,#f08c1a)}
+.ach-n{font-size:10.5px!important}
+.ach-r{color:#7a4fd0!important;font-weight:700}
+.item.achit{background:linear-gradient(180deg,#fffaf0,#fff)}
+.ach-pop{display:flex;gap:9px;align-items:center;margin-top:6px;padding:6px 10px;border-radius:10px;background:linear-gradient(90deg,#fff1b8,#ffe3f1);border:2px solid #18213a;animation:achPop .5s ease-out}
+.ach-pop>i{font-style:normal;font-size:26px}
+.ach-pop span{display:grid} .ach-pop small{color:#4a4a5a}
+.ach-hint{display:block;margin-top:3px;color:var(--muted)}
+@keyframes achPop{0%{transform:scale(.85);opacity:0}70%{transform:scale(1.03)}100%{transform:scale(1);opacity:1}}
+.pc-title{display:inline-block;width:max-content;font-size:11px!important;font-weight:800;color:#8a5a00!important;background:#fff1b8;border:1.5px solid #e0b23a;border-radius:999px;padding:0 7px;margin:1px 0}
+.bd-title{font-size:10.5px;color:#8a5a00;background:#fff1b8;border-radius:999px;padding:0 5px;font-weight:700}
+.rewardbox .ach-pop b,.rewardbox .explore b{font-size:inherit;font-family:inherit;font-weight:800}.ach-pop b{font-size:14.5px!important}

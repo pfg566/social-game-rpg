@@ -7,7 +7,7 @@
 <style>body{margin:0}[hidden]{display:none!important}img{max-width:100%}</style>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jua&family=IBM+Plex+Sans+KR:wght@400;600;700&display=swap">
-<link rel="stylesheet" href="style.css?v=20261108d">
+<link rel="stylesheet" href="style.css?v=20261108f">
 </head>
 <body>
 
@@ -122,7 +122,7 @@
   <div class="lobby-tl lobby">
     <div class="mini-logo" role="img" aria-label="사회 게임 RPG"><span style="--c:#e5484d;--r:-4deg;--d:0ms">사</span><span style="--c:#f08c28;--r:3deg;--d:70ms">회</span><span style="--c:#f2b705;--r:-2deg;--d:140ms">게</span><span style="--c:#38a85a;--r:4deg;--d:210ms">임</span><span style="--c:#2f86e8;--r:-3deg;--d:280ms">R</span><span style="--c:#4f52d9;--r:2deg;--d:350ms">P</span><span style="--c:#9450d8;--r:-4deg;--d:420ms">G</span></div>
     <div class="profilecard lobby" id="profileCard" hidden>
-      <div class="pc-top"><span class="pc-lv" id="pcLv">Lv.1</span><div class="pc-id"><b id="pcName"></b><small id="pcWho"></small></div><span class="pc-coins"><i></i><b id="pcCoins">0</b></span></div>
+      <div class="pc-top"><span class="pc-lv" id="pcLv">Lv.1</span><div class="pc-id"><b id="pcName"></b><small class="pc-title" id="pcTitle" hidden></small><small id="pcWho"></small></div><span class="pc-coins"><i></i><b id="pcCoins">0</b></span></div>
       <div class="xpbar"><i id="pcXp" style="width:0%"></i></div>
       <div class="pc-foot"><small id="pcXpTxt"></small><button class="link" id="pcLogout">로그아웃</button></div>
     </div>
@@ -183,6 +183,7 @@
       <p class="pp-lock" id="ppLock"></p>
       <label class="unitpick" id="unitPick" hidden><span>단원</span><select id="unitSelect"></select></label>
       <label class="unitpick" id="mapPick" hidden><span>맵</span><select id="mapSelect"></select></label>
+      <p class="pm-explore" id="pmExplore" hidden></p>
       <div class="pmodes" id="playModes" role="group" aria-label="게임 모드 고르기">
         <div class="pm-col battle"><p class="pm-h">⚔️ 전투 모드</p><div class="pm-list" id="pmBattle"></div></div>
         <div class="pm-col peace"><p class="pm-h">🕊️ 평화 모드</p><div class="pm-list" id="pmPeace"></div></div>
@@ -328,7 +329,8 @@
     <p class="endwho" id="endWho"></p>
     <h1 id="endTitle">게임 오버</h1>
     <p id="endMsg"></p>
-    <div class="scorebox"><span>점수</span><b id="sScore">0</b><small id="sScoreNote">정답 100점 · 처치 10점 · 승리 500점</small></div>
+    <div class="scorebox"><span>공식 점수</span><b id="sScore">0</b><small id="sScoreNote">서로 다른 문제 맞힘 ×100 · 다시 맞힘 ×50 · 정답률 보너스</small></div>
+    <div class="modebox" id="sMode" hidden></div>
     <p class="sdex" id="sDex" hidden></p>
     <div class="stats">
       <div class="stat"><b id="sKills">0</b><span>처치한 몬스터</span></div>
@@ -438,29 +440,30 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="firebase-config.js"></script>
-<script src="js/01-data.js?v=20261108d"></script>
-<script src="js/02-graphics.js?v=20261108d"></script>
-<script src="js/02m-mood.js?v=20261108d"></script>
-<script src="js/03-world.js?v=20261108d"></script>
-<script src="js/04-island.js?v=20261108d"></script>
-<script src="js/04g-glacier.js?v=20261108d"></script>
-<script src="js/04r-runner.js?v=20261108d"></script>
-<script src="js/04s-stage.js?v=20261108d"></script>
-<script src="js/04t-teamwar.js?v=20261108d"></script>
-<script src="js/05-play.js?v=20261108d"></script>
-<script src="js/06-jobs.js?v=20261108d"></script>
-<script src="js/06p-player.js?v=20261108d"></script>
-<script src="js/07-quiz.js?v=20261108d"></script>
-<script src="js/07b-prep.js?v=20261108d"></script>
-<script src="js/07c-fun.js?v=20261108d"></script>
-<script src="js/08-hud.js?v=20261108d"></script>
-<script src="js/09-server.js?v=20261108d"></script>
-<script src="js/10-shop.js?v=20261108d"></script>
-<script src="js/11-gate-editor.js?v=20261108d"></script>
-<script src="js/12-lobby.js?v=20261108d"></script>
-<script src="js/13-loop.js?v=20261108d"></script>
-<script src="js/14-party.js?v=20261108d"></script>
-<script src="js/15-board.js?v=20261108d"></script>
-<script src="js/16-notes.js?v=20261108d"></script>
+<script src="js/01-data.js?v=20261108f"></script>
+<script src="js/02-graphics.js?v=20261108f"></script>
+<script src="js/02m-mood.js?v=20261108f"></script>
+<script src="js/03-world.js?v=20261108f"></script>
+<script src="js/04-island.js?v=20261108f"></script>
+<script src="js/04g-glacier.js?v=20261108f"></script>
+<script src="js/04r-runner.js?v=20261108f"></script>
+<script src="js/04s-stage.js?v=20261108f"></script>
+<script src="js/04t-teamwar.js?v=20261108f"></script>
+<script src="js/05-play.js?v=20261108f"></script>
+<script src="js/06-jobs.js?v=20261108f"></script>
+<script src="js/06p-player.js?v=20261108f"></script>
+<script src="js/07-quiz.js?v=20261108f"></script>
+<script src="js/07b-prep.js?v=20261108f"></script>
+<script src="js/07c-fun.js?v=20261108f"></script>
+<script src="js/08-hud.js?v=20261108f"></script>
+<script src="js/09-server.js?v=20261108f"></script>
+<script src="js/10-shop.js?v=20261108f"></script>
+<script src="js/10a-ach.js?v=20261108f"></script>
+<script src="js/11-gate-editor.js?v=20261108f"></script>
+<script src="js/12-lobby.js?v=20261108f"></script>
+<script src="js/13-loop.js?v=20261108f"></script>
+<script src="js/14-party.js?v=20261108f"></script>
+<script src="js/15-board.js?v=20261108f"></script>
+<script src="js/16-notes.js?v=20261108f"></script>
 </body>
 </html>

@@ -145,13 +145,13 @@ function shootArrow(ang,o){
   const dx=Math.sin(ang), dz=Math.cos(ang);
   const crit=Math.random()<archerCrit(), pierce=!!o.pierce||W.streak>=5;
   const mesh=makeArrow(pierce?0xffe08a:(crit?0xffd34d:0)); mesh.rotation.y=ang;
-  PROJ.push({kind:'arrow',mesh,x:P.x+dx*.6,z:P.z+dz*.6,y:1.25,vx:dx*30,vz:dz*30,life:ARROW_RANGE/30,dmg:o.dmg,crit,pierce,hit:new Set()});
+  PROJ.push({kind:'arrow',mesh,x:P.x+dx*.6,z:P.z+dz*.6,y:1.25,vx:dx*30,vz:dz*30,life:ARROW_RANGE/30,dmg:o.dmg,crit,pierce,hit:new Set(),tc:projTrailColor()});
 }
 function archerCrit(){ return Math.min(.6,CRIT_CHANCE+.08*Math.min(6,W.streak||0)); }
 function castOrb(ang){
   const dx=Math.sin(ang), dz=Math.cos(ang), big=W.orbBoost>0; if (big) W.orbBoost--;
   const col=ELEM[MELEM].color, mesh=makeOrb(col,big);
-  PROJ.push({kind:'orb',mesh,x:P.x+dx*.7,z:P.z+dz*.7,y:1.35,vx:dx*15,vz:dz*15,life:ORB_RANGE/15,dmg:big?50:32,r:big?3.1:2.1,big,el:MELEM});
+  PROJ.push({kind:'orb',mesh,x:P.x+dx*.7,z:P.z+dz*.7,y:1.35,vx:dx*15,vz:dz*15,life:ORB_RANGE/15,dmg:big?50:32,r:big?3.1:2.1,big,el:MELEM,tc:projTrailColor()});
 }
 function orbBurst(p){
   const E=ELEM[p.el], hit=mobsNear(p.x,p.z,p.r);
@@ -184,7 +184,8 @@ function updateProj(dt){
         if (n) SFX.hit(false); scene.remove(p.mesh); PROJ.splice(i,1); }
       continue; }
     p.x+=p.vx*dt; p.z+=p.vz*dt; p.mesh.position.set(p.x,p.y,p.z);
-    if (p.kind==='orb'){ p.mesh.rotation.y+=dt*6; if (Math.random()<.7) fx.burst(p.x,p.y,p.z,ELEM[p.el].color,1,.6); }
+    if (p.kind==='orb'){ p.mesh.rotation.y+=dt*6; if (Math.random()<.7) fx.burst(p.x,p.y,p.z,p.tc!=null&&Math.random()<.7?p.tc:ELEM[p.el].color,1,.6); }
+    else if (p.kind==='arrow' && p.tc!=null && Math.random()<.8) fx.burst(p.x,p.y,p.z,p.tc,1,.35);
     let boom=false;
     for (const m of mobs){ if (m.dying>=0||m.spawnT>0) continue; if (p.hit&&p.hit.has(m)) continue;
       if (Math.hypot(m.x-p.x,m.z-p.z)<m.r+.45){
