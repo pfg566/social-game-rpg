@@ -183,8 +183,9 @@ function renderLevels(){
   const box=$('#modePick'); if (!box) return;
   if (LEVEL==='hero' && !HERO_OPEN) LEVEL='normal';
   $('#modeHeroL').hidden=!HERO_OPEN; box.classList.toggle('three',!HERO_OPEN);
-  box.querySelectorAll('input[name=mode]').forEach(i=>{ i.checked=i.value===LEVEL; i.nextElementSibling.querySelector('small').textContent=LEVELS[i.value].desc; });
+  box.querySelectorAll('input[name=mode]').forEach(i=>{ i.checked=i.value===LEVEL; i.nextElementSibling.querySelector('small').textContent=LEVELS[i.value].desc; }); try{ showModeDesc(); }catch(e){}
 }
 function readLevel(){ const i=document.querySelector('#modePick input[name=mode]:checked'); if (i && LEVELS[i.value]) LEVEL=i.value; }
-$('#modePick').addEventListener('change',()=>{ readLevel(); try{ localStorage.setItem('gsd-level',LEVEL); }catch(e){} });
+function showModeDesc(){ const i=document.querySelector('#modePick input[name=mode]:checked'), d=$('#modeDesc'); if (d&&i) d.textContent=i.nextElementSibling.querySelector('small').textContent; }
+$('#modePick').addEventListener('change',()=>{ readLevel(); showModeDesc(); try{ localStorage.setItem('gsd-level',LEVEL); }catch(e){} });
 renderLevels();

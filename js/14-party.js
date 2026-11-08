@@ -112,7 +112,7 @@ let PARTY_LOCK={quiz:true,fight:true};   // 기본은 잠김 · 선생님 화면
 const modeLocked=m=>!isAdmin && !!PARTY_LOCK[m==='fight'?'fight':'quiz'];
 const allLocked=()=>modeLocked('quiz')&&modeLocked('fight');
 function applyPartyLock(){
-  const b=$('#partyBtn'); if (b){ b.classList.toggle('locked',allLocked()); b.textContent=allLocked()?'🔒 파티 모드 · 선생님이 잠갔어요':'👥 파티 모드 · 점령전 (최대 5명)'; }
+  const b=$('#partyBtn'); if (b){ b.classList.toggle('locked',allLocked()); b.innerHTML=allLocked()?'🔒 파티 모드<small>선생님이 잠갔어요</small>':'👥 파티 모드<small>점령전 · 최대 5명</small>'; }
   document.querySelectorAll('[data-pmode]').forEach(x=>{ const L=modeLocked(x.dataset.pmode); x.disabled=L; x.classList.toggle('locked',L); });
   if (modeLocked(PP.mode) && !allLocked()) PP.mode=modeLocked('quiz')?'fight':'quiz';
   renderModes();

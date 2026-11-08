@@ -262,7 +262,7 @@ function renderPlayModes(c){
   $('#pmPeace').innerHTML=vis.filter(m=>m.side==='peace').map(card).join('');
   const okModes=vis.filter(m=>mapOK(c.u,m.map)), done=okModes.filter(m=>ex.includes(m.id)).length, pe=$('#pmExplore');
   pe.hidden=!stu;
-  if (stu) pe.innerHTML=done>=okModes.length?`🧭 이번 주 모드 탐험 완료! <b>${done}/${okModes.length}</b> · 다음 주 월요일에 다시 🎁가 생겨요`:`🧭 이번 주 탐험 <b>${done}/${okModes.length}</b> · <span class="pm-gift-i">🎁</span> 표시 모드는 처음 하면 문제 ${EXPLORE_MIN_Q}개 이상 풀 때 <b>코인 +${EXPLORE_COINS}</b>`;
+  if (stu) pe.innerHTML=done>=okModes.length?`🧭 이번 주 탐험 완료 <b>${done}/${okModes.length}</b> · 월요일에 🎁가 다시 생겨요`:`🧭 이번 주 탐험 <b>${done}/${okModes.length}</b> · 🎁 모드 처음 하면 <b>+${EXPLORE_COINS}코인</b> <small>(문제 ${EXPLORE_MIN_Q}개↑)</small>`;
 }
 $('#playModes').addEventListener('click',e=>{ const b=e.target.closest('[data-gmode]'); if (!b||b.disabled||W.state==='play') return;
   MODE_PICK=b.dataset.gmode; try{ localStorage.setItem('gsd-mode',MODE_PICK); }catch(_){}

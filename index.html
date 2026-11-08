@@ -7,7 +7,7 @@
 <style>body{margin:0}[hidden]{display:none!important}img{max-width:100%}</style>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jua&family=IBM+Plex+Sans+KR:wght@400;600;700&display=swap">
-<link rel="stylesheet" href="style.css?v=20261109c">
+<link rel="stylesheet" href="style.css?v=20261109d">
 </head>
 <body>
 
@@ -194,12 +194,12 @@
       </div>
     </div>
     <p class="lobby" id="mapDesc">다국적 기업의 세 거점을 지키세요. 퀴즈를 맞혀야 강해지고, 웨이브가 열리고, 보스의 보호막이 깨져요.</p>
+    <details class="howto lobby"><summary>게임 방법 보기</summary>
     <div class="zones lobby" id="mapZones">
       <div class="zone z-hq"><b>본사 · 북쪽</b><span>선진국 대도시 · 경영과 관리</span></div>
       <div class="zone z-lab"><b>연구소 · 서쪽</b><span>고급 인력 · 기술 개발</span></div>
       <div class="zone z-fac"><b>생산 공장 · 동쪽</b><span>낮은 임금 · 넓은 땅</span></div>
     </div>
-    <details class="howto lobby"><summary>게임 방법 보기</summary>
     <ul class="rules" id="mapRules">
       <li><b>위치 퀴즈:</b> 상황을 읽고 알맞은 거점 바닥으로 직접 달려가요</li>
       <li><b>거점 기둥:</b> 맞히면 다음 웨이브가 열려요</li>
@@ -214,12 +214,13 @@
       <label class="mode hard"><input type="radio" name="mode" value="hard"><span><b>어려움</b><small></small></span></label>
       <label class="mode hero" id="modeHeroL"><input type="radio" name="mode" value="hero" id="modeHero"><span><b>영웅</b><small></small></span></label>
     </div>
+    <p class="mode-desc lobby" id="modeDesc"></p>
     <p class="bankinfo lobby" id="bankInfo"></p>
     <div class="title-actions lobby">
       <button class="btn" id="startBtn">게임 시작</button>
       <button class="btn twbtn" id="twBtn" hidden>⚔️ 조별 점령전 · 입장하기</button>
       <button class="btn stagebtn" id="stageBtn" hidden>🟦 발판 서바이벌 · 입장하기</button>
-      <button class="btn ghost partybtn" id="partyBtn">👥 파티 모드 · 점령전 (최대 5명)</button>
+      <button class="btn ghost partybtn" id="partyBtn">👥 파티 모드<small>점령전 · 최대 5명</small></button>
       <p class="gatenote" id="gateNote" hidden></p>
     </div>
     <div class="history lobby" id="history" hidden></div>
@@ -440,31 +441,31 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="firebase-config.js"></script>
-<script src="js/01-data.js?v=20261109c"></script>
-<script src="js/02-graphics.js?v=20261109c"></script>
-<script src="js/02m-mood.js?v=20261109c"></script>
-<script src="js/03-world.js?v=20261109c"></script>
-<script src="js/04-island.js?v=20261109c"></script>
-<script src="js/04g-glacier.js?v=20261109c"></script>
-<script src="js/04r-runner.js?v=20261109c"></script>
-<script src="js/04s-stage.js?v=20261109c"></script>
-<script src="js/04t-teamwar.js?v=20261109c"></script>
-<script src="js/05-play.js?v=20261109c"></script>
-<script src="js/06-jobs.js?v=20261109c"></script>
-<script src="js/06p-player.js?v=20261109c"></script>
-<script src="js/07-quiz.js?v=20261109c"></script>
-<script src="js/07b-prep.js?v=20261109c"></script>
-<script src="js/07c-fun.js?v=20261109c"></script>
-<script src="js/08-hud.js?v=20261109c"></script>
-<script src="js/09-server.js?v=20261109c"></script>
-<script src="js/10-shop.js?v=20261109c"></script>
-<script src="js/10w-wings.js?v=20261109c"></script>
-<script src="js/10a-ach.js?v=20261109c"></script>
-<script src="js/11-gate-editor.js?v=20261109c"></script>
-<script src="js/12-lobby.js?v=20261109c"></script>
-<script src="js/13-loop.js?v=20261109c"></script>
-<script src="js/14-party.js?v=20261109c"></script>
-<script src="js/15-board.js?v=20261109c"></script>
-<script src="js/16-notes.js?v=20261109c"></script>
+<script src="js/01-data.js?v=20261109d"></script>
+<script src="js/02-graphics.js?v=20261109d"></script>
+<script src="js/02m-mood.js?v=20261109d"></script>
+<script src="js/03-world.js?v=20261109d"></script>
+<script src="js/04-island.js?v=20261109d"></script>
+<script src="js/04g-glacier.js?v=20261109d"></script>
+<script src="js/04r-runner.js?v=20261109d"></script>
+<script src="js/04s-stage.js?v=20261109d"></script>
+<script src="js/04t-teamwar.js?v=20261109d"></script>
+<script src="js/05-play.js?v=20261109d"></script>
+<script src="js/06-jobs.js?v=20261109d"></script>
+<script src="js/06p-player.js?v=20261109d"></script>
+<script src="js/07-quiz.js?v=20261109d"></script>
+<script src="js/07b-prep.js?v=20261109d"></script>
+<script src="js/07c-fun.js?v=20261109d"></script>
+<script src="js/08-hud.js?v=20261109d"></script>
+<script src="js/09-server.js?v=20261109d"></script>
+<script src="js/10-shop.js?v=20261109d"></script>
+<script src="js/10w-wings.js?v=20261109d"></script>
+<script src="js/10a-ach.js?v=20261109d"></script>
+<script src="js/11-gate-editor.js?v=20261109d"></script>
+<script src="js/12-lobby.js?v=20261109d"></script>
+<script src="js/13-loop.js?v=20261109d"></script>
+<script src="js/14-party.js?v=20261109d"></script>
+<script src="js/15-board.js?v=20261109d"></script>
+<script src="js/16-notes.js?v=20261109d"></script>
 </body>
 </html>
