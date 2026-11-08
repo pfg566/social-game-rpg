@@ -55,6 +55,8 @@ h1{font-family:var(--display);font-weight:400;font-size:clamp(26px,5vw,34px);mar
 @media (max-width:700px){.tiles{grid-template-columns:1fr 1fr}}
 
 .tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.tablink{margin-left:auto;border:2px solid var(--ink);border-radius:999px;background:#ffd34d;color:var(--ink);padding:6px 14px;font-family:var(--display);font-size:16px;text-decoration:none}
+.tablink:hover{filter:brightness(1.05)}
 .tab{border:2px solid var(--ink);border-radius:999px;background:#fff;color:var(--ink);padding:6px 14px;font-family:var(--display);font-size:16px}
 .tab[aria-selected="true"]{background:var(--ink);color:#fff}
 .panel{padding:4px 0}
@@ -225,6 +227,7 @@ input.rename{border:2px solid var(--line);border-radius:6px;padding:2px 6px;widt
       <button class="tab" role="tab" data-tab="classes" aria-selected="false">학급 관리</button>
       <button class="tab" role="tab" data-tab="roster" aria-selected="false">학생 명단</button>
       <button class="tab" role="tab" data-tab="manage" aria-selected="false">관리</button>
+      <a class="tablink" href="index.html?edit=1" target="_blank" rel="noopener" title="게임의 문제 관리 화면이 새 탭으로 바로 열려요">📝 문제 추가·수정</a>
     </div>
 
     <section class="card panel" id="pTw" hidden>

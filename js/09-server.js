@@ -97,6 +97,7 @@ function initFirebase(){
     $('#teacherState').textContent = isAdmin ? `선생님 로그인됨 (${u.email})` : (plain?'선생님이신가요?':`${u.email} 은(는) 선생님 권한이 없어요`);
     $('#teacherLogin').textContent = isAdmin||!plain ? '로그아웃' : '문제 관리 로그인';
     flushPending();
+    autoOpenEditor();
   }).catch(()=>{ loadBank(); });
 }
 $('#teacherLogin').addEventListener('click',async e=>{
@@ -110,11 +111,19 @@ function loadSettings(){
   if (!fbDb) return;
   fbDb.ref('settings').on('value',snap=>{ const v=snap.val()||{}; HERO_OPEN=v.heroMode===true; FREE_PLAY=v.freePlay===true; PARTY_LOCK={quiz:v.partyQuizOff!==false,fight:v.partyFightOff!==false}; /* 선생님이 열기 전에는 잠겨 있어요 */ if (W.state!=='play'){ applyPlay(); renderLevels(); } try{ applyPartyLock(); }catch(e){} },()=>{ HERO_OPEN=false; });
 }
+let BANK_LOADED=false;
+/* 선생님 결과판의 '📝 문제 추가·수정'에서 열면(index.html?edit=1) 문제 관리 화면을 바로 보여 줘요 */
+function autoOpenEditor(){
+  if (!/[?&]edit=1/.test(location.search)) return;
+  if (!isAdmin){ $('#teacherState').textContent='문제 관리는 선생님 계정으로 로그인해야 열 수 있어요. 아래 "문제 관리 로그인"을 눌러 주세요.'; return; }
+  let n=0; const t=setInterval(()=>{ n++; if (BANK_LOADED||n>40){ clearInterval(t); try{ openEditor(); }catch(e){} } },150);
+}
 function loadBank(){
   if (!fbDb) return;
   fbDb.ref('bank').once('value').then(snap=>{
     const n=normalize(snap.val()); if (n){ DATA=n; useUnit(DATA.active); applyPlay(); }
-  }).catch(()=>{});
+    BANK_LOADED=true;
+  }).catch(()=>{ BANK_LOADED=true; });
 }
 
 /* ---------- 학생 계정: 반·번호·코드 로그인, 경험치·레벨·코인 ---------- */
