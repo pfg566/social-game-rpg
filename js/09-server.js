@@ -73,7 +73,8 @@ function initFirebase(){
     firebase.initializeApp(window.FIREBASE_CONFIG);
     fbAuth=firebase.auth(); fbDb=firebase.database();
   }catch(e){ $('#netWarn').hidden=false; $('#netWarn').textContent='저장 서버 설정에 문제가 있어요. 선생님께 알려 주세요.'; return; }
-  try{ fbAuth.setPersistence(firebase.auth.Auth.Persistence.SESSION).catch(()=>{}); }catch(e){}
+  // 로그인 유지: 선생님 구글 로그인은 결과판(teacher.html)과 같이 브라우저에 남겨서 새 탭에서도 이어지게 하고,
+  // 학생 로그인만 이 탭에서만 유지(탭을 닫으면 로그아웃)되도록 학생이 로그인하기 직전에 바꿔요
   loadClasses();
   fbReady=new Promise((resolve,reject)=>{
     let first=true;
@@ -118,8 +119,26 @@ let BANK_LOADED=false;
 /* 선생님 결과판의 '📝 문제 추가·수정'에서 열면(index.html?edit=1) 문제 관리 화면을 바로 보여 줘요 */
 function autoOpenEditor(){
   if (!/[?&]edit=1/.test(location.search)) return;
-  if (!isAdmin){ $('#teacherState').textContent='문제 관리는 선생님 계정으로 로그인해야 열 수 있어요. 아래 "문제 관리 로그인"을 눌러 주세요.'; return; }
+  if (!isAdmin){ editLoginPrompt(); return; }
   let n=0; const t=setInterval(()=>{ n++; if (BANK_LOADED||n>40){ clearInterval(t); try{ openEditor(); }catch(e){} } },150);
+}
+/* 문제 관리 탭인데 선생님 로그인이 안 되어 있으면: 학생 로그인 창 대신 선생님 로그인 안내를 크게 보여 줘요 */
+function editLoginPrompt(){
+  if (document.getElementById('editGate')) return;
+  const u=fbAuth&&fbAuth.currentUser, other=u&&!u.isAnonymous&&!isStudentUser(u);
+  const d=document.createElement('div'); d.id='editGate';
+  d.style.cssText='position:fixed;inset:0;z-index:9999;display:grid;place-items:center;background:rgba(24,33,58,.55);font-family:inherit';
+  d.innerHTML=`<div style="background:#fffdf6;border:3px solid #18213a;border-radius:16px;padding:22px 26px;max-width:420px;text-align:center;box-shadow:0 6px 0 #18213a">
+    <p style="font-size:20px;font-weight:800;margin:0 0 8px">📝 문제 추가 · 수정</p>
+    <p style="margin:0 0 14px;line-height:1.5">${other?`지금 <b>${esc(u.email)}</b> 계정은 선생님 권한이 없어요.<br>권한이 있는 구글 계정으로 다시 로그인해 주세요.`:'이 탭에서는 아직 선생님 로그인이 안 되어 있어요.<br>결과판에서 쓰는 <b>구글 계정</b>으로 한 번 로그인하면 다음부터는 바로 열려요.'}</p>
+    <button id="editGateBtn" style="font:inherit;font-weight:800;font-size:16px;padding:10px 18px;border-radius:12px;border:2.5px solid #18213a;background:#ffcf33;cursor:pointer">구글 계정으로 선생님 로그인</button>
+    <p id="editGateMsg" style="margin:10px 0 0;font-size:13px;color:#b4362a"></p>
+    <p style="margin:12px 0 0"><a href="index.html" style="font-size:13px">게임 화면으로 가기</a></p></div>`;
+  document.body.appendChild(d);
+  $('#editGateBtn').addEventListener('click',async()=>{
+    try{ if (other) await fbAuth.signOut(); await fbAuth.signInWithPopup(new firebase.auth.GoogleAuthProvider()); location.reload(); }
+    catch(err){ const c=err&&err.code; $('#editGateMsg').textContent=c==='auth/popup-blocked'?'팝업이 막혔어요. 주소창 오른쪽에서 팝업을 허용해 주세요.':c==='auth/popup-closed-by-user'?'로그인 창이 닫혔어요. 다시 눌러 주세요.':'로그인하지 못했어요. 잠시 뒤 다시 시도해 주세요.'; }
+  });
 }
 function loadBank(){
   if (!fbDb) return;
@@ -197,6 +216,7 @@ async function studentLogin(){
   const email=emailOf(c,n,code), pw=pwOf(code);
   let created=false;
   try{
+    await studentSession();
     try{ await fbAuth.signInWithEmailAndPassword(email,pw); }
     catch(e){
       const k=e&&e.code;
@@ -230,12 +250,13 @@ async function studentLogin(){
 }
 /* 비밀번호로 들어오기 */
 let PENDING_PW='';
+async function studentSession(){ try{ await fbAuth.setPersistence(firebase.auth.Auth.Persistence.SESSION); }catch(e){} }
 async function pwLogin(c,n,code,pw){
   if (!pw){ lgError('비밀번호를 넣어 주세요.'); return; }
   loggingIn=true; $('#lgBtn').disabled=true; $('#lgBtn').textContent='확인 중…'; lgError('');
   const email=emailOf(c,n,code);
   try{
-    let viaCode=false;
+    let viaCode=false; await studentSession();
     try{ await fbAuth.signInWithEmailAndPassword(email,pw); }
     catch(e){ const k=e&&e.code;
       if (!/invalid-credential|wrong-password|invalid-login-credentials|user-not-found/.test(String(k))) throw e;
