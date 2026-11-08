@@ -124,6 +124,12 @@ const CATALOG=[
   /* ===== 함께 쓰는 '없음' ===== */
   {id:'nohat_p0',job:'all',slot:'hat',name:'맨머리'},
   {id:'nocape_p0',job:'all',slot:'cape',name:'망토 없음'},
+  /* ===== 날개 (망토 자리 · 세 직업 모두) ===== */
+  {id:'wangel_p1200',job:'all',slot:'cape',name:'천사 날개',wing:'angel',desc:'깃털을 한 장씩 겹친 하얀 날개 · 달리면 힘차게 퍼덕여요'},
+  {id:'wbat_p1200',job:'all',slot:'cape',name:'박쥐 날개',wing:'bat',desc:'뼈대와 막이 있는 보랏빛 날개'},
+  {id:'wbfly_p1500',job:'all',slot:'cape',name:'나비 날개',wing:'butterfly',desc:'무늬가 그려진 나비 날개 · 팔랑팔랑 빠르게 움직여요'},
+  {id:'wice_p2000',job:'all',slot:'cape',name:'얼음 결정 날개',wing:'crystal',desc:'빛나는 얼음 조각 날개 · 반짝이가 떠다녀요'},
+  {id:'wphx_p2500',job:'all',slot:'cape',name:'불사조 날개',wing:'phoenix',desc:'스스로 빛나는 불꽃 깃털 · 불씨가 피어올라요'},
   {id:'noshield_p0',job:'all',slot:'shield',name:'빈손'}
 ];
 /* 머리색: 직업마다 따로 사요 (k: 기사, a: 궁수, m: 마법사) */
@@ -245,6 +251,7 @@ async function dressP2(ch,L){
   if (cape.own && OSRC[o.src].cape) addSkin(srcMesh(o.src,OSRC[o.src].cape),oTex);
   else if (capeG){ const src=capeG.scene.getObjectByName(cape.mesh); const bone=src&&src.parent&&root.getObjectByName(src.parent.name);
     if (bone){ const m=src.clone(true); m.traverse(x=>{ if (x.isMesh){ x.material=partMat(x.material,.4); x.castShadow=true; } }); bone.add(m); ch.wardParts.push(m); } }
+  if (cape.wing && typeof attachWings==='function'){ const h=attachWings(ch,cape.wing); if (h) ch.wardParts.push(h); }
   if (job==='archer') addSkin(srcMesh('ranger','Quiver'),quivTex);
   // 모자 (머리를 감싸는 옷이면 안 써요)
   if (hat.sig && !headSrc) hat.sig.meshes.forEach(n=>addSkin(srcMesh(hat.sig.src,n),hatTex));
@@ -254,7 +261,7 @@ async function dressP2(ch,L){
     w.traverse(x=>{ if (x.isMesh){ x.material=toonMat({map:heldTex[it.id],color:it.tint||0xffffff,rim:.4}); x.castShadow=true; } });
     bone.add(w); ch.wardParts.push(w); }
   // 맞았을 때 빨갛게 번쩍이는 재질 목록 다시 모으기
-  const mats=new Set(); root.traverse(x=>{ if (x.isMesh && x.visible!==false){ (Array.isArray(x.material)?x.material:[x.material]).forEach(m=>mats.add(m)); } });
+  const mats=new Set(); root.traverse(x=>{ if (x.isMesh && x.visible!==false && !x.userData.noFlash){ (Array.isArray(x.material)?x.material:[x.material]).forEach(m=>mats.add(m)); } });
   ch.mats=[...mats]; ch.doneTok=tok;
 }
 
