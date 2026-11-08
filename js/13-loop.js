@@ -99,7 +99,7 @@ function frame(now){
     }
     mobs=mobs.filter(m=>{ if (m.dying===0){ removeMob(m); return false; } return true; });
     if (MAPK==='defense'){ updateTurrets(dt); updateBolts(dt); }
-    islandTick(dt); glacierTick(dt);
+    islandTick(dt); glacierTick(dt); funTick(dt);
 
     // 웨이브 진행 · 잠금
     if (W.nextWaveAt>=0 && W.t>=W.nextWaveAt) startWave(W.wave+1);
@@ -150,6 +150,7 @@ function frame(now){
         } else item=pick(['mc'],MC);
         openQuiz(item,{type:'station',station:near});
       }
+      else if (!W.loc && !W.prep && W.t>=W.nextQuiz && NEWQ()){ if (!amStart()) W.nextQuiz=W.t+8; }   // 돌발 퀴즈 대신 정답 몬스터
       else if (!W.loc && !W.prep && W.t>=W.nextQuiz){
         W.timedFlip^=1;
         if (W.timedFlip && MAPK==='zones' && LOC.length && !NEWQ()) startLoc();

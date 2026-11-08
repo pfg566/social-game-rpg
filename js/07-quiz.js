@@ -66,14 +66,16 @@ function settle(ok,item,source){
   const parcelQ=source&&source.type==='parcel';
   const prepQ=!!W.prep && source && (source.type==='prep'||source.type==='loc');
   const cardQ=NEWQ() && source && source.type==='card' && ok;
-  const fx=prepQ?prepFx(ok):cardQ?cardFx(ok):jobFx((ok?GOOD:BAD)[parcelQ||PEACE_RUN?1:Math.floor(Math.random()*3)],ok);
+  const lvQ=source && source.type==='lv';
+  const fx=lvQ?lvFx(ok,source):prepQ?prepFx(ok):cardQ?cardFx(ok):jobFx((ok?GOOD:BAD)[parcelQ||PEACE_RUN?1:Math.floor(Math.random()*3)],ok);
   if (parcelQ) extras.push(ok?'급행 배송! 빨리 달려서 배달하세요.':'상자가 무거워졌어요… 그래도 배달은 할 수 있어요.');
-  if (!prepQ && !cardQ) applyEffect(fx);
+  if (!prepQ && !cardQ && !lvQ) applyEffect(fx);
   if (cardQ && W.cardCoins) extras.push(`이번 판 카드 코인 ${W.cardCoins} (판이 끝나면 받아요)`);
   if (entry && ok) extras.push('지난번에 틀린 문제를 이번엔 맞혔어요!');
   if (!entry && !ok) extras.push('이 문제는 잠시 뒤에 다시 나와요.');
   const boss=liveBoss();
-  if (NEWQ() && source && source.type==='station' && W.bg && W.bg.st===source.station) bgSettle(ok,extras);
+  if (NEWQ() && source && source.type==='bossq') duelSettle(ok,extras);
+  else if (NEWQ() && source && source.type==='station' && W.bg && W.bg.st===source.station) bgSettle(ok,extras);
   else if (NEWQ()){}
   else if (!PARTY.on && ok && boss && boss.shield>0){
     boss.shield--; W.lastShield=boss; extras.push(boss.shield>0?`보스 보호막 파괴! 남은 보호막 ${boss.shield}개`:'보스 보호막이 모두 깨졌어요. 이제 공격이 통해요!');
@@ -90,6 +92,7 @@ function settle(ok,item,source){
     if (ok){ W.gate=false; W.nextWaveAt=W.t+2; extras.push(`웨이브 ${W.wave+2}가 열려요!`); }
     else extras.push(MAPK==='zones'?'다른 거점 기둥에서 다시 도전해 보세요.':'다른 수정에서 다시 도전해 보세요.');
   }
+  funSettle(ok,item,source,extras);
   glQuiz(ok,source,extras);
   jobQuiz(ok,source,extras);
   return {fx,extras};
@@ -122,6 +125,7 @@ function closeQuiz(){
   $('#quiz').hidden=true;
   const s=Q.source;
   if (s && s.type==='revive'){ reviveNext(Q.ok); return; }
+  if (s && (s.type==='lv'||s.type==='bossq') && funClose(s,Q.ok)) return;
   if (W.prep && s && (s.type==='prep'||s.type==='loc')){ if (W.lastFx){ fx.rise(P.x,P.z,W.lastFx==='good'?0xffd34d:0x8a8fa0,W.lastFx==='good'?26:12); W.lastFx=null; } prepAfter(Q.ok); return; }
   if (s && s.type==='station'){
     const quick = W.gate || !!liveBoss();

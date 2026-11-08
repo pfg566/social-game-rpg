@@ -82,6 +82,7 @@ function spawnMob(def,isBoss,at){
   c.anim.once('spawn',2.2,true);
   if (isBoss){ m.spawnT=1.8; setTimeout(()=>{ if (m.dying<0) m.anim.once('taunt',1,true); },1700); }
   mobs.push(m);
+  return m;
 }
 let lastSlam=new WeakMap(), lastSummonCd=new WeakMap();
 function animMob(m,real,dt){

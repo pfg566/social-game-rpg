@@ -114,6 +114,7 @@ function endGame(win){
   saveResult(lastResult);
   try{ boardWrite(lastResult); }catch(e){}
   try{ notesWrite(); }catch(e){}
+  try{ $('#sDex').hidden=true; dexWrite(); }catch(e){}
   grantRewards({...lastResult,newSkill},fixedN);
   $('#sScore').textContent=score;
   $('#copyStatus').textContent=''; $('#copyText').hidden=true;

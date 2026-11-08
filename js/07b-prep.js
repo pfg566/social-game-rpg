@@ -1,7 +1,7 @@
 /* 사회 게임 RPG · 정비 시간(웨이브 사이 퀴즈 → 강화 카드) · 보스 기믹(수정에서 힘 끌어오기)
    싸우는 도중에 갑자기 퀴즈가 뜨지 않아요. 평화 모드와 파티 모드는 예전 방식 그대로예요. */
 const NEWQ=()=>!PEACE_RUN && !PARTY.on;
-const PREP_N=3, BG_GAP=5, BG_FIRST=4, BOSS_SHIELD_NEW=3, GROGGY=5, GROGGY_DMG=1.5;
+const PREP_N=2, BG_GAP=5, BG_FIRST=4, BOSS_SHIELD_NEW=3, GROGGY=5, GROGGY_DMG=1.5;
 const bgTime=()=>MODE==='hero'?16:20;
 const timedEvery=()=>NEWQ()?TIMED_NEW:TIMED_EVERY;   // 돌발 퀴즈 간격: 새 방식 50초, 평화 모드 30초
 
@@ -144,7 +144,7 @@ function bgTick(){
   if (!NEWQ() || !W.bg) return;
   const b=W.bg, boss=liveBoss();
   if (!boss){ if (b.st) bgEnd(); return; }
-  if (!b.st){ if (W.t>=b.next) bgStart(); return; }
+  if (!b.st){ if (W.t>=b.next) duelAsk(boss); return; }   // 보스 퀴즈 결투: 보스가 직접 문제를 내요
   if (W.t>=b.until){
     if (boss.shield<boss.shieldMax) boss.shield++;
     boss.hp=Math.min(boss.max,boss.hp+Math.round(boss.max*.06));

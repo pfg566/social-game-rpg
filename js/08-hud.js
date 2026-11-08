@@ -9,7 +9,7 @@ function updateHUD(){
   $('#waveTxt').textContent=`${Math.max(1,W.wave+1)}/${WAVES.length}`;
   $('#killTxt').textContent=W.kills;
   $('#corTxt').textContent=`${W.correct}/${W.asked}`;
-  $('#nextCard').hidden=!!W.loc||!!W.prep;
+  $('#nextCard').hidden=!!W.loc||!!W.prep||!!(FUN.am&&!FUN.am.done);
   const bgOn=NEWQ()&&W.bg&&W.bg.st; $('#bgCard').hidden=!bgOn; if (bgOn) $('#bgTxt').textContent=Math.max(0,Math.ceil(W.bg.until-W.t));
   if (W.up && W.up.list.length) { /* 강화 목록은 칩으로 */ }
   $('#nextTxt').textContent=Math.max(0,Math.ceil(W.nextQuiz-W.t));
@@ -54,7 +54,7 @@ function reset(){
   $('#locCard').hidden=true; $('#gateCard').hidden=true;
   TURRETS.forEach(t=>{ t.until=0; t.cd=0; }); bolts.forEach(b=>scene.remove(b.mesh)); bolts=[]; doorFlash=0;
   $('#doorRow').hidden=MAPK!=='defense';
-  $('#parcelRow').hidden=true; islReset(); glacierReset(); runnerReset(); stageReset(); twReset();
+  $('#parcelRow').hidden=true; islReset(); glacierReset(); runnerReset(); stageReset(); twReset(); funReset();
 }
 let NICK='', BAN='', CI=null;
 try{ NICK=localStorage.getItem('gsd-nick')||''; }catch(e){}

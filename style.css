@@ -601,3 +601,21 @@ body.twmode #hud, body.twmode #skillbar, body.twmode #hint, body.twmode #touch, 
 .tw-mvp li{display:grid;grid-template-columns:130px 1fr auto;gap:8px;padding:6px 10px;border-radius:10px}
 .tw-mvp li:nth-child(odd){background:rgba(0,0,0,.04)}
 #twEndSc{margin:8px 0}
+
+/* 새 퀴즈 방식: 레벨 · 연속 정답 · 정답 몬스터 · 레벨업 카드 · 도감 */
+.lv-box{margin-top:6px}
+.lv-row{display:flex;justify-content:space-between;align-items:center;font-size:14px}
+.lv-qs{font-weight:800}.lv-qs.t1{color:#8a94a6}.lv-qs.t2{color:#d4a017;text-shadow:0 0 6px rgba(255,211,77,.6)}
+.hpbar.lvbar{height:8px;background:rgba(0,0,0,.1)}.hpbar.lvbar i{background:linear-gradient(90deg,#7c5cff,#b59bff)}
+.am-card{top:84px;border:3px solid #e8a400}
+.am-head{display:flex;justify-content:space-between;font-weight:800;color:#b86b1f;margin-bottom:4px}
+.am-ex{font-size:13px;opacity:.85}
+.upcard.lv{position:relative}
+.upcard.lv .lv-tier{font-size:13px;font-weight:800}
+.upcard.lv.t1{border-color:#2f6fed;box-shadow:0 0 0 2px rgba(47,111,237,.25)}
+.upcard.lv.t2{border-color:#e8a400;box-shadow:0 0 14px rgba(255,200,60,.55);background:linear-gradient(180deg,#fff8df,#fff)}
+.sdex{margin:6px 0 0;font-size:15px}
+.am-card{top:76px;padding:10px 14px 9px;width:min(780px,calc(100vw - 32px))}
+.am-card .run-qtext{font-size:18px;margin-bottom:6px}
+.am-card .run-opt{min-height:36px;font-size:14px;padding:5px 8px}
+.am-card .run-opt b{font-size:20px}

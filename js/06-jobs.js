@@ -477,7 +477,9 @@ function hitMob(m,dmg,sx,sz,kbk,col,byPlayer,o){
   if (m.hp>0 && m.anim && !o.noStun && !(m.boss&&m.slamT>0)) m.anim.once('hit',1.5,true);
   if (m.hp<=0){ m.dying=1.6; if (!o.by || o.by===PARTY.me) W.kills++; m.killer=o.by||PARTY.me; if (PEACE_RUN){ fx.rise(m.x,m.z,0xdff1ff,16); if (m.anim){ m.anim.dead=true; } } else if (m.anim) m.anim.die(); fx.burst(m.x,.9,m.z,m.color,m.boss?40:22,m.boss?8:6); SFX.kill();
     if (!m.boss && (o.launch||o.crit)){ m.avy=o.launch?7:4.5; m.kbx*=1.7; m.kbz*=1.7; }
-    if (m.boss) shake=.5; if (!m.boss && !PARTY.on && Math.random()<CARD_CHANCE) dropCard(m.x,m.z); }
+    if (m.boss) shake=.5;
+    if (m.ans) amKill(m); else if (NEWQ()) lvKill(m);   // 새 방식: 지식 카드 대신 경험치 → 레벨업 카드
+    else if (!m.boss && !PARTY.on && Math.random()<CARD_CHANCE) dropCard(m.x,m.z); }
   return true;
 }
 
