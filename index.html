@@ -7,7 +7,7 @@
 <style>body{margin:0}[hidden]{display:none!important}img{max-width:100%}</style>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jua&family=IBM+Plex+Sans+KR:wght@400;600;700&display=swap">
-<link rel="stylesheet" href="style.css?v=20261108c">
+<link rel="stylesheet" href="style.css?v=20261108d">
 </head>
 <body>
 
@@ -183,6 +183,10 @@
       <p class="pp-lock" id="ppLock"></p>
       <label class="unitpick" id="unitPick" hidden><span>단원</span><select id="unitSelect"></select></label>
       <label class="unitpick" id="mapPick" hidden><span>맵</span><select id="mapSelect"></select></label>
+      <div class="pmodes" id="playModes" role="group" aria-label="게임 모드 고르기">
+        <div class="pm-col battle"><p class="pm-h">⚔️ 전투 모드</p><div class="pm-list" id="pmBattle"></div></div>
+        <div class="pm-col peace"><p class="pm-h">🕊️ 평화 모드</p><div class="pm-list" id="pmPeace"></div></div>
+      </div>
       <div class="stylepick" id="stylePick" hidden role="group" aria-label="플레이 방식">
         <button data-style="battle" aria-pressed="true"><b>⚔️ 일반</b><small>몬스터와 싸워요</small></button>
         <button data-style="peace" aria-pressed="false"><b>🕊️ 평화</b><small>싸우지 않아요</small></button>
@@ -434,29 +438,29 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="firebase-config.js"></script>
-<script src="js/01-data.js?v=20261108c"></script>
-<script src="js/02-graphics.js?v=20261108c"></script>
-<script src="js/02m-mood.js?v=20261108c"></script>
-<script src="js/03-world.js?v=20261108c"></script>
-<script src="js/04-island.js?v=20261108c"></script>
-<script src="js/04g-glacier.js?v=20261108c"></script>
-<script src="js/04r-runner.js?v=20261108c"></script>
-<script src="js/04s-stage.js?v=20261108c"></script>
-<script src="js/04t-teamwar.js?v=20261108c"></script>
-<script src="js/05-play.js?v=20261108c"></script>
-<script src="js/06-jobs.js?v=20261108c"></script>
-<script src="js/06p-player.js?v=20261108c"></script>
-<script src="js/07-quiz.js?v=20261108c"></script>
-<script src="js/07b-prep.js?v=20261108c"></script>
-<script src="js/07c-fun.js?v=20261108c"></script>
-<script src="js/08-hud.js?v=20261108c"></script>
-<script src="js/09-server.js?v=20261108c"></script>
-<script src="js/10-shop.js?v=20261108c"></script>
-<script src="js/11-gate-editor.js?v=20261108c"></script>
-<script src="js/12-lobby.js?v=20261108c"></script>
-<script src="js/13-loop.js?v=20261108c"></script>
-<script src="js/14-party.js?v=20261108c"></script>
-<script src="js/15-board.js?v=20261108c"></script>
-<script src="js/16-notes.js?v=20261108c"></script>
+<script src="js/01-data.js?v=20261108d"></script>
+<script src="js/02-graphics.js?v=20261108d"></script>
+<script src="js/02m-mood.js?v=20261108d"></script>
+<script src="js/03-world.js?v=20261108d"></script>
+<script src="js/04-island.js?v=20261108d"></script>
+<script src="js/04g-glacier.js?v=20261108d"></script>
+<script src="js/04r-runner.js?v=20261108d"></script>
+<script src="js/04s-stage.js?v=20261108d"></script>
+<script src="js/04t-teamwar.js?v=20261108d"></script>
+<script src="js/05-play.js?v=20261108d"></script>
+<script src="js/06-jobs.js?v=20261108d"></script>
+<script src="js/06p-player.js?v=20261108d"></script>
+<script src="js/07-quiz.js?v=20261108d"></script>
+<script src="js/07b-prep.js?v=20261108d"></script>
+<script src="js/07c-fun.js?v=20261108d"></script>
+<script src="js/08-hud.js?v=20261108d"></script>
+<script src="js/09-server.js?v=20261108d"></script>
+<script src="js/10-shop.js?v=20261108d"></script>
+<script src="js/11-gate-editor.js?v=20261108d"></script>
+<script src="js/12-lobby.js?v=20261108d"></script>
+<script src="js/13-loop.js?v=20261108d"></script>
+<script src="js/14-party.js?v=20261108d"></script>
+<script src="js/15-board.js?v=20261108d"></script>
+<script src="js/16-notes.js?v=20261108d"></script>
 </body>
 </html>

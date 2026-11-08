@@ -198,39 +198,66 @@ let FREE_PLAY=false, PLAYMAP=null, PICK={};
 try{ PICK=JSON.parse(localStorage.getItem('gsd-pick')||'{}')||{}; }catch(e){ PICK={}; }
 const MAP_ORDER=['zones','general','defense','island','glacier','runner'];
 const mapOK=(u,k)=>!!(u&&MAPS[k]&&MAPS[k].need.every(t=>u.bank[t]&&u.bank[t].length>0));
+/* 게임 모드: 학생이 전투(왼쪽) · 평화(오른쪽) 중에서 자유롭게 골라요. 선생님이 정한 맵은 ⭐ 추천으로 보여요 (파티 · 조별 점령전 · 발판은 따로) */
+const PLAY_MODES=[
+ {id:'zones',  map:'zones',  peace:false,side:'battle',icon:'🏢',name:'세 거점',     sub:'몬스터 사냥 · 거점 퀴즈'},
+ {id:'general',map:'general',peace:false,side:'battle',icon:'🌾',name:'들판 마을',   sub:'몬스터 사냥'},
+ {id:'glacier',map:'glacier',peace:false,side:'battle',icon:'🧊',name:'녹는 빙하',   sub:'빙하 지키며 사냥'},
+ {id:'defense',map:'defense',peace:false,side:'battle',icon:'🏰',name:'성벽 디펜스', sub:'성문 지키기'},
+ {id:'island', map:'island', peace:false,side:'battle',icon:'🏝️',name:'서비스업 섬', sub:'배달 + 도둑 해골'},
+ {id:'island-p',map:'island',peace:true, side:'peace', icon:'📦',name:'택배 배달',   sub:'몬스터 없이 배달만'},
+ {id:'runner', map:'runner', peace:false,side:'peace', icon:'🏃',name:'정답 러너',   sub:'달리며 정답 문 통과'},
+ {id:'defense-p',map:'defense',peace:true,side:'peace',icon:'🗼',name:'성 지휘관',   sub:'퀴즈로 포탑 지휘'},
+];
+let MODE_PICK=''; try{ MODE_PICK=localStorage.getItem('gsd-mode')||''; }catch(e){}
+const modeById=id=>PLAY_MODES.find(x=>x.id===id);
 function playChoice(){
   const byId=id=>DATA.units.find(u=>u.id===id), ready=DATA.units.filter(isReady);
   const def=()=>{ const u=byId(DATA.active)&&isReady(byId(DATA.active))?byId(DATA.active):ready[0]||DATA.units[0]; return u; };
-  if (isAdmin || FREE_PLAY){ let u=byId(PICK.unit); if (!u||!isReady(u)) u=def(); return {u,m:mapOK(u,PICK.map)?PICK.map:mapOf(u),free:true,src:FREE_PLAY?'free':'admin'}; }
-  const g=activeGate(), raw=g&&GATE[g.key];
-  if (raw && raw.unit){ const u=byId(raw.unit); if (u&&isReady(u)) return {u,m:mapOK(u,raw.map)?raw.map:mapOf(u),free:false,src:'gate'}; }
-  const u=def(); return {u,m:mapOf(u),free:false,src:'default'};
+  let c;
+  if (isAdmin || FREE_PLAY){ let u=byId(PICK.unit); if (!u||!isReady(u)) u=def(); c={u,rec:mapOf(u),free:true,src:FREE_PLAY?'free':'admin'}; }
+  else { const g=activeGate(), raw=g&&GATE[g.key];
+    if (raw && raw.unit && byId(raw.unit) && isReady(byId(raw.unit))){ const u=byId(raw.unit); c={u,rec:mapOK(u,raw.map)?raw.map:mapOf(u),free:false,src:'gate'}; }
+    else { const u=def(); c={u,rec:mapOf(u),free:false,src:'default'}; } }
+  let md=modeById(MODE_PICK); if (!md||!c.u||!mapOK(c.u,md.map)) md=modeById(c.rec)||PLAY_MODES[1];
+  c.mode=md; c.m=md.map; return c;
 }
 function applyPlay(){
   if (!DATA||!DATA.units||!DATA.units.length) return;
   const c=playChoice(); if (!c.u) return;
   if (c.u.id!==playUnit) useUnit(c.u.id);
+  PEACE=!!c.mode.peace;
   PLAYMAP=c.m; if (W.state!=='play' && MAPK!==c.m) setMap(c.m);
-  $('#unitEyebrow').innerHTML=`${esc(c.u.name)}<span class="mapname">${MAPS[c.m].name}</span>`;
-  renderUnitPicker(c); updateBankInfo(); refreshStyle();
+  $('#unitEyebrow').innerHTML=`${esc(c.u.name)}<span class="mapname">${c.mode.peace?c.mode.name:MAPS[c.m].name}</span>`;
+  renderUnitPicker(c); renderPlayModes(c); updateBankInfo(); refreshStyle();
 }
+function renderPlayModes(c){
+  const card=md=>{ const ok=mapOK(c.u,md.map), on=md===c.mode, rec=md.map===c.rec&&!md.peace;
+    return `<button type="button" class="pm-btn${on?' on':''}" data-gmode="${md.id}" aria-pressed="${on}"${ok?'':' disabled title="이 단원에는 이 모드에 필요한 문제가 없어요"'}><i>${md.icon}</i><span><b>${md.name}${rec?' <em>⭐ 추천</em>':''}</b><small>${md.sub}</small></span></button>`; };
+  $('#pmBattle').innerHTML=PLAY_MODES.filter(m=>m.side==='battle'&&(mapOK(c.u,m.map)||m.map!=='zones')).map(card).join('');
+  $('#pmPeace').innerHTML=PLAY_MODES.filter(m=>m.side==='peace').map(card).join('');
+}
+$('#playModes').addEventListener('click',e=>{ const b=e.target.closest('[data-gmode]'); if (!b||b.disabled||W.state==='play') return;
+  MODE_PICK=b.dataset.gmode; try{ localStorage.setItem('gsd-mode',MODE_PICK); }catch(_){}
+  const md=modeById(MODE_PICK); PICK.map=md.map; try{ localStorage.setItem('gsd-pick',JSON.stringify(PICK)); }catch(_){}
+  applyPlay(); });
 function refreshStyle(){
-  const ok=PEACE_MAPS.includes(MAPK), on=ok&&PEACE, M=MAPS[MAPK], T=PEACE_TXT[MAPK];
-  $('#stylePick').hidden=!ok;
-  $('#stylePick').querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',String((b.dataset.style==='peace')===on)));
+  const on=PEACE_MAPS.includes(MAPK)&&PEACE, M=MAPS[MAPK], T=PEACE_TXT[MAPK];
+  $('#stylePick').hidden=true;
   $('#mapDesc').textContent=on?T.desc:M.desc;
-  $('#mapRules').innerHTML=(on?T.rules:M.rules).concat([on?'<b>조작:</b> WASD 이동 · Shift 구르기(기사는 막기) · 공격 버튼은 쓰지 않아요':'<b>조작:</b> 스페이스 연타 = 3단 콤보(마지막 타가 가장 세요) · Shift = 구르기(잠깐 무적) · E = 회전 베기(8초마다)']).map(r=>`<li>${r}</li>`).join('');
+  $('#mapRules').innerHTML=(on?T.rules:M.rules).concat([on?'<b>조작:</b> WASD 이동 · Shift 구르기(기사는 막기) · 공격 버튼은 쓰지 않아요':MAPK==='runner'?'':'<b>조작:</b> 스페이스 연타 = 3단 콤보(마지막 타가 가장 세요) · Shift = 구르기(잠깐 무적) · E = 회전 베기(8초마다)']).filter(Boolean).map(r=>`<li>${r}</li>`).join('');
 }
 $('#stylePick').addEventListener('click',e=>{ const b=e.target.closest('[data-style]'); if (!b) return; PEACE=b.dataset.style==='peace'; try{ localStorage.setItem('gsd-peace',PEACE?'1':'0'); }catch(_){} refreshStyle(); });
 function renderUnitPicker(c){
   c=c||playChoice(); if (!c||!c.u) return;
   const ready=DATA.units.filter(isReady);
-  $('#unitPick').hidden=!c.free||ready.length<2; $('#mapPick').hidden=!c.free;
+  $('#unitPick').hidden=!c.free||ready.length<2; $('#mapPick').hidden=true;
   $('#unitSelect').innerHTML=ready.map(u=>`<option value="${esc(u.id)}"${u.id===c.u.id?' selected':''}>${esc(u.name)}${u.id===DATA.active?' (수업 단원)':''}</option>`).join('');
   $('#mapSelect').innerHTML=MAP_ORDER.filter(k=>mapOK(c.u,k)).map(k=>`<option value="${k}"${k===c.m?' selected':''}>${MAPS[k].name}</option>`).join('');
-  $('#ppLock').textContent=c.src==='gate'?'🔒 선생님이 정한 단원과 맵이에요':c.src==='default'?'🔒 선생님이 정한 수업 단원이에요':c.src==='admin'?'⚙️ 선생님 계정이라 단원과 맵을 바꿀 수 있어요':'🗺️ 자유 플레이: 단원과 맵을 골라 보세요';
+  $('#ppLock').hidden=!c.free;
+  $('#ppLock').textContent=c.src==='admin'?'⚙️ 선생님 계정이라 단원도 바꿀 수 있어요 · 아래에서 모드를 골라요':c.src==='free'?'🗺️ 자유 플레이: 단원과 모드를 골라 보세요':'🎮 단원은 선생님이 정해요 · 아래에서 하고 싶은 모드를 골라요';
 }
-$('#mapSelect').addEventListener('change',e=>{ PICK.map=e.target.value; try{ localStorage.setItem('gsd-pick',JSON.stringify(PICK)); }catch(_){} applyPlay(); });
+$('#mapSelect').addEventListener('change',e=>{ PICK.map=e.target.value; MODE_PICK=e.target.value; try{ localStorage.setItem('gsd-pick',JSON.stringify(PICK)); }catch(_){} applyPlay(); });
 function updateBankInfo(){
   $('#bankInfo').textContent= MAPK==='zones' ? `문제 ${MC.length+LOC.length+OX.length+CLS.length}개 · 4지선다 ${MC.length} · 위치 ${LOC.length} · O/X ${OX.length} · 분류 ${CLS.length}` : `문제 ${MC.length+OX.length}개 · 4지선다 ${MC.length} · O/X ${OX.length}`;
 }

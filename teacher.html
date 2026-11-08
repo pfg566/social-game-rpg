@@ -201,7 +201,7 @@ input.rename{border:2px solid var(--line);border-radius:6px;padding:2px 6px;widt
       <div class="pb-row">
         <label class="f"><span>어느 반을 열까요?</span><select id="pbCls"></select></label>
         <label class="f"><span>단원</span><select id="pbUnit"><option value="">불러오는 중…</option></select></label>
-        <label class="f"><span>맵</span><select id="pbMap"></select></label>
+        <label class="f"><span>추천 맵 (학생이 모드를 바꿀 수 있어요)</span><select id="pbMap"></select></label>
         <label class="f"><span>한 판 시간</span><select id="pbLim"><option value="2">2분</option><option value="3">3분</option><option value="4">4분</option><option value="5" selected>5분</option><option value="6">6분</option><option value="7">7분</option><option value="0">제한 없음</option></select></label>
         <label class="f"><span>한 사람당</span><select id="pbPlays"><option value="1" selected>1판</option><option value="2">2판</option><option value="3">3판</option><option value="999">제한 없음</option></select></label>
         <div class="pb-dur"><span>열어 둘 시간</span><div><button class="btn" data-pmin="10">10분</button><button class="btn" data-pmin="15">15분</button><button class="btn primary" data-pmin="20">20분</button><button class="btn" data-pmin="30">30분</button><button class="btn" data-pmin="50">50분</button></div></div>
@@ -350,7 +350,7 @@ input.rename{border:2px solid var(--line);border-radius:6px;padding:2px 6px;widt
         </div>
         <div class="card box">
           <h3>자유 플레이</h3>
-          <p>평소에는 '게임 열기'에서 정한 단원과 맵으로만 플레이해요. 자유 플레이를 켜면 학생이 단원과 맵을 직접 골라요. 시험 전 복습 기간에 켜 두는 걸 추천해요. 게임을 열어야 시작할 수 있는 건 그대로예요.</p>
+          <p>평소에는 '게임 열기'에서 정한 단원으로 플레이하고, 모드(맵)는 학생이 전투·평화 중에서 골라요. 자유 플레이를 켜면 단원까지 학생이 직접 골라요. 시험 전 복습 기간에 켜 두는 걸 추천해요. 게임을 열어야 시작할 수 있는 건 그대로예요.</p>
           <div class="row"><span class="pill lose" id="freeState">불러오는 중</span><button class="btn" id="freeToggle" disabled>자유 플레이 켜기</button></div>
           <p class="msg" id="freeMsg" role="status"></p>
         </div>

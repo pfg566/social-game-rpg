@@ -369,6 +369,23 @@ body.hero .vitals{border-color:#c27a00;box-shadow:4px 4px 0 #c27a00}
 .setpop .unitpick{margin:0}
 .round-h{margin:0;font-family:var(--display);font-weight:400;font-size:24px}
 .playpick{display:grid;gap:6px;margin:6px 0}
+.pmodes{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:2px 0}
+.pm-col{border-radius:12px;padding:7px 6px 6px;display:grid;align-content:start;gap:5px}
+.pm-col.battle{background:#fde8e4;border:2px solid #f0b4a8}
+.pm-col.peace{background:#e3f3e8;border:2px solid #a9dcb9}
+.pm-h{margin:0 0 1px!important;font-weight:800;font-size:13.5px;text-align:center}
+.pm-col.battle .pm-h{color:#b4362a} .pm-col.peace .pm-h{color:#1f7a45}
+.pm-list{display:grid;gap:5px}
+.pm-btn{display:flex;align-items:center;gap:6px;text-align:left;font:inherit;background:#fff;border:2px solid transparent;border-radius:9px;padding:5px 7px;cursor:pointer;color:var(--ink);box-shadow:0 1px 0 rgba(24,33,58,.12);transition:transform .08s}
+.pm-btn:hover:not(:disabled){transform:translateY(-1px)}
+.pm-btn i{font-style:normal;font-size:19px;line-height:1}
+.pm-btn span{display:grid;min-width:0}
+.pm-btn b{font-size:13px;line-height:1.2}
+.pm-btn b em{font-style:normal;font-size:10.5px;color:#a26a00;white-space:nowrap}
+.pm-btn small{font-size:10.5px;color:var(--muted);line-height:1.25}
+.pm-col.battle .pm-btn.on{border-color:#e5484d;background:#fff5f3;box-shadow:0 0 0 2px rgba(229,72,77,.25)}
+.pm-col.peace .pm-btn.on{border-color:#22a35a;background:#f4fcf6;box-shadow:0 0 0 2px rgba(34,163,90,.25)}
+.pm-btn:disabled{opacity:.42;cursor:not-allowed}
 .pp-lock{margin:0!important;font-size:12.5px;font-weight:700;color:var(--muted);background:#f1ede1;border-radius:8px;padding:5px 9px}
 .jobbar{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 16px);width:min(540px,calc(100vw - 2*var(--pw) - 72px));min-width:300px;padding:10px 12px;box-shadow:5px 5px 0 var(--ink);box-sizing:border-box}
 .jobbar .jobpick{margin:0;gap:6px}
