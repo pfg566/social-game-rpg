@@ -36,6 +36,7 @@ function jobLook(){ return jobLookFor(JOB); }
 
 /* 마우스 조준 (PC): 커서가 가리키는 땅 쪽으로 쏴요. 커서 방향 앞 20도 안의 적에게는 살짝 휘어서 맞아요 */
 const MOUSE={x:0,y:0,on:false,held:false}, aimRay=new THREE.Raycaster(), aimPlane=new THREE.Plane(new THREE.Vector3(0,1,0),0), aimHit=new THREE.Vector3();
+const ARROW_MISS=.25;   // 궁수 화살은 4발 중 1발꼴로 빗나가요 (모든 모드 같음)
 const AIM_ASSIST=Math.cos(10*Math.PI/180), ARROW_RANGE=11, ORB_RANGE=9, MAGE_AIM=8;
 function mouseAimDir(){
   if (!MOUSE.on) return null;
@@ -54,7 +55,13 @@ function kbAimDir(){
   return L?{x:x/L,z:z/L}:null;
 }
 /* 마우스 조준을 쓰는 중인지: '키보드만'이면 안 써요. '자동'이면 최근 2.5초 안에 마우스를 움직였을 때만 (터치패드 흔들림 방지) */
-function mouseAiming(){ if (CTRL==='kb' || !MOUSE.on) return false; if (CTRL==='mouse' || MOUSE.held) return true; return performance.now()-(MOUSE.t||0)<2500; }
+/* '자동'에서도 마우스로 클릭해 공격했거나 마우스를 크게 움직였으면 계속 마우스 방향을 봐요 (예전엔 2.5초 지나면 풀려서 360도 조준이 안 되는 것처럼 보였어요)
+   키보드만 쓰는 학생: 마우스를 거의 안 움직이니 그대로 이동 방향을 봐요 · 궁수가 방향키로 조준하면 다시 키보드 조준으로 */
+function mouseAiming(){ if (CTRL==='kb' || !MOUSE.on) return false; if (CTRL==='mouse' || MOUSE.held || MOUSE.sticky) return true; return performance.now()-(MOUSE.t||0)<2500; }
+/* 마우스 방향 + 10도 안의 가까운 적에게 살짝 맞춰 주기 (세 직업 공통) */
+function mouseAimAt(range){ const d=mouseAimDir(); if (!d) return undefined; P.fx=d.x; P.fz=d.z;
+  let best=null, bc=AIM_ASSIST; for (const m of mobs){ if (m.dying>=0||m.spawnT>0) continue; const dx=m.x-P.x, dz=m.z-P.z, dd=Math.hypot(dx,dz)||1; if (dd>range) continue; const c=(dx*d.x+dz*d.z)/dd; if (c>bc){ bc=c; best=m; } }
+  if (best){ const dx=best.x-P.x, dz=best.z-P.z, dd=Math.hypot(dx,dz)||1; P.fx=dx/dd; P.fz=dz/dd; } return best; }
 function archerAim(range){
   const kb=kbAimDir(), md=!kb&&mouseAiming()?mouseAimDir():null;
   const dir=kb||md||{x:P.fx,z:P.fz}; P.fx=dir.x; P.fz=dir.z;
@@ -64,8 +71,11 @@ function archerAim(range){
   if (best){ const dx=best.x-P.x, dz=best.z-P.z, d=Math.hypot(dx,dz)||1; P.fx=dx/d; P.fz=dz/d; }
   return best;
 }
-canvas.addEventListener('pointermove',e=>{ if (e.pointerType!=='mouse') return; if (Math.abs(e.clientX-MOUSE.x)+Math.abs(e.clientY-MOUSE.y)>2) MOUSE.t=performance.now(); MOUSE.x=e.clientX; MOUSE.y=e.clientY; MOUSE.on=true; });
-canvas.addEventListener('pointerdown',e=>{ if (e.pointerType!=='mouse' || e.button!==0) return; MOUSE.x=e.clientX; MOUSE.y=e.clientY; MOUSE.on=true; if (W.state!=='play'||W.paused) return; MOUSE.held=true; attack(); });
+addEventListener('pointermove',e=>{ if (e.pointerType!=='mouse') return; const mv=Math.abs(e.clientX-MOUSE.x)+Math.abs(e.clientY-MOUSE.y), now=performance.now();
+  if (mv>2){ MOUSE.t=now; if (now-(MOUSE.accT||0)>1500){ MOUSE.acc=0; MOUSE.accT=now; } MOUSE.acc=(MOUSE.acc||0)+mv; if (MOUSE.acc>160) MOUSE.sticky=true; }
+  MOUSE.x=e.clientX; MOUSE.y=e.clientY; MOUSE.on=true; });
+document.addEventListener('mouseout',e=>{ if (!e.relatedTarget) MOUSE.sticky=false; });
+canvas.addEventListener('pointerdown',e=>{ if (e.pointerType!=='mouse' || e.button!==0) return; MOUSE.x=e.clientX; MOUSE.y=e.clientY; MOUSE.on=true; if (W.state!=='play'||W.paused) return; MOUSE.held=true; MOUSE.sticky=true; MOUSE.t=performance.now(); if (MAPK!=='teamwar') attack(); });
 addEventListener('pointerup',e=>{ if (e.button===0) MOUSE.held=false; });
 addEventListener('blur',()=>{ MOUSE.held=false; });
 canvas.addEventListener('contextmenu',e=>e.preventDefault());
@@ -77,9 +87,10 @@ const aimMark=new THREE.Group();
 const aimLine=new THREE.Mesh(new THREE.PlaneGeometry(1,1).translate(0,.5,0),new THREE.MeshBasicMaterial({color:0xffd34d,transparent:true,opacity:.45,side:THREE.DoubleSide,depthWrite:false,toneMapped:false}));
 aimLine.rotation.order='YXZ'; aimLine.visible=false; aimLine.renderOrder=4; scene.add(aimLine);
 function aimTick(real){
-  const on=W.state==='play' && !W.paused && JOB==='archer' && !PEACE_RUN && !P.down;
-  aimMark.visible=false; aimLine.visible=false; if (!on) return;
-  const kb=kbAimDir();
+  aimMark.visible=false; aimLine.visible=false;
+  if (JOB!=='archer'){ if (W.state==='play' && !W.paused && !PEACE_RUN && !P.down && MAPK!=='teamwar' && mouseAiming()){ const d=mouseAimDir(); if (d && P.dodgeT<=0 && !(P.dashT>0) && !(P.spinT>0)){ P.fx=d.x; P.fz=d.z; } } return; }
+  const on=W.state==='play' && !W.paused && !PEACE_RUN && !P.down; if (!on) return;
+  const kb=kbAimDir(); if (kb) MOUSE.sticky=false;
   if (kb){ if (P.dodgeT<=0 && !(P.dashT>0)){ P.fx=kb.x; P.fz=kb.z; }
     aimLine.position.set(P.x+kb.x*.7,.09,P.z+kb.z*.7); aimLine.rotation.set(Math.PI/2,Math.atan2(kb.x,kb.z),0); aimLine.scale.set(.14,ARROW_RANGE-.7,1); aimLine.visible=true;
     aimMark.visible=true; aimMark.position.set(P.x+kb.x*ARROW_RANGE,.08,P.z+kb.z*ARROW_RANGE); aimMark.rotation.y=real*1.5; aimMark.children[0].material.color.setHex(0xffd34d); return; }
@@ -95,6 +106,7 @@ function aimTick(real){
 
 /* 가까운 적 자동 조준 (앞쪽에 있는 적을 조금 더 골라요) */
 function aimAt(range){
+  if (mouseAiming()){ const b=mouseAimAt(range); if (b!==undefined) return b; }
   let best=null, bs=1e9;
   for (const m of mobs){ if (m.dying>=0||m.spawnT>0) continue; const dx=m.x-P.x, dz=m.z-P.z, d=Math.hypot(dx,dz); if (d>range) continue;
     const front=(dx*P.fx+dz*P.fz)/(d||1), s=d-front*2.5; if (s<bs){ bs=s; best=m; } }
@@ -189,7 +201,9 @@ function updateProj(dt){
     let boom=false;
     for (const m of mobs){ if (m.dying>=0||m.spawnT>0) continue; if (p.hit&&p.hit.has(m)) continue;
       if (Math.hypot(m.x-p.x,m.z-p.z)<m.r+.45){
-        if (p.kind==='arrow'){ p.hit.add(m); const d=p.dmg*atkMult()*(p.crit?CRIT_MULT:1);
+        if (p.kind==='arrow'){ p.hit.add(m);
+          if (Math.random()<ARROW_MISS){ fx.num(m.x,m.boss?5.2:2.6,m.z,'MISS','#d6dde8',1.3); continue; }
+          const d=p.dmg*atkMult()*(p.crit?CRIT_MULT:1);
           hitMob(m,d,p.x-p.vx*.02,p.z-p.vz*.02,.5,'#ffffff',true,{crit:p.crit,stun:.15}); SFX.hit(p.crit); if (!p.pierce){ boom=true; break; } }
         else { boom=true; break; } } }
     const out=Math.abs(p.x)>36||Math.abs(p.z)>36;
@@ -221,11 +235,11 @@ function clearProj(){ PROJ.forEach(p=>scene.remove(p.mesh)); PROJ=[]; ZONEFX.for
 
 /* 직업별 공격 */
 function jobAttack(){
-  if (P.atkCd>0){ if (P.atkCd<.18) P.buffer=true; return; }
+  if (P.atkCd>0){ if (P.atkCd<.12) P.buffer=true; return; }
   P.buffer=false; P.lastAtk=W.t;
   if (JOB==='archer'){
-    P.atkCd=.3; archerAim(ARROW_RANGE); const ang=Math.atan2(P.fx,P.fz);
-    knightAttackAnim('shoot',3.4); SFX.zap(); shootArrow(ang,{dmg:22});
+    P.atkCd=.55; archerAim(ARROW_RANGE); const ang=Math.atan2(P.fx,P.fz);   // 연사 너프: 0.3초 → 0.55초 (클릭을 빨리 눌러도 이 간격보다 빨리 안 나가요)
+    knightAttackAnim('shoot',3.4); SFX.zap(); shootArrow(ang,{dmg:26});
   } else {
     P.atkCd=.8; P.castT=.3; aimAt(MAGE_AIM); const ang=Math.atan2(P.fx,P.fz);
     knightAttackAnim('cast',2.2); SFX.zap(); castOrb(ang);
@@ -467,6 +481,9 @@ function updateSkillHUD(){
 function hitMob(m,dmg,sx,sz,kbk,col,byPlayer,o){
   o=o||{};
   if (PARTY.on && !PARTY.host && m.net) return partyClientHit(m,dmg,sx,sz,kbk,col,byPlayer,o);
+  if (m.ans && !o.by){ // 정답 몬스터: 포탑에는 안 맞고, 내가 가까이 있을 때만 맞아요
+    if (o.src==='turret') return false;
+    if (Math.hypot(P.x-m.x,P.z-m.z)>AM_NEAR){ if (!m.farT||W.t-m.farT>1){ m.farT=W.t; fx.num(m.x,3.2,m.z,'더 가까이!','#ffe08a',1.1); } return false; } }
   const dx=m.x-sx, dz=m.z-sz, d=Math.hypot(dx,dz)||1, hy=m.boss?2.4:1.1;
   const k=(m.boss?3:7)*kbk; m.kbx=dx/d*k; m.kbz=dz/d*k;
   if (m.shield>0){ if (byPlayer){ flashPrompt('보호막! 퀴즈를 맞혀야 깰 수 있어요',1.5); SFX.block(); } fx.burst(m.x,2.4,m.z,0x5cc8f0,8,4); fx.num(m.x,5,m.z,'막힘','#9fe3ff'); return false; }

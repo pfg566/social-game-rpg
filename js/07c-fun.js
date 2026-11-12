@@ -5,6 +5,7 @@
    ④ 연속 정답: 어디서 맞히든 이어지고, 이어질수록 지식 폭발이 커지고 경험치가 더 들어와요 (동 → 은 → 금)
    ⑤ 지식 도감: 맞힌 문제가 단원별 도감에 모여요 (dex/{반}/{번호})
    파일은 01 → 13 순서로 불러와요. 모든 파일이 같은 전역 공간을 함께 써요. */
+const AM_NEAR=7.5;   // 정답 몬스터는 이 거리 안에서만 맞아요 (멀리서 광역기·관통 화살에 엉뚱한 몬스터가 잡히지 않게)
 const AM_EVERY=45, AM_TIME=30, AM_COL=['#e5484d','#3b82f6','#22a35a','#e8a400'], AM_OXCOL=['#3b82f6','#e5484d'];
 const LV_NEED=lv=>4+lv*2;
 const QS_TIER=n=>n>=5?2:n>=3?1:0, QS_NAME=['','🥈 은빛','🥇 금빛'], QS_XP=[1,1.5,2];
@@ -50,9 +51,9 @@ function amStart(){
   const def=WAVES[Math.min(W.wave,WAVES.length-1)]||WAVES[0], base={...def,boss:null,runner:false,ranged:false,leaper:false};
   const n=opts.length, a0=Math.random()*Math.PI*2, elites=[];
   opts.forEach((o,i)=>{
-    const a=a0+i/n*Math.PI*2, r=9.5, at={x:P.x+Math.cos(a)*r,z:P.z+Math.sin(a)*r};
+    const a=a0+i/n*Math.PI*2, r=n>2?10.5:9.5, at={x:P.x+Math.cos(a)*r,z:P.z+Math.sin(a)*r};
     const m=spawnMob(base,false,at); if (!m) return;
-    m.hp=m.max=Math.round(m.max*2.2); m.ans={i,ok:i===ci}; m.spd*=.85;
+    m.hp=m.max=Math.round(m.max*2.2); m.ans={i,ok:i===ci}; m.spd*=.85; m.hold={x:at.x,z:at.z};   // 쫓아오지 않고 제자리에서 깃발을 들고 기다려요
     const col=item.kind==='mc'?AM_COL[i]:AM_OXCOL[i];
     m.body.scale.multiplyScalar(1.22);
     if (m.bar&&m.bar.fg) m.bar.fg.material.color.set(col);
@@ -66,7 +67,7 @@ function amStart(){
   const box=$('#amOpts'); box.className='run-opts'+(item.kind==='ox'?' two':'');
   box.innerHTML=opts.map((o,i)=>`<div class="run-opt" style="--c:${item.kind==='mc'?AM_COL[i]:AM_OXCOL[i]}"><b>${item.kind==='mc'?i+1:o}</b><span>${item.kind==='mc'?esc(o):(i?'X 깃발 몬스터':'O 깃발 몬스터')}</span></div>`).join('');
   $('#amCard').hidden=false; $('#amRes').hidden=true;
-  SFX.wave(); showBanner('⚔️ 정답 몬스터 등장! 정답 깃발 몬스터를 잡아요');
+  SFX.wave(); showBanner('⚔️ 정답 몬스터 등장! 정답 깃발 몬스터에게 가까이 가서 잡아요');
   return true;
 }
 function amKill(m){

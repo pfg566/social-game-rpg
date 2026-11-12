@@ -195,10 +195,10 @@ let LOC_TIME = 25;
 const HERO={hp:1.5,dmg:1.45,spd:1.12,quiz:.75,loc:18,score:1.5};
 /* 난이도: 쉬움·보통은 3웨이브, 어려움·영웅은 4웨이브 (평화 모드·파티는 따로) */
 const LEVELS={
- easy:  {name:'쉬움',  k:{hp:.8,dmg:.75,spd:.93}, score:.8, waves:3, desc:'3웨이브 · 약한 몬스터 · 점수 ×0.8'},
+ easy:  {name:'쉬움',  k:{hp:.8,dmg:.75,spd:.93}, score:.8, waves:3, desc:'3웨이브 · 약한 몬스터 · 모드 기록 ×0.8'},
  normal:{name:'보통',  k:{hp:1,dmg:1,spd:1},      score:1,  waves:3, desc:'3웨이브 · 내 실력에 맞춰요'},
- hard:  {name:'어려움',k:{hp:1.2,dmg:1.2,spd:1.05},score:1.2,waves:4, desc:'4웨이브 · 강한 몬스터 · 점수 ×1.2'},
- hero:  {name:'영웅',  k:null,                     score:1.5,waves:4, desc:'4웨이브 · 아주 강함 · 점수 ×1.5'}};
+ hard:  {name:'어려움',k:{hp:1.2,dmg:1.2,spd:1.05},score:1.2,waves:4, desc:'4웨이브 · 강한 몬스터 · 모드 기록 ×1.2'},
+ hero:  {name:'영웅',  k:null,                     score:1.5,waves:4, desc:'4웨이브 · 아주 강함 · 모드 기록 ×1.5'}};
 let LEVEL='normal'; try{ const l=localStorage.getItem('gsd-level'); if (LEVELS[l]) LEVEL=l; }catch(e){}
 /* 어려움·영웅에서 보스 앞에 끼워 넣는 웨이브 */
 const EXTRA_WAVE={

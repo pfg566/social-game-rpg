@@ -227,7 +227,7 @@ input.rename{border:2px solid var(--line);border-radius:6px;padding:2px 6px;widt
       <button class="tab" role="tab" data-tab="classes" aria-selected="false">학급 관리</button>
       <button class="tab" role="tab" data-tab="roster" aria-selected="false">학생 명단</button>
       <button class="tab" role="tab" data-tab="manage" aria-selected="false">관리</button>
-      <a class="tablink" href="index.html?edit=1" target="_blank" rel="noopener" title="게임의 문제 관리 화면이 새 탭으로 바로 열려요">📝 문제 추가·수정</a>
+      <a class="tablink" id="editLink" href="index.html?edit=1" target="_blank" rel="noopener" title="게임의 문제 관리 화면이 새 탭으로 바로 열려요">📝 문제 추가·수정</a>
     </div>
 
     <section class="card panel" id="pTw" hidden>
@@ -537,10 +537,12 @@ function renderStudents(){
   $('#tblStudents').innerHTML = rows.length ? th(cols,sortS,'s')+'<tbody>'+rows.map(s=>`<tr><td>${esc(s.cls)}</td><td>${esc(s.nick)}</td><td class="num">${s.plays}</td><td class="num">${s.best}</td><td class="num">${s.wins}</td><td class="num">${rateBar(s.rate)}</td><td>${fmtT(s.last)}</td><td class="qcell">${s.weak.length?s.weak.map(esc).join('<br>'):'<span style="color:var(--good)">없음</span>'}</td></tr>`).join('')+'</tbody>'
     : '<tr><td class="empty">이 조건에 맞는 기록이 없어요. 학생이 게임을 끝내면 여기에 바로 나타나요.</td></tr>';
 }
+const GM_NAMES={zones:'🏢 세 거점',general:'🌾 들판 마을',glacier:'🧊 녹는 빙하',defense:'🏰 성벽 디펜스',island:'🏝️ 서비스업 섬','island-p':'📦 택배 배달',runner:'🏃 정답 러너','defense-p':'🗼 성 지휘관',party:'🎉 파티',stage:'🟩 발판',teamwar:'🚩 점령전'};
+function modeCell(r){ const id=r.gm||(r.map?(r.map+(r.cs&&r.cs.pc?'-p':'')):''); if (!id) return '-'; return `${esc(GM_NAMES[id]||id)}${r.mp!=null?` <small style="color:var(--muted)">${(r.mp|0).toLocaleString('ko-KR')}</small>`:''}`; }
 function renderRecords(){
   const rows=VIEW.map(r=>({...r,rate:pct(r)})).sort(sorter(sortR));
-  const cols=[['ts','시각'],['kl','학급'],['nick','이름'],['unit','단원'],['win','결과'],['score','점수',1],['rate','정답률',1],['kills','처치',1],['timeSec','시간',1],['wrong','못 맞힌 문제']];
-  $('#tblRecords').innerHTML = rows.length ? th(cols,sortR,'r')+'<tbody>'+rows.map(r=>`<tr><td>${fmtT(r.ts)}</td><td>${esc(r.kl)}</td><td>${esc(r.nick)}</td><td>${esc(r.unit||'')}</td><td><span class="pill ${r.win?'win':'lose'}">${r.win?'승리':'게임 오버'}</span>${r.mode==='hero'?' <span class="pill hero">영웅</span>':r.mode==='hard'?' <span class="pill hero">어려움</span>':r.mode==='easy'?' <span class="pill">쉬움</span>':''}</td><td class="num">${r.score|0}</td><td class="num">${r.correct|0}/${r.asked|0} · ${r.rate}%</td><td class="num">${r.kills|0}</td><td class="num">${fmtDur(r.timeSec|0)}</td><td class="qcell">${r.wrongList.length?r.wrongList.map(esc).join('<br>'):'-'}</td></tr>`).join('')+'</tbody>'
+  const cols=[['ts','시각'],['kl','학급'],['nick','이름'],['unit','단원'],['win','결과'],['score','공식 점수',1],['gm','모드 · 기록'],['rate','정답률',1],['kills','처치',1],['timeSec','시간',1],['wrong','못 맞힌 문제']];
+  $('#tblRecords').innerHTML = rows.length ? th(cols,sortR,'r')+'<tbody>'+rows.map(r=>`<tr><td>${fmtT(r.ts)}</td><td>${esc(r.kl)}</td><td>${esc(r.nick)}</td><td>${esc(r.unit||'')}</td><td><span class="pill ${r.win?'win':'lose'}">${r.win?'승리':'게임 오버'}</span>${r.mode==='hero'?' <span class="pill hero">영웅</span>':r.mode==='hard'?' <span class="pill hero">어려움</span>':r.mode==='easy'?' <span class="pill">쉬움</span>':''}</td><td class="num">${r.score|0}</td><td>${modeCell(r)}</td><td class="num">${r.correct|0}/${r.asked|0} · ${r.rate}%</td><td class="num">${r.kills|0}</td><td class="num">${fmtDur(r.timeSec|0)}</td><td class="qcell">${r.wrongList.length?r.wrongList.map(esc).join('<br>'):'-'}</td></tr>`).join('')+'</tbody>'
     : '<tr><td class="empty">이 조건에 맞는 기록이 없어요.</td></tr>';
 }
 function renderMissed(){
@@ -753,8 +755,8 @@ function renderPlay(){
   const now=pNow(), open=Object.keys(PG).filter(k=>(+PG[k].until||0)>now).sort((a,b)=>PG[a].until-PG[b].until);
   const key=open.map(k=>k+Math.ceil((PG[k].until-now)/1000)).join('|')+JSON.stringify(PLA).length; if (key===pbKey) return; pbKey=key;
   $('#pbList').innerHTML=open.length?open.map(k=>{ const g=PG[k], s=Math.ceil((g.until-now)/1000), m=Math.floor(s/60), pl=+g.plays||0;
-    const plTxt=(!pl||pl>=999?'판 수 제한 없음':`한 사람당 ${pl}판`)+` · ${+g.lim?`한 판 ${+g.lim}분`:'한 판 시간 제한 없음'}`;
-    return `<li class="open"><span><b>${esc(playLabel(k))}</b> · 열림 <b class="t">${m}:${String(s%60).padStart(2,'0')}</b> 남음 · ${plTxt} · 🗺️ ${gateWhat(g)}</span><span><button class="link plain" data-pset="${k}">위에서 고른 단원·맵으로 바꾸기</button> ${pl&&pl<999?`<button class="link plain" data-pall="${k}">모두에게 한 판 더</button> `:''}<button class="link plain" data-padd="${k}">+10분</button> <button class="link" data-pclose="${k}">지금 닫기</button></span>${doneList(k)}</li>`; }).join('')
+    const plTxt=(g.stop?'⛔ 남은 판 없앰 (새 판 시작 못 함)':!pl||pl>=999?'판 수 제한 없음':`한 사람당 ${pl}판`)+` · ${+g.lim?`한 판 ${+g.lim}분`:'한 판 시간 제한 없음'}`;
+    return `<li class="open"><span><b>${esc(playLabel(k))}</b> · 열림 <b class="t">${m}:${String(s%60).padStart(2,'0')}</b> 남음 · ${plTxt} · 🗺️ ${gateWhat(g)}</span><span><button class="link plain" data-pset="${k}">위에서 고른 단원·맵으로 바꾸기</button> ${pl&&pl<999?`<button class="link plain" data-pall="${k}">모두에게 한 판 더</button> `:''}${g.stop?`<button class="link plain" data-presume="${k}">다시 하게 하기</button> `:`<button class="link plain" data-pstop="${k}">남은 판 없애기</button> `}${pl&&pl<999?`<button class="link plain" data-pfree="${k}">판 수 제한 풀기</button> `:''}${+g.lim?`<button class="link plain" data-plimoff="${k}">한 판 시간 제한 풀기</button> `:''}<button class="link plain" data-padd="${k}">+10분</button> <button class="link" data-pclose="${k}">지금 닫기</button></span>${doneList(k)}</li>`; }).join('')
     :'<li class="empty-li">지금은 모든 반이 닫혀 있어요. 학생은 게임을 시작할 수 없어요.</li>';
 }
 const okMsg=m=>{ $('#pbMsg').className='msg ok'; $('#pbMsg').textContent=m; pbKey=''; renderPlay(); };
@@ -770,11 +772,15 @@ try{ const v=localStorage.getItem('gsd-pblim'); if (v!==null && [...$('#pbLim').
 $('#pbList').addEventListener('click',async e=>{
   const ps=e.target.closest('[data-pset]');
   if (ps){ const k=ps.dataset.pset, unit=$('#pbUnit').value, map=$('#pbMap').value; if (!unit||!map) return; try{ await db.ref('playgate/'+k).update({unit,map}); okMsg(`${playLabel(k)}의 단원·맵을 바꿨어요. (${gateWhat({unit,map})}) 이미 시작한 판은 그대로예요.`); }catch(err){ errMsg(); } return; }
-  const a=e.target.closest('[data-padd]'), c=e.target.closest('[data-pclose]'), al=e.target.closest('[data-pall]'), one=e.target.closest('[data-pone]');
+  const a=e.target.closest('[data-padd]'), c=e.target.closest('[data-pclose]'), al=e.target.closest('[data-pall]'), one=e.target.closest('[data-pone]'), fr=e.target.closest('[data-pfree]'), lo=e.target.closest('[data-plimoff]'), st=e.target.closest('[data-pstop]'), rs=e.target.closest('[data-presume]');
   try{
     if (a){ const k=a.dataset.padd; await db.ref('playgate/'+k).update({until:Math.round(Math.max(pNow(),+PG[k].until||0)+600000)}); okMsg(`${playLabel(k)} 게임 시간을 10분 늘렸어요.`); }
     if (c){ const k=c.dataset.pclose; await db.ref('playgate/'+k).update({until:Math.round(pNow())}); okMsg(`${playLabel(k)} 게임을 닫았어요. 하던 판은 마칠 수 있어요.`); }
-    if (al){ const k=al.dataset.pall; const p=(+PG[k].plays||1)+1; await db.ref('playgate/'+k).update({plays:p}); okMsg(`${playLabel(k)} 모든 학생이 한 판씩 더 할 수 있어요. (한 사람당 ${p}판)`); }
+    if (st){ const k=st.dataset.pstop; await db.ref('playgate/'+k).update({stop:true}); okMsg(`${playLabel(k)} 남은 판을 모두 없앴어요. 이제 새 판은 시작할 수 없고, 하던 판은 끝까지 할 수 있어요.`); }
+    if (rs){ const k=rs.dataset.presume; await db.ref('playgate/'+k).update({stop:false}); okMsg(`${playLabel(k)} 다시 남은 판만큼 할 수 있게 했어요.`); }
+    if (fr){ const k=fr.dataset.pfree; await db.ref('playgate/'+k).update({plays:999,stop:false}); okMsg(`${playLabel(k)} 판 수 제한을 풀었어요. 이미 다 한 학생도 바로 다시 할 수 있어요. (게임이 열려 있는 동안)`); }
+    if (lo){ const k=lo.dataset.plimoff; await db.ref('playgate/'+k).update({lim:0}); okMsg(`${playLabel(k)} 한 판 시간 제한을 풀었어요. 다음 판부터 시간 제한 없이 해요.`); }
+    if (al){ const k=al.dataset.pall; const p=(+PG[k].plays||1)+1; await db.ref('playgate/'+k).update({plays:p,stop:false}); okMsg(`${playLabel(k)} 모든 학생이 한 판씩 더 할 수 있어요. (한 사람당 ${p}판)`); }
     if (one){ const [cid,n]=one.dataset.pone.split('|'), g=PG[cid]&&+PG[cid].until>pNow()?PG[cid]:PG.all, used=usedOf(cid,n,g.sid);
       await db.ref(`playlog/${cid}/${n}/${g.sid}`).set(Math.max(0,used-1)); okMsg(`${cLabel(cid)} ${n}번 학생에게 한 판 더 줬어요.`); }
   }catch(err){ errMsg(); }
@@ -985,6 +991,8 @@ $('#adminList').addEventListener('click',async e=>{
   try{ await db.ref('admins/'+b.dataset.delAdmin).remove(); }catch(err){ $('#adminMsg').className='msg err'; $('#adminMsg').textContent='빼지 못했어요.'; }
 });
 
+/* 문제 추가·수정 링크: 열 때마다 주소 끝에 시각을 붙여 브라우저에 남은 예전 화면 대신 항상 새 화면이 열리게 해요 */
+document.getElementById('editLink').addEventListener('click',e=>{ e.currentTarget.href='index.html?edit=1&r='+Date.now(); });
 /* 자유 플레이 */
 let freeOn=false;
 function loadFree(){
@@ -1129,9 +1137,10 @@ function stInit(){
     return `<optgroup label="${esc(SCH[sid].name)}">`+ks.map(k=>`<option value="${k}">${CLS[k].grade}학년 ${CLS[k].cls}반</option>`).join('')+'</optgroup>'; }).join('');
   if (cur && [...el.options].some(o=>o.value===cur)) el.value=cur;
   const us=$('#stUnit'), uc=us.value||UACTIVE;
-  us.innerHTML=UNITS.filter(u=>u.cnt.mc+u.cnt.ox>0).map(u=>`<option value="${esc(u.id)}">${esc(u.name)} (4지선다 ${u.cnt.mc} · O/X ${u.cnt.ox})</option>`).join('');
+  us.innerHTML=unitOptions(UNITS.filter(u=>u.cnt.mc+u.cnt.ox>0),el.value,u=>` (4지선다 ${u.cnt.mc} · O/X ${u.cnt.ox})`);
   if (uc && [...us.options].some(o=>o.value===uc)) us.value=uc;
   if (!ST.inited){ ST.inited=true; el.addEventListener('change',stWatch);
+    el.addEventListener('change',()=>{ const v=us.value; us.innerHTML=unitOptions(UNITS.filter(u=>u.cnt.mc+u.cnt.ox>0),el.value,u=>` (4지선다 ${u.cnt.mc} · O/X ${u.cnt.ox})`); const fit=UNITS.find(u=>u.cnt.mc+u.cnt.ox>0&&unitFits(u,el.value)&&(u.sch||u.grade)); us.value=fit?fit.id:v; });
     $('#stOpen').addEventListener('click',stOpenRoom); $('#stGo').addEventListener('click',stStart); $('#stStop').addEventListener('click',stStop);
     ST.timer=setInterval(stRender,1000); }
   stWatch();
@@ -1193,20 +1202,33 @@ let UNITS=[], UACTIVE='';
 const arrOf=x=>Array.isArray(x)?x.filter(Boolean):(x&&typeof x==='object'?Object.values(x):[]);
 function watchUnits(){
   db.ref('bank').on('value',snap=>{ const v=snap.val(); BANKRAW=v; try{ buildQLook(v); }catch(e){}
-    if (v && v.units){ UNITS=arrOf(v.units).filter(u=>u&&u.id).map(u=>{ const b=u.bank||{}; return {id:u.id,name:String(u.name||'이름 없는 단원'),map:MAPINFO[u.map]?u.map:'zones',cnt:{mc:arrOf(b.mc).length,ox:arrOf(b.ox).length,cls:arrOf(b.cls).length,loc:arrOf(b.loc).length}}; }); UACTIVE=v.active||''; }
+    if (v && v.units){ UNITS=arrOf(v.units).filter(u=>u&&u.id).map(u=>{ const b=u.bank||{}; return {id:u.id,name:String(u.name||'이름 없는 단원'),map:MAPINFO[u.map]?u.map:'zones',sch:String(u.sch||''),grade:+u.grade||0,cnt:{mc:arrOf(b.mc).length,ox:arrOf(b.ox).length,cls:arrOf(b.cls).length,loc:arrOf(b.loc).length}}; }); UACTIVE=v.active||''; }
     else if (v && v.mc){ UNITS=[{id:'u1',name:'기본 단원',map:'zones',cnt:{mc:arrOf(v.mc).length,ox:arrOf(v.ox).length,cls:arrOf(v.cls).length,loc:arrOf(v.loc).length}}]; UACTIVE='u1'; }
     else { UNITS=[]; }
     fillUnitSelect(); pbKey=''; renderPlay(); },()=>{});
 }
 const mapOkT=(u,k)=>!!(u&&MAPINFO[k]&&MAPINFO[k].need.every(t=>u.cnt[t]>0));
 const unitById=id=>UNITS.find(u=>u.id===id);
-function fillUnitSelect(){
-  const el=$('#pbUnit'), cur=el.value||UACTIVE;
-  const ok=UNITS.filter(u=>mapOkT(u,u.map)||Object.keys(MAPINFO).some(k=>mapOkT(u,k)));
-  el.innerHTML=ok.length?ok.map(u=>`<option value="${esc(u.id)}">${esc(u.name)}${u.id===UACTIVE?' (수업 단원)':''}</option>`).join(''):'<option value="">문제가 있는 단원이 없어요</option>';
-  if ([...el.options].some(o=>o.value===cur)) el.value=cur;
-  fillMapSelect(true);
+/* 단원의 학교·학년: 고른 반에 맞는 단원을 위에, 다른 학교·학년 단원은 아래 묶음으로 */
+function unitTag(u){ const s=u.sch?((SCH[u.sch]||{}).name||'지워진 학교'):'', g=u.grade?u.grade+'학년':''; return s&&g?`${s} ${g}`:s||g||''; }
+function unitFits(u,cid){ const c=CLS[cid]; if (!c) return true; return (!u.sch||u.sch===c.sid)&&(!u.grade||u.grade===+c.grade); }
+function unitOptions(list,cid,lab){
+  const opt=u=>`<option value="${esc(u.id)}">${esc(u.name)}${unitTag(u)?' · '+esc(unitTag(u)):''}${lab?lab(u):''}${u.id===UACTIVE?' (수업 단원)':''}</option>`;
+  const c=CLS[cid]; if (!c) return list.map(opt).join('');
+  const mine=list.filter(u=>unitFits(u,cid)&&(u.sch||u.grade)), common=list.filter(u=>!u.sch&&!u.grade), other=list.filter(u=>!unitFits(u,cid));
+  const nm=`${(SCH[c.sid]||{}).name||''} ${c.grade}학년`;
+  return (mine.length?`<optgroup label="⭐ ${esc(nm)} 단원">${mine.map(opt).join('')}</optgroup>`:'')+(common.length?`<optgroup label="모든 학교·학년 공통">${common.map(opt).join('')}</optgroup>`:'')+(other.length?`<optgroup label="다른 학교·학년">${other.map(opt).join('')}</optgroup>`:'');
 }
+function fillUnitSelect(){
+  const el=$('#pbUnit'), cur=el.value||UACTIVE, cid=$('#pbCls').value;
+  const ok=UNITS.filter(u=>mapOkT(u,u.map)||Object.keys(MAPINFO).some(k=>mapOkT(u,k)));
+  el.innerHTML=ok.length?unitOptions(ok,cid):'<option value="">문제가 있는 단원이 없어요</option>';
+  const fit=ok.find(u=>unitFits(u,cid)&&(u.sch||u.grade));
+  if (UNIT_PICK_CLS!==cid && fit) el.value=fit.id;   // 반을 바꾸면 그 반 학교·학년 단원을 먼저 골라 둬요
+  else if ([...el.options].some(o=>o.value===cur)) el.value=cur;
+  UNIT_PICK_CLS=cid; fillMapSelect(true);
+}
+let UNIT_PICK_CLS=null;
 function fillMapSelect(reset){
   const u=unitById($('#pbUnit').value), el=$('#pbMap'), cur=reset?(u?u.map:''):el.value;
   const ks=Object.keys(MAPINFO).filter(k=>mapOkT(u,k));
@@ -1214,6 +1236,7 @@ function fillMapSelect(reset){
   if (ks.includes(cur)) el.value=cur;
 }
 $('#pbUnit').addEventListener('change',()=>fillMapSelect(true));
+$('#pbCls').addEventListener('change',()=>{ try{ fillUnitSelect(); }catch(e){} });
 const gateWhat=g=>{ const u=unitById(g.unit); return g.unit?`${u?esc(u.name):'삭제된 단원'} · ${MAPINFO[g.map]?MAPINFO[g.map].n:''}`:'수업 단원'; };
 
 /* 파티 모드 잠금 */

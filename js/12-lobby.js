@@ -37,6 +37,9 @@ function lobbyTick(real,dt){
   // 로비·로그인 화면은 캐릭터가 카메라 가까이 있어서 빛 번짐을 줄여요 (얼굴이 하얗게 날아가지 않게)
   // 로비·로그인 화면은 캐릭터가 카메라 바로 앞이라 햇빛과 빛 번짐을 줄여요 (하얗게 날아가지 않게)
   if (MOODS[MOOD]){ const M=MOODS[MOOD]; if (bloom) bloom.strength=M.bloom[0]*(on?.6:1); sun.intensity=M.sun[1]*(on?.8:1); renderer.toneMappingExposure=M.exp*(on?.95:1); }
+  // 발판 서바이벌: 큰 색 발판이 화면을 꽉 채워서 눈부셔요 → 빛 번짐은 아주 연하게, 밝기도 살짝 낮춰요 (매 프레임 위에서 덮어써서 여기서 맞춰야 해요)
+  if (!on && MAPK==='stage' && MOOD!=='day') applyMood('day');   // 판마다 바뀌는 분위기(황금빛·새벽·황혼)는 발판에서 특히 눈부셔서, 발판 서바이벌은 늘 '맑은 낮'으로 고정
+  if (!on && MAPK==='stage' && MOODS[MOOD]){ if (bloom){ bloom.strength=Math.min(bloom.strength,.06); bloom.threshold=.98; } renderer.toneMappingExposure*=.9; sun.intensity*=.85; }
   pg.visible=!on;
   if (!on || !LOBBY.g) return false;
   const LX=LOBBY_AT.x, LZ=LOBBY_AT.z;

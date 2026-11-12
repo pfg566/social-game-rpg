@@ -103,6 +103,7 @@ function startWave(i){
   const d=WAVES[i];
   for (let k=0;k<d.n;k++) spawnMob(d,false);
   if (d.groups){ const lanes=[-20,0,20]; d.groups.forEach((g,gi)=>W.spawnQ.push({at:W.t+g.at,n:g.n,runner:!!g.runner,lane:lanes[Math.floor(Math.random()*3)],def:d,first:gi===0})); }
+  if (d.boss && typeof FUN!=='undefined' && FUN.am && !FUN.am.done){ amClear(true); W.nextQuiz=W.t+25; flashPrompt('보스가 나타나 정답 몬스터가 물러났어요',2); }
   if (d.boss){ spawnMob(d,true); if (NEWQ()) bgBossSpawned(liveBoss()); else stations.forEach(s=>s.readyAt=Math.min(s.readyAt,W.t)); }
   if (W.up && W.up.turret && MAPK==='defense'){ TURRETS.forEach(t=>{ t.until=W.t+W.up.turret; t.cd=.3; }); W.up.turret=0; setTimeout(()=>flashPrompt('강화 카드: 포탑 3개가 자동으로 쏴요!',2.5),1200); }
   const nr=rangedCount(i); for (let k=0;k<nr;k++) spawnRanged(d);
@@ -312,6 +313,7 @@ function inputDir(){
   const L=Math.hypot(ix,iz); return L>.12?{x:ix/L,z:iz/L}:null;
 }
 function aimAssist(){
+  if (mouseAiming() && mouseAimAt(4.6)!==undefined) return;   // 마우스를 쓰면 마우스 방향으로 휘둘러요
   let best=null, bd=4.6;
   for (const m of mobs){ if (m.dying>=0||m.spawnT>0) continue; const d=Math.hypot(m.x-P.x,m.z-P.z); if (d<bd){ bd=d; best=m; } }
   if (best){ const dx=best.x-P.x, dz=best.z-P.z, d=Math.hypot(dx,dz)||1; P.fx=dx/d; P.fz=dz/d; }

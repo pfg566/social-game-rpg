@@ -160,9 +160,9 @@ function partyUsed(g){
   if (AUTHMODE==='student'&&STUDENT) return +PPLOG[g.sid]||0;
   try{ return +localStorage.getItem('gsd-ppl-'+g.sid)||0; }catch(e){ return 0; }
 }
-function partyLeft(g){ if (!g) return 0; if (!g.sid||!g.plays||g.plays>=999) return Infinity; return Math.max(0,g.plays-partyUsed(g)); }
+function partyLeft(g){ if (!g) return 0; if (g.stop) return 0; if (!g.sid||!g.plays||g.plays>=999) return Infinity; return Math.max(0,g.plays-partyUsed(g)); }
 function partyGateOpen(){ if (isAdmin || !fbDb || GATE_OK===false) return true; const g=activeGate(); return !!g && partyLeft(g)>0; }
-function gateWhy(){ const g=activeGate(); if (!g) return '🔒 선생님이 게임을 열어야 방을 만들 수 있어요.'; if (partyLeft(g)<=0) return '이번 시간에 할 수 있는 파티 판을 다 했어요. (혼자 하는 판은 따로 남아 있을 수 있어요)'; return '지금은 방을 만들 수 없어요.'; }
+function gateWhy(){ const g=activeGate(); if (!g) return '🔒 선생님이 게임을 열어야 방을 만들 수 있어요.'; if (g.stop) return '🔒 선생님이 이번 시간 게임을 마무리했어요.'; if (partyLeft(g)<=0) return '이번 시간에 할 수 있는 파티 판을 다 했어요. (혼자 하는 판은 따로 남아 있을 수 있어요)'; return '지금은 방을 만들 수 없어요.'; }
 async function createRoom(){
   if (!partyGateOpen()){ ppNote(gateWhy(),'err'); return; }
   if (modeLocked(PP.mode)){ ppNote(lockWhy(PP.mode),'err'); return; }
@@ -660,7 +660,7 @@ function partyEnd(win,reason,bonus){
   if (!$('#quiz').hidden){ $('#quiz').hidden=true; }
   W.paused=false; P.down=false; if (knight && knight.anim.dead) knight.anim.revive();
   endGame(!!win);
-  const T={clear:['점령전 승리!','파티원과 힘을 합쳐 해골 군단을 막아 냈어요.'],pts:['거점을 모두 빼앗겼어요','세 거점을 10초 동안 모두 빼앗겼어요. 다음엔 한 거점씩 함께 지켜 보세요.'],down:['파티가 모두 쓰러졌어요','한꺼번에 쓰러지지 않게 서로 거리를 두고 싸워 보세요.'],host:['방장이 나갔어요','방장의 연결이 끊겨서 게임이 끝났어요. 지금까지 한 만큼 기록은 남아요.']}[reason]||['게임 끝',''];
+  const T={quit:['중간에 나왔어요','파티에서 먼저 나왔어요. 지금까지 푼 문제는 기록됐어요.'],clear:['점령전 승리!','파티원과 힘을 합쳐 해골 군단을 막아 냈어요.'],pts:['거점을 모두 빼앗겼어요','세 거점을 10초 동안 모두 빼앗겼어요. 다음엔 한 거점씩 함께 지켜 보세요.'],down:['파티가 모두 쓰러졌어요','한꺼번에 쓰러지지 않게 서로 거리를 두고 싸워 보세요.'],host:['방장이 나갔어요','방장의 연결이 끊겨서 게임이 끝났어요. 지금까지 한 만큼 기록은 남아요.']}[reason]||['게임 끝',''];
   $('#endTitle').textContent=T[0]; $('#endMsg').textContent=T[1]+(PARTY.bonus?` 거점을 지킨 보너스 +${PARTY.bonus}점.`:'')+' 아래 틀린 문제를 한 번 더 읽어 보고 마무리해요.';
   $('#againBtn').hidden=true; $('#partyHud').hidden=true; $('#partyList').hidden=true;
   partyOff();
