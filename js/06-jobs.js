@@ -8,7 +8,7 @@ const JOBS={
   archer:{name:'궁수',hp:75, spd:1.1, dodgeCd:.7, skillCd:6,ultName:'화살비',dodgeName:'구르기',skillName:'세 갈래',
           hint:'WASD 이동 · 방향키 누르면 그쪽으로 연사 (마우스 클릭도 OK) · Shift 구르기 · E 세 갈래 · Q 필살기'},
   mage:  {name:'마법사',hp:80,spd:1,  dodgeCd:2.2,skillCd:7,ultName:'',dodgeName:'순간이동',skillName:'원소 마법',
-          hint:'WASD 이동 · 클릭 또는 스페이스 원소 구슬(가까운 적 자동 조준, 터지면 주변까지) · Shift 순간이동 · E 원소 마법 · Q 필살기(퀴즈 3문제)'}
+          hint:'WASD 이동 · 클릭 또는 스페이스 원소 구슬 3개(가까운 적 3마리에게 알아서 휘어 날아가요) · Shift 순간이동 · E 원소 마법 · Q 필살기(퀴즈 3문제)'}
 };
 const ELEM={fire:{name:'불',color:0xff7a2f,css:'#ff7a2f',skill:'화염 폭발',ult:'운석'},
             ice:{name:'얼음',color:0x7fdcff,css:'#5cc8f0',skill:'얼음 고리',ult:'눈보라'},
@@ -37,7 +37,8 @@ function jobLook(){ return jobLookFor(JOB); }
 /* 마우스 조준 (PC): 커서가 가리키는 땅 쪽으로 쏴요. 커서 방향 앞 20도 안의 적에게는 살짝 휘어서 맞아요 */
 const MOUSE={x:0,y:0,on:false,held:false}, aimRay=new THREE.Raycaster(), aimPlane=new THREE.Plane(new THREE.Vector3(0,1,0),0), aimHit=new THREE.Vector3();
 const ARROW_MISS=.25;
-const MAGE_MOUSE_ASSIST=Math.cos(45*Math.PI/180);   // 궁수 화살은 4발 중 1발꼴로 빗나가요 (모든 모드 같음)
+const MAGE_MOUSE_ASSIST=Math.cos(80*Math.PI/180);   // 마법사: 마우스 쪽 80도(거의 앞쪽 반원) 안의 적을 알아서 맞혀요
+const MAGE_SHOTS=3, MAGE_DMG=13, MAGE_DMG_BIG=22, MAGE_SEEK=10;   // 한 번에 구슬 3개 · 대신 한 발 피해는 크게 줄였어요(예전 32)   // 궁수 화살은 4발 중 1발꼴로 빗나가요 (모든 모드 같음)
 const AIM_ASSIST=Math.cos(10*Math.PI/180), ARROW_RANGE=11, ORB_RANGE=9, MAGE_AIM=8;
 function mouseAimDir(){
   if (!MOUSE.on) return null;
@@ -166,10 +167,17 @@ function shootArrow(ang,o){
   PROJ.push({kind:'arrow',mesh,x:P.x+dx*.6,z:P.z+dz*.6,y:1.25,vx:dx*30,vz:dz*30,life:ARROW_RANGE/30,dmg:o.dmg,crit,pierce,hit:new Set(),tc:projTrailColor()});
 }
 function archerCrit(){ return Math.min(.6,CRIT_CHANCE+.08*Math.min(6,W.streak||0)); }
-function castOrb(ang){
-  const dx=Math.sin(ang), dz=Math.cos(ang), big=W.orbBoost>0; if (big) W.orbBoost--;
-  const col=ELEM[MELEM].color, mesh=makeOrb(col,big);
-  PROJ.push({kind:'orb',mesh,x:P.x+dx*.7,z:P.z+dz*.7,y:1.35,vx:dx*15,vz:dz*15,life:ORB_RANGE/15,dmg:big?50:32,r:big?3.1:2.1,big,el:MELEM,tc:projTrailColor()});
+/* 마법사 목표 고르기: 마우스를 쓰면 마우스 쪽 80도 안, 키보드면 주변 전체에서 가까운 적부터 최대 3마리 */
+function mageTargets(n){
+  const d=mouseAiming()?mouseAimDir():null, out=[];
+  for (const m of mobs){ if (m.dying>=0||m.spawnT>0) continue; const dx=m.x-P.x, dz=m.z-P.z, dd=Math.hypot(dx,dz)||1; if (dd>MAGE_SEEK) continue;
+    if (d && (dx*d.x+dz*d.z)/dd<MAGE_MOUSE_ASSIST) continue; out.push([dd,m]); }
+  return out.sort((a,b)=>a[0]-b[0]).slice(0,n).map(x=>x[1]);
+}
+function castOrb(ang,target,big){
+  const dx=Math.sin(ang), dz=Math.cos(ang);
+  const col=ELEM[MELEM].color, mesh=makeOrb(col,big); mesh.scale.multiplyScalar(.8);
+  PROJ.push({kind:'orb',mesh,x:P.x+dx*.7,z:P.z+dz*.7,y:1.35,vx:dx*16,vz:dz*16,life:target?1.2:ORB_RANGE/16,dmg:big?MAGE_DMG_BIG:MAGE_DMG,r:big?2.2:1.5,big,el:MELEM,tc:projTrailColor(),tgt:target||null});
 }
 function orbBurst(p){
   const E=ELEM[p.el], hit=mobsNear(p.x,p.z,p.r);
@@ -194,6 +202,7 @@ function skyBolt(x,z){
   beam.position.set(x,7,z); scene.add(beam); ZONEFX.push({kind:'fade',mesh:beam,t:0,life:.3});
   impactFx(x,1,z,0xb9a8ff,4); fx.shock(x,z,2.4); fx.burst(x,.6,z,0xd8ccff,16,6);
 }
+function segDist2(px,pz,ax,az,bx,bz){ const vx=bx-ax, vz=bz-az, L=vx*vx+vz*vz, t=L?Math.max(0,Math.min(1,((px-ax)*vx+(pz-az)*vz)/L)):0; return Math.hypot(px-ax-vx*t,pz-az-vz*t); }
 function updateProj(dt){
   for (let i=PROJ.length-1;i>=0;i--){ const p=PROJ[i]; p.life-=dt;
     if (p.kind==='rain'){ p.delay-=dt; if (p.delay>0) continue;
@@ -201,12 +210,15 @@ function updateProj(dt){
       if (p.y<=.3){ fx.burst(p.x,.3,p.z,0xd8c9a8,4,3); let n=0; for (const m of mobsNear(p.x,p.z,1.7)){ if (hitMob(m,p.dmg*atkMult(),p.x,p.z,.5,'#ffe08a',n===0,{stun:.2})) n++; }
         if (n) SFX.hit(false); scene.remove(p.mesh); PROJ.splice(i,1); }
       continue; }
-    p.x+=p.vx*dt; p.z+=p.vz*dt; p.mesh.position.set(p.x,p.y,p.z);
+    if (p.kind==='orb' && p.tgt){ const t=p.tgt; if (t.dying>=0||!mobs.includes(t)) p.tgt=null; else {   // 목표를 따라 휘어 날아가요 (움직이는 적도 맞게)
+        const sp=Math.hypot(p.vx,p.vz)||16, wx=t.x-p.x, wz=t.z-p.z, wd=Math.hypot(wx,wz)||1, k=Math.min(1,dt*9);
+        p.vx+=(wx/wd*sp-p.vx)*k; p.vz+=(wz/wd*sp-p.vz)*k; const n=Math.hypot(p.vx,p.vz)||1; p.vx=p.vx/n*sp; p.vz=p.vz/n*sp; } }
+    const ox=p.x, oz=p.z; p.x+=p.vx*dt; p.z+=p.vz*dt; p.mesh.position.set(p.x,p.y,p.z);
     if (p.kind==='orb'){ p.mesh.rotation.y+=dt*6; if (Math.random()<.7) fx.burst(p.x,p.y,p.z,p.tc!=null&&Math.random()<.7?p.tc:ELEM[p.el].color,1,.6); }
     else if (p.kind==='arrow' && p.tc!=null && Math.random()<.8) fx.burst(p.x,p.y,p.z,p.tc,1,.35);
     let boom=false;
-    for (const m of mobs){ if (m.dying>=0||m.spawnT>0) continue; if (p.hit&&p.hit.has(m)) continue;
-      if (Math.hypot(m.x-p.x,m.z-p.z)<m.r+.45){
+    for (const m of mobs){ if (m.dying>=0||m.spawnT>0) continue; if (p.hit&&p.hit.has(m)) continue; if (p.tgt && m!==p.tgt) continue;   // 목표가 있는 구슬은 자기 목표에만 터져요
+      if (Math.hypot(m.x-p.x,m.z-p.z)<m.r+.45 || (p.tgt===m && segDist2(m.x,m.z,ox,oz,p.x,p.z)<m.r+.6)){   // 화면이 느려 한 번에 많이 움직여도 목표를 지나치지 않게
         if (p.kind==='arrow'){ p.hit.add(m);
           if (Math.random()<ARROW_MISS){ fx.num(m.x,m.boss?5.2:2.6,m.z,'MISS','#d6dde8',1.3); continue; }
           const d=p.dmg*atkMult()*(p.crit?CRIT_MULT:1);
@@ -247,8 +259,12 @@ function jobAttack(){
     P.atkCd=.55; archerAim(ARROW_RANGE); const ang=Math.atan2(P.fx,P.fz);   // 연사 너프: 0.3초 → 0.55초 (클릭을 빨리 눌러도 이 간격보다 빨리 안 나가요)
     knightAttackAnim('shoot',3.4); SFX.zap(); shootArrow(ang,{dmg:26});
   } else {
-    P.atkCd=.8; P.castT=.3; aimAt(MAGE_AIM); const ang=Math.atan2(P.fx,P.fz);
-    knightAttackAnim('cast',2.2); SFX.zap(); castOrb(ang);
+    P.atkCd=.8; P.castT=.3; const big=W.orbBoost>0; if (big) W.orbBoost--;
+    let tg=mageTargets(MAGE_SHOTS); if (tg.length===1) tg=[tg[0],tg[0]];   // 적이 하나뿐이면 구슬 2개가 그 적에게 가요 (보스전이 너무 약해지지 않게)
+    if (tg.length){ const f=tg[0], fd=Math.hypot(f.x-P.x,f.z-P.z)||1; P.fx=(f.x-P.x)/fd; P.fz=(f.z-P.z)/fd;   // 가장 가까운 목표 쪽을 보고
+      tg.forEach((m,i)=>{ const a=Math.atan2(m.x-P.x,m.z-P.z)+(i?(i%2?.35:-.35):0); castOrb(a,m,big); }); }   // 구슬이 살짝 퍼졌다가 각자 목표로 휘어 날아가요
+    else { if (mouseAiming()){ const d=mouseAimDir(); if (d){ P.fx=d.x; P.fz=d.z; } } castOrb(Math.atan2(P.fx,P.fz),null,big); }
+    knightAttackAnim('cast',2.2); SFX.zap();
   }
 }
 /* Shift: 기사 막기 · 마법사 순간이동 (궁수는 구르기 그대로) */
@@ -377,7 +393,7 @@ function renderJobPick(){
   const J=JOBS[JOB];
   $('#jobDesc').textContent=JOB==='knight'?'보통 · 붙어서 싸워요 · 체력 150% · 막기와 반격 · 오답 너프 절반, 정답이면 방어막'
     :JOB==='archer'?'어려움 · 방향키로 직접 조준하며 연사(마우스가 있으면 마우스로도) · 쏘는 동안 느려져요 · 체력 75% · 연속 정답마다 치명타'
-    :`쉬움 · 가까운 적 자동 조준(짧은 거리) · 쏠 때 잠깐 멈춰요 · ${ELEM[MELEM].name} 구슬이 터져 주변까지 · 체력 80% · 퀴즈 효과 1.5배`;
+    :`쉬움 · 구슬 3개가 가까운 적 3마리를 알아서 쫓아가요(한 발은 약해요) · 쏠 때 잠깐 멈춰요 · ${ELEM[MELEM].name} 구슬 · 체력 80% · 퀴즈 효과 1.5배`;
 }
 function setJob(j,el){
   if (j && JOBS[j]) JOB=j; if (el && ELEM[el] && ownedElems().includes(el)) MELEM=el;
