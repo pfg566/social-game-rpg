@@ -153,20 +153,33 @@ const PET_BUILD={
     [[0,.36,.19,.11,.4],[.05,.31,.192,.08,-.6],[-.05,.32,.19,.07,.7]].forEach(([x,y,z,l,a],k)=>{ const m=pPart(B,gB,0x5a4632,[x,y,z],[l,.012,.01],[0,0,a],{noShadow:true}); m.visible=false; R.cracks[k?1:0].push(m); });
     [[.13,.3,.14,.09,1.1],[.16,.24,.11,.06,-.4]].forEach(([x,y,z,l,a])=>{ const m=pPart(B,gB,0x5a4632,[x,y,z],[l,.012,.01],[0,.75,a],{noShadow:true}); m.visible=false; R.cracks[1].push(m); });
   },
-  dragon(R){ const B=R.body, C=0x5cc27a, Y=0xffe7a6, D=0x2f8f57, H0=0xfff6d8;
-    pPart(B,gSph(),C,[0,0,-.02],[.2,.21,.25]); pPart(B,gSph(),Y,[0,-.03,.1],[.14,.16,.12]);
-    [1,-1].forEach(s=>pPart(B,gSph(),C,[.11*s,-.17,.06],[.05,.07,.06]));
-    const T=R.tail=pGroup(B,[0,-.03,-.22]); pPart(T,tubeGeo('dragtail',[[0,0,0],[0,-.05,-.12],[.04,-.04,-.26],[.09,.03,-.36]],.07,.025),C,[0,0,0],1);
-    pPart(T,gCone(),D,[.1,.05,-.39],[.05,.08,.02],[-.9,0,-.4]);
-    for (let i=0;i<3;i++) pPart(B,gCone(),D,[0,.2-.05*i,-.06-.09*i],[.025,.06,.025],[-.4-.3*i,0,0]);
-    const H=R.head=pGroup(B,[0,.22,.13]);
-    pPart(H,gSph(),C,[0,0,0],[.19,.17,.17]); pPart(H,gSph(),C,[0,-.04,.13],[.11,.08,.1]);
-    [1,-1].forEach(s=>pPart(H,gSph(),D,[.04*s,-.02,.225],[.012,.01,.01],null,{noShadow:true}));
-    pEye(R,H,.085,.04,.13,.045,0x3a1a10); pEye(R,H,-.085,.04,.13,.045,0x3a1a10); pCheek(H,.13,-.04,.11,.035); pCheek(H,-.13,-.04,.11,.035);
-    [1,-1].forEach(s=>pPart(H,gCone(),H0,[.08*s,.17,-.03],[.03,.1,.03],[-.35,0,-.25*s]));
-    [1,-1].forEach(s=>{ const e=pGroup(H,[.16*s,.06,-.04],[0,0,-.9*s]); pPart(e,gCone(),C,[0,.05,0],[.04,.09,.02]); R.ears.push(e); });
-    const wg=pgeo('dragwing',()=>{ const s=new THREE.Shape(); s.moveTo(0,0); s.lineTo(.36,.16); s.quadraticCurveTo(.33,.02,.4,-.08); s.quadraticCurveTo(.3,-.06,.27,-.16); s.quadraticCurveTo(.18,-.1,.12,-.17); s.quadraticCurveTo(.08,-.06,0,-.06); s.lineTo(0,0); return new THREE.ShapeGeometry(s,6); });
-    [1,-1].forEach(s=>{ const w=pGroup(B,[.12*s,.1,-.08],[0,s>0?-.35:Math.PI+.35,0]); const m=pPart(w,wg,D,[0,0,0],1,null,{side:true}); R.wings.push(w); w.userData.side=s; });
+  /* 아기 용: 큰 머리 · 둥근 주둥이(콧구멍 없이) · 웃는 입 · 뒤로 휜 뿔 · 보라 날개 · 하트 꼬리 */
+  dragon(R){ const B=R.body, C=0x6fd0c4, Y=0xfff0cc, A=0xb79cf0, AD=0x8f74d6, H0=0xffe4a8;
+    pPart(B,gSph(),C,[0,-.03,-.03],[.17,.18,.2]); pPart(B,gSph(),Y,[0,-.05,.08],[.12,.14,.1],null,{noLine:true});
+    [1,-1].forEach(s=>pPart(B,gSph(),C,[.1*s,-.19,.05],[.055,.04,.07]));                 // 발
+    [1,-1].forEach(s=>pPart(B,gSph(),C,[.12*s,-.02,.12],[.035,.05,.035],[.5,0,-.4*s]));  // 앞발
+    const T=R.tail=pGroup(B,[0,-.08,-.18]);
+    pPart(T,tubeGeo('dragtail2',[[0,0,0],[0,-.05,-.1],[0,-.02,-.22],[0,.08,-.29],[0,.17,-.27]],.065,.022),C,[0,0,0],1);
+    const ht=pGroup(T,[0,.2,-.255],[-.25,0,0]);                                                // 하트 끝
+    pPart(ht,gSph(),A,[.022,.01,0],[.032,.032,.018]); pPart(ht,gSph(),A,[-.022,.01,0],[.032,.032,.018]); pPart(ht,gCone(),A,[0,-.03,0],[.046,.05,.017],[Math.PI,0,0]);
+    for (let i=0;i<3;i++) pPart(B,gSph(),A,[0,.13-.07*i,-.12-.05*i],[.022,.04,.03],[-.5-.25*i,0,0]);   // 등 돌기
+    const H=R.head=pGroup(B,[0,.21,.08]);
+    pPart(H,gSph(),C,[0,0,0],[.21,.19,.19]);
+    pPart(H,gSph(),C,[0,-.065,.1],[.13,.085,.1]);                                              // 둥근 주둥이(머리와 한 덩어리처럼)
+    pPart(H,gSph(),Y,[0,-.1,.12],[.09,.04,.07],null,{noLine:true});                            // 턱 아래 밝은 부분
+    const smile=pgeo('dsmile',()=>new THREE.TorusGeometry(.04,.007,6,14,Math.PI));
+    pPart(H,smile,0x3a2440,[0,-.07,.195],1,[0,0,Math.PI],{noShadow:true});                     // 웃는 입
+    pPart(H,gCone(),0xffffff,[.022,-.083,.19],[.009,.016,.008],[Math.PI,0,0],{noShadow:true});  // 작은 송곳니
+    pEye(R,H,.088,.025,.15,.056,0x2a2350); pEye(R,H,-.088,.025,.15,.056,0x2a2350);
+    R.eyes.forEach(e=>pPart(e,gSph(),0xffffff,[-.018*Math.sign(e.position.x),-.02,.03],.012,null,{basic:true,noShadow:true}));
+    pCheek(H,.14,-.05,.12,.035); pCheek(H,-.14,-.05,.12,.035);
+    [1,-1].forEach(s=>pPart(H,tubeGeo('dhorn',[[0,0,0],[0,.06,-.02],[0,.1,-.07],[0,.11,-.12]],.03,.008),H0,[.085*s,.13,-.02],1,[0,.25*s,0]));
+    [1,-1].forEach(s=>{ const e=pGroup(H,[.19*s,.03,-.03],[0,0,-1.1*s]); pPart(e,gCone(),A,[0,.05,0],[.045,.09,.018]); R.ears.push(e); });
+    pPart(H,gSph(),A,[0,.17,-.06],[.025,.04,.03],[-.3,0,0]); pPart(H,gSph(),A,[0,.12,-.14],[.022,.035,.028],[-.8,0,0]);
+    const wg=pgeo('dragwing2',()=>{ const s=new THREE.Shape(); s.moveTo(0,0); s.quadraticCurveTo(.14,.2,.34,.2);
+      s.quadraticCurveTo(.3,.1,.36,.03); s.quadraticCurveTo(.28,.02,.26,-.07); s.quadraticCurveTo(.18,-.03,.13,-.11); s.quadraticCurveTo(.08,-.03,0,-.05); s.lineTo(0,0); return new THREE.ShapeGeometry(s,8); });
+    const bone=pgeo('dwbone',()=>{ const c=new THREE.QuadraticBezierCurve3(new THREE.Vector3(0,0,0),new THREE.Vector3(.14,.2,0),new THREE.Vector3(.34,.2,0)); return new THREE.TubeGeometry(c,10,.012,6,false); });
+    [1,-1].forEach(s=>{ const w=pGroup(B,[.11*s,.08,-.09],[0,s>0?-.35:Math.PI+.35,0]); pPart(w,wg,A,[0,0,0],1,null,{side:true,noLine:true}); pPart(w,bone,AD,[0,0,.002],1,null,{noLine:true}); R.wings.push(w); w.userData.side=s; });
   }
 };
 /* 💤 표시 */
@@ -195,6 +208,7 @@ function attachPet(ch,type){
 function petReact(ok){
   const me=typeof knight!=='undefined'?knight:null; if (!me) return;
   PETS.forEach(p=>{ if (p.ch===me){ p.st.react={t:0,ok:!!ok}; p.st.still=0;
+    if (ok && p.type==='dragon' && p.st.pos && typeof fx!=='undefined' && fx.burst){ try{ const f=p.st.yaw; fx.burst(p.st.pos.x+Math.sin(f)*.5,p.st.pos.y+(p.T.flyH||1)*1.2,p.st.pos.z+Math.cos(f)*.5,0xff8a3d,10,1.6); }catch(e){} }
     if (p.st.pos && typeof fx!=='undefined' && fx.burst){ try{ fx.burst(p.st.pos.x,p.st.pos.y+(p.T.flyH||.5),p.st.pos.z,ok?0xffd34d:0x9aa4b2,ok?14:6,ok?2.6:1); }catch(e){} } } });
 }
 
