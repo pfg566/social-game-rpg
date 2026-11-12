@@ -158,9 +158,10 @@ addEventListener('keydown',e=>{
     else if (Q.item && Q.item.kind==='ox' && /^[oOxX]$/.test(e.key)) answer(/[oO]/.test(e.key)?0:1);
     return;
   }
+  if (/^Key[WASD]$|^Arrow/.test(e.code)) MOUSE.kbT=performance.now();
   keys[e.code]=true;
   if (/^Arrow/.test(e.code) && W.state==='play') e.preventDefault();
-  if (e.code==='Space'||e.code==='KeyJ'){ e.preventDefault(); attack(); }
+  if (e.code==='Space'||e.code==='KeyJ'){ e.preventDefault(); MOUSE.kbT=performance.now(); attack(); }
   else if (e.code==='ShiftLeft'||e.code==='ShiftRight'||e.code==='KeyK'){ e.preventDefault(); dodge(); }
   else if (e.code==='KeyE'||e.code==='KeyL'){ e.preventDefault(); spinSkill(); }
   else if (e.code==='KeyQ'||e.code==='KeyU'){ e.preventDefault(); ultimate(); }

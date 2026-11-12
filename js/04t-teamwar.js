@@ -217,7 +217,7 @@ function twUseItem(){
 addEventListener('keydown',e=>{
   if (MAPK!=='teamwar'||W.state!=='play'||W.paused) return;
   const k=e.code;
-  if (k==='Space'){ if (!e.repeat) twAttack(); }
+  if (k==='Space'){ MOUSE.kbT=performance.now(); if (!e.repeat) twAttack(); }
   else if (k==='KeyE'||k==='ShiftLeft'||k==='ShiftRight'){ twSkill(); }
   else if (k==='KeyQ'||k==='KeyF'){ twUseItem(); }
   else if (/^(Key[WASD]|Arrow)/.test(k)) return;

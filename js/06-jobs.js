@@ -36,7 +36,8 @@ function jobLook(){ return jobLookFor(JOB); }
 
 /* 마우스 조준 (PC): 커서가 가리키는 땅 쪽으로 쏴요. 커서 방향 앞 20도 안의 적에게는 살짝 휘어서 맞아요 */
 const MOUSE={x:0,y:0,on:false,held:false}, aimRay=new THREE.Raycaster(), aimPlane=new THREE.Plane(new THREE.Vector3(0,1,0),0), aimHit=new THREE.Vector3();
-const ARROW_MISS=.25;   // 궁수 화살은 4발 중 1발꼴로 빗나가요 (모든 모드 같음)
+const ARROW_MISS=.25;
+const MAGE_MOUSE_ASSIST=Math.cos(45*Math.PI/180);   // 궁수 화살은 4발 중 1발꼴로 빗나가요 (모든 모드 같음)
 const AIM_ASSIST=Math.cos(10*Math.PI/180), ARROW_RANGE=11, ORB_RANGE=9, MAGE_AIM=8;
 function mouseAimDir(){
   if (!MOUSE.on) return null;
@@ -57,10 +58,15 @@ function kbAimDir(){
 /* 마우스 조준을 쓰는 중인지: '키보드만'이면 안 써요. '자동'이면 최근 2.5초 안에 마우스를 움직였을 때만 (터치패드 흔들림 방지) */
 /* '자동'에서도 마우스로 클릭해 공격했거나 마우스를 크게 움직였으면 계속 마우스 방향을 봐요 (예전엔 2.5초 지나면 풀려서 360도 조준이 안 되는 것처럼 보였어요)
    키보드만 쓰는 학생: 마우스를 거의 안 움직이니 그대로 이동 방향을 봐요 · 궁수가 방향키로 조준하면 다시 키보드 조준으로 */
-function mouseAiming(){ if (CTRL==='kb' || !MOUSE.on) return false; if (CTRL==='mouse' || MOUSE.held || MOUSE.sticky) return true; return performance.now()-(MOUSE.t||0)<2500; }
+function mouseAiming(){ if (CTRL==='kb' || !MOUSE.on) return false; if (CTRL==='mouse' || MOUSE.held) return true;
+  const idle=performance.now()-(MOUSE.t||0);
+  // 마우스를 3초 넘게 안 만지고 키보드(스페이스·WASD)로만 하면 다시 자동 조준으로 돌아가요
+  if (MOUSE.sticky && idle>3000 && MOUSE.kbT>(MOUSE.t||0)) MOUSE.sticky=false;
+  if (MOUSE.sticky) return true; return idle<2500; }
 /* 마우스 방향 + 10도 안의 가까운 적에게 살짝 맞춰 주기 (세 직업 공통) */
 function mouseAimAt(range){ const d=mouseAimDir(); if (!d) return undefined; P.fx=d.x; P.fz=d.z;
-  let best=null, bc=AIM_ASSIST; for (const m of mobs){ if (m.dying>=0||m.spawnT>0) continue; const dx=m.x-P.x, dz=m.z-P.z, dd=Math.hypot(dx,dz)||1; if (dd>range) continue; const c=(dx*d.x+dz*d.z)/dd; if (c>bc){ bc=c; best=m; } }
+  // 마법사는 '쉬움' 직업이라 마우스 쪽 45도 안의 적을 알아서 맞혀요
+  let best=null, bc=JOB==='mage'?MAGE_MOUSE_ASSIST:AIM_ASSIST; for (const m of mobs){ if (m.dying>=0||m.spawnT>0) continue; const dx=m.x-P.x, dz=m.z-P.z, dd=Math.hypot(dx,dz)||1; if (dd>range) continue; const c=(dx*d.x+dz*d.z)/dd; if (c>bc){ bc=c; best=m; } }
   if (best){ const dx=best.x-P.x, dz=best.z-P.z, dd=Math.hypot(dx,dz)||1; P.fx=dx/dd; P.fz=dz/dd; } return best; }
 function archerAim(range){
   const kb=kbAimDir(), md=!kb&&mouseAiming()?mouseAimDir():null;
