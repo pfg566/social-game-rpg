@@ -11,6 +11,8 @@ const PET_TYPES={
   bear:   {move:'walk',  size:1.05,spd:.95, build:'bear'},
   owl:    {move:'fly',   size:.95, spd:1.1, build:'owl', flyH:1.7},
   gowl:   {move:'fly',   size:1,   spd:1.1, build:'owl', flyH:1.75, gold:true},
+  ribbon: {move:'walk',  size:.95, spd:1.05,build:'ribbon'},
+  fox:    {move:'walk',  size:1,   spd:1.1, build:'fox'},
   egg:    {move:'egg',   size:1,   spd:1.05,build:'egg'},
   dragon: {move:'fly',   size:1.05,spd:1.1, build:'dragon', flyH:1.4}
 };
@@ -153,6 +155,38 @@ const PET_BUILD={
     [[0,.36,.19,.11,.4],[.05,.31,.192,.08,-.6],[-.05,.32,.19,.07,.7]].forEach(([x,y,z,l,a],k)=>{ const m=pPart(B,gB,0x5a4632,[x,y,z],[l,.012,.01],[0,0,a],{noShadow:true}); m.visible=false; R.cracks[k?1:0].push(m); });
     [[.13,.3,.14,.09,1.1],[.16,.24,.11,.06,-.4]].forEach(([x,y,z,l,a])=>{ const m=pPart(B,gB,0x5a4632,[x,y,z],[l,.012,.01],[0,.75,a],{noShadow:true}); m.visible=false; R.cracks[1].push(m); });
   },
+  /* 리본 고양이: 하얀 털 · 분홍 리본 · 파란 눈 · 하트 꼬리 */
+  ribbon(R){ const B=R.body, C=0xf4ece8, P=0xff7fae, PD=0xe0558c, W=0xfffaf6;
+    pPart(B,gSph(),C,[0,.29,-.02],[.2,.19,.29]); pPart(B,gSph(),W,[0,.26,.14],[.13,.13,.12],null,{noLine:true});
+    pLeg(R,B,.1,.2,.15,C,.058,.12,W); pLeg(R,B,-.1,.2,.15,C,.058,.12,W); pLeg(R,B,.1,.2,-.17,C,.062,.12,W); pLeg(R,B,-.1,.2,-.17,C,.062,.12,W);
+    const col=pGroup(B,[0,.4,.17],[.5,0,0]); pPart(col,pgeo('collar',()=>new THREE.TorusGeometry(.1,.016,8,20)),P,[0,0,0],1,null,{noLine:true});
+    pPart(col,gSph(),0xffd34d,[0,-.1,.02],.022,null,{noLine:true});                                  // 방울
+    const H=R.head=pGroup(B,[0,.52,.2]);
+    pPart(H,gSph(),C,[0,0,0],[.23,.2,.2]); pPart(H,gSph(),W,[0,-.07,.13],[.12,.08,.09],null,{noLine:true});
+    pPart(H,gSph(),0xff8fb0,[0,-.03,.205],[.028,.02,.02],null,{noShadow:true});
+    pEye(R,H,.09,.03,.165,.048,0x2f6fd6); pEye(R,H,-.09,.03,.165,.048,0x2f6fd6); pCheek(H,.14,-.05,.13,.038); pCheek(H,-.14,-.05,.13,.038);
+    [1,-1].forEach(s=>{ const e=pGroup(H,[.12*s,.15,0],[0,0,-.25*s]); pPart(e,gCone(),C,[0,.06,0],[.075,.15,.05]); pPart(e,gCone(),0xffbfd0,[0,.05,.025],[.045,.1,.02],null,{noLine:true}); R.ears.push(e); });
+    const bow=pGroup(H,[-.13,.17,.04],[0,0,.35]);                                                     // 리본
+    pPart(bow,gSph(),P,[.055,0,0],[.06,.04,.025],[0,0,.25]); pPart(bow,gSph(),P,[-.055,0,0],[.06,.04,.025],[0,0,-.25]);
+    pPart(bow,gSph(),PD,[0,0,.005],[.025,.028,.025]);
+    [1,-1].forEach(s=>pPart(H,gSph(),0x9a8a8a,[.14*s,-.05,.15],[.065,.004,.004],[0,0,.1*s],{noShadow:true}));
+    const T=R.tail=pGroup(B,[0,.33,-.3]); pPart(T,tubeGeo('cattail',[[0,0,0],[0,.08,-.1],[0,.22,-.14],[0,.36,-.08],[0,.42,.02]],.045,.03),C,[0,0,0],1);
+    const ht=pGroup(T,[0,.45,.03]); pPart(ht,gSph(),P,[.025,.01,0],[.035,.035,.02]); pPart(ht,gSph(),P,[-.025,.01,0],[.035,.035,.02]); pPart(ht,gCone(),P,[0,-.035,0],[.05,.055,.019],[Math.PI,0,0]);
+  },
+  /* 아기 여우: 주황 털 · 하얀 볼 · 크고 복슬복슬한 꼬리 */
+  fox(R){ const B=R.body, C=0xf28a3a, W=0xfff4e6, D=0x5a3324;
+    pPart(B,gSph(),C,[0,.29,-.02],[.2,.19,.29]); pPart(B,gSph(),W,[0,.27,.15],[.13,.14,.12],null,{noLine:true});
+    pLeg(R,B,.1,.2,.15,D,.055,.12); pLeg(R,B,-.1,.2,.15,D,.055,.12); pLeg(R,B,.1,.2,-.17,D,.06,.12); pLeg(R,B,-.1,.2,-.17,D,.06,.12);
+    const H=R.head=pGroup(B,[0,.52,.2]);
+    pPart(H,gSph(),C,[0,0,0],[.22,.19,.19]);
+    [1,-1].forEach(s=>pPart(H,gSph(),W,[.12*s,-.075,.09],[.075,.06,.06],null,{noLine:true}));             // 하얀 볼
+    pPart(H,gSph(),W,[0,-.075,.15],[.065,.05,.1],null,{noLine:true});                                      // 뾰족한 주둥이
+    pPart(H,gSph(),0x2a1d1a,[0,-.06,.25],[.026,.02,.018],null,{noShadow:true});
+    pEye(R,H,.085,.035,.16,.044,0x3a2010); pEye(R,H,-.085,.035,.16,.044,0x3a2010); pCheek(H,.15,-.04,.11,.03); pCheek(H,-.15,-.04,.11,.03);
+    [1,-1].forEach(s=>{ const e=pGroup(H,[.12*s,.14,-.01],[0,0,-.3*s]); pPart(e,gCone(),C,[0,.09,0],[.08,.2,.05]); pPart(e,gCone(),W,[0,.07,.026],[.045,.13,.02],null,{noLine:true}); pPart(e,gCone(),D,[0,.17,0],[.03,.05,.03],null,{noLine:true}); R.ears.push(e); });
+    const T=R.tail=pGroup(B,[0,.3,-.28],[-.5,0,0]);
+    pPart(T,gSph(),C,[0,.08,-.08],[.11,.12,.17],[.5,0,0]); pPart(T,gSph(),C,[0,.18,-.2],[.12,.12,.14],[.9,0,0]); pPart(T,gSph(),W,[0,.27,-.28],[.09,.1,.09]);
+  },
   /* 아기 용: 큰 머리 · 둥근 주둥이(콧구멍 없이) · 웃는 입 · 뒤로 휜 뿔 · 보라 날개 · 하트 꼬리 */
   dragon(R){ const B=R.body, C=0x6fd0c4, Y=0xfff0cc, A=0xb79cf0, AD=0x8f74d6, H0=0xffe4a8;
     pPart(B,gSph(),C,[0,-.03,-.03],[.17,.18,.2]); pPart(B,gSph(),Y,[0,-.05,.08],[.12,.14,.1],null,{noLine:true});
@@ -286,9 +320,9 @@ function petPose(p,dt,now,moving,sit,sleep,hop,sad){
   let bobY=hop, bodyX=0, bodyZ=0, headX=sad*.4, headZ=0, sy=1;
   if (T.move==='walk'){
     R.legs.forEach((l,i)=>{ const diag=(i===0||i===3)?0:Math.PI; let a=Math.sin(ph+diag)*.75*mv;
-      if (sit&&!moving) a=i<2?-.15:-1.25; if (sleep) a=i<2?-1.3:-1.4; l.rotation.x=damp(l.rotation.x,a,12,dt); });
+      if (sit&&!moving&&!T.tall) a=i<2?-.15:-1.25; if (sleep) a=i<2?-1.4:1.4; l.rotation.x=damp(l.rotation.x,a,12,dt); });
     bobY+=moving?Math.abs(Math.sin(ph))*.035*mv:0;
-    bodyX=sleep?0:(sit&&!moving?-.3:0); if (sleep) bobY-=.12; else if (sit&&!moving) bobY+=.02;
+    bodyX=sleep||T.tall?0:(sit&&!moving?-.3:0); if (sleep) bobY-=T.tall?.2:.12; else if (sit&&!moving&&!T.tall) bobY+=.02;
     if (sleep) headX=.3;
     if (!moving&&!sleep) headZ=Math.sin(t*.8)*.12;
   } else if (T.move==='hop'){

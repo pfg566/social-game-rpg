@@ -9,8 +9,9 @@ const EGG_LV=[10,20,30];
 const EGG_XP=[3150,11400,24650];       // 위 레벨이 되는 누적 경험치 (levelOf와 같아야 해요 · 보안 규칙에도 같은 숫자)
 const EGG_Q=4, EGG_Q_GAME=40, EGG_Q_MAX=600;   // 정답 1개 = 0.2%, 한 판 최대 2%, 알 하나에 공부 보너스는 최대 30%
 /* 확률표 (1000칸 중 몇 칸) · 보안 규칙과 순서 · 숫자가 같아야 해요 */
-const EGG_TABLE=[['pdog_egg',150,'보통'],['pcat_egg',150,'보통'],['prabbit_egg',150,'보통'],['pslime_egg',150,'보통'],
-                 ['ppeng_egg',125,'희귀'],['pbear_egg',125,'희귀'],['powl_egg',120,'영웅'],['pdragon_egg',30,'전설']];
+const EGG_TABLE=[['pdog_egg',120,'보통'],['pcat_egg',120,'보통'],['prabbit_egg',120,'보통'],['pslime_egg',120,'보통'],
+                 ['ppeng_egg',100,'희귀'],['pbear_egg',100,'희귀'],['pfox_egg',100,'희귀'],
+                 ['powl_egg',85,'영웅'],['pribbon_egg',85,'영웅'],['pdragon_egg',50,'전설']];
 const EGG_RARE={'보통':'#7a8597','희귀':'#2f8fe0','영웅':'#9a4fe0','전설':'#e08a12'};
 function eggPetAt(h){ let r=((h%1000)+1000)%1000; for (const [id,w] of EGG_TABLE){ if (r<w) return id; r-=w; } return EGG_TABLE[0][0]; }
 const eggList=()=>(typeof WARDROBE!=='undefined'&&WARDROBE&&WARDROBE.eggs)||{};
@@ -80,6 +81,7 @@ async function eggHatch(i){
   if (EGG_TABLE.every(([k])=>eggOwnedPet(k))) throw new Error('all');
   for (let n=0;n<40;n++){
     if (!e.h || eggOwnedPet(eggPetAt(e.h))){
+      if (e.h) await new Promise(r=>setTimeout(r,80+Math.random()*420));   // 다시 굴릴 땐 잠깐 쉬었다가: 같은 칸에 또 걸리지 않게
       await withTimeout(ref.child('h').set(firebase.database.ServerValue.TIMESTAMP),10000);
       e.h=(await withTimeout(ref.child('h').once('value'),10000)).val(); continue; }
     const id=eggPetAt(e.h);

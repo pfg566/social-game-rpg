@@ -140,6 +140,8 @@ const CATALOG=[
   {id:'pslime_egg',job:'all',slot:'pet',name:'슬라임',pet:'slime',ico:'🟢',egg:true,was:'pslime_p2000',desc:'말랑말랑 통통 튀는 투명 슬라임'},
   {id:'ppeng_egg',job:'all',slot:'pet',name:'펭귄',pet:'penguin',ico:'🐧',egg:true,was:'ppeng_p2500',desc:'뒤뚱뒤뚱 걸어요 · 맞히면 날개를 파닥파닥'},
   {id:'pbear_egg',job:'all',slot:'pet',name:'아기 북극곰',pet:'bear',ico:'🐻‍❄️',egg:true,was:'pbear_p2500',desc:'포동포동 하얀 아기 곰'},
+  {id:'pribbon_egg',job:'all',slot:'pet',name:'리본 고양이',pet:'ribbon',ico:'🎀',egg:true,desc:'분홍 리본에 방울 목걸이 · 꼬리 끝이 하트예요'},
+  {id:'pfox_egg',job:'all',slot:'pet',name:'아기 여우',pet:'fox',ico:'🦊',egg:true,desc:'복슬복슬 큰 꼬리를 살랑살랑'},
   {id:'powl_egg',job:'all',slot:'pet',name:'부엉이',pet:'owl',ico:'🦉',egg:true,was:'powl_p3000',desc:'어깨 옆을 날아다녀요 · 가끔 고개를 휙 돌려요'},
   {id:'pdragon_egg',job:'all',slot:'pet',name:'아기 용',pet:'dragon',ico:'🐲',egg:true,was:'pdragon_p5000',desc:'작은 날개로 파닥파닥 날아다니는 아기 용'},
   {id:'eggpet',hidden:true,job:'none',slot:'pet',name:'키우는 알',pet:'egg'},
