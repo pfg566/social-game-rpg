@@ -131,18 +131,16 @@ const CATALOG=[
   {id:'wice_p2000',job:'all',slot:'cape',name:'얼음 결정 날개',wing:'crystal',desc:'빛나는 얼음 조각 날개 · 반짝이가 떠다녀요'},
   {id:'wphx_p2500',job:'all',slot:'cape',name:'불사조 날개',wing:'phoenix',desc:'스스로 빛나는 불꽃 깃털 · 불씨가 피어올라요'},
   {id:'noshield_p0',job:'all',slot:'shield',name:'빈손'},
-  /* ===== 펫 (세 직업 모두 · 가게에서 못 사요: 🥚 알을 부화시키면 무작위로 나와요 · 꾸미기 전용) =====
-     was = 알 시스템 전에 코인으로 산 학생은 그대로 가져요 */
+  /* ===== 펫 (세 직업 모두 · 직업마다 따로 사요 · 꾸미기 전용이라 능력치는 없어요) ===== */
   {id:'nopet_p0',job:'all',slot:'pet',name:'펫 없음',ico:'➖'},
-  {id:'pdog_egg',job:'all',slot:'pet',name:'강아지',pet:'dog',ico:'🐶',egg:true,was:'pdog_p1500',desc:'졸졸 따라오며 꼬리를 흔들어요 · 문제를 맞히면 폴짝!'},
-  {id:'pcat_egg',job:'all',slot:'pet',name:'고양이',pet:'cat',ico:'🐱',egg:true,was:'pcat_p1500',desc:'살금살금 따라와요 · 가만히 있으면 앉아서 꼬리를 살랑'},
-  {id:'prabbit_egg',job:'all',slot:'pet',name:'토끼',pet:'rabbit',ico:'🐰',egg:true,was:'prabbit_p2000',desc:'깡충깡충 뛰어서 따라와요'},
-  {id:'pslime_egg',job:'all',slot:'pet',name:'슬라임',pet:'slime',ico:'🟢',egg:true,was:'pslime_p2000',desc:'말랑말랑 통통 튀는 투명 슬라임'},
-  {id:'ppeng_egg',job:'all',slot:'pet',name:'펭귄',pet:'penguin',ico:'🐧',egg:true,was:'ppeng_p2500',desc:'뒤뚱뒤뚱 걸어요 · 맞히면 날개를 파닥파닥'},
-  {id:'pbear_egg',job:'all',slot:'pet',name:'아기 북극곰',pet:'bear',ico:'🐻‍❄️',egg:true,was:'pbear_p2500',desc:'포동포동 하얀 아기 곰'},
-  {id:'powl_egg',job:'all',slot:'pet',name:'부엉이',pet:'owl',ico:'🦉',egg:true,was:'powl_p3000',desc:'어깨 옆을 날아다녀요 · 가끔 고개를 휙 돌려요'},
-  {id:'pdragon_egg',job:'all',slot:'pet',name:'아기 용',pet:'dragon',ico:'🐲',egg:true,was:'pdragon_p5000',desc:'작은 날개로 파닥파닥 날아다니는 아기 용'},
-  {id:'eggpet',hidden:true,job:'none',slot:'pet',name:'키우는 알',pet:'egg'},
+  {id:'pdog_p1500',job:'all',slot:'pet',name:'강아지',pet:'dog',ico:'🐶',desc:'졸졸 따라오며 꼬리를 흔들어요 · 문제를 맞히면 폴짝!'},
+  {id:'pcat_p1500',job:'all',slot:'pet',name:'고양이',pet:'cat',ico:'🐱',desc:'살금살금 따라와요 · 가만히 있으면 앉아서 꼬리를 살랑'},
+  {id:'prabbit_p2000',job:'all',slot:'pet',name:'토끼',pet:'rabbit',ico:'🐰',desc:'깡충깡충 뛰어서 따라와요'},
+  {id:'pslime_p2000',job:'all',slot:'pet',name:'슬라임',pet:'slime',ico:'🟢',desc:'말랑말랑 통통 튀는 투명 슬라임'},
+  {id:'ppeng_p2500',job:'all',slot:'pet',name:'펭귄',pet:'penguin',ico:'🐧',desc:'뒤뚱뒤뚱 걸어요 · 맞히면 날개를 파닥파닥'},
+  {id:'pbear_p2500',job:'all',slot:'pet',name:'아기 북극곰',pet:'bear',ico:'🐻‍❄️',desc:'포동포동 하얀 아기 곰'},
+  {id:'powl_p3000',job:'all',slot:'pet',name:'부엉이',pet:'owl',ico:'🦉',desc:'어깨 옆을 날아다녀요 · 가끔 고개를 휙 돌려요'},
+  {id:'pdragon_p5000',job:'all',slot:'pet',name:'아기 용',pet:'dragon',ico:'🐲',desc:'작은 날개로 파닥파닥 날아다니는 아기 용'},
   {id:'xpgowl_p0',job:'all',slot:'pet',name:'황금 부엉이',pet:'gowl',ico:'✨',ach:'q500',desc:'업적 📖 지식 수집가 보상 · 반짝이가 맴돌아요'}
 ];
 /* 머리색: 직업마다 따로 사요 (k: 기사, a: 궁수, m: 마법사) */
@@ -163,9 +161,9 @@ const fitsJob=(id,job,slot)=>{ const it=CAT[id]; return !!it && it.slot===slot &
 function lookOf(job,eq){ const L={...DEFAULTS[job]}; eq=eq||{};
   for (const s of JOB_SLOTS[job]){ let id=eq[job+'_'+s]; if (id===undefined && job==='knight') id=eq[s]; if (fitsJob(id,job,s)) L[s]=id; } return L; }
 function guestEquip(){ try{ return JSON.parse(localStorage.getItem('gsd-look2')||'{}'); }catch(e){ return {}; } }
-function guestLook(job){ job=job||JOB; const L=lookOf(job,guestEquip()); JOB_SLOTS[job].forEach(s=>{ if ((priceOf(L[s])>0||(CAT[L[s]]&&(CAT[L[s]].ach||CAT[L[s]].egg))) && !isAdmin) L[s]=DEFAULTS[job][s]; }); return L; }
+function guestLook(job){ job=job||JOB; const L=lookOf(job,guestEquip()); JOB_SLOTS[job].forEach(s=>{ if ((priceOf(L[s])>0||(CAT[L[s]]&&CAT[L[s]].ach)) && !isAdmin) L[s]=DEFAULTS[job][s]; }); return L; }
 function equippedLook(job){ job=job||JOB; return STUDENT&&WARDROBE ? lookOf(job,WARDROBE.equip) : guestLook(job); }
-function owns(id){ const it=CAT[id]; if (it&&it.egg) return eggOwnedPet(it.id) || (!STUDENT && typeof isAdmin!=='undefined' && isAdmin); if (it&&it.ach) return hasAch(it.ach) || (!STUDENT && typeof isAdmin!=='undefined' && isAdmin); return priceOf(id)===0 || !!(WARDROBE&&WARDROBE.inv&&(WARDROBE.inv[id]||(it&&it.was&&WARDROBE.inv[it.was]))) || (!STUDENT && typeof isAdmin!=='undefined' && isAdmin); }
+function owns(id){ const it=CAT[id]; if (it&&it.ach) return hasAch(it.ach) || (!STUDENT && typeof isAdmin!=='undefined' && isAdmin); return priceOf(id)===0 || !!(WARDROBE&&WARDROBE.inv&&(WARDROBE.inv[id]||(it&&it.was&&WARDROBE.inv[it.was]))) || (!STUDENT && typeof isAdmin!=='undefined' && isAdmin); }
 function availCoins(){ return PROFILE ? Math.max(0,(PROFILE.coins|0)-((WARDROBE&&WARDROBE.spent)|0)) : 0; }
 
 /* ---------- 파일 불러오기 (필요할 때 한 번만) ---------- */
@@ -281,7 +279,7 @@ async function dressP2(ch,L){
 
 /* ---------- 지금 차림 적용: 게임 · 로비 · 상점 미리보기 ---------- */
 let LOOK=null, lookToken=0, TRAIL=CAT.gold_p0, WARDROBE=null;
-function lookFor(job){ const L=SHOP.open&&job===SHOP.job&&SHOP.try ? SHOP.try : equippedLook(job); return typeof eggDecorate==='function'?eggDecorate(L):L; }
+function lookFor(job){ return SHOP.open&&job===SHOP.job&&SHOP.try ? SHOP.try : equippedLook(job); }
 async function applyLook(){
   TRAIL=CAT[lookFor('knight').trail]||CAT.gold_p0; LOOK=lookFor(JOB);
   if (!WORLD_READY) return; const t=++lookToken;
@@ -305,8 +303,8 @@ function projTrailColor(){ const t=CAT[(LOOK||{}).trail]; if (!t||t.none||t.slot
 function wardRef(){ return fbDb.ref(`wardrobe/${STUDENT.cid}/${STUDENT.num}`); }
 async function loadWardrobe(){
   if (!STUDENT||!fbDb){ WARDROBE=null; applyLook(); return; }
-  try{ const v=(await withTimeout(wardRef().once('value'),10000)).val()||{}; WARDROBE={inv:v.inv||{},spent:+v.spent||0,equip:v.equip||{},eggs:v.eggs||{},hasSpent:v.spent!=null}; }
-  catch(e){ WARDROBE={inv:{},spent:0,equip:{},eggs:{},err:true}; }
+  try{ const v=(await withTimeout(wardRef().once('value'),10000)).val()||{}; WARDROBE={inv:v.inv||{},spent:+v.spent||0,equip:v.equip||{}}; }
+  catch(e){ WARDROBE={inv:{},spent:0,equip:{},err:true}; }
   applyLook();
   if (AUTHMODE==='student'&&PROFILE) renderProfileCard();
   if (!$('#shop').hidden) renderShop();
@@ -335,9 +333,9 @@ function renderShop(){
   if (SHOP.ach){ renderAchView(); return; }
   $('#shopTabs').innerHTML=JOB_SLOTS[J].map(s=>`<button class="tab" data-stab="${s}" aria-selected="${s===SHOP.tab}">${SLOT_INFO[s].icon} ${slotLabel(J,s)}</button>`).join('');
   const eq=equippedLook(J);
-  $('#shopGrid').innerHTML=(SHOP.tab==='pet'&&typeof eggNestHTML==='function'?eggNestHTML():'')+CATALOG.filter(it=>it.slot===SHOP.tab&&(it.job===J||it.job==='all')&&(!it.hidden||owns(it.id))).map(it=>{
+  $('#shopGrid').innerHTML=CATALOG.filter(it=>it.slot===SHOP.tab&&(it.job===J||it.job==='all')&&(!it.hidden||owns(it.id))).map(it=>{
     const pr=priceOf(it.id), own=owns(it.id), on=CAT[eq[it.slot]]===it;
-    const st=on?'착용 중':own?(it.ach?'🏅 업적 보상':it.egg?'🐣 부화':pr?'보유':'기본'):it.ach?'🔒 업적':it.egg?`🥚 ${eggChanceText(it.id)}`:`${pr.toLocaleString('ko-KR')} 코인`;
+    const st=on?'착용 중':own?(it.ach?'🏅 업적 보상':pr?'보유':'기본'):it.ach?'🔒 업적':`${pr.toLocaleString('ko-KR')} 코인`;
     const sw=it.ico?`<span class="ico">${it.ico}</span>`:it.sw?`<span class="sw" style="background:${it.sw}"></span>`:it.slot==='trail'?`<span class="sw" style="background:${it.rainbow?'linear-gradient(90deg,#ff6b6b,#ffd34d,#7be38a,#5cc8f0,#b38cff)':it.none?'repeating-linear-gradient(45deg,#ddd 0 4px,#fff 4px 8px)':'#'+it.color.toString(16).padStart(6,'0')}"></span>`:'';
     return `<button class="item${it.id===SHOP.sel?' sel':''}${on?' on':''}${own?' own':''}${it.ach?' achit':''}" data-item="${it.id}">${sw}<b>${esc(it.name)}</b><span class="pr">${st}</span></button>`; }).join('');
   const it=CAT[SHOP.sel], btn=$('#shopBuy');
@@ -348,7 +346,6 @@ function renderShop(){
   btn.disabled=SHOP.busy; btn.classList.remove('warn');
   if (on){ btn.textContent='착용 중'; btn.disabled=true; }
   else if (own) btn.textContent='착용하기';
-  else if (it.egg){ btn.textContent='🥚 알을 부화시키면 무작위로 나와요'; btn.disabled=true; }
   else if (it.ach){ const A=achDef(it.ach); btn.textContent=`🔒 업적 ${A?A.icon+' '+A.title:''}을(를) 달성하면 받아요`; btn.disabled=true; }
   else if (!STUDENT||!PROFILE){ btn.textContent='로그인하면 살 수 있어요'; btn.disabled=true; }
   else if (coins<pr){ btn.textContent=`코인이 ${(pr-coins).toLocaleString('ko-KR')} 부족해요`; btn.disabled=true; }
@@ -384,7 +381,7 @@ $('#shopClose').addEventListener('click',closeShop);
 $('#shopJobs').addEventListener('click',e=>{ const b=e.target.closest('[data-sjob]'); if (!b) return;
   if (b.dataset.sjob==='ach'){ SHOP.ach=true; SHOP.achSel=null; shopMsg(''); renderShop(); return; } SHOP.ach=false; shopSetJob(b.dataset.sjob); shopMsg(''); applyLook(); renderShop(); });
 $('#shopTabs').addEventListener('click',e=>{ const b=e.target.closest('[data-stab]'); if (!b) return; SHOP.tab=b.dataset.stab; SHOP.sel=SHOP.try[SHOP.tab]; SHOP.armed=false; renderShop(); });
-$('#shopGrid').addEventListener('click',e=>{ const eb=e.target.closest('[data-egg]'); if (eb){ eggAction(eb.dataset.egg,+eb.dataset.i); return; } if (e.target.closest('.egg-nest')) return; const b=e.target.closest('[data-item]'); if (!b) return; const it=CAT[b.dataset.item];
+$('#shopGrid').addEventListener('click',e=>{ const b=e.target.closest('[data-item]'); if (!b) return; const it=CAT[b.dataset.item];
   SHOP.sel=it.id; SHOP.armed=false; SHOP.try[it.slot]=it.id; applyLook(); shopMsg('');
   if (it.slot==='trail'){ setTimeout(()=>{ if (SHOP.open) slashFx(0); },60); }
   else if (it.slot==='pet'){ setTimeout(()=>{ if (SHOP.open && typeof petReact==='function') petReact(true); },350); }

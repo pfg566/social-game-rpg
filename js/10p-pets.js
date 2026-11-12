@@ -11,7 +11,6 @@ const PET_TYPES={
   bear:   {move:'walk',  size:1.05,spd:.95, build:'bear'},
   owl:    {move:'fly',   size:.95, spd:1.1, build:'owl', flyH:1.7},
   gowl:   {move:'fly',   size:1,   spd:1.1, build:'owl', flyH:1.75, gold:true},
-  egg:    {move:'egg',   size:1,   spd:1.05,build:'egg'},
   dragon: {move:'fly',   size:1.05,spd:1.1, build:'dragon', flyH:1.4}
 };
 const PET_SIZE=1.25;
@@ -132,14 +131,6 @@ const PET_BUILD={
     if (gold){ R.spark=[]; for (let i=0;i<5;i++){ const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:wingGlowTex(),color:0xfff0a0,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false}));
       sp.userData.ph=i/5; R.bob.add(sp); R.spark.push(sp); } }
   },
-  egg(R){ const B=R.body;
-    pPart(B,gSph(),0xf0e2c4,[0,.27,0],[.2,.26,.2]);
-    [[.12,.33,.12,.05,0x9fd8ff],[-.1,.2,.14,.045,0xffb7c9],[.03,.42,-.14,.04,0xbfe8a0],[-.15,.36,-.05,.04,0xffd27a],[.15,.16,-.07,.045,0xc9b6ff],[0,.12,.19,.035,0x9fd8ff]]
-      .forEach(([x,y,z,r,c])=>{ const m=pPart(B,gSph(),c,[x,y,z],[r,r,r*.35],null,{noShadow:true}); m.lookAt(0,y,0); m.rotateY(Math.PI); });
-    const gB=pgeo('box',()=>new THREE.BoxGeometry(1,1,1)); R.cracks=[[],[]];
-    [[0,.36,.19,.11,.4],[.05,.31,.192,.08,-.6],[-.05,.32,.19,.07,.7]].forEach(([x,y,z,l,a],k)=>{ const m=pPart(B,gB,0x5a4632,[x,y,z],[l,.012,.01],[0,0,a],{noShadow:true}); m.visible=false; R.cracks[k?1:0].push(m); });
-    [[.13,.3,.14,.09,1.1],[.16,.24,.11,.06,-.4]].forEach(([x,y,z,l,a])=>{ const m=pPart(B,gB,0x5a4632,[x,y,z],[l,.012,.01],[0,.75,a],{noShadow:true}); m.visible=false; R.cracks[1].push(m); });
-  },
   dragon(R){ const B=R.body, C=0x5cc27a, Y=0xffe7a6, D=0x2f8f57, H0=0xfff6d8;
     pPart(B,gSph(),C,[0,0,-.02],[.2,.21,.25]); pPart(B,gSph(),Y,[0,-.03,.1],[.14,.16,.12]);
     [1,-1].forEach(s=>pPart(B,gSph(),C,[.11*s,-.17,.06],[.05,.07,.06]));
@@ -196,9 +187,7 @@ function petsTick(){
 function petUpdate(p,dt,now){
   const {R,st,T}=p, root=p.ch.root;
   root.updateWorldMatrix(true,false); root.matrixWorld.decompose(PV,PQ,PS);
-  // 로그인 화면(세 캐릭터가 나란히)에서는 펫을 숨겨요: 옆 친구와 겹쳐서
-  const lineup=typeof LOBBY!=='undefined'&&LOBBY.last===null&&LOBBY.chars&&LOBBY.chars[p.ch.job]===p.ch;
-  const sc=PS.x; if (sc<.4||lineup){ R.g.visible=false; return; } R.g.visible=true;
+  const sc=PS.x; if (sc<.4){ R.g.visible=false; return; } R.g.visible=true;
   // 주인 속도 · 가는 방향
   const jump=st.pos?PV.distanceTo(st.op):99, ddx=PV.x-st.op.x, ddz=PV.z-st.op.z; st.op.copy(PV);
   const ov=dt>0&&jump<6?Math.min(10,jump/dt):0; st.ov=damp(st.ov,ov,5,dt);
@@ -224,7 +213,7 @@ function petUpdate(p,dt,now){
   if (dist>1e-4 && !st.arr){ const m=Math.min(dist,st.v*dt); st.pos.x+=dx/dist*m; st.pos.z+=dz/dist*m; }
   const moving=st.v>.35;
   st.still=moving?0:st.still+dt; if (shop) st.still=Math.min(st.still,3);
-  const sleep=st.still>8&&T.move!=='egg', sit=st.still>1.2;
+  const sleep=st.still>8, sit=st.still>1.2;
   // 바닥 높이 · 나는 펫 높이
   const lift=fly?(sleep?0:(T.flyH||1.4)):0;
   st.fy=damp(st.fy,lift,sleep?1.5:3,dt);
@@ -276,12 +265,6 @@ function petPose(p,dt,now,moving,sit,sleep,hop,sad){
     bodyZ=moving?Math.sin(ph)*.2*mv:Math.sin(t*1.2)*.03; bobY+=moving?Math.abs(Math.cos(ph))*.03:0;
     R.wings.forEach((w,i)=>{ const s=i?-1:1; w.rotation.z=damp(w.rotation.z,(.25+(moving?.25+.2*Math.sin(ph*2):hop>0?1.1:sad?0:.06*Math.sin(t*2)))*s,12,dt); });
     if (sleep){ headX=.35; bobY-=.03; }
-  } else if (T.move==='egg'){
-    const pr=typeof eggShowProg==='function'?eggShowProg():0;
-    if (R.cracks){ R.cracks[0].forEach(m=>m.visible=pr>=.5); R.cracks[1].forEach(m=>m.visible=pr>=.8); }
-    if (moving){ bobY+=Math.abs(Math.sin(ph*.8))*.09; bodyZ=Math.sin(ph*.8)*.18; }
-    else { const cyc=(t%(4.2-2.4*pr))/(4.2-2.4*pr), burst=cyc<.16?Math.sin(cyc/.16*Math.PI*6)*(.12+.3*pr):0;
-      bodyZ=Math.sin(t*1.6)*(.03+.06*pr)+burst; if (cyc<.16&&pr>.5) bobY+=Math.abs(burst)*.15; }
   } else if (T.move==='fly'){
     const flap=sleep?0:(moving?16:9)+(hop>0?10:0);
     st.fp=(st.fp||0)+dt*flap; const f=Math.sin(st.fp);
