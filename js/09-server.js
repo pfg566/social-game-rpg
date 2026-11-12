@@ -398,6 +398,7 @@ async function grantRewards(r,fixedN){
       if (upd.mw) upd.coins-=EXPLORE_COINS; delete upd.mw; delete upd.mb; await withTimeout(profRef().update(upd),10000);
       box.insertAdjacentHTML('beforeend','<small class="warn">탐험 보너스와 모드 기록은 선생님이 보안 규칙을 새로 올린 뒤부터 저장돼요.</small>'); } };
   try{ await save(); PROFILE={...PROFILE,...upd,updatedAt:Date.now()}; refreshModeBadges(); renderProfileCard(); renderJobPick(); lastReward={xp,coins}; if (awoke.length){ SFX.wave(); }
+    if (typeof eggQuizBonus==='function') eggQuizBonus(r.correct|0,box);
     // 업적: 저장된 뒤의 기록으로 확인
     try{ const okN=LAST_PLAYC?PLAY_MODES.filter(m=>mapOK(LAST_PLAYC.u,m.map)).length:PLAY_MODES.length;
       achGrant(achCheck(PROFILE,{qsMax:W.qsMax|0,asked:r.asked|0,correct:r.correct|0,exploreAll:!!upd.mw&&String(upd.mw.m).split(',').length>=okN}),box); }catch(e){} }
