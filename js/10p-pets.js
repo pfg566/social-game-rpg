@@ -30,11 +30,24 @@ function pmat(hex,o){ const k=hex+'|'+JSON.stringify(o||{}); if (PMAT[k]) return
   else if (o&&o.slime) m=toonMat({color:hex,transparent:true,opacity:.78,rim:.7});
   else if (o&&o.glow) m=toonMat({color:hex,emissive:c.clone(),emissiveIntensity:o.glow,rim:.6});
   else if (o&&o.side) m=toonMat({color:hex,side:THREE.DoubleSide,rim:.3});
-  else m=toonMat({color:hex,rim:.35});
+  else m=toonMat({color:hex,rim:.12});
+  if (!(o&&o.basic)) petNoGlow(m);
   return PMAT[k]=m; }
+/* 펫만 빛 번짐(블룸)에서 빼기: 펫 색이 '번지기 시작하는 밝기'를 넘지 않게 살짝 눌러요.
+   맵의 반짝이는 느낌은 그대로 두고, 하얀 펫만 형체가 또렷하게 보여요 */
+const PET_CAP={value:10};
+function petNoGlow(m){ const prev=m.onBeforeCompile, key=m.customProgramCacheKey?m.customProgramCacheKey():'';
+  m.onBeforeCompile=(sh,r)=>{ if (prev) prev(sh,r); sh.uniforms.uPetCap=PET_CAP;
+    sh.fragmentShader='uniform float uPetCap;\n'+sh.fragmentShader.replace('#include <dithering_fragment>','gl_FragColor.rgb=min(gl_FragColor.rgb,vec3(uPetCap));\n#include <dithering_fragment>'); };
+  m.customProgramCacheKey=()=>key+'|petcap'; }
 function pPart(par,geo,col,pos,scl,rot,o){ const m=new THREE.Mesh(geo,pmat(col,o)); m.position.set(pos[0],pos[1],pos[2]);
   if (typeof scl==='number') m.scale.setScalar(scl); else m.scale.set(scl[0],scl[1],scl[2]);
-  if (rot) m.rotation.set(rot[0],rot[1],rot[2]); m.castShadow=!(o&&o.noShadow); m.userData.noFlash=true; m.frustumCulled=false; par.add(m); return m; }
+  if (rot) m.rotation.set(rot[0],rot[1],rot[2]); m.castShadow=!(o&&o.noShadow); m.userData.noFlash=true; m.frustumCulled=false; par.add(m);
+  // 테두리 선: 하얀 펫도 배경에 묻히지 않게 (작은 눈 · 볼 · 반짝이는 빼요)
+  if (!(o&&(o.noShadow||o.basic||o.slime||o.noLine))){ const ol=new THREE.Mesh(geo,petLineMat()); ol.scale.setScalar(1.08); ol.userData.noFlash=true; ol.frustumCulled=false; m.add(ol); }
+  return m; }
+let PET_LINE=null;
+function petLineMat(){ return PET_LINE||(PET_LINE=new THREE.MeshBasicMaterial({color:0x4a3b46,side:THREE.BackSide})); }
 function pGroup(par,pos,rot){ const g=new THREE.Group(); g.position.set(pos[0],pos[1],pos[2]); if (rot) g.rotation.set(rot[0],rot[1],rot[2]); par.add(g); return g; }
 /* 눈: 까만 눈 + 하얀 반짝이. 눈 감기는 scale.y 로 해요 */
 function pEye(R,par,x,y,z,r,col){ const g=pGroup(par,[x,y,z]);
@@ -54,7 +67,7 @@ function tubeGeo(key,pts,r0,r1){ return pgeo(key,()=>{ const c=new THREE.Catmull
 /* ---------- 펫마다 만들기 (앞 = +z, 바닥 = y 0, 키 약 0.6) ---------- */
 function newRig(){ const R={g:new THREE.Group(),eyes:[],legs:[],ears:[],wings:[],tail:null,head:null}; R.bob=pGroup(R.g,[0,0,0]); R.body=pGroup(R.bob,[0,0,0]); return R; }
 const PET_BUILD={
-  dog(R){ const B=R.body, C=0xdca066, D=0x8a5a34, W=0xfff4e2;
+  dog(R){ const B=R.body, C=0xdca066, D=0x8a5a34, W=0xf3e7d4;
     pPart(B,gSph(),C,[0,.3,-.02],[.24,.22,.31]); pPart(B,gSph(),W,[0,.27,.15],[.16,.15,.15]);
     pLeg(R,B,.12,.2,.16,C,.07,.12,W); pLeg(R,B,-.12,.2,.16,C,.07,.12,W); pLeg(R,B,.12,.2,-.18,C,.075,.12,W); pLeg(R,B,-.12,.2,-.18,C,.075,.12,W);
     const H=R.head=pGroup(B,[0,.53,.22]);
@@ -65,7 +78,7 @@ const PET_BUILD={
     [1,-1].forEach(s=>{ const e=pGroup(H,[.19*s,.08,-.01],[0,0,.35*s]); pPart(e,gSph(),D,[0,-.11,0],[.065,.14,.1]); R.ears.push(e); });
     const T=R.tail=pGroup(B,[0,.38,-.3],[-.9,0,0]); pPart(T,gSph(),C,[0,.1,0],[.045,.12,.045]); pPart(T,gSph(),W,[0,.21,0],.04);
   },
-  cat(R){ const B=R.body, C=0xf3a557, S=0xd9822f, W=0xfff6ea;
+  cat(R){ const B=R.body, C=0xf3a557, S=0xd9822f, W=0xf3e8d8;
     pPart(B,gSph(),C,[0,.29,-.02],[.21,.2,.3]); pPart(B,gSph(),W,[0,.26,.14],[.14,.14,.13]);
     pPart(B,gSph(),S,[0,.44,-.05],[.1,.04,.18]);
     pLeg(R,B,.1,.2,.15,C,.06,.12,W); pLeg(R,B,-.1,.2,.15,C,.06,.12,W); pLeg(R,B,.1,.2,-.17,C,.065,.12,W); pLeg(R,B,-.1,.2,-.17,C,.065,.12,W);
@@ -80,13 +93,13 @@ const PET_BUILD={
     const T=R.tail=pGroup(B,[0,.33,-.3]); pPart(T,tubeGeo('cattail',[[0,0,0],[0,.08,-.1],[0,.22,-.14],[0,.36,-.08],[0,.42,.02]],.045,.03),C,[0,0,0],1);
     pPart(T,gSph(),W,[0,.42,.02],.035);
   },
-  rabbit(R){ const B=R.body, C=0xece6df, P=0xffb6c6;
+  rabbit(R){ const B=R.body, C=0xe0d6cb, P=0xffb0c2;
     pPart(B,gSph(),C,[0,.27,-.04],[.23,.22,.25]);
     pPart(B,gSph(),C,[0,.27,-.29],.08);
     [1,-1].forEach(s=>pPart(B,gSph(),C,[.14*s,.06,-.06],[.07,.05,.14]));
     pLeg(R,B,.08,.15,.13,C,.05,.07); pLeg(R,B,-.08,.15,.13,C,.05,.07);
     const H=R.head=pGroup(B,[0,.5,.14]);
-    pPart(H,gSph(),C,[0,0,0],[.21,.19,.19]); pPart(H,gSph(),0xf8f4ef,[0,-.06,.13],[.1,.07,.08]);
+    pPart(H,gSph(),C,[0,0,0],[.21,.19,.19]); pPart(H,gSph(),0xf1e9e0,[0,-.06,.13],[.1,.07,.08]);
     pPart(H,gSph(),P,[0,-.025,.19],[.03,.022,.02]);
     pEye(R,H,.085,.03,.16,.045,0xc23a5a); pEye(R,H,-.085,.03,.16,.045,0xc23a5a); pCheek(H,.13,-.05,.12,.04); pCheek(H,-.13,-.05,.12,.04);
     [1,-1].forEach(s=>{ const e=pGroup(H,[.07*s,.15,-.02],[-.12,0,-.12*s]); pPart(e,gSph(),C,[0,.18,0],[.055,.19,.04]); pPart(e,gSph(),P,[0,.18,.022],[.032,.15,.02],null,{noShadow:true}); R.ears.push(e); });
@@ -100,17 +113,17 @@ const PET_BUILD={
     pEye(R,H,.1,.02,.02,.05); pEye(R,H,-.1,.02,.02,.05); pCheek(H,.17,-.05,0,.04); pCheek(H,-.17,-.05,0,.04);
     pPart(H,gSph(),0x1d4a2c,[0,-.06,.04],[.035,.02,.01],null,{noShadow:true});
   },
-  penguin(R){ const B=R.body, K=0x2d3550, W=0xffffff, O=0xffa531;
+  penguin(R){ const B=R.body, K=0x2d3550, W=0xf1eee6, O=0xffa531;
     pPart(B,gSph(),K,[0,.32,0],[.23,.31,.22]); pPart(B,gSph(),W,[0,.29,.1],[.18,.25,.14]);
     [1,-1].forEach(s=>pPart(B,gSph(),O,[.08*s,.025,.08],[.07,.028,.1]));
     [1,-1].forEach(s=>{ const f=pGroup(B,[.22*s,.42,0],[0,0,.25*s]); pPart(f,gSph(),K,[0,-.12,0],[.045,.15,.09]); R.wings.push(f); });
     const H=R.head=pGroup(B,[0,.5,.02]);
-    pPart(H,gSph(),W,[.07,.02,.14],[.07,.07,.05]); pPart(H,gSph(),W,[-.07,.02,.14],[.07,.07,.05]);
+    pPart(H,gSph(),W,[.07,.02,.14],[.07,.07,.05],null,{noLine:true}); pPart(H,gSph(),W,[-.07,.02,.14],[.07,.07,.05],null,{noLine:true});
     pEye(R,H,.065,.025,.18,.032); pEye(R,H,-.065,.025,.18,.032);
     pPart(H,gCone(),O,[0,-.04,.24],[.04,.08,.03],[Math.PI/2,0,0]);
     pCheek(H,.12,-.04,.16,.03); pCheek(H,-.12,-.04,.16,.03);
   },
-  bear(R){ const B=R.body, C=0xe6e0d4, M=0xf6f1e8, N=0x2a2626;
+  bear(R){ const B=R.body, C=0xdbd2c4, M=0xece4d6, N=0x2a2626;
     pPart(B,gSph(),C,[0,.31,-.02],[.27,.24,.32]);
     pLeg(R,B,.13,.2,.16,C,.085,.12,M); pLeg(R,B,-.13,.2,.16,C,.085,.12,M); pLeg(R,B,.13,.2,-.17,C,.09,.12,M); pLeg(R,B,-.13,.2,-.17,C,.09,.12,M);
     pPart(B,gSph(),C,[0,.34,-.33],.055);
@@ -189,6 +202,7 @@ const PV=new THREE.Vector3(), PQ=new THREE.Quaternion(), PS=new THREE.Vector3(),
 const angLerp=(a,b,t)=>{ let d=((b-a+Math.PI)%(Math.PI*2)+Math.PI*2)%(Math.PI*2)-Math.PI; return a+d*t; };
 const damp=(a,b,k,dt)=>a+(b-a)*Math.min(1,k*dt);
 function petsTick(){
+  PET_CAP.value=(typeof bloom!=='undefined'&&bloom&&bloom.enabled&&typeof composer!=='undefined'&&composer)?Math.max(.3,bloom.threshold-.03):10;
   const now=performance.now()/1000, dt=PET_LAST?Math.min(.1,now-PET_LAST):0; PET_LAST=now;
   for (let i=PETS.length-1;i>=0;i--){ const p=PETS[i]; if (!p.R.g.parent){ PETS.splice(i,1); continue; } if (!p.ch.root.parent) continue;
     try{ petUpdate(p,dt,now); }catch(e){} }
