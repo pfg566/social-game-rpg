@@ -4,7 +4,7 @@
 const ACH=[
   {k:'first',   icon:'🌱',title:'새싹 탐구자', desc:'첫 판 끝내기',                         goal:1,   val:P=>P.plays|0},
   {k:'q100',    icon:'✏️',title:'문제 사냥꾼', desc:'문제 100개 맞히기 (모든 판을 더해요)',  goal:100, val:P=>P.correct|0},
-  {k:'q500',    icon:'📖',title:'지식 수집가', desc:'문제 500개 맞히기',                     goal:500, val:P=>P.correct|0},
+  {k:'q500',    icon:'📖',title:'지식 수집가', desc:'문제 500개 맞히기',                     goal:500, val:P=>P.correct|0, reward:'xpgowl_p0'},
   {k:'q1000',   icon:'🎓',title:'사회 박사',   desc:'문제 1000개 맞히기',                    goal:1000,val:P=>P.correct|0, reward:'xhdoc_p0'},
   {k:'fix30',   icon:'🔁',title:'오답 정복자', desc:'틀렸던 문제 30개 다시 맞히기',          goal:30,  val:P=>P.fixed|0,   reward:'xtphx_p0'},
   {k:'streak10',icon:'🔥',title:'불꽃 연속왕', desc:'한 판에서 10연속 정답',                 game:true, reward:'xhfire_p0'},
