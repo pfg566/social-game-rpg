@@ -143,7 +143,7 @@ function endGame(win){
 }
 $('#startBtn').addEventListener('click',tryStart);
 $('#nick').addEventListener('input',()=>{ $('#nickErr').hidden=true; });
-$('#homeBtn').addEventListener('click',()=>{ $('#end').hidden=true; showAuthUI(); ['#hud','#hint','#touch','#skillbar'].forEach(s=>$(s).hidden=true); W.state='title'; renderHistory(); $('#title').hidden=false; $('#nick').focus(); });
+$('#homeBtn').addEventListener('click',()=>{ $('#end').hidden=true; showAuthUI(); ['#hud','#hint','#touch','#skillbar'].forEach(s=>$(s).hidden=true); W.state='title'; renderHistory(); $('#title').hidden=false; try{ applyPlay(); }catch(e){} $('#nick').focus(); });
 let lastResult=null;
 $('#copyBtn').addEventListener('click',()=>{
   if (!lastResult) return;
@@ -191,7 +191,7 @@ function useUnit(id){
   const u=DATA.units.find(x=>x.id===id&&isReady(x)) || DATA.units.find(x=>x.id===DATA.active) || DATA.units[0];
   playUnit=u.id; applyBank(u.bank); applyZoneCfg(zcfgOf(u));
   $('#unitEyebrow').innerHTML=`${esc(u.name)}<span class="mapname">${MAPS[mapOf(u)].name}</span>`;
-  if (W.state!=='play') setMap(mapOf(u));
+  lobbyBg();
   updateBankInfo();
 }
 function setMap(k){
@@ -204,11 +204,19 @@ function setMap(k){
   colliders=MAPSTATE[k].colliders; stations=MAPSTATE[k].stations; npcs=MAPSTATE[k].npcs;
   WAVES=wavesFor(k==='zones'?(MAPS.zones.waves||'zones'):k);
   const M=MAPS[k];
+  setMapInfo(W.state!=='play'&&PLAYMAP&&MAPS[PLAYMAP]?PLAYMAP:k);
+  if (W.state!=='play'){ P.x=M.start[0]; P.z=M.start[1]; }
+}
+/* 로비(캐릭터 고르는 화면) 뒷배경은 늘 같은 맵으로 두고, 고른 모드의 설명만 바꿔요
+   (예전엔 모드를 누를 때마다 뒷배경 맵이 바뀌어서, 러너·발판처럼 땅이 없는 맵에서는 캐릭터가 허공에 떠 보였어요) */
+const LOBBY_MAP='general';
+function lobbyBg(){ if (W.state!=='play' && MAPK!==LOBBY_MAP) setMap(LOBBY_MAP); }
+function setMapInfo(k){
+  const M=MAPS[k]; if (!M) return;
   $('#mapDesc').textContent=M.desc; $('#mapZones').hidden=k!=='zones';
   $('#mapRules').innerHTML=M.rules.concat(['<b>조작:</b> 스페이스 연타 = 3단 콤보(마지막 타가 가장 세요) · Shift = 구르기(잠깐 무적) · E = 회전 베기(8초마다)']).map(r=>`<li>${r}</li>`).join('');
   $('#gateCard').textContent=M.gateText;
-  $('#bossName').textContent=WAVES[WAVES.length-1].name;
-  if (W.state!=='play'){ P.x=M.start[0]; P.z=M.start[1]; }
+  try{ const wv=wavesFor(k==='zones'?(MAPS.zones.waves||'zones'):k); $('#bossName').textContent=wv[wv.length-1].name; }catch(e){}
 }
 let FREE_PLAY=false, PLAYMAP=null, PICK={};
 try{ PICK=JSON.parse(localStorage.getItem('gsd-pick')||'{}')||{}; }catch(e){ PICK={}; }
@@ -256,7 +264,7 @@ function applyPlay(){
   const c=playChoice(); if (!c.u) return;
   if (c.u.id!==playUnit) useUnit(c.u.id);
   PEACE=!!c.mode.peace;
-  PLAYMAP=c.m; if (W.state!=='play' && MAPK!==c.m) setMap(c.m);
+  PLAYMAP=c.m; lobbyBg(); if (W.state!=='play') setMapInfo(c.m);
   $('#unitEyebrow').innerHTML=`${esc(c.u.name)}<span class="mapname">${c.mode.peace?c.mode.name:MAPS[c.m].name}</span>`;
   LAST_PLAYC=c; renderUnitPicker(c); renderPlayModes(c); updateBankInfo(); refreshStyle();
 }
@@ -276,10 +284,11 @@ $('#playModes').addEventListener('click',e=>{ const b=e.target.closest('[data-gm
   const md=modeById(MODE_PICK); PICK.map=md.map; try{ localStorage.setItem('gsd-pick',JSON.stringify(PICK)); }catch(_){}
   applyPlay(); });
 function refreshStyle(){
-  const on=PEACE_MAPS.includes(MAPK)&&PEACE, M=MAPS[MAPK], T=PEACE_TXT[MAPK];
+  const K=W.state!=='play'&&PLAYMAP&&MAPS[PLAYMAP]?PLAYMAP:MAPK;   // 로비에서는 뒷배경 맵이 아니라 고른 모드 기준
+  const on=PEACE_MAPS.includes(K)&&PEACE, M=MAPS[K], T=PEACE_TXT[K];
   $('#stylePick').hidden=true;
   $('#mapDesc').textContent=on?T.desc:M.desc;
-  $('#mapRules').innerHTML=(on?T.rules:M.rules).concat([on?'<b>조작:</b> WASD 이동 · Shift 구르기(기사는 막기) · 공격 버튼은 쓰지 않아요':MAPK==='runner'?'':'<b>조작:</b> 스페이스 연타 = 3단 콤보(마지막 타가 가장 세요) · Shift = 구르기(잠깐 무적) · E = 회전 베기(8초마다)']).filter(Boolean).map(r=>`<li>${r}</li>`).join('');
+  $('#mapRules').innerHTML=(on?T.rules:M.rules).concat([on?'<b>조작:</b> WASD 이동 · Shift 구르기(기사는 막기) · 공격 버튼은 쓰지 않아요':K==='runner'?'':'<b>조작:</b> 스페이스 연타 = 3단 콤보(마지막 타가 가장 세요) · Shift = 구르기(잠깐 무적) · E = 회전 베기(8초마다)']).filter(Boolean).map(r=>`<li>${r}</li>`).join('');
 }
 $('#stylePick').addEventListener('click',e=>{ const b=e.target.closest('[data-style]'); if (!b) return; PEACE=b.dataset.style==='peace'; try{ localStorage.setItem('gsd-peace',PEACE?'1':'0'); }catch(_){} refreshStyle(); });
 function renderUnitPicker(c){
