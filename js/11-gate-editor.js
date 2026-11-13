@@ -257,6 +257,8 @@ function playChoice(){
     if (raw && raw.unit && byId(raw.unit) && isReady(byId(raw.unit))){ const u=byId(raw.unit); c={u,rec:mapOK(u,raw.map)?raw.map:mapOf(u),free:false,src:'gate'}; }
     else { const u=def(); c={u,rec:mapOf(u),free:false,src:'default'}; } }
   let md=modeById(MODE_PICK); if (!md||!c.u||!mapOK(c.u,md.map)) md=modeById(c.rec)||PLAY_MODES[1];
+  // 선생님이 '🔒 이 모드만'으로 열었으면 그 모드만 할 수 있어요 (나머지는 잠김)
+  if (!isAdmin){ const g=activeGate(), raw=g&&GATE[g.key], lm=raw&&raw.mode&&modeById(raw.mode); if (lm && c.u && mapOK(c.u,lm.map)){ md=lm; c.lock=lm.id; } }
   c.mode=md; c.m=md.map; return c;
 }
 function applyPlay(){
@@ -270,13 +272,15 @@ function applyPlay(){
 }
 function renderPlayModes(c){
   const stu=!!(STUDENT&&PROFILE), ex=stu?exploredModes():[], mb=stu&&PROFILE.mb||{};
-  const card=md=>{ const ok=mapOK(c.u,md.map), on=md===c.mode, rec=md.map===c.rec&&!md.peace, fresh=stu&&ok&&!ex.includes(md.id), best=+mb[md.id]||0;
-    return `<button type="button" class="pm-btn${on?' on':''}${fresh?' fresh':''}" data-gmode="${md.id}" aria-pressed="${on}"${ok?'':' disabled title="이 단원에는 이 모드에 필요한 문제가 없어요"'}>${fresh?`<em class="pm-gift" title="이번 주 처음 하는 모드예요. 문제를 ${EXPLORE_MIN_Q}개 이상 풀면 코인 +${EXPLORE_COINS}">🎁+${EXPLORE_COINS}</em>`:''}<i>${md.icon}</i><span><b>${md.name}${rec?' <em>⭐ 추천</em>':''}</b><small>${md.sub}</small>${best?`<small class="pm-best">🏅 내 기록 ${best.toLocaleString('ko-KR')}</small>`:''}</span></button>`; };
+  const card=md=>{ const ok=mapOK(c.u,md.map)&&(!c.lock||md.id===c.lock), on=md===c.mode, rec=md.map===c.rec&&!md.peace, fresh=stu&&ok&&!ex.includes(md.id), best=+mb[md.id]||0;
+    return `<button type="button" class="pm-btn${on?' on':''}${fresh?' fresh':''}" data-gmode="${md.id}" aria-pressed="${on}"${ok?'':c.lock&&mapOK(c.u,md.map)?' disabled title="선생님이 오늘은 다른 모드로 정했어요"':' disabled title="이 단원에는 이 모드에 필요한 문제가 없어요"'}>${c.lock&&md.id!==c.lock&&mapOK(c.u,md.map)?'<em class="pm-lock">🔒</em>':''}${fresh?`<em class="pm-gift" title="이번 주 처음 하는 모드예요. 문제를 ${EXPLORE_MIN_Q}개 이상 풀면 코인 +${EXPLORE_COINS}">🎁+${EXPLORE_COINS}</em>`:''}<i>${md.icon}</i><span><b>${md.name}${rec?' <em>⭐ 추천</em>':''}</b><small>${md.sub}</small>${best?`<small class="pm-best">🏅 내 기록 ${best.toLocaleString('ko-KR')}</small>`:''}</span></button>`; };
   const vis=PLAY_MODES.filter(m=>m.side!=='battle'||mapOK(c.u,m.map)||m.map!=='zones');
   $('#pmBattle').innerHTML=vis.filter(m=>m.side==='battle').map(card).join('');
   $('#pmPeace').innerHTML=vis.filter(m=>m.side==='peace').map(card).join('');
   const okModes=vis.filter(m=>mapOK(c.u,m.map)), done=okModes.filter(m=>ex.includes(m.id)).length, pe=$('#pmExplore');
   pe.hidden=!stu;
+  let ln=$('#pmLockNote'); if (!ln){ ln=document.createElement('div'); ln.id='pmLockNote'; ln.className='pm-locknote'; pe.parentNode.insertBefore(ln,pe); }
+  ln.hidden=!c.lock; if (c.lock) ln.innerHTML=`🔒 오늘은 선생님이 <b>${esc(c.mode.icon+' '+c.mode.name)}</b> 모드로 정했어요. 다른 모드는 잠겨 있어요.`;
   if (stu) pe.innerHTML=done>=okModes.length?`🧭 이번 주 탐험 완료 <b>${done}/${okModes.length}</b> · 월요일에 🎁가 다시 생겨요`:`🧭 이번 주 탐험 <b>${done}/${okModes.length}</b> · 🎁 모드 처음 하면 <b>+${EXPLORE_COINS}코인</b> <small>(문제 ${EXPLORE_MIN_Q}개↑)</small>`;
 }
 $('#playModes').addEventListener('click',e=>{ const b=e.target.closest('[data-gmode]'); if (!b||b.disabled||W.state==='play') return;

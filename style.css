@@ -765,3 +765,7 @@ img,canvas,svg{-webkit-user-drag:none;user-drag:none}
 .eh-pet b{position:relative;font-size:26px;text-shadow:0 2px 0 #2b2350}.eh-pet small{position:relative;max-width:300px;line-height:1.4;opacity:.9}
 .eh-rk{position:relative;padding:2px 12px;border-radius:999px;font-weight:800;font-size:13px;border:2px solid #fff}
 .eh-btns{position:relative;display:flex;gap:8px;margin-top:6px}
+/* 선생님이 '🔒 이 모드만'으로 열었을 때 */
+.pm-btn .pm-lock{position:absolute;top:-6px;right:-4px;font-style:normal;font-size:13px}
+.pm-locknote{margin:6px 0 2px;padding:6px 9px;border-radius:9px;background:#fff4d6;border:1.5px solid #e8b44a;font-size:12.5px;line-height:1.35;color:#5a4410}
+.pm-locknote[hidden]{display:none}
