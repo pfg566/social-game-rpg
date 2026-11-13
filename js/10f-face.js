@@ -70,7 +70,24 @@ function eyeInfo(geo){
   g2.computeBoundingSphere(); g2.userData.eyeInfo=null;
   return geo.userData.eyeInfo={L:cl,R:cr,noEye:g2};
 }
-/* 눈 판 모양: 머리 앞면 곡면에 맞춰 살짝 휘어요 (크기마다 하나씩 만들어 둬요) */
+/* 눈 판 모양: 얼굴 표면에 딱 붙는 '스티커' (머리 모양에 앞에서 광선을 쏴서 맞는 자리에 점을 놓아요)
+   머리 모양마다 한 번만 만들어 두고 같은 직업 캐릭터끼리 함께 써요 */
+const FACE_DECAL={};
+function faceDecal(geo,cx,cy,w){ const key=geo.uuid+'|'+w.toFixed(3); if (FACE_DECAL[key]) return FACE_DECAL[key];
+  const h=w/2, NX=24, NY=12, probe=new THREE.Mesh(geo,new THREE.MeshBasicMaterial({side:THREE.DoubleSide})), ray=new THREE.Raycaster(), dir=new THREE.Vector3(0,0,-1);
+  geo.computeBoundingBox(); const zTop=geo.boundingBox.max.z+1;
+  const g=new THREE.PlaneGeometry(w,h,NX,NY), p=g.attributes.position, hit=[];
+  for (let i=0;i<p.count;i++){ const x=cx+p.getX(i), y=cy+p.getY(i);
+    ray.set(new THREE.Vector3(x,y,zTop),dir); const r=ray.intersectObject(probe,false)[0];
+    hit.push(r?r.point.z:null); p.setX(i,x); p.setY(i,y); }
+  // 광선이 빗나간 가장자리 점은 가까운 점 높이를 빌려요
+  const ok=hit.filter(z=>z!=null), zMin=ok.length?Math.min(...ok):0;
+  for (let i=0;i<p.count;i++){ let z=hit[i];
+    if (z==null){ const r=Math.floor(i/(NX+1)), c=i%(NX+1); let best=null,bd=1e9; for (let j=0;j<p.count;j++){ if (hit[j]==null) continue; const d=Math.abs(Math.floor(j/(NX+1))-r)+Math.abs(j%(NX+1)-c); if (d<bd){ bd=d; best=hit[j]; } } z=best==null?zMin:best; }
+    p.setZ(i,z+.006); }                     // 표면에서 아주 살짝만 띄워요(겹쳐서 깜빡이지 않게)
+  p.needsUpdate=true; g.computeVertexNormals(); g.computeBoundingSphere();
+  return FACE_DECAL[key]=g; }
+/* (예전 방식: 얼굴 앞에 휜 판) */
 const FACE_GEO={};
 function faceGeo(w){ const k=w.toFixed(3); if (FACE_GEO[k]) return FACE_GEO[k];
   const g=new THREE.PlaneGeometry(w,w/2,12,1), p=g.attributes.position; const curve=.9*.72/w;
@@ -84,10 +101,10 @@ function attachFace(ch,head,face,col){
   head.userData.geo0=geo0; head.geometry=E.noEye;
   const sk=head.skeleton, bi=sk.bones.findIndex(b=>/^head$/i.test(b.name)); if (bi<0) return null;
   const bone=sk.bones[bi];
-  const sep=E.R.x-E.L.x, w=sep/.55, cx=(E.L.x+E.R.x)/2, cy=(E.L.y+E.R.y)/2, cz=Math.max(E.L.zm,E.R.zm)+.105*(w/.72);
-  face=face||'base'; const mesh=new THREE.Mesh(faceGeo(w),faceMat(face,col));
+  const sep=E.R.x-E.L.x, w=sep/.55, cx=(E.L.x+E.R.x)/2, cy=(E.L.y+E.R.y)/2;
+  face=face||'base'; const mesh=new THREE.Mesh(faceDecal(E.noEye,cx,cy-.012,w),faceMat(face,col));
   // 머리 모양 기준 자리 → 머리 뼈 기준 자리 (처음 자세 기준이라, 어떤 동작 중이어도 정확해요)
-  const M=new THREE.Matrix4().copy(sk.boneInverses[bi]).multiply(head.bindMatrix).multiply(new THREE.Matrix4().makeTranslation(cx,cy-.012,cz));
+  const M=new THREE.Matrix4().copy(sk.boneInverses[bi]).multiply(head.bindMatrix);
   mesh.matrixAutoUpdate=false; mesh.matrix.copy(M);
   mesh.renderOrder=3; mesh.frustumCulled=false; mesh.userData.noFlash=true; mesh.castShadow=false;
   bone.add(mesh);
