@@ -3,7 +3,7 @@
 /* ---------- 직업: 기사 · 궁수 · 마법사 ---------- */
 // 퀴즈를 대하는 방식이 직업마다 달라요. 기사는 틀려도 버티고, 궁수는 연달아 맞히면 강해지고, 마법사는 많이 풀수록 강해져요.
 const JOBS={
-  knight:{name:'기사',hp:150,spd:1,   dodgeCd:1.2,skillCd:6,ultName:'대검 회오리',dodgeName:'막기',skillName:'돌진 베기',
+  knight:{name:'기사',hp:135,spd:1,   dodgeCd:1.2,skillCd:6,ultName:'대검 회오리',dodgeName:'막기',skillName:'돌진 베기',
           hint:'WASD 이동 · 클릭 또는 스페이스 3단 베기 · Shift 막기(정면 피해 80% 감소, 반격) · E 돌진 베기 · Q 필살기(퀴즈 3문제)'},
   archer:{name:'궁수',hp:75, spd:1.1, dodgeCd:.7, skillCd:6,ultName:'화살비',dodgeName:'구르기',skillName:'세 갈래',
           hint:'WASD 이동 · 방향키 누르면 그쪽으로 연사 (마우스 클릭도 OK) · Shift 구르기 · E 세 갈래 · Q 필살기'},
@@ -36,9 +36,9 @@ function jobLook(){ return jobLookFor(JOB); }
 
 /* 마우스 조준 (PC): 커서가 가리키는 땅 쪽으로 쏴요. 커서 방향 앞 20도 안의 적에게는 살짝 휘어서 맞아요 */
 const MOUSE={x:0,y:0,on:false,held:false}, aimRay=new THREE.Raycaster(), aimPlane=new THREE.Plane(new THREE.Vector3(0,1,0),0), aimHit=new THREE.Vector3();
-const ARROW_MISS=.25;
+const ARROW_MISS=.15;   // 밸런스: 25% → 15%
 const MAGE_MOUSE_ASSIST=Math.cos(80*Math.PI/180);   // 마법사: 마우스 쪽 80도(거의 앞쪽 반원) 안의 적을 알아서 맞혀요
-const MAGE_SHOTS=3, MAGE_DMG=13, MAGE_DMG_BIG=22, MAGE_SEEK=10;   // 한 번에 구슬 3개 · 대신 한 발 피해는 크게 줄였어요(예전 32)   // 궁수 화살은 4발 중 1발꼴로 빗나가요 (모든 모드 같음)
+const MAGE_SHOTS=3, MAGE_DMG=13, MAGE_DMG_BIG=22, MAGE_SEEK=10;   // 한 번에 구슬 3개 · 대신 한 발 피해는 크게 줄였어요(예전 32)   // 궁수 화살은 7발 중 1발꼴로 빗나가요 (모든 모드 같음)
 const AIM_ASSIST=Math.cos(10*Math.PI/180), ARROW_RANGE=11, ORB_RANGE=9, MAGE_AIM=8;
 function mouseAimDir(){
   if (!MOUSE.on) return null;
@@ -257,10 +257,10 @@ function jobAttack(){
   P.buffer=false; P.lastAtk=W.t;
   if (JOB==='archer'){
     P.atkCd=.55; archerAim(ARROW_RANGE); const ang=Math.atan2(P.fx,P.fz);   // 연사 너프: 0.3초 → 0.55초 (클릭을 빨리 눌러도 이 간격보다 빨리 안 나가요)
-    knightAttackAnim('shoot',3.4); SFX.zap(); shootArrow(ang,{dmg:26});
+    knightAttackAnim('shoot',3.4); SFX.zap(); shootArrow(ang,{dmg:28});   // 밸런스: 26 → 28
   } else {
     P.atkCd=.8; P.castT=.3; const big=W.orbBoost>0; if (big) W.orbBoost--;
-    let tg=mageTargets(MAGE_SHOTS); if (tg.length===1) tg=[tg[0],tg[0]];   // 적이 하나뿐이면 구슬 2개가 그 적에게 가요 (보스전이 너무 약해지지 않게)
+    let tg=mageTargets(MAGE_SHOTS); if (tg.length===1) tg=[tg[0],tg[0],tg[0]]; else if (tg.length===2) tg=[tg[0],tg[1],tg[0]];   // 적이 적으면 구슬 3개가 모두 그 적들에게 가요 (보스전이 덜 답답하게)
     if (tg.length){ const f=tg[0], fd=Math.hypot(f.x-P.x,f.z-P.z)||1; P.fx=(f.x-P.x)/fd; P.fz=(f.z-P.z)/fd;   // 가장 가까운 목표 쪽을 보고
       tg.forEach((m,i)=>{ const a=Math.atan2(m.x-P.x,m.z-P.z)+(i?(i%2?.35:-.35):0); castOrb(a,m,big); }); }   // 구슬이 살짝 퍼졌다가 각자 목표로 휘어 날아가요
     else { if (mouseAiming()){ const d=mouseAimDir(); if (d){ P.fx=d.x; P.fz=d.z; } } castOrb(Math.atan2(P.fx,P.fz),null,big); }

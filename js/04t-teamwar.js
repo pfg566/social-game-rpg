@@ -9,10 +9,10 @@ const TW_BASES=[{x:-17,z:-17},{x:17,z:-17},{x:17,z:17},{x:-17,z:17}], TW_BASE_R=
 const TW_COL=['#e5484d','#3b82f6','#22a35a','#e8a400'], TW_NAME=['빨강 조','파랑 조','초록 조','노랑 조'], TW_EMO=['🔴','🔵','🟢','🟡'];
 const TW_ITEMS={hammer:{e:'🔨',n:'거대 망치'},shoes:{e:'👟',n:'번개 신발'},bubble:{e:'🫧',n:'방패 거품'},tornado:{e:'🌪️',n:'회오리 폭탄'},banana:{e:'🍌',n:'바나나 함정'}};
 /* 직업 역할: 기사 = 거점 지킴이(잘 안 밀림) · 궁수 = 멀리서 약하게 견제 · 마법사 = 범위로 한꺼번에 날려 보내기 */
-const TW_JOB={knight:{cd:.5,scd:5,anim:'slashH',sanim:'stab'},archer:{cd:.85,scd:12,anim:'shoot',sanim:'shoot'},mage:{cd:.8,scd:5,anim:'cast',sanim:'spin'}};   // 궁수: 공속·세 갈래 화살 너프 · 마법사: 공속 조금 빠르게
-const TW_ARROW={spd:26,rng:10,p:2,g:5,miss:.25},   // 궁수 화살은 4발 중 1발꼴로 빗나가요(MISS)
+const TW_JOB={knight:{cd:.5,scd:5,anim:'slashH',sanim:'stab'},archer:{cd:.85,scd:8,anim:'shoot',sanim:'shoot'},mage:{cd:.8,scd:5,anim:'cast',sanim:'spin'}};   // 궁수: 공속·세 갈래 화살 너프 · 마법사: 공속 조금 빠르게
+const TW_ARROW={spd:26,rng:10,p:2,g:8,miss:.15},   // 밸런스: 게이지 5→8 · MISS 25%→15% (궁수 화살은 7발 중 1발꼴로 빗나가요)
      TW_MISS_FX=(x,z)=>fx.num(x,3.4,z,'MISS','#d6dde8',1.35);
-const TW_ORB={spd:22,rng:10,r:3.4,p:9,g:16,hit:1.15}, TW_KNIGHT_ARMOR=.7;
+const TW_ORB={spd:22,rng:10,r:2.6,p:9,g:12,hit:1.15}, TW_KNIGHT_ARMOR=.7;   // 밸런스: 마법 구슬 폭발 범위 3.4→2.6 · 게이지 16→12
 const TWC={cid:'',metaRef:null,meta:null,st:null,on:false,joining:false,team:-1,rp:{},refs:[],vx:0,vz:0,g:0,launch:0,lx:0,lz:0,fall:0,y:0,lastHit:null,cd:0,scd:0,item:'',hammer:false,fastT:0,bubbleT:0,slowT:0,slipT:0,boostT:0,
   dash:0,dashHit:{},an:0,ak:0,sendT:0,lastSent:'',traps:{},stats:{ko:0,items:0,out:0},endShown:false,joinAt:0,proj:[],reqT:0,ptV:[],baseV:[],itemV:{},trapV:{},pi:{},feedN:0};
 const twTeamBase=t=>TW_BASES[(TWC.meta&&TWC.meta.nt===2)?[0,2][t]||0:t]||TW_BASES[0];

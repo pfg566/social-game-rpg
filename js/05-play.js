@@ -305,7 +305,7 @@ function updateCombatFx(dt){
 const COMBO=[
   {a:'slashH',sp:2.6,dmg:30,cd:.30,r:2.7,kb:1,  stun:.22,trail:0},
   {a:'slashD',sp:2.6,dmg:30,cd:.30,r:2.7,kb:1,  stun:.22,trail:1},
-  {a:'chop',  sp:2.3,dmg:55,cd:.55,r:3.2,kb:2.1,stun:.45,trail:2,fin:true}
+  {a:'chop',  sp:2.3,dmg:45,cd:.55,r:3.2,kb:2.1,stun:.45,trail:2,fin:true}
 ];
 const CRIT_CHANCE=.12, CRIT_MULT=1.8, DODGE_CD=1.1, DODGE_TIME=.3, SPIN_CD=8, SPIN_DMG=26, SPIN_R=4.3, MOB_HP=1.3;
 let hitStop=0;
