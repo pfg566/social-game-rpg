@@ -187,7 +187,7 @@ const PET_BUILD={
     const T=R.tail=pGroup(B,[0,.3,-.28],[-.5,0,0]);
     pPart(T,gSph(),C,[0,.08,-.08],[.11,.12,.17],[.5,0,0]); pPart(T,gSph(),C,[0,.18,-.2],[.12,.12,.14],[.9,0,0]); pPart(T,gSph(),W,[0,.27,-.28],[.09,.1,.09]);
   },
-  /* 아기 용: 큰 머리 · 둥근 주둥이(콧구멍 없이) · 웃는 입 · 뒤로 휜 뿔 · 보라 날개 · 하트 꼬리 */
+  /* 아기 용: 큰 머리 · 둥근 주둥이(콧구멍 · 입 없이) · 뒤로 휜 뿔 · 보라 날개 · 하트 꼬리 */
   dragon(R){ const B=R.body, C=0x6fd0c4, Y=0xfff0cc, A=0xb79cf0, AD=0x8f74d6, H0=0xffe4a8;
     pPart(B,gSph(),C,[0,-.03,-.03],[.17,.18,.2]); pPart(B,gSph(),Y,[0,-.05,.08],[.12,.14,.1],null,{noLine:true});
     [1,-1].forEach(s=>pPart(B,gSph(),C,[.1*s,-.19,.05],[.055,.04,.07]));                 // 발
@@ -200,10 +200,6 @@ const PET_BUILD={
     const H=R.head=pGroup(B,[0,.21,.08]);
     pPart(H,gSph(),C,[0,0,0],[.21,.19,.19]);
     pPart(H,gSph(),C,[0,-.065,.1],[.13,.085,.1]);                                              // 둥근 주둥이(머리와 한 덩어리처럼)
-    pPart(H,gSph(),Y,[0,-.1,.12],[.09,.04,.07],null,{noLine:true});                            // 턱 아래 밝은 부분
-    const smile=pgeo('dsmile',()=>new THREE.TorusGeometry(.04,.007,6,14,Math.PI));
-    pPart(H,smile,0x3a2440,[0,-.07,.195],1,[0,0,Math.PI],{noShadow:true});                     // 웃는 입
-    pPart(H,gCone(),0xffffff,[.022,-.083,.19],[.009,.016,.008],[Math.PI,0,0],{noShadow:true});  // 작은 송곳니
     pEye(R,H,.088,.025,.15,.056,0x2a2350); pEye(R,H,-.088,.025,.15,.056,0x2a2350);
     R.eyes.forEach(e=>pPart(e,gSph(),0xffffff,[-.018*Math.sign(e.position.x),-.02,.03],.012,null,{basic:true,noShadow:true}));
     pCheek(H,.14,-.05,.12,.035); pCheek(H,-.14,-.05,.12,.035);

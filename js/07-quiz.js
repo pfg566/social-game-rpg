@@ -53,6 +53,7 @@ function correctText(item){
 /* 정답·오답 처리: 효과, 틀린 문제 기록, 보스 보호막, 웨이브 잠금 */
 function settle(ok,item,source){
   if (typeof petReact==='function') petReact(ok);
+  if (typeof faceQuiz==='function') faceQuiz(ok);
   W.asked++; if (ok){ W.correct++; (W.right||(W.right=new Set())).add(item.q); } W.lastFx=ok?'good':'bad';
   let entry=W.wrong.find(w=>w.item===item);
   if (entry){ entry.pending=false; if (ok) entry.fixed=true; }

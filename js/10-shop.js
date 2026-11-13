@@ -259,8 +259,11 @@ async function dressP2(ch,L){
     const m=x.clone(); m.bind(skelFor(ch,x.skeleton),x.bindMatrix); m.material=charMat(ch,tex); m.frustumCulled=false; m.castShadow=true; m.receiveShadow=true; host.add(m); ch.wardParts.push(m); }); };
   // 머리: 복면 도적 옷이나 사슴뿔 두건은 머리를 통째로 바꿔요
   const headSrc=OSRC[o.src].head?[o.src,oTex]:hat.head?[hat.head,hatTex]:null;
+  const nHead=ch.wardParts.length;
   if (headSrc) addSkin(srcMesh(headSrc[0],'Head'),headSrc[1]);
   else { ch.nativeHead.visible=true; ch.nativeHead.material=charMat(ch,oTex); }
+  // 눈: 원래 막대 눈 대신 반짝이는 그린 눈 (10f-face.js)
+  if (typeof attachFace==='function'){ const hm=headSrc?ch.wardParts.slice(nHead).find(m=>/Head/.test(m.name))||ch.wardParts[nHead]:ch.nativeHead; const fm=attachFace(ch,hm); if (fm) ch.wardParts.push(fm); }
   // 옷 · 망토
   OSRC[o.src].parts.forEach(p=>addSkin(srcMesh(o.src,p),oTex));
   if (cape.own && OSRC[o.src].cape) addSkin(srcMesh(o.src,OSRC[o.src].cape),oTex);
