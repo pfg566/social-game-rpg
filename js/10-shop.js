@@ -5,9 +5,9 @@
    옷: 기사(기사 · 바바리안) · 궁수(레인저 · 도적) · 마법사(마법사 · 드루이드). 색 버전은 옷 아이템으로 따로 있어요.
    머리색 아이템은 머리카락만 바꿔요(옷 · 무기는 그대로). */
 const JOB_LIST=['knight','archer','mage'];
-const JOB_SLOTS={knight:['outfit','hat','cape','weapon','shield','hair','trail','pet'],archer:['outfit','hat','cape','weapon','hair','trail','pet'],mage:['outfit','hat','cape','weapon','shield','hair','trail','pet']};
-const SLOTS=['outfit','hat','cape','weapon','shield','hair','trail','pet'];
-const SLOT_INFO={outfit:{label:'옷',icon:'👕'},hat:{label:'모자',icon:'⛑️'},cape:{label:'망토',icon:'🧣'},weapon:{label:'무기',icon:'⚔️'},shield:{label:'왼손',icon:'🛡️'},hair:{label:'머리색',icon:'💇'},trail:{label:'칼 궤적',icon:'✨'},pet:{label:'펫',icon:'🐾'}};
+const JOB_SLOTS={knight:['outfit','hat','cape','weapon','shield','hair','eyes','eyecol','trail','pet'],archer:['outfit','hat','cape','weapon','hair','eyes','eyecol','trail','pet'],mage:['outfit','hat','cape','weapon','shield','hair','eyes','eyecol','trail','pet']};
+const SLOTS=['outfit','hat','cape','weapon','shield','hair','eyes','eyecol','trail','pet'];
+const SLOT_INFO={outfit:{label:'옷',icon:'👕'},hat:{label:'모자',icon:'⛑️'},cape:{label:'망토',icon:'🧣'},weapon:{label:'무기',icon:'⚔️'},shield:{label:'왼손',icon:'🛡️'},hair:{label:'머리색',icon:'💇'},trail:{label:'칼 궤적',icon:'✨'},pet:{label:'펫',icon:'🐾'},eyes:{label:'표정',icon:'😊'},eyecol:{label:'눈 색',icon:'👁️'}};
 const TRAIL_LABEL={knight:'칼 궤적',archer:'화살 꼬리',mage:'구슬 꼬리'};
 const slotLabel=(job,s)=>s==='trail'?TRAIL_LABEL[job]||SLOT_INFO.trail.label:SLOT_INFO[s].label;
 const JOB_NAME={knight:'🛡️ 기사',archer:'🏹 궁수',mage:'🔮 마법사'};
@@ -131,6 +131,29 @@ const CATALOG=[
   {id:'wice_p2000',job:'all',slot:'cape',name:'얼음 결정 날개',wing:'crystal',desc:'빛나는 얼음 조각 날개 · 반짝이가 떠다녀요'},
   {id:'wphx_p2500',job:'all',slot:'cape',name:'불사조 날개',wing:'phoenix',desc:'스스로 빛나는 불꽃 깃털 · 불씨가 피어올라요'},
   {id:'noshield_p0',job:'all',slot:'shield',name:'빈손'},
+  /* ===== 표정 (세 직업 모두 · 한 번 사면 세 직업 다 써요 · 고른 표정이 늘 그 얼굴이 돼요 · 입은 그대로) ===== */
+  {id:'eyenone_p0',job:'all',slot:'eyes',name:'기본 눈',ico:'😐',desc:'캐릭터의 원래 눈'},
+  {id:'fbase_p600',job:'all',slot:'eyes',face:'base',name:'반짝 눈',ico:'🙂',desc:'반짝임이 들어간 동그란 눈 · 가끔 깜빡여요'},
+  {id:'fhappy_p600',job:'all',slot:'eyes',face:'happy',name:'웃는 눈 ^^',ico:'😊',desc:'늘 싱글벙글 웃는 눈'},
+  {id:'fsleepy_p600',job:'all',slot:'eyes',face:'sleepy',name:'졸린 눈',ico:'😪',desc:'꾸벅꾸벅 졸린 눈'},
+  {id:'fdot_p600',job:'all',slot:'eyes',face:'dot',name:'점 눈',ico:'😶',desc:'콕 찍은 작은 점 눈 · 멍~'},
+  {id:'fwink_p800',job:'all',slot:'eyes',face:'wink',name:'윙크',ico:'😉',desc:'한쪽 눈을 찡긋'},
+  {id:'ffocus_p800',job:'all',slot:'eyes',face:'focus',name:'결의의 눈',ico:'😤',desc:'반쯤 내리깐 진지한 눈'},
+  {id:'fangry_p800',job:'all',slot:'eyes',face:'angry',name:'화난 눈',ico:'😠',desc:'눈꼬리가 올라간 화난 눈'},
+  {id:'fsurp_p800',job:'all',slot:'eyes',face:'surprise',name:'놀란 눈',ico:'😳',desc:'동그랗게 뜬 깜짝 놀란 눈'},
+  {id:'fsad_p800',job:'all',slot:'eyes',face:'sad',name:'글썽 눈',ico:'🥺',desc:'눈물이 그렁그렁'},
+  {id:'fsparkle_p1000',job:'all',slot:'eyes',face:'sparkle',name:'초롱초롱 눈',ico:'🥹',desc:'크고 반짝이는 눈 + 볼터치'},
+  {id:'fhurt_p1000',job:'all',slot:'eyes',face:'hurt',name:'질끈 눈 ><',ico:'😣',desc:'눈을 질끈 감은 얼굴'},
+  {id:'fheart_p1200',job:'all',slot:'eyes',face:'heart',name:'하트 눈',ico:'😍',desc:'눈이 하트! 볼터치까지'},
+  {id:'fstar_p1200',job:'all',slot:'eyes',face:'star',name:'별 눈',ico:'🤩',desc:'반짝반짝 별 모양 눈'},
+  {id:'fswirl_p1200',job:'all',slot:'eyes',face:'swirl',name:'어질어질 눈',ico:'😵‍💫',desc:'빙글빙글 도는 눈'},
+  /* ===== 눈 색 (표정 아이템을 낀 눈에만 칠해져요 · 기본 눈에는 안 보여요) ===== */
+  {id:'ecblk_p0',job:'all',slot:'eyecol',eyecol:0,name:'까만 눈동자',sw:'#2a2638',desc:'기본 눈 색'},
+  {id:'ecbrn_p600',job:'all',slot:'eyecol',eyecol:1,name:'갈색 눈동자',sw:'linear-gradient(180deg,#3b2214,#a8703f)',desc:'표정 아이템과 함께 써요'},
+  {id:'ecblu_p600',job:'all',slot:'eyecol',eyecol:2,name:'파란 눈동자',sw:'linear-gradient(180deg,#13306e,#6fb0ff)',desc:'표정 아이템과 함께 써요'},
+  {id:'ecgrn_p600',job:'all',slot:'eyecol',eyecol:3,name:'초록 눈동자',sw:'linear-gradient(180deg,#0f4a2c,#62d39a)',desc:'표정 아이템과 함께 써요'},
+  {id:'ecpur_p800',job:'all',slot:'eyecol',eyecol:4,name:'보라 눈동자',sw:'linear-gradient(180deg,#33195e,#b18cff)',desc:'표정 아이템과 함께 써요'},
+  {id:'ecred_p800',job:'all',slot:'eyecol',eyecol:5,name:'루비 눈동자',sw:'linear-gradient(180deg,#5e1016,#ff8a8a)',desc:'표정 아이템과 함께 써요'},
   /* ===== 펫 (세 직업 모두 · 가게에서 못 사요: 🥚 알을 부화시키면 무작위로 나와요 · 꾸미기 전용) =====
      was = 알 시스템 전에 코인으로 산 학생은 그대로 가져요 */
   {id:'nopet_p0',job:'all',slot:'pet',name:'펫 없음',ico:'➖'},
@@ -156,9 +179,9 @@ JOB_LIST.forEach(j=>{
 const CAT={}; CATALOG.forEach(it=>CAT[it.id]=it); CATALOG.forEach(it=>{ if (it.was && !CAT[it.was]) CAT[it.was]=it; });
 const priceOf=id=>{ const m=/_p(\d+)$/.exec(id||''); return m?+m[1]:0; };
 const DEFAULTS={
-  knight:{outfit:'knight_p0',hat:'nohat_p0',cape:'nocape_p0',weapon:'sword_p0',shield:'noshield_p0',hair:'khair_p0',trail:'gold_p0',pet:'nopet_p0'},
-  archer:{outfit:'ranger_p0',hat:'nohat_p0',cape:'nocape_p0',weapon:'bow_p0',hair:'ahair_p0',trail:'atrnone_p0',pet:'nopet_p0'},
-  mage:{outfit:'magerobe_p0',hat:'nohat_p0',cape:'nocape_p0',weapon:'mstaff_p0',shield:'noshield_p0',hair:'mhair_p0',trail:'mtrnone_p0',pet:'nopet_p0'}
+  knight:{outfit:'knight_p0',hat:'nohat_p0',cape:'nocape_p0',weapon:'sword_p0',shield:'noshield_p0',hair:'khair_p0',trail:'gold_p0',pet:'nopet_p0',eyes:'eyenone_p0',eyecol:'ecblk_p0'},
+  archer:{outfit:'ranger_p0',hat:'nohat_p0',cape:'nocape_p0',weapon:'bow_p0',hair:'ahair_p0',trail:'atrnone_p0',pet:'nopet_p0',eyes:'eyenone_p0',eyecol:'ecblk_p0'},
+  mage:{outfit:'magerobe_p0',hat:'nohat_p0',cape:'nocape_p0',weapon:'mstaff_p0',shield:'noshield_p0',hair:'mhair_p0',trail:'mtrnone_p0',pet:'nopet_p0',eyes:'eyenone_p0',eyecol:'ecblk_p0'}
 };
 const fitsJob=(id,job,slot)=>{ const it=CAT[id]; return !!it && it.slot===slot && (it.job===job||it.job==='all') && JOB_SLOTS[job].includes(slot); };
 /* 저장된 착용: equip/<직업>_<칸>. 예전(직업 없이 칸만) 기록은 기사 것으로 읽어요 */
@@ -263,7 +286,10 @@ async function dressP2(ch,L){
   if (headSrc) addSkin(srcMesh(headSrc[0],'Head'),headSrc[1]);
   else { ch.nativeHead.visible=true; ch.nativeHead.material=charMat(ch,oTex); }
   // 눈: 원래 막대 눈 대신 반짝이는 그린 눈 (10f-face.js)
-  if (typeof attachFace==='function'){ const hm=headSrc?ch.wardParts.slice(nHead).find(m=>/Head/.test(m.name))||ch.wardParts[nHead]:ch.nativeHead; const fm=attachFace(ch,hm); if (fm) ch.wardParts.push(fm); }
+  if (typeof attachFace==='function'){ const hm=headSrc?ch.wardParts.slice(nHead).find(m=>/Head/.test(m.name))||ch.wardParts[nHead]:ch.nativeHead; const ey=CAT[L.eyes], ec=CAT[L.eyecol];
+    if (ch.nativeHead && ch.nativeHead.userData.geo0) ch.nativeHead.geometry=ch.nativeHead.userData.geo0;   // 기본 눈으로 되돌리기
+    ch.face=null;
+    if (ey && ey.face){ const fm=attachFace(ch,hm,ey.face,ec&&ec.eyecol||0); if (fm) ch.wardParts.push(fm); } }
   // 옷 · 망토
   OSRC[o.src].parts.forEach(p=>addSkin(srcMesh(o.src,p),oTex));
   if (cape.own && OSRC[o.src].cape) addSkin(srcMesh(o.src,OSRC[o.src].cape),oTex);
