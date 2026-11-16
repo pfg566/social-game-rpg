@@ -66,7 +66,7 @@ function stgWatch(){
 }
 async function stgLoadQs(){ const k=STG.meta.t0; try{ const v=(await fbDb.ref(`stage/${STG.cid}/qs`).once('value')).val(); STG.qs=Array.isArray(v)?v:(v?Object.values(v):[]); STG.qsKey=k; }catch(e){} }
 function stgOpen(){ const m=STG.meta; return !!m && (m.state==='wait'||m.state==='run'); }
-function stgBtn(){ const b=$('#stageBtn'); if (!b) return; const on=stgOpen()&&W.state!=='play'&&!PARTY.rid; b.hidden=!on;
+function stgBtn(){ const b=$('#stageBtn'); if (!b) return; const on=stgOpen()&&W.state!=='play'&&!(typeof PARTY!=='undefined'&&PARTY.rid); b.hidden=!on;
   if (on) b.innerHTML=STG.meta.state==='run'?'🟦 발판 서바이벌 진행 중 · 지금 들어가기':'🟦 발판 서바이벌 · 입장하기'; }
 setInterval(()=>{ try{ stgWatch(); stgBtn(); }catch(e){} },1500);
 const stgNow=()=>Date.now()+STG.off;
@@ -80,7 +80,7 @@ function stageReset(){
   document.body.classList.remove('stagemode');
   ['#stHud','#stQ','#stMsg','#stRank'].forEach(s=>{ const e=$(s); if (e) e.hidden=true; });
   if (MAPK!=='stage'){ STG.on=false; return; }
-  STG.on=true; Object.assign(STG,{qi:-1,phase:'',lives:3,score:0,correct:0,ta:0,tc:0,restoring:true,sk:STG.meta&&+STG.meta.t0||0,perm:null,slotHold:-1,holdT:0,locked:-1,lockFrac:0,answered:false,falling:false,fallY:0,rvShown:-1,ended:false,rank:null,pT:0,dropK:0,wasDead:false});
+  STG.on=true; Object.assign(STG,{qi:-1,phase:'',lives:3,score:0,correct:0,ta:0,tc:0,wq:[],restoring:true,sk:STG.meta&&+STG.meta.t0||0,perm:null,slotHold:-1,holdT:0,locked:-1,lockFrac:0,answered:false,falling:false,fallY:0,rvShown:-1,ended:false,rank:null,pT:0,dropK:0,wasDead:false});
   stgRemoveAvatars(); stgSlabsUp(true); stgListenLive(); STG.nameT=0; STG.posLast='';
   P.x=0; P.z=0; W.nextWaveAt=-1; W.nextQuiz=1e9;
   document.body.classList.add('stagemode'); $('#stHud').hidden=false;
@@ -92,13 +92,28 @@ async function stgRestore(){
   const u=myUid(), k=STG.sk; let v=null;
   if (u && STG.cid && k){ try{ v=(await withTimeout(fbDb.ref(`stage/${STG.cid}/p/${u}`).once('value'),6000)).val(); }catch(e){} }
   if (v && +v.k===+k){ STG.lives=Math.max(0,Math.min(3,v.l|0)); STG.score=v.s|0; STG.correct=v.c|0; STG.ta=v.ta|0; STG.tc=v.tc|0;
-    if (typeof flashPrompt==='function') flashPrompt(STG.lives>0?`이어서 해요 · ❤️ ${STG.lives}개 · ${STG.score}점`:'이어서 해요 · 👻 관전하며 맞히면 부활해요',2.5); }
+    STG.wq=v.wq?String(v.wq).split('\n').filter(Boolean):[];
+    // 나가 있는 동안 지나간 문제는 '틀림'으로 쳐요 (하트도 하나씩 줄어요)
+    for (let i=0;i<50&&!(STG.qs&&STG.meta&&STG.qsKey===STG.meta.t0);i++) await new Promise(r=>setTimeout(r,100));
+    const miss=Math.max(0,stgRevealedN()-STG.ta);
+    for (let j=0;j<miss;j++){ const q=STG.qs&&STG.qs[STG.ta+j]; if (q&&!STG.wq.includes(q.q)) STG.wq.push(q.q); }
+    if (miss){ STG.ta+=miss; if (STG.lives>0) STG.lives=Math.max(0,STG.lives-miss); }
+    if (typeof flashPrompt==='function') flashPrompt((miss?`나가 있는 동안 지나간 ${miss}문제는 틀린 걸로 쳐요 · `:'이어서 해요 · ')+(STG.lives>0?`❤️ ${STG.lives}개 · ${STG.score}점`:'👻 관전하며 맞히면 부활해요'),3); }
   STG.restoring=false; stgWriteMe();
 }
+/* 지금까지 정답이 공개된(지나간) 문제 수 */
+function stgRevealedN(){ const c=stgClock(); if (c.ph==='q') return c.i; if (c.ph==='rv') return c.i+1; if (c.ph==='done') return stgTotalN(); return 0; }
+function stgTotalN(){ const m=STG.meta, n=STG.qs?STG.qs.length:0; return m&&m.n?Math.min(m.n,n):n; }
+/* 결과 기록: 한 판에 한 줄 (나갔다 들어와도 같은 줄을 고쳐 써요) · 못 푼 문제(나가 있던 동안 · 나간 뒤 남은 문제)는 틀린 걸로 */
+function stageResult(R){ if (!STG.on||!STG.sk) return; STG.n=stgTotalN()||STG.n||STG.ta;
+  const n=Math.max(STG.n|0,STG.ta|0), c=STG.tc|0, k=accBonusK(c,n), left=[];
+  for (let i=STG.ta|0;i<n;i++){ const q=STG.qs&&STG.qs[i]; if (q) left.push(q.q+' (못 풂)'); }
+  Object.assign(R,{stg:STG.sk,asked:n,correct:c,uniq:c,acc:k,score:c*100+Math.round(c*100*k),wrong:[...STG.wq,...left]});
+  $('#sCorrect').textContent=`${c}/${n}`; $('#sScore').textContent=R.score; }
 /* 보상 계산용: 이번 판 전체 기록 (09-server.js grantRewards) */
 function stageSession(){ if (!STG.on||!STG.sk) return null; const a=STG.ta|0, c=STG.tc|0;   // 들어올 때 기억한 판 번호(선생님이 판을 끝내도 그대로)
   return {k:STG.sk, uniq:c, asked:a, acc:a?accBonusK(c,a):0, mp:STG.score|0, score:c*100+Math.round(c*100*(a?accBonusK(c,a):0))}; }
-function stgWriteMe(){ const u=myUid(); if (!u||!STG.cid||STG.restoring) return; fbDb.ref(`stage/${STG.cid}/p/${u}`).set({n:myName().slice(0,12),num:STUDENT?+STUDENT.num:0,l:STG.lives,s:STG.score,c:STG.correct,ta:STG.ta|0,tc:STG.tc|0,k:STG.sk||0,a:W.asked|0,job:JOB,look:equippedLook(JOB),t:firebase.database.ServerValue.TIMESTAMP}).catch(()=>{}); }
+function stgWriteMe(){ const u=myUid(); if (!u||!STG.cid||STG.restoring) return; fbDb.ref(`stage/${STG.cid}/p/${u}`).set({n:myName().slice(0,12),num:STUDENT?+STUDENT.num:0,l:STG.lives,s:STG.score,c:STG.correct,ta:STG.ta|0,tc:STG.tc|0,k:STG.sk||0,wq:STG.wq.join('\n').slice(0,2000),a:W.asked|0,job:JOB,look:equippedLook(JOB),t:firebase.database.ServerValue.TIMESTAMP}).catch(()=>{}); }
 
 /* 지금 몇 번째 문제 · 어떤 단계인지 (선생님이 시작한 시각 기준으로 모두 같아요) */
 function stgClock(){
@@ -118,7 +133,10 @@ function stgSetupQ(i){
   STG.qi=i; STG.locked=-1; STG.slotHold=-1; STG.holdT=0; STG.answered=false; STG.lockFrac=0; STG.dropK=0;
   stgClearGhosts(); stgSlabsUp(false);
   P.x=0; P.z=0; W.snapCam=true; STG.falling=false; STG.fallY=0;   // 문제마다 모두 가운데에서 출발해요
-  const q=STG.qs[i], rng=stgRng(stgHash(myUid()+':'+STG.meta.t0+':'+i));
+  // 처음 몇 문제(판마다 1~4문제, 무작위)는 모두 같은 배치 → 그다음부터 친구마다 다른 배치
+  STG.sameN=1+stgHash('same:'+STG.meta.t0)%4;
+  const same=i<STG.sameN, q=STG.qs[i], rng=stgRng(stgHash((same?'all':myUid())+':'+STG.meta.t0+':'+i));
+  if (i===STG.sameN && STG.swapShown!==STG.meta.t0){ STG.swapShown=STG.meta.t0; stgSwapAlert(); }
   STG.texs.forEach(t=>t.dispose()); STG.texs=[];
   if (q.k==='mc'){
     const perm=[0,1,2,3]; for (let k=3;k>0;k--){ const j=Math.floor(rng()*(k+1)); [perm[k],perm[j]]=[perm[j],perm[k]]; } STG.perm=perm;
@@ -134,7 +152,7 @@ function stgSetupQ(i){
   const box=$('#stOpts'); box.className='run-opts'+(q.k==='ox'?' two':'');
   if (q.k==='mc') box.innerHTML=STG.perm.map((oi,slot)=>`<div class="run-opt" style="--c:${STG_COL[slot]}"><b>${slot+1}</b><span>${esc(q.o[oi])}<small> · ${STG_POS[slot]}</small></span></div>`).join('');
   else box.innerHTML=[0,1].map(slot=>{ const v=slot===0?STG.oxLeft:1-STG.oxLeft; return `<div class="run-opt" style="--c:${STG_OXCOL[v]}"><b>${v?'X':'O'}</b><span>${slot?'오른쪽 발판':'왼쪽 발판'}</span></div>`; }).join('');
-  $('#stQ').hidden=false; $('#stLock').textContent=STG.lives>0?'정답 발판으로 달려가요! 시간이 끝날 때 서 있는 발판이 내 답 · 일찍 도착할수록 점수 UP':'👻 관전 중 · 이 문제를 맞히면 부활해요!';
+  $('#stQ').hidden=false; $('#stLock').textContent=STG.lives>0?(same?'👥 지금은 모두 같은 배치예요 · ':'🔀 친구마다 배치가 달라요 · ')+'정답 발판으로 달려가요! 일찍 도착할수록 점수 UP':'👻 관전 중 · 이 문제를 맞히면 부활해요!';
   $('#stMsg').hidden=true;
 }
 /* 내가 서 있는 칸 → 보기 번호 */
@@ -163,7 +181,7 @@ function stgReveal(){
   if (opt>=0) stgSendAns(opt,frac);
   const ok=opt===C, dead=STG.lives<=0;
   settle(ok,item,{type:'stage'});
-  STG.ta=(STG.ta|0)+1; if (ok) STG.tc=(STG.tc|0)+1;
+  STG.ta=(STG.ta|0)+1; if (ok) STG.tc=(STG.tc|0)+1; else if (!STG.wq.includes(item.q)) STG.wq.push(item.q);
   let msg='';
   if (ok){ SFX.correct();
     if (dead){ STG.lives=1; msg='부활! ❤️ 1개로 다시 시작해요'; }
@@ -194,13 +212,13 @@ function stgAvatar(u){
 function stgRemoveAvatars(){ for (const u in STG.av){ const A=STG.av[u]; scene.remove(A.g); A.ch.mixer.stopAllAction(); } STG.av={}; }
 function stgListenLive(){
   stgUnlisten(); const c=STG.cid, me=myUid(); const r=fbDb.ref(`stage/${c}/pos`);
-  const cb=s=>{ if (s.key===me) return; const a=String(s.val()||'').split(','); if (a.length<3) return; STG.live[s.key]={x:+a[0]/10,z:+a[1]/10,f:+a[2]/100,t:performance.now()}; };
+  const cb=s=>{ if (s.key===me) return; const a=String(s.val()||'').split(','); if (a.length<3) return; STG.live[s.key]={x:+a[0]/10,z:+a[1]/10,f:+a[2]/100,d:a[3]==='1',t:performance.now()}; };
   r.on('child_added',cb,()=>{}); r.on('child_changed',cb,()=>{}); STG.liveRef=[r,cb];
 }
 function stgUnlisten(){ if (STG.liveRef){ const [r,cb]=STG.liveRef; r.off('child_added',cb); r.off('child_changed',cb); STG.liveRef=null; } STG.live={}; }
 function stgSendPos(dt){
   STG.posT-=dt; if (STG.posT>0) return; STG.posT=.2;
-  const s=[Math.round(P.x*10),Math.round(P.z*10),Math.round(Math.atan2(P.fx,P.fz)*100)].join(','); if (s===STG.posLast) return; STG.posLast=s;
+  const s=[Math.round(P.x*10),Math.round(P.z*10),Math.round(Math.atan2(P.fx,P.fz)*100),STG.lives>0?0:1].join(','); if (s===STG.posLast) return; STG.posLast=s;
   fbDb.ref(`stage/${STG.cid}/pos/${myUid()}`).set(s).catch(()=>{});
 }
 function stgAvatarTick(dt){
@@ -212,7 +230,8 @@ function stgAvatarTick(dt){
     const ox=A.x, oz=A.z, k=Math.min(1,dt*(A.rv?6:12)); A.x+=(tx-A.x)*k; A.z+=(tz-A.z)*k;
     const mv=Math.hypot(A.x-ox,A.z-oz)/Math.max(dt,1e-3);
     if (mv>.4){ const f=Math.atan2(A.x-ox,A.z-oz); let df=f-A.f; df=Math.atan2(Math.sin(df),Math.cos(df)); A.f+=df*Math.min(1,dt*12); }
-    A.g.position.set(A.x,Math.max(-40,ty),A.z); A.ch.root.rotation.y=A.f;
+    const dead=!!L.d||!!(STG.names[u]&&STG.names[u].l===0); stgSpirit(A.ch,dead);
+    A.g.position.set(A.x,Math.max(-40,ty)+(dead?.45+Math.sin(now/400+A.x)*.15:0),A.z); A.ch.root.rotation.y=A.f;
     A.ch.anim.setBase(mv>1.2?'run':'idle'); A.ch.mixer.update(dt);
   }
 }
@@ -247,7 +266,7 @@ async function stgShowRank(){
   $('#stRankMe').textContent=myR?`나는 ${list.length}명 중 ${myR}등 · ${STG.score}점 · 정답 ${STG.correct}개`:'';
   $('#stRank').hidden=false;
 }
-function stgEndUI(){ stgUnlisten(); stgRemoveAvatars(); document.body.classList.remove('stagemode'); ['#stHud','#stQ','#stMsg','#stRank'].forEach(s=>{ const e=$(s); if (e) e.hidden=true; }); STG.ring.visible=false; }
+function stgEndUI(){ stgUnlisten(); stgRemoveAvatars(); if (knight) stgSpirit(knight,false); if (STG.mark) STG.mark.visible=false; document.body.classList.remove('stagemode'); ['#stHud','#stQ','#stMsg','#stRank'].forEach(s=>{ const e=$(s); if (e) e.hidden=true; }); STG.ring.visible=false; }
 function stgFinish(){ $('#stRank').hidden=true; if (W.state==='play') endGame(STG.lives>0); }
 function stageFrame(dt,real,now){
   if (knight && (knight.anim.dead||endPose)){ knight.anim.revive(); endPose=false; }   // 지난 판에서 쓰러진(누운) 자세가 남지 않게
@@ -268,14 +287,15 @@ function stageFrame(dt,real,now){
   else if (C.ph==='rv'){ if (STG.qi!==C.i){ stgSetupQ(C.i); } if (STG.phase!=='rv'||STG.rvShown!==C.i){ STG.rvShown=C.i; stgReveal(); } stgRvTick(dt); }
   else if (C.ph==='wait'||C.ph==='intro'||C.ph==='load'){ $('#stQ').hidden=true; const m=$('#stMsg'); m.hidden=false; m.className='run-res card';
     STG.pT-=dt; if (STG.pT<=0){ STG.pT=3; fbDb.ref(`stage/${STG.cid}/p`).once('value').then(s=>{ STG.joinN=Object.keys(s.val()||{}).length; }).catch(()=>{}); }
-    m.innerHTML=C.ph==='intro'?`<b>곧 시작해요! ${Math.ceil(C.left)}</b><p>문제가 뜨면 정답 발판으로 달려가요. 발판 배치는 친구마다 달라요!</p>`:`<b>선생님이 곧 시작해요</b><p>지금 ${STG.joinN}명 들어왔어요 · WASD로 발판 위를 걸어 보세요</p>`; }
+    m.innerHTML=C.ph==='intro'?`<b>곧 시작해요! ${Math.ceil(C.left)}</b><p>문제가 뜨면 정답 발판으로 달려가요. 처음엔 모두 같은 배치지만, 어느 순간 친구마다 달라져요! 친구만 따라가면 위험해요</p>`:`<b>선생님이 곧 시작해요</b><p>지금 ${STG.joinN}명 들어왔어요 · WASD로 발판 위를 걸어 보세요</p>`; }
   else if (C.ph==='done'||C.ph==='gone'){ stgShowRank(); }
   STG.phase=C.ph;
   STG.nameT-=dt; if (STG.nameT<=0){ STG.nameT=4; fbDb.ref(`stage/${STG.cid}/p`).once('value').then(s=>{ const v=s.val()||{}; STG.names=v; STG.joinN=Object.keys(v).length; }).catch(()=>{}); }
   if (C.ph!=='done'&&C.ph!=='gone'&&!STG.falling) stgSendPos(dt);
   stgAvatarTick(dt);
   // 캐릭터
-  pg.position.set(P.x,STG.fallY,P.z); { let dy=Math.atan2(P.fx,P.fz)-pg.rotation.y; dy=Math.atan2(Math.sin(dy),Math.cos(dy)); pg.rotation.y+=dy*Math.min(1,dt*14); }
+  const meDead=STG.lives<=0; if (knight) stgSpirit(knight,meDead);
+  pg.position.set(P.x,STG.fallY+(meDead?.45+Math.sin(now/400)*.15:0),P.z); stgMarkTick(dt,meDead); { let dy=Math.atan2(P.fx,P.fz)-pg.rotation.y; dy=Math.atan2(Math.sin(dy),Math.cos(dy)); pg.rotation.y+=dy*Math.min(1,dt*14); }
   pg.traverse&&0;
   if (knight){ const A=knight.anim; setBaseSynced(A,moving?'run':'idle',moving?1.15:1); knight.mixer.update(dt); }
   if (STG.falling && STG.fallY<-14 && C.ph!=='rv'){ STG.falling=false; STG.fallY=0; P.x=0; P.z=0; }
@@ -289,6 +309,41 @@ function stageFrame(dt,real,now){
   $('#stProg').textContent=STG.meta&&STG.qs?`문제 ${Math.min((STG.meta.n||STG.qs.length),Math.max(1,STG.qi+1))}/${Math.min(STG.meta.n||STG.qs.length,STG.qs.length)}`:'';
   renderFrame();
 }
+/* 👻 목숨을 다 잃으면 반투명 귀신 모습 (나 · 친구 모두) */
+const STG_SPIRIT={s:new THREE.MeshBasicMaterial({color:0xb9e0ff,transparent:true,opacity:.55,depthWrite:false,skinning:true,fog:false}),
+                  r:new THREE.MeshBasicMaterial({color:0xb9e0ff,transparent:true,opacity:.55,depthWrite:false,fog:false})};
+let STG_BOO=null;   // 귀신 머리 위 👻
+function stgBoo(){ if (!STG_BOO){ const c=document.createElement('canvas'); c.width=c.height=128; const g=c.getContext('2d'); g.font='96px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif'; g.textAlign='center'; g.textBaseline='middle'; g.fillText('👻',64,70); STG_BOO=new THREE.SpriteMaterial({map:new THREE.CanvasTexture(c),transparent:true,depthWrite:false,fog:false}); }
+  const sp=new THREE.Sprite(STG_BOO); sp.scale.setScalar(1.1); sp.userData.noFlash=true; return sp; }
+function stgSpirit(ch,on){ if (!ch||!ch.root) return; if (!on&&!ch.spirit) return;
+  if (on){ const t=performance.now(); if (ch.spirit&&t-ch.spiritT<800) return; ch.spiritT=t; }   // 옷을 늦게 입어도 다시 덮어요
+  ch.spirit=on;
+  if (on&&!ch.boo){ ch.boo=stgBoo(); ch.boo.position.y=3.6; ch.root.parent&&ch.root.parent.add(ch.boo); }
+  if (ch.boo) ch.boo.visible=on;
+  ch.root.traverse(o=>{ if (!o.isMesh||o.userData.noFlash) return;
+    if (on){ const gm=o.isSkinnedMesh?STG_SPIRIT.s:STG_SPIRIT.r; if (o.material!==gm){ o.userData.mat0=o.material; o.material=gm; } }
+    else if (o.userData.mat0){ o.material=o.userData.mat0; o.userData.mat0=null; } }); }
+/* 내 캐릭터 표시: 머리 위 통통 튀는 화살표 + 발밑 빛나는 고리 (사람이 많아도 나를 바로 찾게) */
+function stgMarkMake(){ const g=new THREE.Group();
+  const gold=new THREE.MeshBasicMaterial({color:0xffd23f,fog:false}), line=new THREE.MeshBasicMaterial({color:0x2b2350,side:THREE.BackSide,fog:false});
+  const arrow=new THREE.Group(); const cone=new THREE.ConeGeometry(.55,.9,20), stem=new THREE.CylinderGeometry(.2,.2,.6,14);
+  [[cone,0],[stem,.7]].forEach(([geo,y])=>{ const m=new THREE.Mesh(geo,gold); m.position.y=y; arrow.add(m); const o=new THREE.Mesh(geo,line); o.position.y=y; o.scale.setScalar(1.18); arrow.add(o); });
+  arrow.rotation.x=Math.PI; g.add(arrow); g.userData.arrow=arrow;
+  const ring=new THREE.Mesh(new THREE.RingGeometry(.95,1.25,48),new THREE.MeshBasicMaterial({color:0xffd23f,transparent:true,opacity:.95,depthWrite:false,side:THREE.DoubleSide,fog:false}));
+  ring.rotation.x=-Math.PI/2; g.add(ring); g.userData.ring=ring;
+  const lab=nameTag('나'); g.add(lab); g.userData.lab=lab;
+  g.traverse(o=>{ o.frustumCulled=false; o.renderOrder=5; }); scene.add(g); return g; }
+function stgMarkTick(dt,dead){ if (!STG.mark) STG.mark=stgMarkMake(); const g=STG.mark, t=performance.now()/1000; g.visible=!STG.falling||STG.fallY>-3;
+  const y0=STG.fallY+(dead?.45:0);
+  g.userData.arrow.position.set(P.x,y0+4.1+Math.abs(Math.sin(t*3.2))*.35,P.z);
+  g.userData.lab.position.set(P.x,y0+5.15+Math.abs(Math.sin(t*3.2))*.35,P.z);
+  const r=g.userData.ring; r.position.set(P.x,STG.fallY+.09,P.z); r.scale.setScalar(1+.08*Math.sin(t*5)); r.visible=!dead;
+  const c=dead?0xa9d8ff:0xffd23f; g.userData.arrow.children[0].material.color.setHex(c); r.material.color.setHex(c); }
+/* 배치가 바뀌는 순간 알림 */
+function stgSwapAlert(){ let el=$('#stSwap'); if (!el){ el=document.createElement('div'); el.id='stSwap'; document.body.appendChild(el); }
+  el.innerHTML='<b>🔀 지금부터 발판 배치가 친구마다 달라요!</b><span>친구를 따라가지 말고 내 화면의 보기를 잘 보세요</span>';
+  el.className=''; void el.offsetWidth; el.className='show'; try{ SFX.wave(); }catch(e){}
+  clearTimeout(el._t); el._t=setTimeout(()=>{ el.className=''; },3800); }
 /* 잠금 고리: 1.5초 동안 채워져요 */
 STG.ring=(()=>{ const m=new THREE.ShaderMaterial({transparent:true,depthWrite:false,uniforms:{uK:{value:0}},
   vertexShader:'varying vec2 vU; void main(){ vU=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.); }',

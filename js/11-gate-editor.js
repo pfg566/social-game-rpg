@@ -126,13 +126,14 @@ function endGame(win){
   lastResult={diff:DIFF,mode:MODE,lv:PARTY.on?'hero':LEVEL,nick:NICK,cls:CI.cls,cid:CI.cid,sch:CI.sch,grade:CI.grade,year:CI.year,label:CI.label,unit:unit?unit.name:'',unitId:playUnit,win,score,correct:W.correct,asked:W.asked,kills:W.kills,sp:spd,acc:accK,
     time:$('#sTime').textContent,timeSec:s,when,wrong:W.wrong.filter(w=>!w.fixed).map(w=>w.item.q),
     job:JOB+(JOB==='mage'?':'+MELEM:''),map:MAPK,ease:easeIdx(),cs:combatStats(),uniq:uniqN,mp:modePts,gm};
+  if (MAPK==='stage' && typeof stageResult==='function') stageResult(lastResult);   // 발판 서바이벌: 한 판에 한 줄
   $('#endWho').textContent=`${CI.label} ${NICK} · ${lastResult.unit} · ${when}`;
   saveResult(lastResult);
   try{ boardWrite(lastResult); }catch(e){}
   try{ notesWrite(); }catch(e){}
   try{ $('#sDex').hidden=true; dexWrite(); }catch(e){}
   grantRewards({...lastResult,newSkill},fixedN);
-  $('#sScore').textContent=score;
+  $('#sScore').textContent=lastResult.score;
   $('#copyStatus').textContent=''; $('#copyText').hidden=true;
   const url=submitUrl(lastResult), a=$('#submitLink');
   a.hidden=!url; if (url) a.href=url;

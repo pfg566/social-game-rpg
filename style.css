@@ -769,3 +769,9 @@ img,canvas,svg{-webkit-user-drag:none;user-drag:none}
 .pm-btn .pm-lock{position:absolute;top:-6px;right:-4px;font-style:normal;font-size:13px}
 .pm-locknote{margin:6px 0 2px;padding:6px 9px;border-radius:9px;background:#fff4d6;border:1.5px solid #e8b44a;font-size:12.5px;line-height:1.35;color:#5a4410}
 .pm-locknote[hidden]{display:none}
+/* 발판 서바이벌: 배치가 바뀌는 순간 알림 */
+#stSwap{position:fixed;left:50%;top:56%;transform:translate(-50%,-20px) scale(.9);z-index:40;opacity:0;pointer-events:none;
+  background:#2b2350;color:#fff;border:3px solid #ffd23f;border-radius:16px;padding:14px 22px;text-align:center;box-shadow:0 8px 0 rgba(0,0,0,.25);transition:opacity .25s,transform .25s}
+#stSwap b{display:block;font-size:24px;margin-bottom:4px}#stSwap span{font-size:15px;opacity:.9}
+#stSwap.show{opacity:1;transform:translate(-50%,0) scale(1);animation:stswap .5s ease-in-out 3}
+@keyframes stswap{50%{transform:translate(-50%,0) scale(1.05)}}

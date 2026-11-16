@@ -26,18 +26,20 @@ async function pushResult(r){
   await withTimeout(fbReady,10000);
   const u=fbAuth.currentUser; if (!u) throw new Error('no-auth');
   const rec=toRecord(r,u.uid);
-  try{ await withTimeout(fbDb.ref('results').push(rec),10000); }
+  // 발판 서바이벌은 한 판에 한 줄: 정해진 이름(s판번호_학생)으로 덮어써요
+  const ref=r.stg?fbDb.ref('results/s'+r.stg+'_'+u.uid):fbDb.ref('results').push();
+  try{ await withTimeout(ref.set(rec),10000); }
   catch(e){
     // 예전 보안 규칙(모드·난이도 칸이 없는 규칙)이면 그 두 칸을 빼고 다시 저장
     if (!/permission|PERMISSION/i.test(String(e&&(e.code||e.message)))) throw e;
     // 모드 기록 칸(mp·gm)이 없는 예전 규칙이면 그 칸만 빼고 다시
-    if (rec.gm!==undefined){ delete rec.mp; delete rec.gm; try{ await withTimeout(fbDb.ref('results').push(rec),10000); return; }catch(e0){ if (!/permission|PERMISSION/i.test(String(e0&&(e0.code||e0.message)))) throw e0; } }
-    if (rec.mode==='easy'||rec.mode==='hard'){ rec.mode='normal'; try{ await withTimeout(fbDb.ref('results').push(rec),10000); return; }catch(e1){ if (!/permission|PERMISSION/i.test(String(e1&&(e1.code||e1.message)))) throw e1; } }
+    if (rec.gm!==undefined){ delete rec.mp; delete rec.gm; try{ await withTimeout(ref.set(rec),10000); return; }catch(e0){ if (!/permission|PERMISSION/i.test(String(e0&&(e0.code||e0.message)))) throw e0; } }
+    if (rec.mode==='easy'||rec.mode==='hard'){ rec.mode='normal'; try{ await withTimeout(ref.set(rec),10000); return; }catch(e1){ if (!/permission|PERMISSION/i.test(String(e1&&(e1.code||e1.message)))) throw e1; } }
     if (rec.cs){ delete rec.job; delete rec.map; delete rec.ease; delete rec.cs;
-      try{ await withTimeout(fbDb.ref('results').push(rec),10000); return; }
+      try{ await withTimeout(ref.set(rec),10000); return; }
       catch(e2){ if (!/permission|PERMISSION/i.test(String(e2&&(e2.code||e2.message)))) throw e2; } }
     delete rec.mode; delete rec.diff;
-    await withTimeout(fbDb.ref('results').push(rec),10000);
+    await withTimeout(ref.set(rec),10000);
   }
 }
 async function saveResult(r){
