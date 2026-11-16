@@ -140,7 +140,7 @@ function endGame(win){
   saveHistory(lastResult);
   $('#end').hidden=false;
   $('#end .panel').scrollTop=0;
-  setTimeout(()=>$('#againBtn').focus({preventScroll:true}),30);
+  againLabel(); setTimeout(()=>$('#againBtn').focus({preventScroll:true}),30);
 }
 $('#startBtn').addEventListener('click',tryStart);
 $('#nick').addEventListener('input',()=>{ $('#nickErr').hidden=true; });
@@ -152,7 +152,13 @@ $('#copyBtn').addEventListener('click',()=>{
   const fallback=()=>{ ta.hidden=false; ta.value=text; ta.focus(); ta.select(); $('#copyStatus').className='ed-status ok'; $('#copyStatus').textContent='아래 글을 길게 누르거나 Ctrl+C로 복사하세요.'; };
   try{ navigator.clipboard.writeText(text).then(()=>{ $('#copyStatus').className='ed-status ok'; $('#copyStatus').textContent='복사했어요. 선생님이 알려준 곳에 붙여넣으세요.'; },fallback); }catch(e){ fallback(); }
 });
-$('#againBtn').addEventListener('click',tryStart);
+/* 다시 하기: 발판 서바이벌 · 조별 점령전은 선생님이 연 판에 '다시 참여'해요 (다른 모드가 켜지거나 판 수가 줄지 않게) */
+function againLabel(){ const b=$('#againBtn'); if (!b) return;
+  b.textContent=MAPK==='stage'?(typeof stgOpen==='function'&&stgOpen()?'다시 참여하기':'로비로 가기'):MAPK==='teamwar'?(typeof twOpen==='function'&&twOpen()?'다시 참여하기':'로비로 가기'):'다시 하기'; }
+$('#againBtn').addEventListener('click',()=>{
+  if (MAPK==='stage'){ if (typeof stgOpen==='function'&&stgOpen()) stageJoin(); else $('#homeBtn').click(); return; }
+  if (MAPK==='teamwar'){ if (typeof twOpen==='function'&&twOpen()) twJoin(); else $('#homeBtn').click(); return; }
+  tryStart(); });
 
 /* ---------- 문제은행(단원별) 불러오기 · 문제 관리 ---------- */
 const TYPES={
