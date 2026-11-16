@@ -80,13 +80,25 @@ function stageReset(){
   document.body.classList.remove('stagemode');
   ['#stHud','#stQ','#stMsg','#stRank'].forEach(s=>{ const e=$(s); if (e) e.hidden=true; });
   if (MAPK!=='stage'){ STG.on=false; return; }
-  STG.on=true; Object.assign(STG,{qi:-1,phase:'',lives:3,score:0,correct:0,perm:null,slotHold:-1,holdT:0,locked:-1,lockFrac:0,answered:false,falling:false,fallY:0,rvShown:-1,ended:false,rank:null,pT:0,dropK:0,wasDead:false});
+  STG.on=true; Object.assign(STG,{qi:-1,phase:'',lives:3,score:0,correct:0,ta:0,tc:0,restoring:true,sk:STG.meta&&+STG.meta.t0||0,perm:null,slotHold:-1,holdT:0,locked:-1,lockFrac:0,answered:false,falling:false,fallY:0,rvShown:-1,ended:false,rank:null,pT:0,dropK:0,wasDead:false});
   stgRemoveAvatars(); stgSlabsUp(true); stgListenLive(); STG.nameT=0; STG.posLast='';
   P.x=0; P.z=0; W.nextWaveAt=-1; W.nextQuiz=1e9;
   document.body.classList.add('stagemode'); $('#stHud').hidden=false;
-  stgWriteMe();
+  stgRestore();
 }
-function stgWriteMe(){ const u=myUid(); if (!u||!STG.cid) return; fbDb.ref(`stage/${STG.cid}/p/${u}`).set({n:myName().slice(0,12),num:STUDENT?+STUDENT.num:0,l:STG.lives,s:STG.score,c:STG.correct,a:W.asked|0,job:JOB,look:equippedLook(JOB),t:firebase.database.ServerValue.TIMESTAMP}).catch(()=>{}); }
+/* 같은 판(선생님이 시작한 한 번)에 다시 들어오면 하트 · 점수 · 푼 문제 수를 그대로 이어서 해요
+   (나갔다 들어와서 하트를 채우거나, 보상을 여러 번 받는 걸 막아요) */
+async function stgRestore(){
+  const u=myUid(), k=STG.sk; let v=null;
+  if (u && STG.cid && k){ try{ v=(await withTimeout(fbDb.ref(`stage/${STG.cid}/p/${u}`).once('value'),6000)).val(); }catch(e){} }
+  if (v && +v.k===+k){ STG.lives=Math.max(0,Math.min(3,v.l|0)); STG.score=v.s|0; STG.correct=v.c|0; STG.ta=v.ta|0; STG.tc=v.tc|0;
+    if (typeof flashPrompt==='function') flashPrompt(STG.lives>0?`이어서 해요 · ❤️ ${STG.lives}개 · ${STG.score}점`:'이어서 해요 · 👻 관전하며 맞히면 부활해요',2.5); }
+  STG.restoring=false; stgWriteMe();
+}
+/* 보상 계산용: 이번 판 전체 기록 (09-server.js grantRewards) */
+function stageSession(){ if (!STG.on||!STG.sk) return null; const a=STG.ta|0, c=STG.tc|0;   // 들어올 때 기억한 판 번호(선생님이 판을 끝내도 그대로)
+  return {k:STG.sk, uniq:c, asked:a, acc:a?accBonusK(c,a):0, mp:STG.score|0, score:c*100+Math.round(c*100*(a?accBonusK(c,a):0))}; }
+function stgWriteMe(){ const u=myUid(); if (!u||!STG.cid||STG.restoring) return; fbDb.ref(`stage/${STG.cid}/p/${u}`).set({n:myName().slice(0,12),num:STUDENT?+STUDENT.num:0,l:STG.lives,s:STG.score,c:STG.correct,ta:STG.ta|0,tc:STG.tc|0,k:STG.sk||0,a:W.asked|0,job:JOB,look:equippedLook(JOB),t:firebase.database.ServerValue.TIMESTAMP}).catch(()=>{}); }
 
 /* 지금 몇 번째 문제 · 어떤 단계인지 (선생님이 시작한 시각 기준으로 모두 같아요) */
 function stgClock(){
@@ -151,6 +163,7 @@ function stgReveal(){
   if (opt>=0) stgSendAns(opt,frac);
   const ok=opt===C, dead=STG.lives<=0;
   settle(ok,item,{type:'stage'});
+  STG.ta=(STG.ta|0)+1; if (ok) STG.tc=(STG.tc|0)+1;
   let msg='';
   if (ok){ SFX.correct();
     if (dead){ STG.lives=1; msg='부활! ❤️ 1개로 다시 시작해요'; }

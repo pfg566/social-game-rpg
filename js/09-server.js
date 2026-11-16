@@ -358,30 +358,37 @@ async function grantRewards(r,fixedN){
   if (!STUDENT||!PROFILE){ box.className='rewardbox guest'; box.innerHTML='<b>연습 모드</b><span>코드로 로그인하면 경험치와 코인이 쌓여요.</span>'; box.hidden=false; return; }
   try{ const fresh=(await withTimeout(profRef().once('value'),8000)).val(); if (fresh) PROFILE=fresh; }catch(e){}   // 선생님이 코인을 초기화했을 수 있어서 최신으로
   // 경험치·코인: 공식 점수와 같은 기준(서로 다른 문제 정답 · 다시 맞힘 · 정답률) + 도전한 문제(30개까지) + 모드 기록 조금(최대 150)
-  const uniq=r.uniq!=null?r.uniq|0:r.correct|0;
-  const quizXp=20*uniq+40*fixedN, accXp=Math.round(quizXp*(r.acc||0)), tryXp=10*Math.min(r.asked|0,XP_TRY_MAX), modeXp=Math.min(150,Math.round((r.mp|0)/10));
+  // 발판 서바이벌: 나갔다 다시 들어와도 '한 판(선생님이 시작한 한 번)'으로 계산해요.
+  // 그 판 전체 기록으로 보상을 계산하고, 이미 받은 만큼은 빼요 → 나가기·다시하기를 반복해도 코인이 더 늘지 않아요
+  const S=typeof stageSession==='function'?stageSession():null;
+  const uniq=S?S.uniq:(r.uniq!=null?r.uniq|0:r.correct|0), fx=S?0:fixedN, rAsked=S?S.asked:(r.asked|0), rAcc=S?S.acc:(r.acc||0), rMp=S?S.mp:(r.mp|0), rScore=S?S.score:r.score;
+  const quizXp=20*uniq+40*fx, accXp=Math.round(quizXp*rAcc), tryXp=10*Math.min(rAsked,XP_TRY_MAX), modeXp=Math.min(150,Math.round(rMp/10));
   let xp=tryXp+quizXp+accXp+modeXp;
-  const newBest=(PROFILE.plays|0)>0 && r.score>(PROFILE.best|0);
+  const newBest=(PROFILE.plays|0)>0 && rScore>(PROFILE.best|0);
   if (newBest) xp+=80;
   const rawXp=Math.round(xp); xp=Math.min(XP_CAP,rawXp); const capped=rawXp>XP_CAP;
   const cardC=Math.min(100,W.cardCoins|0);
   // 모드 탐험 보너스 · 모드 최고 기록
   const wk=weekKey(), ex=exploredModes(), canEx=!!r.gm&&PLAY_MODES.some(m=>m.id===r.gm);
   const explore=canEx && !ex.includes(r.gm) && (r.asked|0)>=EXPLORE_MIN_Q;
-  const coins=Math.min(COIN_CAP,Math.round(xp/2))+cardC+(explore?EXPLORE_COINS:0);
+  let coins=Math.min(COIN_CAP,Math.round(xp/2))+cardC+(explore?EXPLORE_COINS:0);
   const mbOld=PROFILE.mb&&+PROFILE.mb[r.gm]||0, mbNew=r.gm&&(r.mp|0)>mbOld;
+  const again=!!S && +PROFILE.sk===S.k, prevX=again?PROFILE.sx|0:0, prevC=again?PROFILE.sc|0:0;
+  if (S){ const base=coins-(explore?EXPLORE_COINS:0); xp=Math.max(0,xp-prevX); coins=Math.max(0,base-prevC)+(explore?EXPLORE_COINS:0); }
   const before=levelOf(PROFILE.xp|0), after=levelOf((PROFILE.xp|0)+xp);
   // 각성: 오른 레벨마다 한 번씩 굴려요
   let own=ownedElems(), awk=PROFILE.awk|0; const awoke=[]; let tries=0;
   for (let l=before.lv+1; l<=after.lv; l++){ const left=ELEM_ORDER.filter(e=>!own.includes(e)); if (!left.length) break; tries++;
     if (awk>=AWAKE_PITY || Math.random()<AWAKE_CHANCE){ const e=left[Math.floor(Math.random()*left.length)]; own=[...own,e]; awoke.push(e); awk=0; } else awk++; }
-  const upd={xp:(PROFILE.xp|0)+xp,coins:(PROFILE.coins|0)+coins,plays:(PROFILE.plays|0)+1,wins:(PROFILE.wins|0)+(r.win?1:0),
+  const upd={xp:(PROFILE.xp|0)+xp,coins:(PROFILE.coins|0)+coins,plays:(PROFILE.plays|0)+(again?0:1),wins:(PROFILE.wins|0)+(r.win?1:0),
     best:Math.max(PROFILE.best|0,r.score|0),correct:(PROFILE.correct|0)+r.correct,asked:(PROFILE.asked|0)+r.asked,fixed:(PROFILE.fixed|0)+fixedN,
     skill:Math.round((r.newSkill??PROFILE.skill??1)*100)/100,updatedAt:firebase.database.ServerValue.TIMESTAMP};
   if (explore) upd.mw={w:wk,m:[...ex,r.gm].join(',').slice(0,200)};
+  if (S){ upd.sk=S.k; upd.sx=Math.min(100000,prevX+xp); upd.sc=Math.min(100000,prevC+coins-(explore?EXPLORE_COINS:0)); }
   if (mbNew) upd.mb={...(PROFILE.mb||{}),[r.gm]:Math.min(1000000,r.mp|0)};
   if (tries){ upd.elems=ELEM_ORDER.filter(e=>own.includes(e)).join(','); upd.awk=awk; }
   const lines=[`<b>+${xp} 경험치 · +${coins} 코인</b>`];
+  if (again) lines.push(`<span>🧱 이번 발판 서바이벌에서 이미 받은 보상(경험치 ${prevX} · 코인 ${prevC})을 빼고, 새로 푼 만큼만 더했어요</span>`);
   const why=[]; if (r.asked) why.push(`문제 ${r.asked}개 도전`); if (uniq) why.push(`서로 다른 문제 ${uniq}개 맞힘`); if (fixedN) why.push(`틀린 문제 ${fixedN}개 다시 맞힘`); if (accXp) why.push(`정답률 ${r.asked?Math.round(r.correct/r.asked*100):0}% 보너스 +${accXp}`); if (modeXp) why.push(`모드 기록 +${modeXp}`); if (newBest) why.push('내 최고 점수 경신!'); if (capped) why.push(`한 판 최대 ${XP_CAP} 경험치`);
   if (why.length) lines.push(`<span>${why.join(' · ')}</span>`);
   if (explore) lines.push(`<span class="explore">🎁 모드 탐험 보너스! 이번 주 처음 해 본 <b>${modeIcon(r.gm)} ${esc(modeName(r.gm))}</b> · 코인 +${EXPLORE_COINS} (탐험 ${ex.length+1}개째)</span>`);
