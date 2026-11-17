@@ -81,6 +81,7 @@ function endGame(win){
   $('#rewardBox').hidden=true;
   if (MAPK==='runner') runEndUI();
   if (MAPK==='stage') stgEndUI();
+  if (MAPK==='live') lvEndUI();
   if (MAPK==='teamwar') twEndUI();
   W.state='end'; W.paused=true; W.loc=null; W.prep=null; $('#timeCard').hidden=true; $('#prep').hidden=true; $('#locIntro').hidden=true; $('#reviveIntro').hidden=true;
   $('#locCard').hidden=true; $('#gateCard').hidden=true; $('#bossbar').hidden=true; $('#prompt').hidden=true;
@@ -207,7 +208,7 @@ function setMap(k){
   MAPK=k;
   ensureMap(k);
   for (const g in mapGroups) mapGroups[g].visible=g===k;
-  bgGroup.visible=!['island','glacier','runner','stage','teamwar'].includes(k); ground.visible=!['glacier','runner','stage','teamwar'].includes(k);
+  bgGroup.visible=!['island','glacier','runner','stage','teamwar','live'].includes(k); ground.visible=!['glacier','runner','stage','teamwar','live'].includes(k);
   colliders=MAPSTATE[k].colliders; stations=MAPSTATE[k].stations; npcs=MAPSTATE[k].npcs;
   WAVES=wavesFor(k==='zones'?(MAPS.zones.waves||'zones'):k);
   const M=MAPS[k];
@@ -243,7 +244,7 @@ const PLAY_MODES=[
 const MODE_EXTRA={party:{icon:'🎉',name:'파티'},stage:{icon:'🟩',name:'발판 서바이벌'},teamwar:{icon:'🚩',name:'조별 점령전'}};
 const modeName=id=>(PLAY_MODES.find(x=>x.id===id)||MODE_EXTRA[id]||{name:(MAPS[id]&&MAPS[id].name)||id}).name;
 const modeIcon=id=>(PLAY_MODES.find(x=>x.id===id)||MODE_EXTRA[id]||{icon:'🎮'}).icon;
-function gameModeId(){ if (PARTY&&PARTY.on) return 'party'; if (MAPK==='stage'||MAPK==='teamwar') return MAPK; return PEACE_RUN&&PEACE_MAPS.includes(MAPK)?MAPK+'-p':MAPK; }
+function gameModeId(){ if (PARTY&&PARTY.on) return 'party'; if (MAPK==='stage'||MAPK==='teamwar'||MAPK==='live') return MAPK; return PEACE_RUN&&PEACE_MAPS.includes(MAPK)?MAPK+'-p':MAPK; }
 /* 모드 탐험 보너스: 이번 주(월요일 시작)에 처음 해 보는 모드에서 문제를 5개 이상 풀면 코인 + */
 const EXPLORE_COINS=60, EXPLORE_MIN_Q=5;
 function weekKey(){ const t=new Date(); t.setHours(0,0,0,0); t.setDate(t.getDate()-((t.getDay()+6)%7)); return `${t.getFullYear()}${String(t.getMonth()+1).padStart(2,'0')}${String(t.getDate()).padStart(2,'0')}`; }
@@ -574,9 +575,10 @@ $('#edSave').addEventListener('click',async()=>{
 /* ---------- 게임 중간에 나가기 (모든 모드) ----------
    오른쪽 아래 🚪 나가기 또는 Esc → 확인 창 → 지금까지 푼 문제로 '중간에 나옴' 결과를 저장하고 결과 화면으로 */
 const QUIT={wasPaused:false,solo:false};
-const isMultiMode=()=>!!(PARTY&&PARTY.on)||MAPK==='teamwar'||MAPK==='stage';
+const isMultiMode=()=>!!(PARTY&&PARTY.on)||MAPK==='teamwar'||MAPK==='stage'||MAPK==='live';
 function quitOpen(){
   if (W.state!=='play' || !$('#quitPop').hidden) return;
+  if (MAPK==='live'){ liveLeave(); return; }   // 수업 모드: 묻지 않고 바로 로비로
   QUIT.solo=!isMultiMode(); QUIT.wasPaused=W.paused;
   if (QUIT.solo){ W.paused=true; for (const k in keys) keys[k]=false; }      // 혼자 하는 판은 잠깐 멈춰요 (함께 하는 판은 계속 진행돼요)
   $('#quitMsg').textContent=isMultiMode()?'함께 하는 게임이라 화면은 멈추지 않아요. 나가면 이번 판에서 빠지고, 지금까지 푼 문제는 \'중간에 나옴\'으로 기록돼요.':'지금까지 푼 문제와 점수는 \'중간에 나옴\'으로 기록돼요.';

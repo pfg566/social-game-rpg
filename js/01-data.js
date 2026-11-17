@@ -118,6 +118,7 @@ const WAVESETS = {
   {name:'온실가스 해골 대왕', n:2, hp:80, spd:2.4, dmg:9, color:0x8b5cf6, boss:{...BOSS_BASE, hp:620}}],
  teamwar:[{name:'조별 점령전', n:0, hp:1, spd:1, dmg:0, color:0xe0434a}],
  stage:[{name:'발판 서바이벌', n:0, hp:1, spd:1, dmg:0, color:0xe0434a}],
+ live:[{name:'수업 모드', n:0, hp:1, spd:1, dmg:0, color:0xe0434a}],
  runner:[{name:'정답 러너', n:0, hp:1, spd:1, dmg:0, color:0xe0434a}],
  island_peace:[
   {name:'1단계 · 아침 배송', n:0, hp:60, spd:2, dmg:0, color:0xe0434a, parcels:3},
@@ -159,6 +160,7 @@ const MAPS = {
   gateText:'잠김 · 빛나는 지식의 수정에서 퀴즈를 맞히면 다음 웨이브가 열려요', clearText:'웨이브 클리어! 지식의 수정에서 다음 웨이브를 여세요',
   winTitle:'섬 마을 배송 완료!', winMsg:'전자 상거래와 택배 산업이 섬 마을을 세계와 이어 줬어요. 아래 틀린 문제를 한 번 더 읽어 보고 마무리해요.'},
  teamwar:{name:'조별 점령전', need:['mc','ox'], start:[0,12], recharge:30, desc:'선생님이 연 조별 점령전이에요.', rules:[], gateText:'', clearText:'', winTitle:'우리 조 승리!', winMsg:'조별 점령전을 마쳤어요. 함께 싸운 조원들에게 박수!'},
+ live:{name:'수업 모드', need:[], start:[0,6.6], recharge:30, desc:'선생님이 연 수업 방이에요.', rules:[], gateText:'', clearText:'', winTitle:'수업 끝!', winMsg:'수업에 참여했어요.'},
  stage:{name:'발판 서바이벌', need:['mc','ox'], start:[0,0], recharge:30, desc:'선생님이 연 반 전체 퀴즈 게임이에요.', rules:[], gateText:'', clearText:'', winTitle:'끝까지 살아남았어요!', winMsg:'발판 서바이벌을 마쳤어요. 아래 틀린 문제를 한 번 더 읽어 보고 마무리해요.'},
  runner:{name:'정답 러너', need:['mc','ox'], start:[-1.5,0], recharge:30,
   desc:'앞으로 달리면서 문제를 읽고, 정답 색깔 문이 있는 줄로 옮겨 통과하세요. 몬스터와 싸우지 않아요.',

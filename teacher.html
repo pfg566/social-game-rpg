@@ -164,6 +164,52 @@ input.rename{border:2px solid var(--line);border-radius:6px;padding:2px 6px;widt
 .tw-tfeed{font-size:14px;line-height:1.7;margin:6px 0 10px;max-height:150px;overflow:auto}
 .miss-scope{margin:0 0 10px;padding:10px 12px;border-radius:10px;background:rgba(127,140,170,.12);font-size:14px;line-height:1.6}
 .miss-scope.warn{background:rgba(255,170,60,.16);border:1px solid rgba(255,170,60,.55)}
+/* 🏫 수업 모드 */
+.lv-sep{flex:1}
+.lv-grid{display:grid;grid-template-columns:minmax(340px,1fr) minmax(380px,1.25fr);gap:16px;align-items:start}
+@media (max-width:980px){ .lv-grid{grid-template-columns:1fr} }
+.lv-comp{display:grid;gap:10px;padding:12px;border:2px solid var(--line);border-radius:14px}
+.lv-comp textarea{border:2px solid var(--line);border-radius:8px;padding:6px 8px;font:inherit;width:100%;resize:vertical}
+.lv-quick{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding-bottom:10px;border-bottom:1px dashed var(--line)}
+.lv-quick small{color:var(--muted);width:100%}
+.lv-kinds{display:flex;flex-wrap:wrap;gap:6px}
+.lv-kinds button{border:2px solid var(--line);background:#fff;border-radius:99px;padding:5px 12px;font-weight:700;color:var(--ink);cursor:pointer}
+.lv-kinds button.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.lv-kdesc{margin:0;color:var(--muted);font-size:13px}
+.lv-optbox{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.lv-optbox .f.wide{grid-column:1/-1}
+.lv-bank{margin:0}
+.lv-ctl{display:flex;flex-wrap:wrap;gap:8px}
+.lv-live{padding:12px;border:2px solid var(--line);border-radius:14px;min-height:300px}
+.lv-rhead{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px}.lv-rhead label{font-size:13px;color:var(--muted)}
+.lv-empty{color:var(--muted)}
+.lv-row{display:grid;grid-template-columns:minmax(80px,180px) 1fr 48px;gap:8px;align-items:center;margin:6px 0}
+.lv-row .lb{font-weight:700;display:flex;gap:6px;align-items:center}.lv-row .lb i{width:14px;height:14px;border-radius:4px;flex:none}
+.lv-row .lvbar{height:22px;background:rgba(127,140,170,.15);border-radius:6px;overflow:hidden}.lv-row .lvbar b{display:block;height:100%;border-radius:6px}
+.lv-row .ct{font-weight:800;text-align:right}
+.lv-row.ok .lb::after{content:' ✓ 정답';color:#15803d}
+.lv-names{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:4px;margin:-2px 0 4px}
+.lv-names span{font-size:12px;background:rgba(127,140,170,.13);border-radius:99px;padding:2px 8px}
+.lv-names span em{font-style:normal;color:var(--muted)}
+.lv-wait{margin-top:10px;font-size:13px;color:var(--muted)}.lv-wait b{color:var(--ink)}
+.lv-h3{margin:16px 0 6px;font-size:15px}
+.lv-big{justify-content:flex-start;gap:18px;padding-top:56px}
+.lv-bigx{position:absolute;right:20px;top:16px}
+.lv-bigk{font-size:22px;opacity:.85}
+.lv-bigq{font-size:clamp(30px,4.2vw,58px);margin:0;text-align:center;max-width:92vw;line-height:1.25}
+.lv-bigr{width:min(1200px,94vw);display:grid;gap:14px}
+.lv-bigr .lv-row{grid-template-columns:minmax(120px,320px) 1fr 80px;font-size:26px}
+.lv-bigr .lv-row .lvbar{height:44px}
+.lv-bigr .lv-names span{font-size:17px;background:rgba(255,255,255,.14);color:#fff}
+.lv-bigr .lv-row.ok .lb::after{color:#7ef0a6}
+.lv-bign{font-size:22px;opacity:.85;margin:0}
+.lv-hist{display:flex;align-items:flex-end;gap:4px;height:140px;margin:26px 0 8px}
+.lv-hist div{flex:1;background:#8b5cf6;border-radius:4px 4px 0 0;position:relative;min-height:2px}
+.lv-hist div span{position:absolute;top:-18px;left:0;right:0;text-align:center;font-size:12px;font-weight:700}
+.lv-hlab{display:flex;justify-content:space-between;font-size:12px;color:var(--muted)}
+.lv-big .lv-hist{height:300px}.lv-big .lv-hist div span{font-size:20px;top:-28px}.lv-big .lv-hlab{font-size:20px;color:#fff;width:min(1200px,94vw)}
+.lv-reason{font-size:13px;margin:2px 0 6px;padding-left:10px;border-left:3px solid var(--line)}
+.lv-big .lv-reason{font-size:20px}
 </style>
 </head>
 <body>
@@ -221,6 +267,7 @@ input.rename{border:2px solid var(--line);border-radius:6px;padding:2px 6px;widt
     <div class="tabs" role="tablist" id="tabs">
       <button class="tab" role="tab" data-tab="students" aria-selected="true">학생별</button>
       <button class="tab" role="tab" data-tab="awards" aria-selected="false">🏆 시상식</button>
+      <button class="tab" role="tab" data-tab="live" aria-selected="false">🏫 수업 모드</button>
       <button class="tab" role="tab" data-tab="stage" aria-selected="false">🟦 발판 서바이벌</button>
       <button class="tab" role="tab" data-tab="tw" aria-selected="false">⚔️ 조별 점령전</button>
       <button class="tab" role="tab" data-tab="records" aria-selected="false">전체 기록</button>
@@ -245,6 +292,39 @@ input.rename{border:2px solid var(--line);border-radius:6px;padding:2px 6px;widt
       <div class="tw-board" id="twBoard"></div>
       <div class="tw-tfeed" id="twTFeed"></div>
       <div class="tablewrap"><table id="twTbl"></table></div>
+    </section>
+    <section class="card panel" id="pLive" hidden>
+      <div class="aw-bar">
+        <label class="f"><span>학급</span><select id="lvCls"></select></label>
+        <button class="btn primary" id="lvOpen">🏫 수업 방 열기</button><button class="btn" id="lvClose">방 닫기</button>
+        <span class="lv-sep"></span>
+        <button class="btn" id="lvFreeze">⛔ 멈춰!</button>
+        <label class="f"><span>발표자 뽑기</span><select id="lvPickFrom"><option value="all">접속한 학생 모두</option><option value="ans">답한 학생 중</option><option value="none">아직 답 안 한 학생 중</option></select></label>
+        <button class="btn" id="lvPickBtn">🎤 뽑기</button>
+        <button class="btn" id="lvBigBtn">📺 크게 보기</button>
+        <button class="btn" id="lvCsv">📥 참여 기록 CSV</button>
+      </div>
+      <div id="lvStatus" class="miss-scope">학급을 고르고 '수업 방 열기'를 누르면 그 반 학생들 게임 화면에 '🏫 수업 모드 · 교실에 들어가기' 버튼이 생겨요.</div>
+      <div class="lv-grid">
+        <div class="lv-comp">
+          <div class="lv-quick"><b>⚡ 바로 묻기</b><button class="btn" data-lvq="mc">1 · 2 · 3 · 4</button><button class="btn" data-lvq="ox">O / X</button><button class="btn" data-lvq="light">🚦 이해도</button><small>질문은 말로 하고, 학생은 구역으로 이동만 해요</small></div>
+          <div class="lv-kinds" id="lvKinds">
+            <button data-lvk="mc" class="on">4지선다</button><button data-lvk="ox">O/X</button><button data-lvk="sa">단답형</button><button data-lvk="light">🚦 신호등</button><button data-lvk="debate">찬반 토론</button><button data-lvk="line">수직선</button><button data-lvk="group">모둠 나누기</button>
+          </div>
+          <p class="lv-kdesc" id="lvKDesc"></p>
+          <label class="f"><span>질문 (비워 두면 말로 묻는 걸로 해요)</span><textarea id="lvQText" rows="2" maxlength="160" placeholder="예) 지방 자치 단체의 일을 감시하는 곳은?"></textarea></label>
+          <div id="lvOptBox" class="lv-optbox"></div>
+          <div class="aw-bar lv-bank"><label class="f"><span>문제은행</span><select id="lvUnit"></select></label><button class="btn" id="lvBankBtn">🎲 한 문제 가져오기</button>
+            <label class="f"><span>자동 마감</span><select id="lvAuto"><option value="0">안 함</option><option value="20">20초 뒤</option><option value="30">30초 뒤</option><option value="45">45초 뒤</option><option value="60">1분 뒤</option><option value="90">1분 30초 뒤</option></select></label></div>
+          <div class="lv-ctl"><button class="btn primary" id="lvAsk">▶ 질문 띄우기</button><button class="btn" id="lvLock">⏹ 마감</button><button class="btn" id="lvReveal">✅ 정답·결과 공개</button><button class="btn" id="lvNext">🧹 질문 내리기</button></div>
+        </div>
+        <div class="lv-live">
+          <div class="lv-rhead"><b id="lvRTitle">결과</b><label><input type="checkbox" id="lvHide"> 큰 화면에서 이름 숨기기</label></div>
+          <div id="lvRes" class="lv-res"><p class="lv-empty">질문을 띄우면 여기에 학생 답이 실시간으로 모여요.</p></div>
+          <h3 class="lv-h3">질문 기록 (이번 수업)</h3>
+          <div class="tablewrap"><table id="lvLogTbl"></table></div>
+        </div>
+      </div>
     </section>
     <section class="card panel" id="pStage" hidden>
       <div class="aw-bar">
@@ -388,6 +468,13 @@ input.rename{border:2px solid var(--line);border-radius:6px;padding:2px 6px;widt
   </main>
 </div>
 
+<div class="aw-stage lv-big" id="lvBig" hidden>
+  <button class="btn lv-bigx" id="lvBigX">닫기 ✕</button>
+  <div class="lv-bigk" id="lvBigK"></div>
+  <h1 class="lv-bigq" id="lvBigQ"></h1>
+  <div class="lv-bigr" id="lvBigR"></div>
+  <p class="lv-bign" id="lvBigN"></p>
+</div>
 <div class="aw-stage rv-stage" id="rvStage" hidden>
   <div class="rv-card">
     <div class="rv-head" id="rvHead"></div>
@@ -577,6 +664,7 @@ $('#tabs').addEventListener('click',e=>{ const b=e.target.closest('[data-tab]');
   $('#pRoster').hidden=tab!=='roster'; if (tab==='roster'&&!RS.cls&&$('#rsCls').options.length>1){ $('#rsCls').selectedIndex=1; rsWatch(); }
   $('#pAwards').hidden=tab!=='awards'; if (tab==='awards') awInit();
   $('#pStage').hidden=tab!=='stage'; if (tab==='stage') stInit();
+  $('#pLive').hidden=tab!=='live'; if (tab==='live') lvInit();
   $('#pTw').hidden=tab!=='tw'; if (tab==='tw') twInit();
   $('#pStudents').hidden=tab!=='students'; $('#pRecords').hidden=tab!=='records'; $('#pMissed').hidden=tab!=='missed'; $('#pManage').hidden=tab!=='manage'; $('#pBalance').hidden=tab!=='balance'; });
 
@@ -1324,6 +1412,176 @@ $('#delBtn').addEventListener('click',async()=>{
   }catch(err){ $('#delMsg').className='msg err'; $('#delMsg').textContent='지우지 못했어요. 잠시 뒤 다시 시도해 주세요.'; }
   finally{ $('#delBtn').disabled=false; }
 });
+
+/* ---------- 🏫 수업 모드 (게임이 아니라 수업 참여) ---------- */
+const LV={inited:false,cls:'',meta:null,p:{},ans:{},log:{},refs:[],aRef:null,aQid:'',k:'mc',autoTo:0,timer:0};
+const LV_PAL=['#e5484d','#3b82f6','#22a35a','#e8a400','#8b5cf6','#ec4899'];
+const LV_KN={mc:'4지선다',ox:'O/X',sa:'단답형',light:'🚦 신호등',debate:'찬반 토론',line:'수직선',group:'모둠 나누기'};
+const LV_KD={mc:'바닥에 1~4 구역이 생겨요. 보기를 비워 두면 번호만 보여요. 정답을 고르지 않으면 투표로 써요.',ox:'왼쪽 O · 오른쪽 X 구역이 생겨요.',sa:'학생 화면에 입력 칸이 떠요. 띄어쓰기는 무시하고, 정답이 여러 개면 | 로 나눠 써요 (예: 지방 의회|의회).',
+  light:'초록(알겠어요) · 노랑(조금 헷갈려요) · 빨강(잘 모르겠어요) 구역으로 지금 이해도를 보여 줘요. 정답 없음.',debate:'찬성 · 반대 구역으로 가고, 이유를 한 줄 쓸 수 있어요.',
+  line:'바닥 전체가 0~100 수직선이 돼요. 서 있는 자리가 곧 생각의 정도예요. 양 끝 말을 정해요.',group:'2~6개 모둠 구역이 생겨요. 학생이 원하는 모둠으로 가요 (주제 고르기 · 역할 나누기).'};
+function lvInit(){
+  const el=$('#lvCls'), cur=el.value||LV.cls;
+  el.innerHTML='<option value="">학급 선택</option>'+sortedSchools().map(sid=>{ const ks=sortedClasses(sid).filter(k=>!CLS[k].hidden); if (!ks.length) return '';
+    return `<optgroup label="${esc(SCH[sid].name)}">`+ks.map(k=>`<option value="${k}">${CLS[k].grade}학년 ${CLS[k].cls}반</option>`).join('')+'</optgroup>'; }).join('');
+  if (cur && [...el.options].some(o=>o.value===cur)) el.value=cur;
+  lvFillUnits();
+  if (!LV.inited){ LV.inited=true;
+    el.addEventListener('change',()=>{ lvFillUnits(); lvWatch(); });
+    $('#lvOpen').onclick=lvOpenRoom; $('#lvClose').onclick=lvCloseRoom;
+    $('#lvKinds').addEventListener('click',e=>{ const b=e.target.closest('[data-lvk]'); if (b) lvSetKind(b.dataset.lvk); });
+    document.querySelectorAll('[data-lvq]').forEach(b=>b.onclick=()=>lvAsk({k:b.dataset.lvq,text:'',opts:[],ans:''}));
+    $('#lvAsk').onclick=()=>{ const q=lvReadForm(); if (q) lvAsk(q); };
+    $('#lvLock').onclick=()=>lvPhase('lock'); $('#lvReveal').onclick=()=>lvPhase('reveal'); $('#lvNext').onclick=lvClearQ;
+    $('#lvFreeze').onclick=lvToggleFreeze; $('#lvPickBtn').onclick=lvPick; $('#lvBankBtn').onclick=lvFromBank;
+    $('#lvBigBtn').onclick=()=>{ $('#lvBig').hidden=false; lvRender(); try{ document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen().catch(()=>{}); }catch(e){} };
+    $('#lvBigX').onclick=()=>{ $('#lvBig').hidden=true; try{ document.fullscreenElement&&document.exitFullscreen(); }catch(e){} };
+    $('#lvHide').onchange=lvRender; $('#lvCsv').onclick=lvCsv;
+    LV.timer=setInterval(lvRender,2000); lvSetKind('mc'); }
+  lvWatch();
+}
+function lvFillUnits(){ const us=$('#lvUnit'), v=us.value||UACTIVE; us.innerHTML=unitOptions(UNITS.filter(u=>u.cnt.mc+u.cnt.ox>0),$('#lvCls').value,u=>` (4지선다 ${u.cnt.mc} · O/X ${u.cnt.ox})`);
+  const fit=UNITS.find(u=>u.cnt.mc+u.cnt.ox>0&&unitFits(u,$('#lvCls').value)&&(u.sch||u.grade)); if ([...us.options].some(o=>o.value===v)&&!fit) us.value=v; else if (fit) us.value=fit.id; }
+function lvWatch(){
+  LV.refs.forEach(r=>r.off()); LV.refs=[]; if (LV.aRef){ LV.aRef.off(); LV.aRef=null; LV.aQid=''; }
+  LV.cls=$('#lvCls').value; LV.meta=null; LV.p={}; LV.ans={}; LV.log={}; lvRender(); if (!LV.cls) return;
+  const m=db.ref(`live/${LV.cls}/meta`); m.on('value',s=>{ LV.meta=s.val(); lvWatchAns(); lvRender(); }); LV.refs.push(m);
+  const p=db.ref(`live/${LV.cls}/p`); p.on('value',s=>{ LV.p=s.val()||{}; lvRender(); }); LV.refs.push(p);
+  const l=db.ref(`live/${LV.cls}/log`); l.on('value',s=>{ LV.log=s.val()||{}; lvRenderLog(); }); LV.refs.push(l);
+}
+function lvWatchAns(){ const q=LV.meta&&LV.meta.q, id=q&&q.id||''; if (id===LV.aQid) return;
+  if (LV.aRef){ LV.aRef.off(); LV.aRef=null; } LV.aQid=id; LV.ans={}; if (!id) return;
+  LV.aRef=db.ref(`live/${LV.cls}/a/${id}`); LV.aRef.on('value',s=>{ LV.ans=s.val()||{}; lvRender(); }); }
+function lvMsg(t,warn){ const e=$('#lvStatus'); e.className='miss-scope'+(warn?' warn':''); e.innerHTML=t; }
+const LV_RULE_ERR='저장하지 못했어요. 새 보안 규칙(database.rules.json)을 Firebase에 올렸는지 확인해 주세요.';
+async function lvOpenRoom(){ if (!LV.cls){ lvMsg('학급을 먼저 골라 주세요.',true); return; }
+  if (LV.meta&&LV.meta.state==='open'&&!confirm('이미 열려 있어요. 새 수업으로 다시 열까요? (이번 수업 기록과 참여 코인 횟수가 새로 시작돼요)')) return;
+  try{ await db.ref(`live/${LV.cls}`).set({meta:{state:'open',t0:firebase.database.ServerValue.TIMESTAMP}}); }catch(e){ lvMsg(LV_RULE_ERR,true); } }
+async function lvCloseRoom(){ if (!LV.cls||!LV.meta) return; if (!confirm('수업 방을 닫을까요? 학생들은 로비로 돌아가요.')) return;
+  try{ await db.ref(`live/${LV.cls}/meta`).update({state:'closed',q:null,freeze:null}); }catch(e){ lvMsg(LV_RULE_ERR,true); } }
+function lvSetKind(k){ LV.k=k; document.querySelectorAll('#lvKinds [data-lvk]').forEach(b=>b.classList.toggle('on',b.dataset.lvk===k)); $('#lvKDesc').textContent=LV_KD[k]||'';
+  const box=$('#lvOptBox'), inp=(id,lab,ph,val,wide)=>`<label class="f${wide?' wide':''}"><span>${lab}</span><input id="${id}" maxlength="40" placeholder="${esc(ph||'')}" value="${esc(val||'')}"></label>`;
+  if (k==='mc') box.innerHTML=[1,2,3,4].map(i=>inp('lvO'+i,`보기 ${i}`,'비워 두면 번호만')).join('')+`<label class="f wide"><span>정답</span><select id="lvAns"><option value="">정답 없음 (투표)</option><option value="1">1번</option><option value="2">2번</option><option value="3">3번</option><option value="4">4번</option></select></label>`;
+  else if (k==='ox') box.innerHTML=`<label class="f wide"><span>정답</span><select id="lvAns"><option value="">정답 없음 (생각 묻기)</option><option value="o">O</option><option value="x">X</option></select></label>`;
+  else if (k==='sa') box.innerHTML=inp('lvAnsT','정답 (선택 · 여러 개면 | 로)','예) 지방 의회|의회','',true);
+  else if (k==='debate') box.innerHTML=inp('lvO1','왼쪽 구역','찬성','찬성')+inp('lvO2','오른쪽 구역','반대','반대');
+  else if (k==='line') box.innerHTML=inp('lvO1','왼쪽 끝 (0)','전혀 아니다','전혀 아니다')+inp('lvO2','오른쪽 끝 (100)','매우 그렇다','매우 그렇다');
+  else if (k==='group') box.innerHTML=`<label class="f"><span>모둠 수</span><select id="lvGN">${[2,3,4,5,6].map(n=>`<option${n===4?' selected':''}>${n}</option>`).join('')}</select></label>`+inp('lvGNames','모둠 이름 (쉼표로 · 선택)','예) 환경, 교통, 복지, 문화','',false);
+  else box.innerHTML='';
+}
+function lvReadForm(){
+  const k=LV.k, text=$('#lvQText').value.trim().slice(0,160), v=id=>{ const e=$('#'+id); return e?e.value.trim().slice(0,40):''; };
+  let opts=[], ans='';
+  if (k==='mc'){ opts=[1,2,3,4].map(i=>v('lvO'+i)); if (!opts.some(Boolean)) opts=[]; ans=v('lvAns'); }
+  else if (k==='ox') ans=v('lvAns');
+  else if (k==='sa'){ ans=v('lvAnsT'); if (!text){ lvMsg('단답형은 질문을 써 주세요 (학생 화면에 보여요).',true); return null; } }
+  else if (k==='debate'||k==='line') opts=[v('lvO1'),v('lvO2')];
+  else if (k==='group'){ const n=+v('lvGN')||4, nm=v('lvGNames').split(/[,，]/).map(s=>s.trim()).filter(Boolean); opts=[...Array(n).keys()].map(i=>(nm[i]||`${i+1}모둠`).slice(0,12)); }
+  return {k,text,opts,ans};
+}
+async function lvAsk(q){
+  if (!LV.cls||!LV.meta||LV.meta.state!=='open'){ lvMsg('먼저 🏫 수업 방 열기를 눌러 주세요.',true); return; }
+  const id='q'+Date.now().toString(36), n=Object.keys(LV.log||{}).length+1;
+  const Q={id,k:q.k,text:q.text||'',opts:q.opts&&q.opts.length?q.opts:null,ans:q.ans||'',ph:'ask',at:firebase.database.ServerValue.TIMESTAMP};
+  try{ await db.ref(`live/${LV.cls}`).update({'meta/q':Q,'meta/pick':null,[`log/${id}`]:{n,k:Q.k,text:Q.text,opts:Q.opts,ans:Q.ans,at:firebase.database.ServerValue.TIMESTAMP}}); }
+  catch(e){ lvMsg(LV_RULE_ERR,true); return; }
+  clearTimeout(LV.autoTo); const s=+$('#lvAuto').value; if (s>0) LV.autoTo=setTimeout(()=>{ const c=LV.meta&&LV.meta.q; if (c&&c.id===id&&c.ph==='ask') lvPhase('lock'); },s*1000);
+}
+async function lvPhase(ph){ const q=LV.meta&&LV.meta.q; if (!q) return;
+  const up={'meta/q/ph':ph};
+  if (ph==='reveal'){ const R=lvSummary(q); up['meta/q/res']=R.res||null; up['meta/q/avg']=R.avg!=null?R.avg:null; up['meta/q/top']=R.top||null;
+    up[`log/${q.id}/cnt`]=R.n; up[`log/${q.id}/res`]=R.res||null; up[`log/${q.id}/avg`]=R.avg!=null?R.avg:null; up[`log/${q.id}/top`]=R.top||null; }
+  if (ph==='lock') clearTimeout(LV.autoTo);
+  try{ await db.ref(`live/${LV.cls}`).update(up); }catch(e){ lvMsg(LV_RULE_ERR,true); } }
+async function lvClearQ(){ const q=LV.meta&&LV.meta.q; if (!q) return; clearTimeout(LV.autoTo);
+  const R=lvSummary(q); try{ await db.ref(`live/${LV.cls}`).update({'meta/q':null,[`log/${q.id}/cnt`]:R.n}); }catch(e){ lvMsg(LV_RULE_ERR,true); } }
+async function lvToggleFreeze(){ if (!LV.meta||LV.meta.state!=='open') return; try{ await db.ref(`live/${LV.cls}/meta/freeze`).set(LV.meta.freeze?null:true); }catch(e){ lvMsg(LV_RULE_ERR,true); } }
+function lvPresent(){ const now=pNow(); return Object.entries(LV.p||{}).filter(([u,p])=>p&&now-(+p.t||0)<75000).map(([u,p])=>({u,...p})).sort((a,b)=>(a.num|0)-(b.num|0)); }
+async function lvPick(){
+  if (!LV.meta||LV.meta.state!=='open') return; const from=$('#lvPickFrom').value, ps=lvPresent();
+  const list=ps.filter(p=>from==='all'?true:from==='ans'?!!LV.ans[p.u]:!LV.ans[p.u]);
+  if (!list.length){ lvMsg('뽑을 학생이 없어요.',true); return; }
+  const p=list[Math.floor(Math.random()*list.length)];
+  try{ await db.ref(`live/${LV.cls}/meta/pick`).set({u:p.u,n:String(p.n||'').slice(0,12),t:firebase.database.ServerValue.TIMESTAMP}); }catch(e){ lvMsg(LV_RULE_ERR,true); }
+}
+function lvFromBank(){
+  const uid=$('#lvUnit').value, units=BANKRAW&&BANKRAW.units?arrOf(BANKRAW.units):[], u=units.find(x=>x&&x.id===uid); if (!u){ lvMsg('단원을 골라 주세요.',true); return; }
+  const b=u.bank||{}, mc=arrOf(b.mc).filter(x=>x&&x.q&&arrOf(x.o).length>=4), ox=arrOf(b.ox).filter(x=>x&&x.q);
+  const pool=[...mc.map(x=>['mc',x]),...ox.map(x=>['ox',x])]; if (!pool.length){ lvMsg('이 단원에는 4지선다나 O/X 문제가 없어요.',true); return; }
+  const [k,x]=pool[Math.floor(Math.random()*pool.length)]; lvSetKind(k); $('#lvQText').value=String(x.q).slice(0,160);
+  if (k==='mc'){ const o=arrOf(x.o).slice(0,4).map(String), perm=[0,1,2,3].sort(()=>Math.random()-.5); perm.forEach((pi,i)=>{ $('#lvO'+(i+1)).value=o[pi].slice(0,40); }); $('#lvAns').value=String(perm.indexOf(0)+1); }
+  else $('#lvAns').value=x.a?'o':'x';
+  lvMsg(`문제은행에서 가져왔어요 (${k==='mc'?'4지선다':'O/X'}). 확인하고 ▶ 질문 띄우기를 눌러요.`);
+}
+/* 결과 모으기 */
+const lvNorm=s=>String(s||'').replace(/\s+/g,'').toLowerCase();
+function lvDefs(q){ const o=arrOf(q.opts).map(String);
+  if (q.k==='mc') return [0,1,2,3].map(i=>({num:String(i+1),text:o[i]||'',col:LV_PAL[i]}));
+  if (q.k==='ox') return [{num:'O',text:'',col:'#3b82f6'},{num:'X',text:'',col:'#e5484d'}];
+  if (q.k==='light') return [{num:'초록',text:'알겠어요',col:'#22a35a'},{num:'노랑',text:'조금 헷갈려요',col:'#e8a400'},{num:'빨강',text:'잘 모르겠어요',col:'#e5484d'}];
+  if (q.k==='debate') return [{num:o[0]||'찬성',text:'',col:'#3b82f6'},{num:o[1]||'반대',text:'',col:'#e5484d'}];
+  if (q.k==='group'){ const n=Math.max(2,Math.min(6,o.length||4)); return [...Array(n).keys()].map(i=>({num:o[i]||`${i+1}모둠`,text:'',col:LV_PAL[i]})); }
+  return []; }
+function lvCorrect(q){ if (!q||!q.ans) return []; if (q.k==='mc') return String(q.ans).split(/[,|]/).map(s=>+s-1).filter(n=>n>=0&&n<4); if (q.k==='ox') return [/^o/i.test(q.ans)?0:1]; return []; }
+function lvSaOk(q,v){ if (!q.ans) return null; return String(q.ans).split('|').map(lvNorm).filter(Boolean).includes(lvNorm(v)); }
+function lvSummary(q,A){ A=A||LV.ans||{}; const L=Object.entries(A).map(([u,a])=>({u,...a})); const n=L.length;
+  if (q.k==='line'){ const vs=L.map(a=>+a.v).filter(x=>isFinite(x)); const avg=vs.length?Math.round(vs.reduce((a,b)=>a+b,0)/vs.length):null; const bins=Array(10).fill(0); vs.forEach(x=>bins[Math.min(9,Math.floor(x/10))]++); return {n,avg,bins,L}; }
+  if (q.k==='sa'){ const g={}; L.forEach(a=>{ const k=lvNorm(a.v); if (!k) return; (g[k]=g[k]||{v:String(a.v),c:0,names:[]}); g[k].c++; g[k].names.push(a.n||''); });
+    const top=Object.values(g).sort((a,b)=>b.c-a.c); return {n,groups:top,top:top.slice(0,5).map(t=>({v:t.v.slice(0,20),c:t.c})),L}; }
+  const d=lvDefs(q), res=d.map(()=>0), names=d.map(()=>[]), why=d.map(()=>[]); L.forEach(a=>{ const i=+a.v; if (i>=0&&i<d.length){ res[i]++; names[i].push(a.n||''); if (a.r) why[i].push([a.n||'',a.r]); } });
+  return {n,res,names,why,L}; }
+function lvBody(q,big){
+  const R=lvSummary(q), hide=big&&$('#lvHide').checked, rev=q.ph==='reveal', show=!big||rev||q.k==='light'||q.k==='group'||q.k==='debate'||!lvCorrect(q).length&&q.k!=='sa';
+  const nm=a=>hide?'':`<div class="lv-names">${a.map(x=>`<span>${esc(x)}</span>`).join('')}</div>`;
+  if (q.k==='line'){ const mx=Math.max(1,...R.bins), o=arrOf(q.opts);
+    return `<div class="lv-hist">${R.bins.map((c,i)=>`<div style="height:${Math.round(c/mx*100)}%" title="${i*10}~${i*10+9}"><span>${c||''}</span></div>`).join('')}</div><div class="lv-hlab"><span>0 ${esc(o[0]||'')}</span><b>${R.avg!=null?`평균 ${R.avg}`:''}</b><span>${esc(o[1]||'')} 100</span></div>`+
+      (hide?'':`<div class="lv-names" style="margin-top:8px">${R.L.sort((a,b)=>(+a.v)-(+b.v)).map(a=>`<span>${esc(a.n||'')} <em>${a.v}</em></span>`).join('')}</div>`); }
+  if (q.k==='sa'){ if (!R.groups.length) return '<p class="lv-empty">아직 답이 없어요.</p>'; const mx=Math.max(1,...R.groups.map(g=>g.c));
+    if (big&&!rev) return `<p class="lv-empty" style="color:#fff;text-align:center;font-size:24px">✏️ ${R.n}명이 답했어요</p>`;
+    return R.groups.map(g=>{ const ok=lvSaOk(q,g.v); return `<div class="lv-row${ok?' ok':''}"><div class="lb"><i style="background:${ok?'#22a35a':ok===false?'#94a3b8':'#8b5cf6'}"></i>${esc(g.v)}</div><div class="lvbar"><b style="width:${Math.round(g.c/mx*100)}%;background:${ok?'#22a35a':'#8b5cf6'}"></b></div><div class="ct">${g.c}</div>${nm(g.names)}</div>`; }).join(''); }
+  const d=lvDefs(q), c=lvCorrect(q), mx=Math.max(1,...R.res);
+  return d.map((z,i)=>`<div class="lv-row${(rev||!big)&&c.includes(i)?' ok':''}"><div class="lb"><i style="background:${z.col}"></i>${esc(z.num)}${z.text?` · ${esc(z.text)}`:''}</div><div class="lvbar"><b style="width:${show?Math.round(R.res[i]/mx*100):0}%;background:${z.col}"></b></div><div class="ct">${show?R.res[i]:'?'}</div>${show?nm(R.names[i]):''}${show&&!hide?R.why[i].map(([n,r])=>`<div class="lv-reason" style="grid-column:1/-1"><b>${esc(n)}</b> ${esc(r)}</div>`).join(''):''}</div>`).join('');
+}
+function lvRender(){
+  if ($('#pLive').hidden&&$('#lvBig').hidden) return;
+  const m=LV.meta, ps=lvPresent(), q=m&&m.q;
+  if (!LV.cls) lvMsg("학급을 고르고 '수업 방 열기'를 누르면 그 반 학생들 게임 화면에 '🏫 수업 모드 · 교실에 들어가기' 버튼이 생겨요.");
+  else if (!m||m.state!=='open') lvMsg(m&&m.state==='closed'?'수업 방을 닫았어요. 다시 하려면 🏫 수업 방 열기를 눌러요.':'아직 열지 않았어요. 🏫 수업 방 열기를 눌러 주세요.');
+  else { const pk=m.pick&&pNow()-(+m.pick.t||0)<60000?` · 🎤 발표자: <b>${esc(m.pick.n||'')}</b>`:'';
+    lvMsg(`<b>수업 중</b> · 들어온 학생 ${ps.length}명${m.freeze?' · <b style="color:#d93a3f">⛔ 멈춤 중</b>':''}${pk}`); }
+  $('#lvFreeze').textContent=m&&m.freeze?'▶ 다시 움직이기':'⛔ 멈춰!';
+  ['#lvAsk','#lvLock','#lvReveal','#lvNext'].forEach(s=>$(s).disabled=!m||m.state!=='open');
+  if (q){ $('#lvLock').disabled=q.ph!=='ask'; $('#lvReveal').disabled=q.ph==='reveal'; } else { $('#lvLock').disabled=$('#lvReveal').disabled=$('#lvNext').disabled=true; }
+  const ansd=q?Object.keys(LV.ans).length:0, waitL=q?ps.filter(p=>!LV.ans[p.u]):[];
+  $('#lvRTitle').textContent=q?`${LV_KN[q.k]||''} · ${q.ph==='ask'?'답 받는 중':q.ph==='lock'?'마감':'결과 공개'} · ${ansd}/${ps.length}명 답함`:'결과';
+  $('#lvRes').innerHTML=q?(q.text?`<p style="margin:0 0 8px"><b>${esc(q.text)}</b></p>`:'')+lvBody(q,false)+(waitL.length?`<p class="lv-wait"><b>아직 안 한 학생 ${waitL.length}명</b> · ${waitL.map(p=>esc(p.n||'')).join(', ')}</p>`:''):'<p class="lv-empty">질문을 띄우면 여기에 학생 답이 실시간으로 모여요. 질문이 없을 때 학생들은 교실을 자유롭게 돌아다녀요.</p>';
+  if (!$('#lvBig').hidden){
+    $('#lvBigK').textContent=q?`${LV_KN[q.k]||''} · ${q.ph==='ask'?'생각하고 이동해요':q.ph==='lock'?'마감!':'결과'}`:'🏫 수업 모드';
+    $('#lvBigQ').textContent=q?(q.text||(q.k==='mc'?'정답 번호 구역으로!':q.k==='ox'?'O일까 X일까?':q.k==='light'?'지금 내 이해도는?':'')):(m&&m.pick&&pNow()-(+m.pick.t||0)<60000?`🎤 ${m.pick.n} 발표!`:'자유 시간');
+    $('#lvBigR').innerHTML=q?lvBody(q,true):'';
+    $('#lvBigN').textContent=q?`${ansd}/${ps.length}명 답했어요`+(m.freeze?' · ⛔ 멈춤':''):`들어온 학생 ${ps.length}명`; }
+}
+function lvRenderLog(){ const L=Object.entries(LV.log||{}).map(([id,x])=>({id,...x})).sort((a,b)=>(a.n|0)-(b.n|0));
+  $('#lvLogTbl').innerHTML=L.length?'<thead><tr><th>#</th><th>종류</th><th>질문</th><th>정답</th><th>답한 학생</th><th>결과</th></tr></thead><tbody>'+L.map(x=>{ const q={...x,opts:x.opts}; const d=lvDefs(q);
+    const res=Array.isArray(x.res)?d.map((z,i)=>`${z.num} ${x.res[i]|0}`).join(' · '):x.avg!=null?`평균 ${x.avg}`:Array.isArray(x.top)?x.top.map(t=>`${t.v}(${t.c})`).join(', '):'';
+    const ans=x.k==='mc'&&x.ans?x.ans+'번':x.k==='ox'&&x.ans?x.ans.toUpperCase():x.ans||'';
+    return `<tr><td>${x.n|0}</td><td>${LV_KN[x.k]||x.k}</td><td>${esc(x.text||'(말로 질문)')}</td><td>${esc(ans)}</td><td>${x.cnt!=null?x.cnt+'명':''}</td><td>${esc(res)}</td></tr>`; }).join('')+'</tbody>'
+    :'<tbody><tr><td class="empty">이번 수업에 띄운 질문이 아직 없어요.</td></tr></tbody>'; }
+async function lvCsv(){
+  if (!LV.cls){ lvMsg('학급을 먼저 골라 주세요.',true); return; }
+  let A={}, L={}; try{ const [a,l]=await Promise.all([db.ref(`live/${LV.cls}/a`).once('value'),db.ref(`live/${LV.cls}/log`).once('value')]); A=a.val()||{}; L=l.val()||{}; }catch(e){ lvMsg('기록을 읽지 못했어요.',true); return; }
+  const ps=LV.p||{}, rows=[['질문번호','종류','질문','번호','이름','답','이유','정답여부']];
+  const cell=s=>{ s=String(s==null?'':s); return /[",\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s; };
+  Object.entries(L).map(([id,x])=>({id,...x})).sort((a,b)=>(a.n|0)-(b.n|0)).forEach(x=>{ const d=lvDefs(x), c=lvCorrect(x);
+    Object.entries(A[x.id]||{}).map(([u,a])=>({u,...a})).sort((a,b)=>((ps[a.u]||{}).num|0)-((ps[b.u]||{}).num|0)).forEach(a=>{
+      const lab=x.k==='sa'||x.k==='line'?a.v:(d[+a.v]?d[+a.v].num+(d[+a.v].text?' '+d[+a.v].text:''):a.v);
+      const ok=x.k==='sa'?lvSaOk(x,a.v):c.length?c.includes(+a.v):null;
+      rows.push([x.n|0,LV_KN[x.k]||x.k,x.text||'(말로 질문)',(ps[a.u]||{}).num||'',a.n||'',lab,a.r||'',ok===true?'O':ok===false?'X':'']); }); });
+  if (rows.length<2){ lvMsg('아직 저장된 답이 없어요.',true); return; }
+  const blob=new Blob(['﻿'+rows.map(r=>r.map(cell).join(',')).join('\r\n')],{type:'text/csv;charset=utf-8'}), a=document.createElement('a');
+  const d=new Date(), c=CLS[LV.cls]; a.href=URL.createObjectURL(blob); a.download=`수업참여_${c?c.grade+'-'+c.cls:LV.cls}_${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}.csv`; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+}
+
 })();
 </script>
 <div class="aw-stage" id="awStage" hidden>
