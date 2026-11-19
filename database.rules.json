@@ -666,6 +666,33 @@
           ".validate": false
         }
       }
+    },
+    "online": {
+      ".read": "auth != null && auth.token.email_verified == true && (auth.token.email.toLowerCase() == 'pfg566@gmail.com' || root.child('admins').child(auth.token.email.toLowerCase().replace('.', ',')).val() == true)",
+      "$cid": {
+        "$uid": {
+          ".write": "auth != null && auth.uid == $uid",
+          ".validate": "newData.hasChildren(['t'])",
+          "n": {
+            ".validate": "newData.isString() && newData.val().length <= 12"
+          },
+          "num": {
+            ".validate": "newData.isNumber()"
+          },
+          "s": {
+            ".validate": "newData.isString() && newData.val().length <= 10"
+          },
+          "m": {
+            ".validate": "newData.isString() && newData.val().length <= 16"
+          },
+          "t": {
+            ".validate": "newData.val() == now"
+          },
+          "$other": {
+            ".validate": false
+          }
+        }
+      }
     }
   }
 }

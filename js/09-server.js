@@ -153,7 +153,7 @@ function editLoginPrompt(){
 function loadBank(){
   if (!fbDb) return;
   fbDb.ref('bank').once('value').then(snap=>{
-    const n=normalize(snap.val()); if (n){ DATA=n; useUnit(DATA.active); applyPlay(); }
+    const n=normalize(snap.val()); if (n){ DATA=n; if (W.state!=='play'){ useUnit(DATA.active); applyPlay(); } }
     BANK_LOADED=true;
   }).catch(()=>{ BANK_LOADED=true; });
 }

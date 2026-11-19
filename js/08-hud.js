@@ -134,7 +134,7 @@ function startGame(){
   EASEF = EASES[MODE==='hero'?0:Math.min(2,Math.max(0,(CI&&CI.ease)|0))];
   LOC_TIME = MODE==='hero' ? HERO.loc : Math.round(25*(DIFF<1? 1+(1-DIFF)*.8 : 1))+EASEF.loc;
   document.body.classList.toggle('hero',MODE==='hero');
-  { applyPlay(); const pu=DATA.units.find(u=>u.id===playUnit); applyZoneCfg(zcfgOf(pu)); setMap(PARTY.on?'conquest':STG.joining?'stage':LIVE.joining?'live':TWC.joining?'teamwar':(PLAYMAP||mapOf(pu))); }
+  { applyPlay(true); const pu=DATA.units.find(u=>u.id===playUnit); applyZoneCfg(zcfgOf(pu)); setMap(PARTY.on?'conquest':STG.joining?'stage':LIVE.joining?'live':TWC.joining?'teamwar':(PLAYMAP||mapOf(pu))); }
   PEACE_RUN=PEACE && PEACE_MAPS.includes(MAPK);
   if (PEACE_RUN) WAVES=WAVESETS[MAPK+'_peace'];
   document.body.classList.toggle('peace',PEACE_RUN); document.body.classList.toggle('aim-mouse',JOB==='archer'&&!PEACE_RUN);

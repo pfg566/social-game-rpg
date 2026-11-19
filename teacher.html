@@ -84,6 +84,8 @@ tr:hover td{background:#f8fafc}
 .pb-head h3{font-family:var(--display);font-weight:400;font-size:21px;margin:0 0 2px}
 .pb-head p{margin:0;font-size:13px;color:#33405e}
 .pb-row{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end}
+.onl{margin:0 0 12px;padding:8px 12px;border:2px solid var(--line);border-radius:12px;background:#f6f8ff}.onl summary{cursor:pointer;display:flex;flex-wrap:wrap;gap:4px 12px;align-items:center}.onl summary b{font-size:16px}.onl summary span{color:var(--muted);font-size:13px}
+.onl-cls{margin-top:8px}.onl-cls h4{margin:0 0 4px;font-size:14px}.onl-cls .chips{display:flex;flex-wrap:wrap;gap:4px}.onl-cls .chips span{font-size:12px;border-radius:99px;padding:2px 9px;background:#fff;border:1.5px solid var(--line)}.onl-cls .chips span.play{background:#e3f6ea;border-color:#9bd3b1}
 .pb-kick{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center;margin-top:10px;padding-top:10px;border-top:1px dashed var(--line)}.pb-kick label{font-weight:700}.pb-kick small{color:var(--muted);flex-basis:100%}.pb-login b{font-size:15px}.pb-login .btn{padding:5px 10px}
 .pb-dur{display:grid;gap:4px} .pb-dur>span{font-size:12px;font-weight:700;color:var(--muted)} .pb-dur>div{display:flex;flex-wrap:wrap;gap:6px}
 #pbList li.open{background:#e3f6ea;flex-wrap:wrap;gap:6px}
@@ -245,6 +247,7 @@ input.rename{border:2px solid var(--line);border-radius:6px;padding:2px 6px;widt
 
     <section class="card playbar" id="playBar">
       <div class="pb-head"><h3>🎮 게임 열기</h3><p>학생은 선생님이 연 동안, 정한 판 수만큼만 게임을 시작할 수 있어요. 판을 다 한 학생에게는 아래에서 '한 판 더'를 줄 수 있어요. 시간이 끝나도 하던 판은 마칠 수 있고 보상도 저장돼요(15분 여유).</p></div>
+      <details class="onl" id="onlBox"><summary><b id="onlSum">👥 지금 접속 중 …</b><span id="onlSub"></span></summary><div id="onlList"></div></details>
       <div class="pb-row">
         <label class="f"><span>학교</span><select id="pbSch"></select></label>
         <label class="f"><span>학년</span><select id="pbGrade"></select></label>
@@ -532,7 +535,7 @@ auth.onAuthStateChanged(async u=>{
   $('#meEmail').textContent=u.email;
   if (!(await isAdmin(u))){ gate(`${u.email} 계정은 선생님 권한이 없어요. 권한이 있는 선생님께 '함께 볼 선생님'에 추가해 달라고 요청하세요.`,'err'); return; }
   $('#gate').hidden=true; $('#app').hidden=false;
-  loadRegistry(); subscribe(); loadAdmins(); loadHero(); loadFree(); loadPartyLock(); watchPlay(); watchLogin(); watchUnits();
+  loadRegistry(); subscribe(); loadAdmins(); loadHero(); loadFree(); loadPartyLock(); watchPlay(); watchLogin(); watchOnline(); watchUnits();
 });
 
 /* 데이터 */
@@ -1589,6 +1592,21 @@ async function lvCsv(){
   const blob=new Blob(['﻿'+rows.map(r=>r.map(cell).join(',')).join('\r\n')],{type:'text/csv;charset=utf-8'}), a=document.createElement('a');
   const d=new Date(), c=CLS[LV.cls]; a.href=URL.createObjectURL(blob); a.download=`수업참여_${c?c.grade+'-'+c.cls:LV.cls}_${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}.csv`; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),4000);
 }
+
+/* 👥 지금 접속 중 (동시 접속자) */
+let ONLD={};
+function watchOnline(){ db.ref('online').on('value',s=>{ ONLD=s.val()||{}; renderOnline(); },()=>{ $('#onlSum').textContent='👥 접속자 수를 불러오지 못했어요'; $('#onlSub').textContent='새 보안 규칙(database.rules.json)을 Firebase에 올렸는지 확인해 주세요.'; }); }
+const ONL_MODE={zones:'세 거점',general:'들판 마을',glacier:'녹는 빙하',defense:'성벽 디펜스',island:'서비스업 섬','island-p':'택배 배달',runner:'정답 러너','defense-p':'성 지휘관',party:'파티',stage:'발판 서바이벌',teamwar:'조별 점령전',live:'수업 모드',conquest:'파티'};
+function renderOnline(){
+  const now=pNow(), by={}; let tot=0, play=0;
+  for (const cid in ONLD) for (const u in ONLD[cid]){ const o=ONLD[cid][u]; if (!o||now-(+o.t||0)>90000) continue; (by[cid]=by[cid]||[]).push(o); tot++; if (o.s==='play') play++; }
+  $('#onlSum').textContent=`👥 지금 접속 중 ${tot}명`;
+  $('#onlSub').textContent=tot?`로비 ${tot-play}명 · 게임 중 ${play}명 · 반 ${Object.keys(by).length}개 (눌러서 자세히)`:'접속한 학생이 없어요';
+  const ks=Object.keys(by).sort((a,b)=>cLabel(a).localeCompare(cLabel(b),'ko'));
+  $('#onlList').innerHTML=ks.map(k=>{ const L=by[k].sort((a,b)=>(a.num|0)-(b.num|0)), p=L.filter(o=>o.s==='play').length;
+    return `<div class="onl-cls"><h4>${esc(cLabel(k))} · ${L.length}명 <small>(게임 중 ${p})</small></h4><div class="chips">${L.map(o=>`<span class="${o.s==='play'?'play':''}" title="${o.s==='play'?esc(ONL_MODE[o.m]||o.m||'게임 중'):'로비'}">${o.num|0}번 ${esc(o.n||'')}${o.s==='play'?' 🎮':''}</span>`).join('')}</div></div>`; }).join('')||'<p class="lv-empty">접속한 학생이 없어요.</p>';
+}
+setInterval(()=>{ try{ renderOnline(); }catch(e){} },15000);
 
 /* 🔑 학생 로그인 허용 */
 let LGG={}, LGFREE=false, lgKey='';

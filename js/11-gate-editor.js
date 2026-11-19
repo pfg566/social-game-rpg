@@ -269,7 +269,9 @@ function playChoice(){
   if (!isAdmin){ const g=activeGate(), raw=g&&GATE[g.key], lm=raw&&raw.mode&&modeById(raw.mode); if (lm && c.u && mapOK(c.u,lm.map)){ md=lm; c.lock=lm.id; } }
   c.mode=md; c.m=md.map; return c;
 }
-function applyPlay(){
+function applyPlay(force){
+  // 게임하는 동안에는 단원·문제를 바꾸지 않아요 (선생님이 다른 반 게임을 열거나 문제를 고치면, 하던 판의 문제가 다른 단원으로 바뀌던 버그)
+  if (!force && W.state==='play') return;
   if (!DATA||!DATA.units||!DATA.units.length) return;
   const c=playChoice(); if (!c.u) return;
   if (c.u.id!==playUnit) useUnit(c.u.id);
@@ -575,9 +577,10 @@ $('#edSave').addEventListener('click',async()=>{
 /* ---------- 게임 중간에 나가기 (모든 모드) ----------
    오른쪽 아래 🚪 나가기 또는 Esc → 확인 창 → 지금까지 푼 문제로 '중간에 나옴' 결과를 저장하고 결과 화면으로 */
 const QUIT={wasPaused:false,solo:false};
+const canQuit=()=>!!isAdmin||AUTHMODE==='guest';   // 학생은 게임 중 나가기 버튼·Esc를 쓸 수 없어요 (실수로 누르지 않게)
 const isMultiMode=()=>!!(PARTY&&PARTY.on)||MAPK==='teamwar'||MAPK==='stage'||MAPK==='live';
 function quitOpen(){
-  if (W.state!=='play' || !$('#quitPop').hidden) return;
+  if (W.state!=='play' || !$('#quitPop').hidden || !canQuit()) return;
   if (MAPK==='live'){ liveLeave(); return; }   // 수업 모드: 묻지 않고 바로 로비로
   QUIT.solo=!isMultiMode(); QUIT.wasPaused=W.paused;
   if (QUIT.solo){ W.paused=true; for (const k in keys) keys[k]=false; }      // 혼자 하는 판은 잠깐 멈춰요 (함께 하는 판은 계속 진행돼요)
@@ -602,5 +605,5 @@ addEventListener('keydown',e=>{
   if (!$('#quitPop').hidden){ quitClose(); e.preventDefault(); return; }
   quitOpen(); e.preventDefault();
 });
-setInterval(()=>{ const b=$('#quitBtn'); const show=W.state==='play'; if (b.hidden===show) b.hidden=!show; if (!show && !$('#quitPop').hidden) $('#quitPop').hidden=true; },300);
+setInterval(()=>{ const b=$('#quitBtn'), lv=$('#lvLeave'); if (lv) lv.hidden=!canQuit(); const show=W.state==='play'&&canQuit(); if (b.hidden===show) b.hidden=!show; if (!show && !$('#quitPop').hidden) $('#quitPop').hidden=true; },300);
 addEventListener('dragstart',e=>{ if (!(e.target.closest&&e.target.closest('input,textarea,#editor'))) e.preventDefault(); });
