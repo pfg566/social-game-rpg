@@ -84,6 +84,7 @@ tr:hover td{background:#f8fafc}
 .pb-head h3{font-family:var(--display);font-weight:400;font-size:21px;margin:0 0 2px}
 .pb-head p{margin:0;font-size:13px;color:#33405e}
 .pb-row{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end}
+.pb-kick{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center;margin-top:10px;padding-top:10px;border-top:1px dashed var(--line)}.pb-kick label{font-weight:700}.pb-kick small{color:var(--muted);flex-basis:100%}
 .pb-dur{display:grid;gap:4px} .pb-dur>span{font-size:12px;font-weight:700;color:var(--muted)} .pb-dur>div{display:flex;flex-wrap:wrap;gap:6px}
 #pbList li.open{background:#e3f6ea;flex-wrap:wrap;gap:6px}
 #pbList .done{flex-basis:100%;display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:12px;color:#33405e}
@@ -256,6 +257,8 @@ input.rename{border:2px solid var(--line);border-radius:6px;padding:2px 6px;widt
       </div>
       <ul class="list" id="pbList"></ul>
       <p class="msg" id="pbMsg" role="status"></p>
+      <div class="pb-kick"><button class="btn danger" id="kickBtn">🚪 학생 내보내기</button><label><input type="checkbox" id="kickAll"> 게임·수업 중인 학생도 내보내기</label><small>위 '어느 반을 열까요?'에서 고른 반 학생이 로그아웃돼요. 체크하지 않으면 로비에 있는 학생만 나가고, 게임 중인 학생은 하던 판을 마칠 수 있어요.</small></div>
+      <p class="msg" id="kickMsg" role="status"></p>
     </section>
     <div class="tiles">
       <div class="card tile"><span>플레이 수</span><b id="tPlays">0</b><small id="tPlaysSub"></small></div>
@@ -1581,6 +1584,15 @@ async function lvCsv(){
   const blob=new Blob(['﻿'+rows.map(r=>r.map(cell).join(',')).join('\r\n')],{type:'text/csv;charset=utf-8'}), a=document.createElement('a');
   const d=new Date(), c=CLS[LV.cls]; a.href=URL.createObjectURL(blob); a.download=`수업참여_${c?c.grade+'-'+c.cls:LV.cls}_${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}.csv`; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),4000);
 }
+
+/* 🚪 학생 내보내기 (로그아웃시키기) */
+$('#kickBtn').addEventListener('click',async()=>{
+  const k=$('#pbCls').value, all=$('#kickAll').checked, m=$('#kickMsg'); if (!k) return;
+  const who=k==='all'?'모든 반':cLabel(k);
+  if (!confirm(`${who} 학생을 ${all?'게임·수업 중인 학생까지 모두':'로비에 있는 학생만'} 내보낼까요?\n학생은 로그아웃되고 로그인 화면으로 돌아가요. 다시 로그인하면 들어올 수 있어요.`)) return;
+  try{ await db.ref('kick/'+k).set({t:firebase.database.ServerValue.TIMESTAMP,all}); m.className='msg ok'; m.textContent=`${who}: ${all?'모든 학생':'로비에 있는 학생'}을 내보냈어요. (몇 초 안에 학생 화면이 로그인 화면으로 바뀌어요)`; }
+  catch(e){ m.className='msg err'; m.textContent='내보내지 못했어요. 새 보안 규칙(database.rules.json)을 Firebase에 올렸는지 확인해 주세요.'; }
+});
 
 })();
 </script>

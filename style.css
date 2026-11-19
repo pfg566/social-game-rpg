@@ -803,3 +803,4 @@ body.livemode #hud, body.livemode #skillbar, body.livemode #hint, body.livemode 
 #lvHud{white-space:nowrap;gap:12px}#lvHud b,#lvHud span{white-space:nowrap}
 .title-actions #liveBtn{grid-row:1;font-size:18px}
 .title-actions:has(#liveBtn:not([hidden])) #startBtn,.title-actions:has(#liveBtn:not([hidden])) #partyBtn{grid-row:2}
+.kick-pop{position:fixed;inset:0;z-index:90;display:flex;align-items:center;justify-content:center;background:rgba(15,20,40,.45)}.kick-pop .card{max-width:420px;padding:22px 26px;text-align:center;display:flex;flex-direction:column;gap:10px}.kick-pop b{font-size:20px}
