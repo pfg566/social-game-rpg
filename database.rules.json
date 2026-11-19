@@ -28,6 +28,9 @@
       "noLimit": {
         ".validate": "newData.isBoolean()"
       },
+      "loginFree": {
+        ".validate": "newData.isBoolean()"
+      },
       "$other": {
         ".validate": false
       }
@@ -645,6 +648,19 @@
         },
         "all": {
           ".validate": "newData.isBoolean()"
+        },
+        "$other": {
+          ".validate": false
+        }
+      }
+    },
+    "logingate": {
+      ".read": "auth != null",
+      "$k": {
+        ".write": "auth != null && auth.token.email_verified == true && (auth.token.email.toLowerCase() == 'pfg566@gmail.com' || root.child('admins').child(auth.token.email.toLowerCase().replace('.', ',')).val() == true)",
+        ".validate": "newData.hasChildren(['until']) && newData.child('until').isNumber()",
+        "until": {
+          ".validate": true
         },
         "$other": {
           ".validate": false

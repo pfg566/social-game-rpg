@@ -84,7 +84,7 @@ tr:hover td{background:#f8fafc}
 .pb-head h3{font-family:var(--display);font-weight:400;font-size:21px;margin:0 0 2px}
 .pb-head p{margin:0;font-size:13px;color:#33405e}
 .pb-row{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end}
-.pb-kick{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center;margin-top:10px;padding-top:10px;border-top:1px dashed var(--line)}.pb-kick label{font-weight:700}.pb-kick small{color:var(--muted);flex-basis:100%}
+.pb-kick{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center;margin-top:10px;padding-top:10px;border-top:1px dashed var(--line)}.pb-kick label{font-weight:700}.pb-kick small{color:var(--muted);flex-basis:100%}.pb-login b{font-size:15px}.pb-login .btn{padding:5px 10px}
 .pb-dur{display:grid;gap:4px} .pb-dur>span{font-size:12px;font-weight:700;color:var(--muted)} .pb-dur>div{display:flex;flex-wrap:wrap;gap:6px}
 #pbList li.open{background:#e3f6ea;flex-wrap:wrap;gap:6px}
 #pbList .done{flex-basis:100%;display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:12px;color:#33405e}
@@ -259,6 +259,11 @@ input.rename{border:2px solid var(--line);border-radius:6px;padding:2px 6px;widt
       <p class="msg" id="pbMsg" role="status"></p>
       <div class="pb-kick"><button class="btn danger" id="kickBtn">🚪 학생 내보내기</button><label><input type="checkbox" id="kickAll"> 게임·수업 중인 학생도 내보내기</label><small>위 '어느 반을 열까요?'에서 고른 반 학생이 로그아웃돼요. 체크하지 않으면 로비에 있는 학생만 나가고, 게임 중인 학생은 하던 판을 마칠 수 있어요.</small></div>
       <p class="msg" id="kickMsg" role="status"></p>
+      <div class="pb-kick pb-login"><b>🔑 학생 로그인</b><span>위에서 고른 반을</span><button class="btn" data-lgmin="10">10분</button><button class="btn" data-lgmin="20">20분</button><button class="btn" data-lgmin="30">30분</button><button class="btn" data-lgmin="50">50분</button><button class="btn" data-lgmin="600">오늘 하루</button><span>동안 허용</span><button class="btn danger" id="lgStop">지금 막기</button>
+        <label><input type="checkbox" id="lgFree"> 항상 허용 (예전처럼 언제든 로그인)</label>
+        <small>학생은 선생님이 허용한 동안에만 로그인할 수 있어요. 게임 열기·수업 모드·발판 서바이벌·조별 점령전을 연 반은 그동안 로그인도 저절로 허용돼요. 막아도 이미 들어와 있는 학생은 그대로이니, 내보내려면 위 '학생 내보내기'를 눌러요.</small></div>
+      <ul class="list" id="lgList"></ul>
+      <p class="msg" id="lgMsg" role="status"></p>
     </section>
     <div class="tiles">
       <div class="card tile"><span>플레이 수</span><b id="tPlays">0</b><small id="tPlaysSub"></small></div>
@@ -527,7 +532,7 @@ auth.onAuthStateChanged(async u=>{
   $('#meEmail').textContent=u.email;
   if (!(await isAdmin(u))){ gate(`${u.email} 계정은 선생님 권한이 없어요. 권한이 있는 선생님께 '함께 볼 선생님'에 추가해 달라고 요청하세요.`,'err'); return; }
   $('#gate').hidden=true; $('#app').hidden=false;
-  loadRegistry(); subscribe(); loadAdmins(); loadHero(); loadFree(); loadPartyLock(); watchPlay(); watchUnits();
+  loadRegistry(); subscribe(); loadAdmins(); loadHero(); loadFree(); loadPartyLock(); watchPlay(); watchLogin(); watchUnits();
 });
 
 /* 데이터 */
@@ -1584,6 +1589,36 @@ async function lvCsv(){
   const blob=new Blob(['﻿'+rows.map(r=>r.map(cell).join(',')).join('\r\n')],{type:'text/csv;charset=utf-8'}), a=document.createElement('a');
   const d=new Date(), c=CLS[LV.cls]; a.href=URL.createObjectURL(blob); a.download=`수업참여_${c?c.grade+'-'+c.cls:LV.cls}_${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}.csv`; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),4000);
 }
+
+/* 🔑 학생 로그인 허용 */
+let LGG={}, LGFREE=false, lgKey='';
+function watchLogin(){
+db.ref('logingate').on('value',s=>{ LGG=s.val()||{}; lgKey=''; renderLogin(); },()=>{ $('#lgMsg').className='msg err'; $('#lgMsg').textContent='로그인 허용 정보를 불러오지 못했어요. 새 보안 규칙(database.rules.json)을 Firebase에 올렸는지 확인해 주세요.'; });
+db.ref('settings/loginFree').on('value',s=>{ LGFREE=s.val()===true; $('#lgFree').checked=LGFREE; lgKey=''; renderLogin(); },()=>{});
+}
+function renderLogin(){
+  const now=pNow(), open=Object.keys(LGG).filter(k=>(+LGG[k].until||0)>now).sort((a,b)=>LGG[a].until-LGG[b].until);
+  const key=LGFREE+'|'+open.map(k=>k+Math.ceil((LGG[k].until-now)/1000)).join('|'); if (key===lgKey) return; lgKey=key;
+  const auto=Object.keys(PG).filter(k=>(+PG[k].until||0)>now);
+  $('#lgList').innerHTML=LGFREE?'<li class="open"><span>🔓 <b>항상 허용</b> · 모든 반 학생이 언제든 로그인할 수 있어요.</span></li>'
+    :(open.map(k=>{ const s=Math.ceil((LGG[k].until-now)/1000), h=Math.floor(s/3600), m=Math.floor(s%3600/60);
+      return `<li class="open"><span>🔑 <b>${esc(playLabel(k))}</b> · 로그인 허용 <b class="t">${h?h+'시간 ':''}${m}:${String(s%60).padStart(2,'0')}</b> 남음</span><span><button class="link plain" data-lgstop="${k}">막기</button></span></li>`; }).join('')
+      +(auto.length?`<li class="empty-li">🎮 게임이 열린 반(${auto.map(k=>esc(playLabel(k))).join(', ')})은 게임이 열린 동안 로그인도 허용돼요.</li>`:'')
+      ||'<li class="empty-li">🔒 지금은 로그인이 막혀 있어요. 게임 열기·수업 모드 등을 열거나 위에서 시간을 골라 허용하면 들어올 수 있어요.</li>');
+}
+setInterval(renderLogin,1000);
+document.querySelectorAll('[data-lgmin]').forEach(b=>b.addEventListener('click',async()=>{
+  const k=$('#pbCls').value, min=+b.dataset.lgmin, m=$('#lgMsg'); if (!k) return;
+  try{ await db.ref('logingate/'+k).set({until:pNow()+min*60000}); m.className='msg ok'; m.textContent=`${k==='all'?'모든 반':cLabel(k)}: ${min>=600?'오늘 하루':min+'분'} 동안 로그인을 허용했어요.`; }
+  catch(e){ m.className='msg err'; m.textContent='저장하지 못했어요. 새 보안 규칙(database.rules.json)을 Firebase에 올렸는지 확인해 주세요.'; } }));
+async function lgStopK(k){ const m=$('#lgMsg'); try{ await db.ref('logingate/'+k).remove(); m.className='msg ok'; m.textContent=`${k==='all'?'모든 반':cLabel(k)}: 로그인을 막았어요.`+((+((PG[k]||{}).until)||0)>pNow()?' (게임이 열려 있는 동안은 그 반 로그인이 계속 허용돼요)':''); }
+  catch(e){ m.className='msg err'; m.textContent='저장하지 못했어요. 새 보안 규칙을 올렸는지 확인해 주세요.'; } }
+$('#lgStop').addEventListener('click',()=>{ const k=$('#pbCls').value; if (k) lgStopK(k); });
+$('#lgList').addEventListener('click',e=>{ const b=e.target.closest('[data-lgstop]'); if (b) lgStopK(b.dataset.lgstop); });
+$('#lgFree').addEventListener('change',async e=>{ const v=e.target.checked, m=$('#lgMsg');
+  if (v&&!confirm('항상 허용으로 바꿀까요? 모든 반 학생이 선생님 허락 없이 언제든 로그인할 수 있어요.')){ e.target.checked=false; return; }
+  try{ await db.ref('settings/loginFree').set(v?true:null); m.className='msg ok'; m.textContent=v?'이제 언제든 로그인할 수 있어요.':'이제 선생님이 허용할 때만 로그인할 수 있어요.'; }
+  catch(err){ e.target.checked=LGFREE; m.className='msg err'; m.textContent='저장하지 못했어요. 새 보안 규칙을 올렸는지 확인해 주세요.'; } });
 
 /* 🚪 학생 내보내기 (로그아웃시키기) */
 $('#kickBtn').addEventListener('click',async()=>{

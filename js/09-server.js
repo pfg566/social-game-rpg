@@ -212,6 +212,19 @@ $('#lgBtn').addEventListener('click',()=>studentLogin());
 $('#pcLogout').addEventListener('click',async()=>{ STUDENT=null; PROFILE=null; WARDROBE=null; applyLook(guestLook()); AUTHMODE='login'; PENDING_PW=''; showAuthUI(); $('#lgCode').value=''; $('#lgNum').value=''; lgModeKey=''; lgModeCheck(); try{ await fbAuth.signOut(); }catch(e){} });
 
 let loggingIn=false;
+/* 🔑 선생님이 허락할 때만 로그인: 로그인 허용 · 게임 열기 · 수업 모드 · 발판 서바이벌 · 조별 점령전 중 하나라도 열려 있으면 들어올 수 있어요 */
+async function loginAllowed(c){
+  try{
+    const now=Date.now()+((typeof STG!=='undefined'&&STG.off)||0), NO={};
+    const get=p=>withTimeout(fbDb.ref(p).once('value'),6000).then(s=>s.val()).catch(()=>NO);
+    const [free,lg,pg,lv,st,tw]=await Promise.all([get('settings/loginFree'),get('logingate'),get('playgate'),get(`live/${c}/meta`),get(`stage/${c}/meta`),get(`tw/${c}/meta`)]);
+    if (free===true||lg===NO) return true;   // 항상 허용 · 아직 새 보안 규칙을 안 올렸거나 못 읽으면 막지 않아요
+    const open=g=>!!g&&(+g.until||0)>now, room=m=>!!m&&m!==NO&&(m.state==='wait'||m.state==='run'||m.state==='open');
+    if (lg&&(open(lg.all)||open(lg[c]))) return true;
+    if (pg&&pg!==NO&&(open(pg.all)||open(pg[c]))) return true;
+    return room(lv)||room(st)||room(tw);
+  }catch(e){ return true; }
+}
 async function studentLogin(){
   if (loggingIn) return;
   if (!fbAuth){ lgError('저장 서버에 연결되지 않아 로그인할 수 없어요. 잠시 뒤 다시 해 보고, 계속 안 되면 선생님께 알려 주세요.'); return; }
@@ -219,6 +232,7 @@ async function studentLogin(){
   if (LEGACY||!c||c.startsWith('n:')){ lgError('학급을 먼저 골라 주세요.'); return; }
   if (!n||+n<1||+n>60){ lgError('번호를 확인해 주세요.'); return; }
   loggingIn=true; $('#lgBtn').disabled=true; $('#lgBtn').textContent='확인 중…'; lgError('');
+  if (!(await loginAllowed(c))){ loggingIn=false; $('#lgBtn').disabled=false; $('#lgBtn').textContent='로그인'; lgError('🔒 지금은 로그인할 수 없어요. 선생님이 로그인을 열어 주면 들어올 수 있어요.'); return; }
   // 비밀번호를 만든 학생인지 먼저 확인해요
   let idx=null; try{ idx=(await withTimeout(fbDb.ref(`loginIdx/${c}/${n}`).once('value'),8000)).val(); }catch(e){ idx=null; }
   if (idx){ loggingIn=false; $('#lgBtn').disabled=false; $('#lgBtn').textContent='로그인'; return pwLogin(c,n,String(idx),raw); }
