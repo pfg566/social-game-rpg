@@ -6,6 +6,23 @@
 const STG_COL=['#e5484d','#3b82f6','#22a35a','#e8a400'], STG_OXCOL=['#3b82f6','#e5484d'];
 const STG_SLOT=[[-1,-1],[1,-1],[-1,1],[1,1]], STG_POS=['왼쪽 위','오른쪽 위','왼쪽 아래','오른쪽 아래'];
 const STG_HALF=7.6, STG_LOCK=1.5, STG_INTRO=8;
+
+/* 친구 위치 부드럽게: 받은 위치를 시간과 함께 모아 두고, 0.3초 늦게 두 위치 사이를 이어서 보여 줘요 (끊김 없이) */
+const NET_DELAY=300;
+function netPush(old,x,z,extra){
+  const now=performance.now(), L=old||{buf:[]}, b=L.buf||(L.buf=[]), last=b[b.length-1];
+  if (last&&now-last.t>450) b.push({x:last.x,z:last.z,t:now-220});   // 한참 서 있다가 출발: 그 자리에 있었던 걸로 이어 붙여요
+  b.push({x,z,t:now}); while (b.length>8) b.shift();
+  return Object.assign(L,{x,z,t:now},extra||{});
+}
+function netSample(L,now){
+  const b=L.buf; if (!b||!b.length) return {x:L.x,z:L.z};
+  const rt=now-NET_DELAY; if (rt<=b[0].t) return b[0];
+  for (let i=b.length-1;i>0;i--){ const a=b[i-1], c=b[i];
+    if (a.t<=rt){ if (rt>=c.t) return c; if (Math.hypot(c.x-a.x,c.z-a.z)>6) return c;   // 순간이동(출발선 등)은 바로
+      const k=(rt-a.t)/Math.max(1,c.t-a.t); return {x:a.x+(c.x-a.x)*k,z:a.z+(c.z-a.z)*k}; } }
+  return b[b.length-1];
+}
 const STG={av:{},live:{},liveRef:null,names:{},posT:0,posLast:'',nameT:0,cid:'',metaRef:null,meta:null,qs:null,qsKey:'',joining:false,on:false,qi:-1,phase:'',lives:3,score:0,correct:0,perm:null,oxLeft:0,
   slotHold:-1,holdT:0,locked:-1,lockFrac:0,answered:false,ghosts:[],fallY:0,falling:false,rvShown:-1,slabs:[],oxSlabs:[],texs:[],ended:false,rank:null,off:0,pT:0,joinN:0,dropK:0,wasDead:false};
 let stageSea=null;
@@ -212,7 +229,7 @@ function stgAvatar(u){
 function stgRemoveAvatars(){ for (const u in STG.av){ const A=STG.av[u]; scene.remove(A.g); A.ch.mixer.stopAllAction(); } STG.av={}; }
 function stgListenLive(){
   stgUnlisten(); const c=STG.cid, me=myUid(); const r=fbDb.ref(`stage/${c}/pos`);
-  const cb=s=>{ if (s.key===me) return; const a=String(s.val()||'').split(','); if (a.length<3) return; STG.live[s.key]={x:+a[0]/10,z:+a[1]/10,f:+a[2]/100,d:a[3]==='1',t:performance.now()}; };
+  const cb=s=>{ if (s.key===me) return; const a=String(s.val()||'').split(','); if (a.length<3) return; STG.live[s.key]=netPush(STG.live[s.key],+a[0]/10,+a[1]/10,{f:+a[2]/100,d:a[3]==='1'}); };
   r.on('child_added',cb,()=>{}); r.on('child_changed',cb,()=>{}); STG.liveRef=[r,cb];
 }
 function stgUnlisten(){ if (STG.liveRef){ const [r,cb]=STG.liveRef; r.off('child_added',cb); r.off('child_changed',cb); STG.liveRef=null; } STG.live={}; }
@@ -225,14 +242,14 @@ function stgAvatarTick(dt){
   const now=performance.now();
   for (const u in STG.live){ const L=STG.live[u], A=stgAvatar(u); if (!A) continue;
     A.g.visible=now-L.t<30000||!!A.rv;
-    let tx=L.x, tz=L.z, ty=0;
+    const sm=netSample(L,now); let tx=sm.x, tz=sm.z, ty=0;
     if (A.rv){ tx=A.rv.x; tz=A.rv.z; if (!A.rv.ok&&A.rv.fall){ A.rv.vy+=24*dt; A.y-=A.rv.vy*dt; } ty=A.y; }
-    const ox=A.x, oz=A.z, k=Math.min(1,dt*(A.rv?6:12)); A.x+=(tx-A.x)*k; A.z+=(tz-A.z)*k;
+    const ox=A.x, oz=A.z; if (A.rv){ const k=Math.min(1,dt*6); A.x+=(tx-A.x)*k; A.z+=(tz-A.z)*k; } else { A.x=tx; A.z=tz; }
     const mv=Math.hypot(A.x-ox,A.z-oz)/Math.max(dt,1e-3);
     if (mv>.4){ const f=Math.atan2(A.x-ox,A.z-oz); let df=f-A.f; df=Math.atan2(Math.sin(df),Math.cos(df)); A.f+=df*Math.min(1,dt*12); }
     const dead=!!L.d||!!(STG.names[u]&&STG.names[u].l===0); stgSpirit(A.ch,dead);
     A.g.position.set(A.x,Math.max(-40,ty)+(dead?.45+Math.sin(now/400+A.x)*.15:0),A.z); A.ch.root.rotation.y=A.f;
-    A.ch.anim.setBase(mv>1.2?'run':'idle'); A.ch.mixer.update(dt);
+    A.mvS=(A.mvS||0)+((mv>20?0:mv)-(A.mvS||0))*Math.min(1,dt*8); A.ch.anim.setBase(A.mvS>1.2?'run':'idle'); A.ch.mixer.update(dt);
   }
 }
 async function stgLoadGhosts(i){

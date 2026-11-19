@@ -278,7 +278,7 @@ function lvAvatar(u){
 function lvRemoveAvatars(){ for (const u in LIVE.av){ const A=LIVE.av[u]; scene.remove(A.g); A.ch.mixer.stopAllAction(); } LIVE.av={}; }
 function lvListenLive(){
   lvUnlisten(); const c=LIVE.cid, me=myUid(); const r=fbDb.ref(`live/${c}/pos`);
-  const cb=s=>{ if (s.key===me) return; const a=String(s.val()||'').split(','); if (a.length<3) return; LIVE.live[s.key]={x:+a[0]/10,z:+a[1]/10,f:+a[2]/100,t:performance.now()}; };
+  const cb=s=>{ if (s.key===me) return; const a=String(s.val()||'').split(','); if (a.length<3) return; LIVE.live[s.key]=netPush(LIVE.live[s.key],+a[0]/10,+a[1]/10,{f:+a[2]/100}); };
   const rm=s=>{ delete LIVE.live[s.key]; const A=LIVE.av[s.key]; if (A){ scene.remove(A.g); A.ch.mixer.stopAllAction(); delete LIVE.av[s.key]; } };
   r.on('child_added',cb,()=>{}); r.on('child_changed',cb,()=>{}); r.on('child_removed',rm,()=>{}); LIVE.liveRef=[r,cb,rm];
 }
@@ -292,11 +292,10 @@ function lvAvatarTick(dt){
   const now=performance.now();
   for (const u in LIVE.live){ const L=LIVE.live[u], A=lvAvatar(u); if (!A) continue;
     A.g.visible=now-L.t<120000;
-    const ox=A.x, oz=A.z, k=Math.min(1,dt*12); A.x+=(L.x-A.x)*k; A.z+=(L.z-A.z)*k;
-    const mv=Math.hypot(A.x-ox,A.z-oz)/Math.max(dt,1e-3);
+    const ox=A.x, oz=A.z, sm=netSample(L,now); A.x=sm.x; A.z=sm.z;
+    let mv=Math.hypot(A.x-ox,A.z-oz)/Math.max(dt,1e-3); if (mv>20) mv=0;   // 순간이동(출발선)은 달리기로 안 쳐요
     if (mv>.4){ const f=Math.atan2(A.x-ox,A.z-oz); let df=f-A.f; df=Math.atan2(Math.sin(df),Math.cos(df)); A.f+=df*Math.min(1,dt*12); }
-    if (mv>8){ A.x=L.x; A.z=L.z; }   // 새 질문으로 출발선에 순간이동
-    A.g.position.set(A.x,0,A.z); A.ch.root.rotation.y=A.f; A.ch.anim.setBase(mv>1.2?'run':'idle'); A.ch.mixer.update(dt); }
+    A.g.position.set(A.x,0,A.z); A.ch.root.rotation.y=A.f; A.mvS=(A.mvS||0)+(mv-(A.mvS||0))*Math.min(1,dt*8); A.ch.anim.setBase(A.mvS>1.2?'run':'idle'); A.ch.mixer.update(dt); }
 }
 
 function liveFrame(dt,real,now){
