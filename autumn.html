@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>가을 마을 · 테스트 맵</title>
+<style>
+html,body{margin:0;height:100%;overflow:hidden;background:#f4c69b;font-family:"Malgun Gothic","Apple SD Gothic Neo",sans-serif}
+canvas{display:block}
+#hud{position:fixed;left:10px;top:8px;color:#fff;font-size:13px;line-height:1.6;text-shadow:0 1px 3px rgba(0,0,0,.75);pointer-events:none;white-space:pre}
+#load{position:fixed;inset:0;display:grid;place-items:center;background:#f4c69b;color:#5a3a26;font-size:20px;font-weight:700;transition:opacity .6s}
+#load.off{opacity:0;pointer-events:none}
+#back{position:fixed;right:12px;top:10px;background:rgba(255,255,255,.85);color:#3a2230;border-radius:999px;padding:6px 14px;font-size:13px;font-weight:700;text-decoration:none}
+</style>
+</head>
+<body>
+<div id="hud"></div>
+<a id="back" href="index.html">← 게임으로</a>
+<div id="load">가을 마을을 만드는 중…</div>
+<script src="lib/three.min.js"></script>
+<script src="lib/GLTFLoader.js"></script>
+<script src="lib/CopyShader.js"></script>
+<script src="lib/LuminosityHighPassShader.js"></script>
+<script src="lib/GammaCorrectionShader.js"></script>
+<script src="lib/EffectComposer.js"></script>
+<script src="lib/RenderPass.js"></script>
+<script src="lib/ShaderPass.js"></script>
+<script src="lib/UnrealBloomPass.js"></script>
+<script src="js/autumn.js?v=20261120a"></script>
+</body>
+</html>
