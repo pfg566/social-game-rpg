@@ -128,7 +128,7 @@ function buildVillage(){
         vec3 p=vec3(position.x*aP.z*c, h*hgt, position.x*aP.z*s);
         p.xz+=vec2(-s,c)*h*h*hgt*.35;
         float w=sin(uTime*1.3+root.x*.21+root.y*.17)*.55+sin(uTime*2.6+root.x*.7-root.y*.5)*.2+.3; p.xz+=vec2(.85,.45)*w*.35*hgt*h*h;
-        vec3 wp=vec3(root.x,0.,root.y)+p; vec2 d=wp.xz-uPlayer.xz; float dl=length(d)+1e-4; float push=smoothstep(1.,.0,dl)*h; wp.xz+=d/dl*push*.45; wp.y-=push*.25*hgt;
+        vec3 wp=vec3(root.x,0.,root.y)+p; vec2 d=wp.xz-uPlayer.xz; float dl=length(d)+1e-4; float push=smoothstep(1.,.0,dl)*h*tl; wp.xz+=d/dl*push*min(.45,hgt*.8); wp.y-=push*.25*hgt;
         vW=wp; vH=h; vV=aP.w*.6+pch*.4; vS=mk.g; vG=texture2D(uGround,uv).rgb*2.*uSoil;
         gl_Position=projectionMatrix*viewMatrix*vec4(wp,1.); }`,
     fragmentShader:`uniform vec3 uTip,uTip2,uDry,uSunCol,uSun,uFog; uniform float uFogN,uFogF,uTime,uGK; varying float vH,vV,vS,vT; varying vec3 vW,vG;
@@ -273,7 +273,7 @@ function vlLoadNature(){
         if (m.name==='Leaves_NormalTree') m.map=whiteTex('Leaves_NormalTree'); if (m.name==='Leaves_TwistedTree') m.map=whiteTex('Leaves_TwistedTree');
         m.onBeforeCompile=sh=>{ sh.uniforms.uTime=VL.U?VL.U.uTime:{value:0}; sh.uniforms.uCam=VL.U?VL.U.uCam:{value:new THREE.Vector3(0,-999,0)}; sh.uniforms.uPlr=VL.U?VL.U.uPlr:{value:new THREE.Vector3(0,-999,0)};
           sh.vertexShader='uniform float uTime;\nuniform vec3 uPlr;\nvarying vec3 vWP;\n'+sh.vertexShader.replace('#include <project_vertex>','#include <project_vertex>\n gl_Position=projectionMatrix*viewMatrix*vec4(vWP,1.);').replace('#include <begin_vertex>',
-          '#include <begin_vertex>\n#ifdef USE_INSTANCING\n float ph=instanceMatrix[3].x*.37+instanceMatrix[3].z*.29;\n#else\n float ph=0.;\n#endif\n float hh=max(position.y,0.); transformed.x+=sin(uTime*1.5+ph)*.035*hh; transformed.z+=cos(uTime*1.2+ph*1.3)*.035*hh;\n vec4 vwp=vec4(transformed,1.);\n#ifdef USE_INSTANCING\n vwp=instanceMatrix*vwp;\n#endif\n vWP=(modelMatrix*vwp).xyz;\n { vec2 pd=vWP.xz-uPlr.xz; float pl=length(pd)+1e-4; float pk=(1.-smoothstep(.2,1.3,pl))*smoothstep(.04,.45,vWP.y)*(1.-smoothstep(1.5,2.3,vWP.y)); vWP.xz+=pd/pl*pk*.4; vWP.y-=pk*.08; }');
+          '#include <begin_vertex>\n#ifdef USE_INSTANCING\n float ph=instanceMatrix[3].x*.37+instanceMatrix[3].z*.29;\n#else\n float ph=0.;\n#endif\n float hh=max(position.y,0.); transformed.x+=sin(uTime*1.5+ph)*.035*hh; transformed.z+=cos(uTime*1.2+ph*1.3)*.035*hh;\n vec4 vwp=vec4(transformed,1.);\n#ifdef USE_INSTANCING\n vwp=instanceMatrix*vwp;\n#endif\n vWP=(modelMatrix*vwp).xyz;\n { vec2 pd=vWP.xz-uPlr.xz; float pl=length(pd)+1e-4; float pk=(1.-smoothstep(.2,1.3,pl))*smoothstep(.2,.6,vWP.y)*(1.-smoothstep(1.5,2.3,vWP.y)); vWP.xz+=pd/pl*pk*.4; vWP.y-=pk*.08; }');
           sh.fragmentShader='uniform vec3 uCam,uPlr;\nvarying vec3 vWP;\n'+sh.fragmentShader.replace('#include <clipping_planes_fragment>',
           '{ vec3 ab=uPlr-uCam; float tt=clamp(dot(vWP-uCam,ab)/max(dot(ab,ab),1e-4),0.,1.); float dd=length(vWP-(uCam+ab*tt)); if (tt<.9){ float rr=.55+tt*1.15; float k=smoothstep(rr*.5,rr,dd); float di=fract(52.9829189*fract(dot(gl_FragCoord.xy,vec2(.06711056,.00583715)))); if (k<di) discard; } }\n#include <clipping_planes_fragment>'); };
         m.customProgramCacheKey=()=>'vlwind'+m.name; }
