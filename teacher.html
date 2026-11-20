@@ -1357,7 +1357,7 @@ function fillUnitSelect(){
 let UNIT_PICK_CLS=null;
 /* 모드(맵) 고르기: 평소엔 '학생이 자유롭게', 반 전체가 같은 모드를 해야 할 땐 '🔒 이 모드만' (나머지 모드는 학생 화면에서 잠겨요) */
 const GMODES=[{id:'zones',map:'zones',n:'세 거점',s:'전투'},{id:'general',map:'general',n:'들판 마을',s:'전투'},{id:'glacier',map:'glacier',n:'녹는 빙하',s:'전투'},{id:'defense',map:'defense',n:'성벽 디펜스',s:'전투'},{id:'island',map:'island',n:'서비스업 섬',s:'전투'},
-              {id:'island-p',map:'island',n:'택배 배달',s:'평화'},{id:'runner',map:'runner',n:'정답 러너',s:'평화'},{id:'cafe',map:'cafe',n:'디저트 카페',s:'평화'},{id:'defense-p',map:'defense',n:'성 지휘관',s:'평화'}];
+              {id:'runner',map:'runner',n:'정답 러너',s:'평화'},{id:'cafe',map:'cafe',n:'디저트 카페',s:'평화'}];
 function fillMapSelect(reset){
   const u=unitById($('#pbUnit').value), el=$('#pbMap'), cur=reset?'':el.value;
   const ms=GMODES.filter(m=>mapOkT(u,m.map));

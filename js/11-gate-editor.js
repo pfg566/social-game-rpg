@@ -246,12 +246,10 @@ const PLAY_MODES=[
  {id:'glacier',map:'glacier',peace:false,side:'battle',icon:'🧊',name:'녹는 빙하',   sub:'빙하 지키며 사냥'},
  {id:'defense',map:'defense',peace:false,side:'battle',icon:'🏰',name:'성벽 디펜스', sub:'성문 지키기'},
  {id:'island', map:'island', peace:false,side:'battle',icon:'🏝️',name:'서비스업 섬', sub:'배달 + 도둑 해골'},
- {id:'island-p',map:'island',peace:true, side:'peace', icon:'📦',name:'택배 배달',   sub:'몬스터 없이 배달만'},
  {id:'runner', map:'runner', peace:false,side:'peace', icon:'🏃',name:'정답 러너',   sub:'달리며 정답 문 통과'},
  {id:'cafe',   map:'cafe',   peace:false,side:'peace', icon:'🍰',name:'디저트 카페', sub:'주문 퀴즈로 디저트 만들기'},
- {id:'defense-p',map:'defense',peace:true,side:'peace',icon:'🗼',name:'성 지휘관',   sub:'퀴즈로 포탑 지휘'},
 ];
-const MODE_EXTRA={party:{icon:'🎉',name:'파티'},stage:{icon:'🟩',name:'발판 서바이벌'},teamwar:{icon:'🚩',name:'조별 점령전'}};
+const MODE_EXTRA={party:{icon:'🎉',name:'파티'},'island-p':{icon:'📦',name:'택배 배달'},'defense-p':{icon:'🗼',name:'성 지휘관'},stage:{icon:'🟩',name:'발판 서바이벌'},teamwar:{icon:'🚩',name:'조별 점령전'}};
 const modeName=id=>(PLAY_MODES.find(x=>x.id===id)||MODE_EXTRA[id]||{name:(MAPS[id]&&MAPS[id].name)||id}).name;
 const modeIcon=id=>(PLAY_MODES.find(x=>x.id===id)||MODE_EXTRA[id]||{icon:'🎮'}).icon;
 function gameModeId(){ if (PARTY&&PARTY.on) return 'party'; if (MAPK==='stage'||MAPK==='teamwar'||MAPK==='live') return MAPK; return PEACE_RUN&&PEACE_MAPS.includes(MAPK)?MAPK+'-p':MAPK; }
