@@ -911,3 +911,8 @@ body.cafe #hud, body.cafe #skillbar, body.cafe #hint, body.cafe #touch, body.caf
 .pm-col.battle .pm-list,.pm-list{grid-template-columns:max-content;justify-content:stretch}
 .pm-btn{width:100%;box-sizing:border-box;padding:3px 26px 3px 7px}
 .pm-btn span{flex:none}
+/* 카페 · 새 문제 방식 (주문서 · 토핑 파르페 · 층 케이크) */
+.cf-qx{display:grid;gap:8px}.cf-qx .qx-row input{font-size:18px;padding:8px 12px}
+.cf-slip{background:#fff6e5;border:2px dashed #e0a940;border-radius:12px;padding:8px 14px;font-size:17px}.cf-slip b{color:#c2185b;margin:0 6px}.cf-slip small{color:#7a5b66;font-size:13px}
+.run-opts.cf-st{position:relative}.run-opts.cf-st .run-opt{font-size:13.5px;min-height:44px}.run-opts.cf-st .run-opt b{font-size:18px;min-width:30px}
+.cf-redo{grid-column:1/-1;justify-self:end;width:auto;margin:0;padding:4px 12px}

@@ -84,47 +84,108 @@ function cfGuest(){
   const job=jobs[Math.floor(Math.random()*jobs.length)]; return {n:CF_NAMES[CAFE.spawned%CF_NAMES.length],job,look:cfLookFix(job,cfRandLook(job))};
 }
 /* 손님 */
+/* 주문 종류: 기본(4지선다 재료 + O/X 토핑) · 📝 주문서(단답형) · 📋 토핑 파르페(보기 조합) · 🎂 층 케이크(순서 맞히기)
+   단원에 들어 있는 문제 방식에 맞춰 섞여 나와요. 새 방식은 재료 선반 발판 4칸을 그대로 써요. */
+const CF_KIND={base:{w:1.6},sa:{w:1,what:'📝 특별 메뉴',name:'주문서 · 단답형',pat:1.35},cmb:{w:1,what:'🍓 토핑 파르페',name:'토핑 파르페 · 보기 조합',pat:1.3},ord:{w:1,what:'🎂 층 케이크',name:'층 케이크 · 순서 맞히기',pat:1.3}};
+function cfPools(){
+  return {plain:MC.filter(x=>!x.src),sa:MC.filter(x=>x.src==='sa'),cmb:MC.filter(x=>x.src==='cmb'&&x.cmb.s.length<=4),ord:MC.filter(x=>x.src==='ord'&&x.ord.it.length<=4)};
+}
 function cfOrder(){
-  const hasMC=MC.length>0, hasOX=OX.length>0;
-  const mc=hasMC?pick(['mc'],MC):null, ox=hasOX?pick(['ox'],OX):null;
-  let opts=null, ci=-1; if (mc){ const order=mc.o.map((_,i)=>i).sort(()=>Math.random()-.5); opts=order.map(i=>mc.o[i]); ci=order.indexOf(0); }
-  return {mc,ox,opts,ci,oxci:ox?(ox.a?0:1):-1};
+  const P0=cfPools(), av=[];
+  if (P0.plain.length||OX.length) av.push('base');
+  for (const k of ['sa','cmb','ord']) if (P0[k].length) av.push(k);
+  if (!av.length) return {k:'base',mc:null,ox:null};
+  // 앞 손님과 같은 새 방식이 연달아 나오지 않게 조금 섞어요
+  let tot=0; const ws=av.map(k=>{ const w=CF_KIND[k].w*(k!=='base'&&k===CAFE.lastK?.4:1); tot+=w; return w; });
+  let r=Math.random()*tot, k=av[av.length-1]; for (let i=0;i<av.length;i++){ r-=ws[i]; if (r<=0){ k=av[i]; break; } }
+  CAFE.lastK=k;
+  if (k==='base'){
+    const mc=P0.plain.length?pick(['mc'],P0.plain,x=>!x.src):null, ox=OX.length?pick(['ox'],OX):null;
+    let opts=null, ci=-1; if (mc){ const order=mc.o.map((_,i)=>i).sort(()=>Math.random()-.5); opts=order.map(i=>mc.o[i]); ci=order.indexOf(0); }
+    return {k,mc,ox,opts,ci,oxci:ox?(ox.a?0:1):-1};
+  }
+  const it=pick(['mc'],P0[k],x=>x.src===k);
+  const o={k,sp:it,mc:null,ox:null};
+  if (k==='cmb') o.opts=it.cmb.s.slice();
+  if (k==='ord'){ o.map=qxShuffle(it.ord.it.map((_,i)=>i)); o.opts=o.map.map(i=>it.ord.it[i]); }
+  return o;
 }
 function cfSpawn(){
-  const o=cfOrder(); if (!o.mc&&!o.ox) return;
+  const o=cfOrder(); if (!o.mc&&!o.ox&&!o.sp) return;
   const g=cfGuest(), c=makePlayerChar(g.job);
   dressP2(c,g.look).catch(()=>{});
   c.root.position.set(CF_DOOR.x,0,CF_DOOR.z); c.root.rotation.y=-Math.PI/2; CAFE.dyn.add(c.root); c.anim.setBase('idle');
   const pat=CAFE.lv.pat*(MODE==='hero'?1:(EASEF.quiz||1));
-  const C={id:++CAFE.id,no:++CAFE.spawned,name:g.n,c,o,pat,left:pat,x:CF_DOOR.x,z:CF_DOOR.z,leaving:0,mood:'',el:null,happyT:0};
+  const pat2=pat*(CF_KIND[o.k].pat||1);
+  const C={id:++CAFE.id,no:++CAFE.spawned,name:g.n,c,o,pat:pat2,left:pat2,x:CF_DOOR.x,z:CF_DOOR.z,leaving:0,mood:'',el:null,happyT:0};
   const el=document.createElement('div'); el.className='cf-bub'; $('#cfBubs').appendChild(el); C.el=el;
   CAFE.cust.push(C); if (cfFront()===C) cfActivate();
 }
 function cfFront(){ return CAFE.cust.find(c=>!c.leaving)||null; }
 function cfActivate(){
-  cfClearPanels(); CAFE.pick={mc:null,ox:null}; CAFE.bake=0; cfCarry(null);
+  cfClearPanels(); CAFE.pick={mc:null,ox:null,sel:[],sa:null,hint:false}; CAFE.bake=0; cfCarry(null); CAFE.qxKey='';
   const C=cfFront(); if (!C){ $('#cfQ').hidden=true; CAFE.step=''; return; }
   const o=C.o;
   if (o.mc) o.opts.forEach((t,i)=>{ const s=CF_SHELF[i]; CAFE.panels.push(cfPanel(s.x,3.25,-7.25,runPanelTex(String(i+1),t,s.c,false),3.3,2.48)); });
   if (o.ox) CF_OX.forEach((s,i)=>{ CAFE.oxPanels.push(cfPanel(s.x-2.2,1.95,s.z,runPanelTex(i?'X':'O','',s.c,true),1.7,1.1)); });
-  CAFE.step=o.mc?'mc':'ox';
+  if (o.k==='cmb'||o.k==='ord') o.opts.forEach((t,i)=>{ const s=CF_SHELF[i]; CAFE.panels.push(cfPanel(s.x,3.25,-7.25,runPanelTex(o.k==='cmb'?QX_LET[i]:'ABCD'[i],t,s.c,false),3.3,2.48)); });
+  CAFE.step=o.k==='base'?(o.mc?'mc':'ox'):o.k;
   cfQUI(); try{ SFX.wave(); }catch(e){}
+  if (o.k==='sa') setTimeout(()=>{ const el=$('#cfSaIn'); if (el&&cfFront()===C) el.focus(); },350);
 }
 function cfQUI(){
   const C=cfFront(); if (!C){ $('#cfQ').hidden=true; return; } const o=C.o;
   $('#cfQ').hidden=false;
   $('#cfQNo').textContent=`주문 #${C.no}`;
-  const mcDone=CAFE.pick.mc!=null, oxDone=CAFE.pick.ox!=null;
-  const showOx=!o.mc||(mcDone&&CAFE.step!=='mc');
-  $('#cfQKind').textContent=showOx&&o.ox?'토핑 · O/X':'재료 · 4지선다';
-  $('#cfQText').textContent=showOx&&o.ox?o.ox.q:o.mc.q;
-  const box=$('#cfOpts');
-  if (showOx&&o.ox){ box.className='run-opts two'; box.innerHTML=CF_OX.map((s,i)=>`<div class="run-opt${CAFE.pick.ox===i?' on':''}" style="--c:${s.c}"><b>${i?'X':'O'}</b><span>${i?'민트 (틀리다)':'체리 (맞다)'}</span></div>`).join(''); }
-  else { box.className='run-opts'; box.innerHTML=o.opts.map((t,i)=>`<div class="run-opt${CAFE.pick.mc===i?' on':''}" style="--c:${CF_SHELF[i].c}"><b>${i+1}</b><span>${esc(t)}</span></div>`).join(''); }
-  const steps=[]; if (o.mc) steps.push(['재료',mcDone]); if (o.ox) steps.push(['토핑',oxDone]); steps.push(['오븐',CAFE.step==='serve']); steps.push(['서빙',false]);
-  const cur={mc:'재료',ox:'토핑',oven:'오븐',serve:'서빙'}[CAFE.step];
-  $('#cfSteps').innerHTML=steps.map(([n,d])=>`<span class="${d?'done':n===cur?'now':''}">${d?'✓ ':''}${n}</span>`).join('<i>›</i>');
-  $('#cfHint').textContent=CAFE.step==='mc'?'정답 재료 선반 앞 발판에 서요':CAFE.step==='ox'?'왼쪽 토핑대: 맞으면 O(체리), 틀리면 X(민트) 발판':CAFE.step==='oven'?'왼쪽 오븐 앞 발판에 서서 구워요 (재료를 바꾸려면 다른 발판에 다시 서요)':'카운터 앞 노란 발판에서 손님에게 서빙!';
+  const box=$('#cfOpts'), cur0={mc:'재료',ox:'토핑',oven:'오븐',serve:'서빙',sa:'주문서',cmb:'토핑 담기',ord:'층 쌓기'}[CAFE.step];
+  let steps;
+  if (o.k==='base'){
+    const mcDone=CAFE.pick.mc!=null, oxDone=CAFE.pick.ox!=null;
+    const showOx=!o.mc||(mcDone&&CAFE.step!=='mc');
+    $('#cfQKind').textContent=showOx&&o.ox?'토핑 · O/X':'재료 · 4지선다';
+    $('#cfQText').textContent=showOx&&o.ox?o.ox.q:o.mc.q;
+    if (showOx&&o.ox){ box.className='run-opts two'; box.innerHTML=CF_OX.map((s,i)=>`<div class="run-opt${CAFE.pick.ox===i?' on':''}" style="--c:${s.c}"><b>${i?'X':'O'}</b><span>${i?'민트 (틀리다)':'체리 (맞다)'}</span></div>`).join(''); }
+    else { box.className='run-opts'; box.innerHTML=o.opts.map((t,i)=>`<div class="run-opt${CAFE.pick.mc===i?' on':''}" style="--c:${CF_SHELF[i].c}"><b>${i+1}</b><span>${esc(t)}</span></div>`).join(''); }
+    steps=[]; if (o.mc) steps.push(['재료',mcDone]); if (o.ox) steps.push(['토핑',oxDone]);
+    $('#cfHint').textContent=CAFE.step==='mc'?'정답 재료 선반 앞 발판에 서요':CAFE.step==='ox'?'왼쪽 토핑대: 맞으면 O(체리), 틀리면 X(민트) 발판':CAFE.step==='oven'?'왼쪽 오븐 앞 발판에 서서 구워요 (재료를 바꾸려면 다른 발판에 다시 서요)':'카운터 앞 노란 발판에서 손님에게 서빙!';
+  } else {
+    const it=o.sp, sel=CAFE.pick.sel;
+    $('#cfQKind').textContent=CF_KIND[o.k].name;
+    if (o.k==='sa'){
+      $('#cfQText').textContent=it.q;
+      const key='sa'+C.id+(CAFE.pick.sa==null?'':'d');
+      if (CAFE.qxKey!==key){ CAFE.qxKey=key; box.className='cf-qx';
+        if (CAFE.pick.sa==null){
+          box.innerHTML=`<div class="qx-row"><input id="cfSaIn" maxlength="30" autocomplete="off" placeholder="손님이 원하는 메뉴(정답)를 써요 · Enter"><button class="btn" id="cfSaGo">주문서 완성</button></div>
+            <div class="qx-row2"><button class="btn ghost small" id="cfSaHint">💡 초성 힌트 (팁 조금 줄어요)</button><span id="cfSaHintTxt" class="qx-hint"></span></div>`;
+          const inp=$('#cfSaIn'), go=()=>{ const v=inp.value.trim(); if (!v){ inp.focus(); return; } CAFE.pick.sa=v.slice(0,30); inp.blur(); CAFE.step='oven'; try{ SFX.card(); }catch(e){} cfCarry('raw'); cfQUI(); };
+          inp.addEventListener('focus',()=>{ for (const k in keys) keys[k]=false; });
+          inp.addEventListener('keydown',e=>{ e.stopPropagation(); if (e.key==='Enter'){ e.preventDefault(); go(); } else if (e.key==='Escape') inp.blur(); });
+          $('#cfSaGo').onclick=go;
+          $('#cfSaHint').onclick=()=>{ CAFE.pick.hint=true; $('#cfSaHint').disabled=true; $('#cfSaHintTxt').textContent=`${it.sa.cho} (${it.sa.ans[0].replace(/\s/g,'').length}글자)`+(it.sa.h?` · ${it.sa.h}`:''); inp.focus(); };
+        } else box.innerHTML=`<div class="cf-slip">📝 주문서: <b>${esc(CAFE.pick.sa)}</b><small>맞았는지는 서빙할 때 알 수 있어요</small></div>`;
+      }
+      steps=[['주문서',CAFE.pick.sa!=null]];
+      $('#cfHint').textContent=CAFE.pick.sa==null?'정답을 써서 주문서를 완성해요 (쓰는 동안은 움직이지 않아요 · Esc로 빠져나오기)':CAFE.step==='oven'?'왼쪽 오븐 앞 발판에 서서 구워요':'카운터 앞 노란 발판에서 손님에게 서빙!';
+    } else {
+      CAFE.qxKey='';
+      if (o.k==='cmb'){
+        $('#cfQText').textContent=it.cmb.q0;
+        box.className='run-opts cf-st'; box.innerHTML=o.opts.map((t,i)=>`<div class="run-opt${sel.includes(i)?' on':''}" style="--c:${CF_SHELF[i].c}"><b>${sel.includes(i)?'✓':QX_LET[i]}</b><span>${esc(t)}</span></div>`).join('');
+        steps=[['토핑 담기',CAFE.step!=='cmb']];
+        $('#cfHint').textContent=CAFE.step==='cmb'?(sel.length?`담은 토핑: ${sel.slice().sort().map(i=>QX_LET[i]).join(', ')} · 다 담았으면 오븐으로 (다시 밟으면 빼요)`:'옳은 보기 선반 앞 발판을 모두 밟아 토핑을 담아요'):'카운터 앞 노란 발판에서 손님에게 서빙!';
+      } else {
+        $('#cfQText').textContent=String(it.q).replace(/^\[순서\]\s*/,'');
+        box.className='run-opts cf-st'; box.innerHTML=o.opts.map((t,i)=>{ const n=sel.indexOf(i); return `<div class="run-opt${n>=0?' on':''}" style="--c:${CF_SHELF[i].c}"><b>${n>=0?n+1+'층':'ABCD'[i]}</b><span>${esc(t)}</span></div>`; }).join('')+
+          (sel.length&&CAFE.step!=='serve'?`<button class="btn ghost small cf-redo" id="cfRedo">↺ 다시 쌓기</button>`:'');
+        const rb=$('#cfRedo'); if (rb) rb.onclick=()=>{ CAFE.pick.sel=[]; CAFE.step='ord'; CAFE.bake=0; cfCarry(null); cfQUI(); };
+        steps=[['층 쌓기',CAFE.step!=='ord']];
+        $('#cfHint').textContent=CAFE.step==='ord'?`먼저 일어나는 것부터 발판을 차례로 밟아 한 층씩 쌓아요 (${sel.length}/${o.opts.length}층)`:CAFE.step==='oven'?'다 쌓았어요! 왼쪽 오븐 앞 발판에서 구워요':'카운터 앞 노란 발판에서 손님에게 서빙!';
+      }
+    }
+  }
+  steps.push(['오븐',CAFE.step==='serve']); steps.push(['서빙',false]);
+  $('#cfSteps').innerHTML=steps.map(([n,d])=>`<span class="${d?'done':n===cur0?'now':''}">${d?'✓ ':''}${n}</span>`).join('<i>›</i>');
 }
 /* 내가 들고 있는 쟁반 */
 function cfCarry(kind){
@@ -132,12 +193,19 @@ function cfCarry(kind){
     const base=new THREE.Mesh(new THREE.CylinderGeometry(.34,.34,.3,18),std(0xffe0b0)); base.position.y=.18; g.add(base);
     const top=new THREE.Mesh(new THREE.CylinderGeometry(.36,.36,.1,18),std(0xff6b8a)); top.position.y=.36; g.add(top);
     const ch=new THREE.Mesh(new THREE.SphereGeometry(.09,10,8),std(0xe8143c)); ch.position.y=.47; g.add(ch);
-    g.position.set(0,1.45,.62); CAFE.tray={g,base,top,ch}; }
+    const layers=[0,1,2,3].map(k=>{ const m=new THREE.Mesh(new THREE.CylinderGeometry(.32-k*.04,.32-k*.04,.16,18),std(0xffffff)); m.position.y=.42+k*.17; g.add(m); return m; });
+    g.position.set(0,1.45,.62); CAFE.tray={g,base,top,ch,layers}; }
   const T=CAFE.tray; if (!kind){ if (T.g.parent) T.g.parent.remove(T.g); return; }
   if (T.g.parent!==pg) pg.add(T.g);
   const mcI=CAFE.pick.mc, oxI=CAFE.pick.ox;
   T.base.visible=true; T.top.visible=mcI!=null; if (mcI!=null) T.top.material.color.setHex(CF_SHELF[mcI].hex);
   T.ch.visible=oxI!=null; if (oxI!=null) T.ch.material.color.setHex(oxI?0x5fd38d:0xe8143c);
+  const C=cfFront(), k=C?C.o.k:'base', sel=CAFE.pick.sel||[];
+  T.layers.forEach((m,j)=>{ m.visible=k==='ord'&&j<sel.length; if (m.visible) m.material.color.setHex(CF_SHELF[sel[j]].hex); });
+  if (k==='ord'){ T.top.visible=false; T.ch.visible=false; }
+  if (k==='cmb'){ T.top.visible=true; T.top.material.color.setHex(0xfff0f5); T.ch.visible=sel.length>0; T.ch.material.color.setHex(sel.length?CF_SHELF[sel[sel.length-1]].hex:0xe8143c); T.ch.scale.setScalar(1+.25*sel.length); }
+  if (k==='sa'){ T.top.visible=true; T.top.material.color.setHex(0xffb3c7); T.ch.visible=true; T.ch.material.color.setHex(0xffd23f); T.ch.scale.setScalar(1.3); }
+  if (k==='base') T.ch.scale.setScalar(1);
   T.base.material.color.setHex(kind==='baked'?0xe9b36a:0xffe0b0);
 }
 
@@ -159,6 +227,7 @@ function cfPadTick(dt){
   const C=cfFront(); if (!C) return;
   let here=null;
   if (C.o.mc&&CAFE.step!=='serve') CF_SHELF.forEach((s,i)=>{ if (cfAt(s.x,CF_PAD_Z)) here='mc'+i; });
+  if ((C.o.k==='cmb'||C.o.k==='ord')&&CAFE.step!=='serve') C.o.opts.forEach((_,i)=>{ const s=CF_SHELF[i]; if (cfAt(s.x,CF_PAD_Z)) here='qx'+i; });
   if (C.o.ox&&CAFE.step!=='serve'&&(CAFE.step!=='mc')) CF_OX.forEach((s,i)=>{ if (cfAt(s.x,s.z)) here='ox'+i; });
   if (cfAt(CF_OVEN.x,CF_OVEN.z)) here='oven';
   if (cfAt(CF_SERVE.x,CF_SERVE.z)) here='serve';
@@ -169,26 +238,42 @@ function cfPadTick(dt){
     if (CAFE.step==='mc') CAFE.step=C.o.ox?'ox':'oven'; else if (CAFE.step==='serve'){} cfQUI(); CAFE.standT=-99; }
   else if (here.startsWith('ox')&&CAFE.standT>=.4){ const i=+here[2]; if (CAFE.pick.ox!==i){ CAFE.pick.ox=i; try{ SFX.card(); }catch(e){} fx.burst(P.x,1.6,P.z,i?0x5fd38d:0xe8143c,10,3); cfCarry('raw'); }
     if (CAFE.step==='ox') CAFE.step='oven'; cfQUI(); CAFE.standT=-99; }
-  else if (here==='oven'&&CAFE.step==='oven'){ CAFE.bake+=dt; if (CAFE.bake>=2.2){ CAFE.step='serve'; CAFE.bake=0; cfCarry('baked'); try{ SFX.wave(); }catch(e){} fx.burst(CF_OVEN.x,1.8,CF_OVEN.z,0xffc531,20,4); cfQUI(); } }
+  else if (here.startsWith('qx')&&CAFE.standT>=.4){ const i=+here[2], sel=CAFE.pick.sel;
+    if (C.o.k==='cmb'){ const n=sel.indexOf(i); if (n>=0) sel.splice(n,1); else sel.push(i); CAFE.step='cmb'; CAFE.bake=0; try{ SFX.card(); }catch(e){} fx.burst(P.x,1.6,P.z,CF_SHELF[i].hex,10,3); cfCarry(sel.length?'raw':null); }
+    else if (CAFE.step==='ord'&&!sel.includes(i)){ sel.push(i); try{ SFX.card(); }catch(e){} fx.burst(P.x,1.6,P.z,CF_SHELF[i].hex,10,3); cfCarry('raw'); if (sel.length===C.o.opts.length) CAFE.step='oven'; }
+    cfQUI(); CAFE.standT=-99; }
+  else if (here==='oven'&&(CAFE.step==='oven'||CAFE.step==='cmb'&&CAFE.pick.sel.length)){ CAFE.bake+=dt; if (CAFE.bake>=2.2){ CAFE.step='serve'; CAFE.bake=0; cfCarry('baked'); try{ SFX.wave(); }catch(e){} fx.burst(CF_OVEN.x,1.8,CF_OVEN.z,0xffc531,20,4); cfQUI(); } }
   else if (here==='serve'&&CAFE.step==='serve'&&CAFE.standT>=.25){ cfServe(C); CAFE.standT=-99; }
 }
 function cfServe(C){
-  const o=C.o, okMc=o.mc?CAFE.pick.mc===o.ci:null, okOx=o.ox?CAFE.pick.ox===o.oxci:null;
-  if (o.mc) settle(okMc,o.mc,{type:'cafe'}); if (o.ox) settle(okOx,o.ox,{type:'cafe'});
-  const n=(o.mc?1:0)+(o.ox?1:0), good=(okMc?1:0)+(okOx?1:0), perfect=good===n;
+  const o=C.o; let n,good,lines,tip0;
+  const line=(item,ok,ans,mine,q)=>`<li class="${ok?'g':'b'}"><b>${ok?'정답':'아쉬워요'}</b> ${esc(q||item.q)}<br><small>${mine!=null&&!ok?`내 답: ${esc(mine)} → `:''}정답: ${esc(ans)}${item.e?` · ${esc(item.e)}`:''}</small></li>`;
+  if (o.k==='base'){
+    const okMc=o.mc?CAFE.pick.mc===o.ci:null, okOx=o.ox?CAFE.pick.ox===o.oxci:null;
+    if (o.mc) settle(okMc,o.mc,{type:'cafe'}); if (o.ox) settle(okOx,o.ox,{type:'cafe'});
+    n=(o.mc?1:0)+(o.ox?1:0); good=(okMc?1:0)+(okOx?1:0); tip0=good*20;
+    lines=(o.mc?line(o.mc,okMc,correctText(o.mc)):'')+(o.ox?line(o.ox,okOx,correctText(o.ox)):'');
+  } else {
+    const it=o.sp, sel=CAFE.pick.sel; let ok=false, mine='', q=it.q;
+    if (o.k==='sa'){ mine=CAFE.pick.sa||''; ok=it.sa.ans.map(qxNorm).includes(qxNorm(mine)); }
+    if (o.k==='cmb'){ const s=sel.slice().sort(), a=it.cmb.a; ok=s.length===a.length&&s.every((v,j)=>v===a[j]); mine=s.map(i=>QX_LET[i]).join(', ')||'(없음)'; q=it.cmb.q0+' — '+it.cmb.s.map((v,i)=>`${QX_LET[i]}. ${v}`).join(' / '); }
+    if (o.k==='ord'){ const seq=sel.map(i=>o.map[i]); ok=seq.length===it.ord.it.length&&seq.every((v,j)=>v===j); mine=seq.map(j=>it.ord.it[j]).join(' → '); q=String(it.q).replace(/^\[순서\]\s*/,''); }
+    settle(ok,it,{type:'cafe'});
+    n=1; good=ok?1:0; tip0=ok?Math.round(40*(CAFE.pick.hint?.7:1)):0;
+    lines=line(it,ok,correctText(it),mine,q)+(o.k==='ord'&&!ok?'<li class="b"><small>🎂 층 순서가 달라서 케이크가 기울었어요!</small></li>':'');
+  }
+  const perfect=good===n;
   if (perfect){ CAFE.combo++; CAFE.perfect++; } else CAFE.combo=0; CAFE.maxCombo=Math.max(CAFE.maxCombo,CAFE.combo);
   const mul=1+.25*Math.min(4,Math.max(0,CAFE.combo-1)), hurry=C.left/C.pat;
-  const tip=Math.round((good*20+(perfect?Math.round(hurry*20):0))*mul);
+  const tip=Math.round((tip0+(perfect?Math.round(hurry*20):0))*mul);
   CAFE.tips+=tip; CAFE.served++; CAFE.scores.push(perfect?5:good?3:1);
   W.cardCoins=(W.cardCoins||0)+(perfect?4:good?2:0);
   C.mood=perfect?'happy':good?'ok':'sad'; C.happyT=W.t+2.2;
   if (perfect){ C.c.anim.once('cheer',1); try{ SFX.correct(); }catch(e){} fx.burst(C.x,2.6,C.z,0xff4d88,26,5); }
   else if (good){ try{ SFX.correct(); }catch(e){} } else { try{ SFX.wrong(); }catch(e){} }
-  const line=(item,ok,ans)=>`<li class="${ok?'g':'b'}"><b>${ok?'정답':'아쉬워요'}</b> ${esc(item.q)}<br><small>정답: ${esc(ans)}${item.e?` · ${esc(item.e)}`:''}</small></li>`;
   const r=$('#cfRes'); r.className='run-res cf-res '+(perfect?'good':good?'mid':'bad'); r.hidden=false;
-  r.innerHTML=`<b>${perfect?'"딱 제가 원하던 맛이에요!"':good?'"음, 괜찮네요!"':'"음… 이게 아닌데요?"'}</b> <small>${tip?`+${tip} 팁`:''}${CAFE.combo>=2?` · 🔥 ${CAFE.combo}콤보`:''}</small><ul>`+
-    (o.mc?line(o.mc,okMc,correctText(o.mc)):'')+(o.ox?line(o.ox,okOx,correctText(o.ox)):'')+'</ul>';
-  CAFE.res=W.t+(perfect?4:6.5);
+  r.innerHTML=`<b>${perfect?'"딱 제가 원하던 맛이에요!"':good?'"음, 괜찮네요!"':'"음… 이게 아닌데요?"'}</b> <small>${tip?`+${tip} 팁`:''}${CAFE.combo>=2?` · 🔥 ${CAFE.combo}콤보`:''}</small><ul>${lines}</ul>`;
+  CAFE.res=W.t+(perfect?4:7);
   cfLeave(C);
 }
 function cfLeave(C){ C.leaving=1; C.el.classList.add('out'); setTimeout(()=>C.el&&C.el.remove(),600); cfActivate(); }
@@ -227,7 +312,7 @@ function cfBubbles(){
     _cfV.set(C.x,2.9,C.z).project(camera); const x=r.left+(_cfV.x+1)/2*r.width, y=r.top+(1-_cfV.y)/2*r.height;
     C.el.style.transform=`translate(${Math.round(x-65)}px,${Math.round(y-46)}px)`;
     const k=Math.max(0,C.left/C.pat), col=k>.5?'#3fb26b':k>.25?'#f2a516':'#e5484d';
-    const what=C.o.mc&&C.o.ox?'케이크 + 토핑':C.o.mc?'케이크':'파르페';
+    const what=CF_KIND[C.o.k].what||(C.o.mc&&C.o.ox?'케이크 + 토핑':C.o.mc?'케이크':'파르페');
     const html=C.leaving?`<b class="nm">${esc(C.name)}</b> `+(C.mood==='happy'?'<b class="hp">💖 맛있어요!</b>':C.mood==='ok'?'<b>🙂 고마워요</b>':'<b class="sd">😢</b>')
       :`<div class="t"><b class="nm">${esc(C.name)}</b><em>${C===front?'만드는 중':'#'+C.no}</em></div><div class="bar"><i style="width:${Math.round(k*100)}%;background:${col}"></i></div>`;
     if (C.el._h!==html){ C.el._h=html; C.el.innerHTML=html; } C.el.classList.toggle('front',C===front&&!C.leaving); }
@@ -249,7 +334,9 @@ function cafeFrame(dt,real,now){
     const am=arrowsMove();
     let ix=(keys.KeyD||am&&keys.ArrowRight?1:0)-(keys.KeyA||am&&keys.ArrowLeft?1:0)+joy.x, iz=(keys.KeyS||am&&keys.ArrowDown?1:0)-(keys.KeyW||am&&keys.ArrowUp?1:0)+joy.y;
     const L=Math.hypot(ix,iz); if (L>.12){ if (L>1){ ix/=L; iz/=L; } P.x+=ix*7.5*dt; P.z+=iz*7.5*dt; P.fx=ix; P.fz=iz; moving=true; }
-    P.x=Math.max(-8.1,Math.min(4.75,P.x)); P.z=Math.max(-7.0,Math.min(8.6,P.z));
+    P.x=Math.max(-8.1,Math.min(7.9,P.x)); P.z=Math.max(-7.0,Math.min(8.6,P.z));
+    // 카운터(오른쪽 긴 탁자)는 통과하지 못해요. 카운터 뒤쪽 끝으로 돌아가면 4번 선반 발판까지 갈 수 있어요
+    { const x0=4.75,x1=7.45,z0=-4.25,z1=4.85; if (P.x>x0&&P.x<x1&&P.z>z0&&P.z<z1){ const d=[[P.x-x0,'x',x0],[x1-P.x,'x',x1],[P.z-z0,'z',z0],[z1-P.z,'z',z1]].sort((a,b)=>a[0]-b[0])[0]; P[d[1]]=d[2]; } }
     for (const c of CAFE.cols){ const dx=P.x-c.x, dz=P.z-c.z, d=Math.hypot(dx,dz); if (d<c.r&&d>1e-4){ P.x=c.x+dx/d*c.r; P.z=c.z+dz/d*c.r; } }
   }
   pg.position.set(P.x,0,P.z);
@@ -262,8 +349,8 @@ function cafeFrame(dt,real,now){
   cfHUD(); cfArrowTick(); renderFrame(); cfBubbles();
 }
 /* 카페에서는 공격 · 스킬 키를 쓰지 않아요 (이동 키는 그대로) */
-addEventListener('keydown',e=>{ if (MAPK!=='cafe'||W.state!=='play') return; if (/^(Space|KeyE|KeyQ|KeyR|KeyF|ShiftLeft|ShiftRight|Digit\d)$/.test(e.code)){ e.preventDefault(); e.stopImmediatePropagation(); } },true);
-addEventListener('mousedown',e=>{ if (MAPK==='cafe'&&W.state==='play'&&e.target===renderer.domElement){ e.stopImmediatePropagation(); } },true);
+addEventListener('keydown',e=>{ if (MAPK!=='cafe'||W.state!=='play') return; if (e.target.closest&&e.target.closest('input,textarea')) return; if (/^(Space|KeyE|KeyQ|KeyR|KeyF|ShiftLeft|ShiftRight|Digit\d)$/.test(e.code)){ e.preventDefault(); e.stopImmediatePropagation(); } },true);
+addEventListener('mousedown',e=>{ if (MAPK==='cafe'&&W.state==='play'&&e.target===renderer.domElement){ e.stopImmediatePropagation(); blurAll(); } },true);
 /* 다음에 갈 곳 위에 통통 튀는 화살표 (재료 → 토핑 → 오븐 → 서빙) */
 function cfArrowMake(){
   const g=new THREE.Group(), mat=new THREE.MeshBasicMaterial({color:0xffb800,toneMapped:false,fog:false}), line=new THREE.MeshBasicMaterial({color:0x3a2230,side:THREE.BackSide,toneMapped:false,fog:false});
@@ -275,26 +362,30 @@ function cfArrowMake(){
   ring.rotation.x=-Math.PI/2; g.userData.ring=ring; CAFE.dyn.add(ring);
   g.renderOrder=6; CAFE.dyn.add(g); return g;
 }
-function cfLabelTex(t){ return canvasTex(512,128,g=>{ g.fillStyle='#3a2230'; roundRect(g,8,8,496,112,56); g.fill(); g.fillStyle='#ffd23f'; g.font='bold 64px Jua, "Malgun Gothic", sans-serif'; g.textAlign='center'; g.textBaseline='middle'; g.fillText(t,256,68); }); }
+function cfLabelTex(t){ return canvasTex(512,128,g=>{ g.fillStyle='#3a2230'; roundRect(g,8,8,496,112,56); g.fill(); g.fillStyle='#ffd23f'; let fs=64; do { g.font=`bold ${fs}px Jua, "Malgun Gothic", sans-serif`; fs-=4; } while (fs>30&&g.measureText(t).width>460); g.textAlign='center'; g.textBaseline='middle'; g.fillText(t,256,68); }); }
 function cfArrowTick(){
-  if (!CAFE.arrows){ CAFE.arrows=[0,1,2,3].map(cfArrowMake); CAFE.labels={};
+  if (!CAFE.arrows){ CAFE.arrows=[0,1,2,3,4].map(cfArrowMake); CAFE.labels={};
     const sp=new THREE.Sprite(new THREE.SpriteMaterial({transparent:true,depthTest:false,toneMapped:false})); sp.scale.set(3.4,.85,1); sp.renderOrder=7; CAFE.dyn.add(sp); CAFE.label=sp; }
   const C=cfFront(); let pts=[], txt='';
   if (C&&W.state==='play'){
     if (CAFE.step==='mc'){ pts=CF_SHELF.map(s=>[s.x,CF_PAD_Z]); txt='① 정답 재료 고르기'; }
     else if (CAFE.step==='ox'){ pts=CF_OX.map(s=>[s.x,s.z]); txt='② 토핑 O / X'; }
+    else if (CAFE.step==='cmb'){ pts=C.o.opts.map((_,i)=>[CF_SHELF[i].x,CF_PAD_Z]); if (CAFE.pick.sel.length) pts.push([CF_OVEN.x,CF_OVEN.z]); txt='① 옳은 보기 모두 담기'; }
+    else if (CAFE.step==='ord'){ pts=C.o.opts.map((_,i)=>[CF_SHELF[i].x,CF_PAD_Z]).filter((_,i)=>!CAFE.pick.sel.includes(i)); txt=`① ${CAFE.pick.sel.length+1}층 쌓기`; }
+    else if (CAFE.step==='sa'){ txt=''; }
     else if (CAFE.step==='oven'){ pts=[[CF_OVEN.x,CF_OVEN.z]]; txt=CAFE.bake>0?'굽는 중…':'③ 오븐에서 굽기'; }
     else if (CAFE.step==='serve'){ pts=[[CF_SERVE.x,CF_SERVE.z]]; txt='④ 손님에게 서빙!'; }
   }
   const t=performance.now()/1000;
   CAFE.arrows.forEach((a,i)=>{ const p=pts[i]; a.visible=!!p; a.userData.ring.visible=!!p; if (!p) return;
     const here=Math.hypot(P.x-p[0],P.z-p[1])<1.15, bob=Math.abs(Math.sin(t*3.4+i*.5))*.45;
-    a.position.set(p[0],(here?2.3:1.7)+bob,p[1]); a.rotation.y=t*1.6; a.scale.setScalar(pts.length>2?.8:1);
+    a.position.set(p[0],(here?2.3:1.7)+bob,p[1]); a.rotation.y=t*1.6; a.scale.setScalar(pts.length>2?.8:1); if (CAFE.step==='cmb'&&i<C.o.opts.length&&CAFE.pick.sel.includes(i)) a.scale.setScalar(.5);
     a.userData.ring.position.set(p[0],.06,p[1]); a.userData.ring.scale.setScalar(1+.12*Math.sin(t*5+i)); a.userData.ring.material.opacity=here?.95:.6; });
   const L=CAFE.label; L.visible=!!txt;
   if (txt){ if (!CAFE.labels[txt]) CAFE.labels[txt]=cfLabelTex(txt); if (L.material.map!==CAFE.labels[txt]){ L.material.map=CAFE.labels[txt]; L.material.needsUpdate=true; }
-    const cx=pts.reduce((s,p)=>s+p[0],0)/pts.length, cz=pts.reduce((s,p)=>s+p[1],0)/pts.length;
-    L.position.set(cx,(CAFE.step==='mc'?.9:3.6)+Math.sin(t*2)*.08,cz+(CAFE.step==='mc'?1.7:0)); }
+    const shelf=CAFE.step==='mc'||CAFE.step==='cmb'||CAFE.step==='ord', pp=shelf?pts.filter(p=>p[1]===CF_PAD_Z):pts, q=pp.length?pp:pts;
+    const cx=shelf?.0:q.reduce((s,p)=>s+p[0],0)/q.length, cz=q.reduce((s,p)=>s+p[1],0)/q.length;
+    L.position.set(cx,(shelf?.9:3.6)+Math.sin(t*2)*.08,cz+(shelf?1.7:0)); }
 }
 function cafeEndUI(){
   document.body.classList.remove('cafe'); ['#cfHud','#cfQ','#cfRes','#cfHelp','#cfOven'].forEach(s=>{ const e=$(s); if (e) e.hidden=true; });
