@@ -17,6 +17,7 @@ function frame(now){
   }
 
   if (MAPK==='runner' && W.state==='play' && !PARTY.on){ runnerFrame(dt,real,now); return; }
+  if (MAPK==='cafe' && W.state==='play' && !PARTY.on){ cafeFrame(dt,real,now); return; }
   if (MAPK==='stage' && W.state==='play' && !PARTY.on){ stageFrame(dt,real,now); return; }
   if (MAPK==='live' && W.state==='play' && !PARTY.on){ liveFrame(dt,real,now); return; }
   if (MAPK==='teamwar' && W.state==='play' && !PARTY.on){ twFrame(dt,real,now); return; }

@@ -80,6 +80,7 @@ renderHistory();
 function endGame(win){
   $('#rewardBox').hidden=true;
   if (MAPK==='runner') runEndUI();
+  if (MAPK==='cafe') cafeEndUI();
   if (MAPK==='stage') stgEndUI();
   if (MAPK==='live') lvEndUI();
   if (MAPK==='teamwar') twEndUI();
@@ -110,16 +111,18 @@ function endGame(win){
   const uniqN=W.right?W.right.size:0, offBase=uniqN*100+fixedN*50, offAcc=Math.round(offBase*accK), score=offBase+offAcc;
   // 모드 기록(재미용, 같은 모드끼리만 비교): 처치 · 배달 · 별 · 빙하 · 러너 연속 · 승리 · 웨이브 · 빠른 정답 × 난이도
   const lvMul=PARTY.on||MODE==='hero'?HERO.score:LEVELS[LEVEL].score;
-  const modePts=Math.round((spd+W.kills*2+dlv*30+stars*30+gls.pts+(rnb?rnb.pts:0)+(win?300:0)+wc*50+(PARTY.on?PARTY.bonus:0))*lvMul);
+  const cfp=MAPK==='cafe'?CAFE.tips:0;
+  const modePts=Math.round((spd+W.kills*2+dlv*30+stars*30+gls.pts+(rnb?rnb.pts:0)+cfp+(win?300:0)+wc*50+(PARTY.on?PARTY.bonus:0))*lvMul);
   const gm=gameModeId(), prevBest=PROFILE&&PROFILE.mb&&+PROFILE.mb[gm]||0;
   $('#sScoreNote').textContent=`서로 다른 문제 ${uniqN}개 맞힘 ×100 · 다시 맞힘 ${fixedN}개 ×50 · 정답률 ${rateP}% 보너스 +${Math.round(accK*100)}%(${offAcc}점) · 같은 문제는 한 번만 세요`;
   const mparts=[]; if (spd) mparts.push(`빠른 정답 +${spd}`); if (W.kills) mparts.push(`처치 ${W.kills}×2`);
-  if (MAPK==='island') mparts.push(`배달 ${dlv}×30`); if (stars) mparts.push(`별 ${stars}×30`); if (rnb) mparts.push(`최고 ${rnb.m}연속×20 + 코인 ${rnb.c}×2`);
+  if (MAPK==='island') mparts.push(`배달 ${dlv}×30`); if (MAPK==='cafe') mparts.push(`팁 ${cfp}`); if (stars) mparts.push(`별 ${stars}×30`); if (rnb) mparts.push(`최고 ${rnb.m}연속×20 + 코인 ${rnb.c}×2`);
   if (MAPK==='glacier') mparts.push(`빙하 ${gls.pts}`); if (PARTY.on) mparts.push(`거점 +${PARTY.bonus}`); if (tu&&wc) mparts.push(`깬 웨이브 ${wc}×50`); if (win) mparts.push('승리 300');
   if (lvMul!==1) mparts.push(`${PARTY.on||MODE==='hero'?'영웅':LEVELS[LEVEL].name} ×${lvMul}`);
   const isNew=!!PROFILE&&modePts>prevBest&&modePts>0;
   $('#sMode').innerHTML=`<div class="mb-top"><span>${modeIcon(gm)} ${esc(modeName(gm))} 모드 기록</span><b>${modePts.toLocaleString('ko-KR')}</b>${isNew?'<em class="mb-new">🎉 새 기록!</em>':prevBest?`<small>내 최고 ${prevBest.toLocaleString('ko-KR')}</small>`:''}</div><small class="mb-note">${mparts.join(' · ')} · 모드 기록은 같은 모드끼리만 비교해요</small>`;
   $('#sMode').hidden=false;
+  if (MAPK==='cafe') $('#endMsg').textContent=cafeSummary()+$('#endMsg').textContent;
   if (MAPK==='island'&&W.isl) $('#endMsg').textContent=`택배 ${W.isl.delivered}개 배달`+(stars?` · 제시간 배달 ★${stars}`:'')+(W.isl.lost?` · 도둑에게 ${W.isl.lost}개 잃어버림`:'')+'. '+$('#endMsg').textContent;
   const newSkill=PARTY.on||tu?loadSkill():updateSkill(win);
   const d=new Date();
@@ -208,7 +211,7 @@ function setMap(k){
   MAPK=k;
   ensureMap(k);
   for (const g in mapGroups) mapGroups[g].visible=g===k;
-  bgGroup.visible=!['island','glacier','runner','stage','teamwar','live'].includes(k); ground.visible=!['glacier','runner','stage','teamwar','live'].includes(k);
+  bgGroup.visible=!['island','glacier','runner','stage','teamwar','live','cafe'].includes(k); ground.visible=!['glacier','runner','stage','teamwar','live','cafe'].includes(k);
   colliders=MAPSTATE[k].colliders; stations=MAPSTATE[k].stations; npcs=MAPSTATE[k].npcs;
   WAVES=wavesFor(k==='zones'?(MAPS.zones.waves||'zones'):k);
   const M=MAPS[k];
@@ -228,7 +231,7 @@ function setMapInfo(k){
 }
 let FREE_PLAY=false, PLAYMAP=null, PICK={};
 try{ PICK=JSON.parse(localStorage.getItem('gsd-pick')||'{}')||{}; }catch(e){ PICK={}; }
-const MAP_ORDER=['zones','general','defense','island','glacier','runner'];
+const MAP_ORDER=['zones','general','defense','island','glacier','runner','cafe'];
 const mapOK=(u,k)=>!!(u&&MAPS[k]&&MAPS[k].need.every(t=>u.bank[t]&&u.bank[t].length>0));
 /* 게임 모드: 학생이 전투(왼쪽) · 평화(오른쪽) 중에서 자유롭게 골라요. 선생님이 정한 맵은 ⭐ 추천으로 보여요 (파티 · 조별 점령전 · 발판은 따로) */
 const PLAY_MODES=[
@@ -239,6 +242,7 @@ const PLAY_MODES=[
  {id:'island', map:'island', peace:false,side:'battle',icon:'🏝️',name:'서비스업 섬', sub:'배달 + 도둑 해골'},
  {id:'island-p',map:'island',peace:true, side:'peace', icon:'📦',name:'택배 배달',   sub:'몬스터 없이 배달만'},
  {id:'runner', map:'runner', peace:false,side:'peace', icon:'🏃',name:'정답 러너',   sub:'달리며 정답 문 통과'},
+ {id:'cafe',   map:'cafe',   peace:false,side:'peace', icon:'🍰',name:'디저트 카페', sub:'주문 퀴즈로 디저트 만들기'},
  {id:'defense-p',map:'defense',peace:true,side:'peace',icon:'🗼',name:'성 지휘관',   sub:'퀴즈로 포탑 지휘'},
 ];
 const MODE_EXTRA={party:{icon:'🎉',name:'파티'},stage:{icon:'🟩',name:'발판 서바이벌'},teamwar:{icon:'🚩',name:'조별 점령전'}};

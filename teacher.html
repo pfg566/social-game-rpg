@@ -1318,7 +1318,7 @@ function stRender(){
 }
 
 /* 게임 열기: 단원과 맵 고르기 */
-const MAPINFO={zones:{n:'세 거점 맵',need:['mc','ox','cls','loc']},general:{n:'들판 마을 맵',need:['mc','ox']},defense:{n:'성벽 디펜스 맵',need:['mc','ox']},island:{n:'서비스업 섬 맵',need:['mc','ox']},glacier:{n:'녹는 빙하 맵',need:['mc','ox']},runner:{n:'정답 러너',need:['mc','ox']}};
+const MAPINFO={zones:{n:'세 거점 맵',need:['mc','ox','cls','loc']},general:{n:'들판 마을 맵',need:['mc','ox']},defense:{n:'성벽 디펜스 맵',need:['mc','ox']},island:{n:'서비스업 섬 맵',need:['mc','ox']},glacier:{n:'녹는 빙하 맵',need:['mc','ox']},runner:{n:'정답 러너',need:['mc','ox']},cafe:{n:'디저트 카페',need:['mc']}};
 let UNITS=[], UACTIVE='';
 const arrOf=x=>Array.isArray(x)?x.filter(Boolean):(x&&typeof x==='object'?Object.values(x):[]);
 function watchUnits(){
@@ -1357,7 +1357,7 @@ function fillUnitSelect(){
 let UNIT_PICK_CLS=null;
 /* 모드(맵) 고르기: 평소엔 '학생이 자유롭게', 반 전체가 같은 모드를 해야 할 땐 '🔒 이 모드만' (나머지 모드는 학생 화면에서 잠겨요) */
 const GMODES=[{id:'zones',map:'zones',n:'세 거점',s:'전투'},{id:'general',map:'general',n:'들판 마을',s:'전투'},{id:'glacier',map:'glacier',n:'녹는 빙하',s:'전투'},{id:'defense',map:'defense',n:'성벽 디펜스',s:'전투'},{id:'island',map:'island',n:'서비스업 섬',s:'전투'},
-              {id:'island-p',map:'island',n:'택배 배달',s:'평화'},{id:'runner',map:'runner',n:'정답 러너',s:'평화'},{id:'defense-p',map:'defense',n:'성 지휘관',s:'평화'}];
+              {id:'island-p',map:'island',n:'택배 배달',s:'평화'},{id:'runner',map:'runner',n:'정답 러너',s:'평화'},{id:'cafe',map:'cafe',n:'디저트 카페',s:'평화'},{id:'defense-p',map:'defense',n:'성 지휘관',s:'평화'}];
 function fillMapSelect(reset){
   const u=unitById($('#pbUnit').value), el=$('#pbMap'), cur=reset?'':el.value;
   const ms=GMODES.filter(m=>mapOkT(u,m.map));
@@ -1596,7 +1596,7 @@ async function lvCsv(){
 /* 👥 지금 접속 중 (동시 접속자) */
 let ONLD={};
 function watchOnline(){ db.ref('online').on('value',s=>{ ONLD=s.val()||{}; renderOnline(); },()=>{ $('#onlSum').textContent='👥 접속자 수를 불러오지 못했어요'; $('#onlSub').textContent='새 보안 규칙(database.rules.json)을 Firebase에 올렸는지 확인해 주세요.'; }); }
-const ONL_MODE={zones:'세 거점',general:'들판 마을',glacier:'녹는 빙하',defense:'성벽 디펜스',island:'서비스업 섬','island-p':'택배 배달',runner:'정답 러너','defense-p':'성 지휘관',party:'파티',stage:'발판 서바이벌',teamwar:'조별 점령전',live:'수업 모드',conquest:'파티'};
+const ONL_MODE={zones:'세 거점',general:'들판 마을',glacier:'녹는 빙하',defense:'성벽 디펜스',island:'서비스업 섬','island-p':'택배 배달',runner:'정답 러너',cafe:'디저트 카페','defense-p':'성 지휘관',party:'파티',stage:'발판 서바이벌',teamwar:'조별 점령전',live:'수업 모드',conquest:'파티'};
 function renderOnline(){
   const now=pNow(), by={}; let tot=0, play=0;
   for (const cid in ONLD) for (const u in ONLD[cid]){ const o=ONLD[cid][u]; if (!o||now-(+o.t||0)>90000) continue; (by[cid]=by[cid]||[]).push(o); tot++; if (o.s==='play') play++; }

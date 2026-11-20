@@ -804,3 +804,31 @@ body.livemode #hud, body.livemode #skillbar, body.livemode #hint, body.livemode 
 .title-actions #liveBtn{grid-row:1;font-size:18px}
 .title-actions:has(#liveBtn:not([hidden])) #startBtn,.title-actions:has(#liveBtn:not([hidden])) #partyBtn{grid-row:2}
 .kick-pop{position:fixed;inset:0;z-index:90;display:flex;align-items:center;justify-content:center;background:rgba(15,20,40,.45)}.kick-pop .card{max-width:420px;padding:22px 26px;text-align:center;display:flex;flex-direction:column;gap:10px}.kick-pop b{font-size:20px}
+
+/* 🍰 디저트 카페 */
+body.cafe #hud, body.cafe #skillbar, body.cafe #hint, body.cafe #touch, body.cafe #prompt{display:none!important}
+.cf-hud{gap:12px}.cf-hud .cf-name{font-family:Jua,sans-serif;font-size:20px;color:#c2185b}#cfStars{color:#b7791f;font-weight:700}
+.cf-q{top:auto;bottom:16px}
+.cf-qhead{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;margin-bottom:4px}
+.cf-no{background:#ff6b8a;color:#fff;border-radius:99px;padding:2px 12px;font-family:Jua,sans-serif;font-size:16px}
+.cf-kind{font-weight:700;color:#c2185b}.cf-hint{font-size:13px;color:#6b5560}
+.cf-q .run-opt.on{outline:4px solid #ffe14d;outline-offset:-2px}
+.cf-steps{display:flex;gap:6px;align-items:center;margin-top:8px;font-size:13px;font-weight:700}
+.cf-steps span{background:#f2e6ea;border-radius:99px;padding:3px 10px}.cf-steps span.done{background:#3fb26b;color:#fff}.cf-steps span.now{background:#ffe14d}
+.cf-steps i{font-style:normal;color:#9a8790}
+.cf-res{top:16px;bottom:auto;text-align:left}.cf-res.mid b{color:#b7791f}
+.cf-res ul{margin:8px 0 0;padding:0;list-style:none;display:grid;gap:6px}.cf-res li{font-size:15px;line-height:1.45;padding:6px 10px;border-radius:10px;background:#f6f7fb}
+.cf-res li.g b{color:#1f9d55}.cf-res li.b b{color:#d93a3f}.cf-res li b{font-size:15px;margin-right:4px}.cf-res li small{color:#5a5f73}
+#cfBubs{position:fixed;inset:0;pointer-events:none;z-index:11}
+.cf-bub{position:fixed;left:0;top:0;width:160px;background:#fff;border:3px solid #3a2230;border-radius:14px;box-shadow:3px 3px 0 #3a2230;padding:6px 9px;font-size:13px;font-weight:700;color:#3a2230;transition:opacity .5s}
+.cf-bub.front{border-color:#ff4d88;box-shadow:3px 3px 0 #ff4d88}.cf-bub.out{opacity:0}
+.cf-bub .t{display:flex;justify-content:space-between;gap:4px}.cf-bub em{font-style:normal;color:#c2185b;font-size:12px}
+.cf-bub .bar{margin-top:5px;height:8px;border-radius:99px;background:#f2e6ea;overflow:hidden}.cf-bub .bar i{display:block;height:100%}
+.cf-bub .hp{color:#ff4d88;font-size:16px}.cf-bub .sd{font-size:18px}
+.cf-oven{position:fixed;left:50%;top:46%;transform:translate(-50%,-50%);z-index:12;width:220px;height:26px;border:3px solid #3a2230;border-radius:99px;background:#fff;overflow:hidden}
+.cf-oven i{position:absolute;left:0;top:0;bottom:0;background:#ff8a3d}.cf-oven span{position:relative;display:block;text-align:center;font-weight:700;line-height:20px}
+.cf-toast{position:fixed;left:50%;top:40%;transform:translate(-50%,10px);z-index:13;background:#3a2230;color:#fff;padding:8px 16px;border-radius:99px;font-weight:700;opacity:0;pointer-events:none}
+.cf-toast.show{animation:cfToast 2.6s ease}
+@keyframes cfToast{0%{opacity:0;transform:translate(-50%,10px)}12%,80%{opacity:1;transform:translate(-50%,0)}100%{opacity:0}}
+#cfHelp{top:84px;bottom:auto}
+.cf-res{top:84px}

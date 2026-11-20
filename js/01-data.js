@@ -120,6 +120,7 @@ const WAVESETS = {
  stage:[{name:'발판 서바이벌', n:0, hp:1, spd:1, dmg:0, color:0xe0434a}],
  live:[{name:'수업 모드', n:0, hp:1, spd:1, dmg:0, color:0xe0434a}],
  runner:[{name:'정답 러너', n:0, hp:1, spd:1, dmg:0, color:0xe0434a}],
+ cafe:[{name:'디저트 카페', n:0, hp:1, spd:1, dmg:0, color:0xe0434a}],
  island_peace:[
   {name:'1단계 · 아침 배송', n:0, hp:60, spd:2, dmg:0, color:0xe0434a, parcels:3},
   {name:'2단계 · 점심 배송', n:0, hp:60, spd:2, dmg:0, color:0xe0434a, parcels:4},
@@ -162,6 +163,9 @@ const MAPS = {
  teamwar:{name:'조별 점령전', need:['mc','ox'], start:[0,12], recharge:30, desc:'선생님이 연 조별 점령전이에요.', rules:[], gateText:'', clearText:'', winTitle:'우리 조 승리!', winMsg:'조별 점령전을 마쳤어요. 함께 싸운 조원들에게 박수!'},
  live:{name:'수업 모드', need:[], start:[0,6.6], recharge:30, desc:'선생님이 연 수업 방이에요.', rules:[], gateText:'', clearText:'', winTitle:'수업 끝!', winMsg:'수업에 참여했어요.'},
  stage:{name:'발판 서바이벌', need:['mc','ox'], start:[0,0], recharge:30, desc:'선생님이 연 반 전체 퀴즈 게임이에요.', rules:[], gateText:'', clearText:'', winTitle:'끝까지 살아남았어요!', winMsg:'발판 서바이벌을 마쳤어요. 아래 틀린 문제를 한 번 더 읽어 보고 마무리해요.'},
+ cafe:{name:'디저트 카페', need:['mc'], start:[0,3], recharge:30, desc:'손님의 주문서(문제)를 보고 정답 재료와 토핑으로 디저트를 만들어 서빙해요. 몬스터 없이 편하게 해요.',
+  rules:['<b>재료:</b> 4지선다는 뒤쪽 선반 ①~④ 중 정답 재료 발판에 서요','<b>토핑:</b> O/X는 왼쪽 토핑대 — 맞으면 O(체리), 틀리면 X(민트) 발판','<b>오븐 → 서빙:</b> 오븐 앞에서 굽고, 카운터 앞 노란 발판에서 손님에게 드려요. 맞혔는지는 손님 반응으로 알 수 있어요','<b>손님:</b> 기다리는 시간 게이지가 다 닳으면 손님이 떠나요. 연달아 완벽하게 만들면 팁이 늘어요'],
+  gateText:'', clearText:'', winTitle:'오늘 영업 끝!', winMsg:'아래 틀린 주문을 한 번 더 읽어 보고 마무리해요.'},
  runner:{name:'정답 러너', need:['mc','ox'], start:[-1.5,0], recharge:30,
   desc:'앞으로 달리면서 문제를 읽고, 정답 색깔 문이 있는 줄로 옮겨 통과하세요. 몬스터와 싸우지 않아요.',
   rules:['<b>조작:</b> ← → 또는 A D로 줄 바꾸기 · 스페이스(↑ W)로 점프','<b>정답 문:</b> 4지선다는 4줄(빨강 1 · 파랑 2 · 초록 3 · 노랑 4), O/X는 왼쪽 두 줄이 O, 오른쪽 두 줄이 X예요','<b>하트 3개:</b> 틀리면 하트가 하나 줄어요. 5연속 정답이면 하트가 하나 돌아와요. 하트를 모두 잃으면 끝','<b>장애물:</b> 통과 상자에 부딪히면 잠깐 느려져요. 점프하거나 줄을 바꿔 피해요','<b>코인:</b> 길 위의 코인을 주우면 판이 끝날 때 받아요','정해진 문제를 모두 통과하면 승리 · 연속 정답이 길수록 점수가 커요'],
