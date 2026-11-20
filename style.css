@@ -832,3 +832,5 @@ body.cafe #hud, body.cafe #skillbar, body.cafe #hint, body.cafe #touch, body.caf
 @keyframes cfToast{0%{opacity:0;transform:translate(-50%,10px)}12%,80%{opacity:1;transform:translate(-50%,0)}100%{opacity:0}}
 #cfHelp{top:84px;bottom:auto}
 .cf-res{top:84px}
+.cf-bub .nm{font-family:Jua,sans-serif;font-size:16px;color:#3a2230;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cf-bub{width:130px;padding:4px 8px;font-size:12px;border-width:2.5px;box-shadow:2px 2px 0 #3a2230}.cf-bub .nm{font-size:15px;margin:0;max-width:78px;display:inline-block;vertical-align:bottom}.cf-bub .t{align-items:baseline}.cf-bub .bar{margin-top:3px;height:6px}

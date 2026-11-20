@@ -16,4 +16,13 @@ function onlineTick(){
   try{ ONL.ref.onDisconnect().remove(); }catch(e){}
   ONL.ref.set({n:String(myName()||'').slice(0,12),num:+STUDENT.num||0,s,m,t:firebase.database.ServerValue.TIMESTAMP}).catch(()=>{ ONL.t=now+30000; });
 }
-setInterval(()=>{ try{ onlineTick(); }catch(e){} },2000);
+/* 내 캐릭터 카드: 우리 반 친구들 게임(디저트 카페 손님 등)에 내 이름 · 직업 · 차림으로 나와요 · 같은 반만 볼 수 있어요 */
+const PUBC={sig:'',t:0};
+function pubCardTick(){
+  if (!(fbDb&&AUTHMODE==='student'&&STUDENT&&PROFILE&&typeof WARDROBE!=='undefined'&&WARDROBE)) return;
+  const look=equippedLook(JOB), sig=JSON.stringify([PROFILE.name,JOB,look]); if (sig===PUBC.sig||performance.now()-PUBC.t<20000) return;
+  PUBC.t=performance.now();
+  const l={}; for (const k in look) if (typeof look[k]==='string') l[k]=look[k].slice(0,24);
+  fbDb.ref(`pubcard/${STUDENT.cid}/${STUDENT.num}`).set({n:String(PROFILE.name||'').slice(0,12),j:JOB,l,t:firebase.database.ServerValue.TIMESTAMP}).then(()=>{ PUBC.sig=sig; }).catch(()=>{});
+}
+setInterval(()=>{ try{ onlineTick(); }catch(e){} try{ pubCardTick(); }catch(e){} },2000);

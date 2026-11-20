@@ -693,6 +693,32 @@
           }
         }
       }
+    },
+    "pubcard": {
+      "$cid": {
+        ".read": "auth != null && (auth.token.email.beginsWith($cid + '-') || (auth != null && auth.token.email_verified == true && (auth.token.email.toLowerCase() == 'pfg566@gmail.com' || root.child('admins').child(auth.token.email.toLowerCase().replace('.', ',')).val() == true)))",
+        "$num": {
+          ".write": "auth != null && auth.token.email == ($cid + '-' + $num + '-' + root.child('roster').child($cid).child($num).child('code').val() + '@stu.sgame.kr') || (auth != null && auth.token.email_verified == true && (auth.token.email.toLowerCase() == 'pfg566@gmail.com' || root.child('admins').child(auth.token.email.toLowerCase().replace('.', ',')).val() == true))",
+          ".validate": "newData.hasChildren(['n','j','l'])",
+          "n": {
+            ".validate": "newData.isString() && newData.val().length <= 12"
+          },
+          "j": {
+            ".validate": "newData.val() == 'knight' || newData.val() == 'archer' || newData.val() == 'mage'"
+          },
+          "l": {
+            "$k": {
+              ".validate": "newData.isString() && newData.val().length <= 24"
+            }
+          },
+          "t": {
+            ".validate": "newData.val() == now"
+          },
+          "$other": {
+            ".validate": false
+          }
+        }
+      }
     }
   }
 }
