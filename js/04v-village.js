@@ -1,25 +1,34 @@
 /* 사회 게임 RPG · 🏡 노을 마을 (돌아다니는 마을 · 1단계)
    로비에서 들어가요. 내 캐릭터(꾸민 모습 그대로)로 걸어 다니고, 건물 앞 발판에서 상점 · 던전(지금 열린 게임) · 내 집(준비 중)으로 들어가요.
    몬스터 · 퀴즈 · 기록이 없는 공간이라 점수에는 영향이 없어요. 파일은 01 → 13 순서로 불러와요. 모든 파일이 같은 전역 공간을 함께 써요. */
-const VL={on:false,joining:false,built:false,yaw:0,pitch:.2,dist:6.5,run:false,drag:null,ks:1,door:null,callT:0,toastT:0,backShop:false,
+const VL={on:false,joining:false,built:false,yaw:0,pitch:.2,dist:6.5,run:false,slow:1,drag:null,ks:1,door:null,callT:0,toastT:0,backShop:false,
   U:null,grass:null,leaves:null,sky:null,skyU:null,rays:null,mini:null,miniSrc:null};
 const VL_LIN=h=>new THREE.Color(h).convertSRGBToLinear();
 let vlSeed=7; const vlR=()=>{ vlSeed=(vlSeed*16807)%2147483647; return (vlSeed-1)/2147483646; }, vlS=(a,b)=>a+vlR()*(b-a);
 const VL_SUN=new THREE.Vector3(-.42,.2,-.88).normalize();
 const VL_MAP=140, VL_PATH_W=1.7;
-const VL_PATH=[[-62,34],[-40,22],[-20,12],[-4,6],[10,0],[24,-10],[40,-26],[62,-40]].map(p=>new THREE.Vector2(p[0],p[1]));
+// 큰길: 서쪽 끝은 마을 밖으로 이어지고, 동쪽 끝은 던전 입구 앞마당에서 끝나요
+const VL_PATH=[[-62,34],[-40,22],[-20,12],[-4,6],[10,0],[24,-10],[40,-26]].map(p=>new THREE.Vector2(p[0],p[1]));
 const VL_SIDE=[[3,5.6],[4,1],[5.2,-3.5],[6.2,-8.5],[6.6,-12.6]].map(p=>new THREE.Vector2(p[0],p[1]));
 const VL_HOUSES=[{x:7,z:-20,r:0,w:10,d:7,h:4.4,roof:'#6d5a8e',cozy:true},{x:-24,z:-8,r:.5,w:8,d:6.5,h:4.2,roof:'#a2553f',shut:'#3f6b4a',shop:true},{x:-8,z:27,r:Math.PI+.25,w:9,d:6.5,h:4.4,roof:'#56688c',shut:'#3f5f8a',chim:-1},{x:30,z:16,r:Math.PI-.4,w:8.5,d:6,h:4.2,roof:'#7a5a7a',shut:'#8a3f3f'}];
 const VL_TREES=[[-8,-6,1.15,'au'],[16,6,1.3,'au'],[-30,10,1.2,'au'],[22,-24,1.1,'yl'],[-14,-24,1.05,'au'],[-2,16,.95,'yl'],[34,-6,1.2,'au'],[-40,-16,1.25,'gr'],[12,24,1.1,'gr'],[-20,30,1.15,'au'],[44,8,1.0,'yl'],[-44,26,1.05,'au'],[0,-36,1.2,'au'],[26,-40,1.0,'gr']];
-const VL_BUSHES=[[-2.2,-4.0,'rd'],[-13.5,4.2,'au'],[12,4,'au'],[14.5,1.5,'rd'],[-1,-11,'gr'],[13,-12,'gr'],[-12,8,'au'],[18,-4,'rd'],[-17,2,'gr'],[3,10,'au'],[-26,16,'rd'],[26,-14,'au'],[30,0,'gr'],[-10,-14,'rd'],[8,14,'gr'],[-34,4,'au'],[20,12,'rd']];
-const VL_PORTAL={x:31,z:-19,r:-2.2};
+// 덤불: 길 위 · 길가에 있던 것들은 나무 곁 · 울타리 곁 · 연못가로 옮겼어요 (지나갈 수 있지만 느려져요)
+const VL_BUSHES=[[-2.2,-4.0,'rd'],[-15,-3.5,'au'],[13.5,9,'au'],[19.5,8.5,'rd'],[-1,-11,'gr'],[13,-12,'gr'],[-17.1,19.3,'au'],[21,-17,'rd'],[-17,2,'gr'],[0,12.5,'au'],[-24,26,'rd'],[29,-26,'au'],[30,0,'gr'],[-10,-14,'rd'],[8,14,'gr'],[-34,4,'au'],[20,12,'rd']];
+// 던전 입구: 큰길이 끝나는 동쪽 숲 가장자리, 바위 언덕에 박힌 돌 아치 (앞쪽이 길을 바라봐요)
+const VL_PORTAL={x:43.4,z:-29.4,r:-Math.PI/4};
+const vlPortalW=(lx,lz)=>({x:VL_PORTAL.x+lx*Math.cos(VL_PORTAL.r)+lz*Math.sin(VL_PORTAL.r),z:VL_PORTAL.z-lx*Math.sin(VL_PORTAL.r)+lz*Math.cos(VL_PORTAL.r)});
 // 가로등: 큰길을 따라 약 12.5m마다 양쪽을 번갈아 세우고, 등불 팔은 길 쪽을 향해요 (시작 위치 앞 시야는 비워 둬요) [x, z, 회전]
-const VL_LAMPS=[[-33.58,21.47,2.05],[-24.64,11.38,-1.127],[-11.18,11.24,1.908],[-5.39,3.86,-1.197],[12.34,1.53,2.103],[19.74,-9.69,-.89],[31.13,-13.63,2.401],[37.51,-27.2,-.876]];
-const VL_COLL=[];
+const VL_LAMPS=[[-33.58,21.47,2.05],[-24.64,11.38,-1.127],[-11.18,11.24,1.908],[-5.39,3.86,-1.197],[12.34,1.53,2.103],[19.74,-9.69,-.89],[31.28,-13.45,2.355]];
+const VL_COLL=[], VL_SOFT=[];   // VL_SOFT: 덤불처럼 지나갈 수 있지만 느려지는 곳
 const vlSegD=(p,a,b)=>{ const abx=b.x-a.x, aby=b.y-a.y, t=Math.max(0,Math.min(1,((p.x-a.x)*abx+(p.y-a.y)*aby)/(abx*abx+aby*aby))); return Math.hypot(p.x-(a.x+abx*t),p.y-(a.y+aby*t)); };
 const VL_PATHC=new THREE.SplineCurve(VL_PATH), VL_PATHP=VL_PATHC.getPoints(160), VL_SIDEC=new THREE.SplineCurve(VL_SIDE), VL_SIDEP=VL_SIDEC.getPoints(40);
+// 내 집 앞 꽃밭 두 개 · 작은 정원등 두 개 (디딤돌 길 양옆)
+const VL_GARDEN=(()=>{ const L=VL_SIDEC.getLength(), at=d=>{ const p=VL_SIDEC.getPointAt(d/L), t=VL_SIDEC.getTangentAt(d/L).normalize(); return {p,t,n:new THREE.Vector2(-t.y,t.x)}; };
+  const b=at(13.5), l=at(9), ry=Math.atan2(b.t.x,b.t.y);
+  return {beds:[-1,1].map(s=>({x:b.p.x+b.n.x*s*1.85,z:b.p.y+b.n.y*s*1.85,ry,w:1.1,l:3.6})),lights:[-1,1].map(s=>({x:l.p.x+l.n.x*s*1.25,z:l.p.y+l.n.y*s*1.25}))}; })();
 function vlPolyD(pts,x,z){ const p=new THREE.Vector2(x,z); let d=1e9; for (let i=0;i<pts.length-1;i++) d=Math.min(d,vlSegD(p,pts[i],pts[i+1])); return d; }
 function vlInHouse(x,z,pad){ for (const H of VL_HOUSES){ const c=Math.cos(H.r), s=Math.sin(H.r), dx=x-H.x, dz=z-H.z, lx=dx*c-dz*s, lz=dx*s+dz*c; if (Math.abs(lx)<H.w/2+pad&&Math.abs(lz)<H.d/2+pad) return true; } return false; }
+const VL_DPINES=[[-9.6,-5.2,1.25],[9.9,-4.8,1.35],[-5.4,-11.8,1.15],[5.8,-12.2,1.4],[.3,-14.5,1.2],[-12.5,1,1.05],[12.8,.6,1.1]];   // 던전 언덕 뒤 · 옆 소나무 (아치 기준 좌표)
 const vlFront=(H,d)=>({x:H.x+Math.sin(H.r)*d,z:H.z+Math.cos(H.r)*d});
 const VL_DOORS=[
   {id:'home',...vlFront(VL_HOUSES[0],VL_HOUSES[0].d/2+1.5),sign:'🏠 내 집'},
@@ -32,7 +41,7 @@ function vlTex(cv,rep){ const t=new THREE.CanvasTexture(cv); t.encoding=THREE.sR
 const vlRnd=(a,b)=>a+Math.random()*(b-a);
 
 function buildVillage(){
-  const R=new THREE.Group(); scene.add(R); VL.root=R; VL_COLL.length=0; VL.camObs=[]; VL.halos=[]; VL.smokeSrc=[]; VL_AO.length=0;
+  const R=new THREE.Group(); scene.add(R); VL.root=R; VL_COLL.length=0; VL_SOFT.length=0; VL.camObs=[]; VL.halos=[]; VL.smokeSrc=[]; VL_AO.length=0; VL.bedFlowers=[]; VL.torches=[];
   const add=o=>{ R.add(o); return o; };
   const U=VL.U={uTime:{value:0},uPlayer:{value:new THREE.Vector3()},uBase:{value:VL_LIN('#3b4f1a')},uTip:{value:VL_LIN('#d9c25e')},uTip2:{value:VL_LIN('#a9b544')},
     uSunCol:{value:VL_LIN('#ffb46e')},uSun:{value:VL_SUN.clone()},uFog:{value:new THREE.Color()},uFogN:{value:12},uFogF:{value:95},
@@ -70,15 +79,23 @@ function buildVillage(){
   /* 풀: 캐릭터 주변(한 변 약 50m)에 가는 풀잎을 아주 빽빽하게. 움직이면 풀밭이 따라와요(먼 곳은 바닥 그림 · 풀 뭉치 · 안개).
      뿌리 색은 바닥 그림에서 그대로 가져와서 바닥과 이어져 보여요. 길 · 집 · 문 앞은 '풀 지도(mask)'로 비워요 */
   const MS=512, mcv=vlCanvas(MS,MS,()=>{}), mg=mcv.getContext('2d'), mp=v=>(v/VL_MAP+.5)*MS;
-  { const A=vlCanvas(MS,MS,g=>{ g.fillStyle='#fff'; g.fillRect(0,0,MS,MS); g.strokeStyle='#000'; g.fillStyle='#000'; g.lineCap='round'; g.lineJoin='round';
-      g.filter='blur(2px)';
+  { const A=vlCanvas(MS,MS,g=>{ g.fillStyle='#fff'; g.fillRect(0,0,MS,MS); g.lineCap='round'; g.lineJoin='round';
       const st=(pts,w)=>{ g.lineWidth=w/VL_MAP*MS; g.beginPath(); pts.forEach((p,i)=>i?g.lineTo(mp(p.x),mp(p.y)):g.moveTo(mp(p.x),mp(p.y))); g.stroke(); };
-      st(VL_PATHP,VL_PATH_W*2+.9); st(VL_SIDEP,2.0);
-      VL_HOUSES.forEach(H=>{ g.save(); g.translate(mp(H.x),mp(H.z)); g.rotate(-H.r); const w=(H.w+.5)/VL_MAP*MS, d=(H.d+.5)/VL_MAP*MS; g.fillRect(-w/2-(H.cozy?0:0),-d/2,w+(H.cozy?3.4/VL_MAP*MS:0),d); g.restore(); });
-      VL_DOORS.forEach(d=>{ if (d.id==='home') return; g.beginPath(); g.arc(mp(d.x),mp(d.z),2.2/VL_MAP*MS,0,7); g.fill(); });
-      g.beginPath(); g.arc(mp(VL_PORTAL.x),mp(VL_PORTAL.z),3/VL_MAP*MS,0,7); g.fill();
+      const box=(x,z,r,w,d,ex)=>{ const k=MS/VL_MAP; g.save(); g.translate(mp(x),mp(z)); g.rotate(-r); g.fillRect(-w/2*k,-d/2*k,(w+(ex||0))*k,d*k); g.restore(); };
+      const disc=(x,z,r)=>{ g.beginPath(); g.arc(mp(x),mp(z),r/VL_MAP*MS,0,7); g.fill(); };
+      // 길가 · 내 집 마당 · 집 둘레 · 시작 자리: 짧게 깎은 풀 (회색)
+      g.filter='blur(6px)'; g.strokeStyle=g.fillStyle='#555';
+      st(VL_PATHP,VL_PATH_W*2+4.6); st(VL_SIDEP,6.6); box(7.5,-19.2,0,19,13.6); disc(5.6,8.2,3.2);
+      VL_HOUSES.forEach(H=>box(H.x,H.z,H.r,H.w+5,H.d+5,H.cozy?3.4:0));
+      // 풀 없음 (검정): 길 · 디딤돌 · 집 · 문 앞 · 꽃밭 · 던전 앞마당과 바위 언덕 · 연못 · 나무 밑
+      g.filter='blur(2px)'; g.strokeStyle=g.fillStyle='#000';
+      st(VL_PATHP,VL_PATH_W*2+.9); st(VL_SIDEP,1.8);
+      VL_HOUSES.forEach(H=>box(H.x,H.z,H.r,H.w+.5,H.d+.5,H.cozy?3.4:0));
+      VL_DOORS.forEach(d=>{ if (d.id!=='home') disc(d.x,d.z,2.2); });
+      { const f=vlPortalW(0,1.6), k=vlPortalW(0,-4.5); disc(f.x,f.z,5.4); disc(k.x,k.z,7.8); }
+      VL_GARDEN.beds.forEach(b=>box(b.x,b.z,b.ry,b.w+.3,b.l+.3));
       g.beginPath(); for (let i=0;i<=72;i++){ const a=i/72*Math.PI*2, r=vlPondR(a)+.35, x=VL_POND.x+Math.cos(a)*r, z=VL_POND.z+Math.sin(a)*r; i?g.lineTo(mp(x),mp(z)):g.moveTo(mp(x),mp(z)); } g.fill();
-      VL_COLL.forEach(c=>{ if (c.r>.4){ g.beginPath(); g.arc(mp(c.x),mp(c.z),c.r*.7/VL_MAP*MS,0,7); g.fill(); } }); });
+      VL_COLL.forEach(c=>{ if (c.r>.4) disc(c.x,c.z,c.r*.7); }); });
     const B=vlCanvas(MS,MS,g=>{ g.fillStyle='#fff'; g.fillRect(0,0,MS,MS);
       const hor=new THREE.Vector2(-VL_SUN.x,-VL_SUN.z).normalize(), kk=1/Math.max(.25,VL_SUN.y);
       const spot=(x,z,r,k)=>{ const gr=g.createRadialGradient(mp(x),mp(z),0,mp(x),mp(z),r/VL_MAP*MS); gr.addColorStop(0,`rgba(0,0,0,${k})`); gr.addColorStop(1,'rgba(0,0,0,0)'); g.fillStyle=gr; g.fillRect(0,0,MS,MS); };
@@ -87,7 +104,8 @@ function buildVillage(){
       VL_HOUSES.forEach(H=>{ const o=Math.min(10,3*kk*.5); for (let i=-1;i<=1;i++) spot(H.x+hor.x*o+Math.cos(H.r)*i*H.w*.3,H.z+hor.y*o-Math.sin(H.r)*i*H.w*.3,H.d*.7,.55); }); });
     const a=A.getContext('2d').getImageData(0,0,MS,MS).data, b=B.getContext('2d').getImageData(0,0,MS,MS).data, out=mg.createImageData(MS,MS);
     for (let i=0;i<a.length;i+=4){ out.data[i]=a[i]; out.data[i+1]=b[i]; out.data[i+2]=0; out.data[i+3]=255; }
-    mg.putImageData(out,0,0); }
+    mg.putImageData(out,0,0);
+    VL.maskR=new Uint8Array(MS*MS); VL.maskS=MS; for (let i=0;i<MS*MS;i++) VL.maskR[i]=a[i*4]; }
   VL.maskCv=mcv; const maskT=new THREE.CanvasTexture(mcv); maskT.minFilter=THREE.LinearFilter; maskT.generateMipmaps=false;
   U.uMask={value:maskT}; U.uGround={value:VL.macroTex}; U.uCenter={value:new THREE.Vector2()}; U.uR={value:24}; U.uMap={value:VL_MAP}; U.uDry={value:VL_LIN('#d9a24a')}; U.uGK={value:1.45};
   const GMAX=240000, geo=new THREE.InstancedBufferGeometry();
@@ -99,13 +117,13 @@ function buildVillage(){
   geo.userData={max:GMAX};
   VL.grass=add(new THREE.Mesh(geo,new THREE.ShaderMaterial({uniforms:U,side:THREE.DoubleSide,
     vertexShader:`attribute vec3 aOff; attribute vec4 aP; uniform float uTime,uR,uMap; uniform vec3 uPlayer,uSoil; uniform vec2 uCenter; uniform sampler2D uMask,uGround;
-      varying float vH,vV,vS; varying vec3 vW,vG;
+      varying float vH,vV,vS,vT; varying vec3 vW,vG;
       void main(){
         vec2 rel=mod(aOff.xz-uCenter+uR,2.*uR)-uR; vec2 root=uCenter+rel;
         vec2 uv=vec2(root.x/uMap+.5,1.-(root.y/uMap+.5)); vec4 mk=texture2D(uMask,uv);
         float fade=1.-smoothstep(uR*.72,uR,max(abs(rel.x),abs(rel.y)));
         float pch=.5+.5*sin(root.x*.23+sin(root.y*.17)*2.)*cos(root.y*.19-root.x*.07);
-        float hgt=aP.y*(.22+.34*pch)*smoothstep(.15,.6,mk.r)*fade;
+        float tl=smoothstep(.45,.92,mk.r); float hgt=aP.y*mix(.12,.22+.34*pch,tl)*smoothstep(.06,.26,mk.r)*fade; vT=tl;
         float h=position.y; float c=cos(aP.x), s=sin(aP.x);
         vec3 p=vec3(position.x*aP.z*c, h*hgt, position.x*aP.z*s);
         p.xz+=vec2(-s,c)*h*h*hgt*.35;
@@ -113,8 +131,8 @@ function buildVillage(){
         vec3 wp=vec3(root.x,0.,root.y)+p; vec2 d=wp.xz-uPlayer.xz; float dl=length(d)+1e-4; float push=smoothstep(1.,.0,dl)*h; wp.xz+=d/dl*push*.45; wp.y-=push*.25*hgt;
         vW=wp; vH=h; vV=aP.w*.6+pch*.4; vS=mk.g; vG=texture2D(uGround,uv).rgb*2.*uSoil;
         gl_Position=projectionMatrix*viewMatrix*vec4(wp,1.); }`,
-    fragmentShader:`uniform vec3 uTip,uTip2,uDry,uSunCol,uSun,uFog; uniform float uFogN,uFogF,uTime,uGK; varying float vH,vV,vS; varying vec3 vW,vG;
-      void main(){ vec3 tip=mix(uTip2,uTip,smoothstep(.2,.8,vV)); tip=mix(tip,uDry,smoothstep(.75,1.,vV)*.6);
+    fragmentShader:`uniform vec3 uTip,uTip2,uDry,uSunCol,uSun,uFog; uniform float uFogN,uFogF,uTime,uGK; varying float vH,vV,vS,vT; varying vec3 vW,vG;
+      void main(){ vec3 tip=mix(uTip2,uTip,smoothstep(.2,.8,vV)); tip=mix(tip,uDry,smoothstep(.75,1.,vV)*.6); tip=mix(uTip2,tip,.5+.5*vT);
         vec3 base=vG*uGK*mix(.55,1.,vS);
         vec3 col=mix(base,tip*mix(.55,1.,vS),smoothstep(.0,1.,vH));
         vec3 V=normalize(vW-cameraPosition); float back=pow(max(dot(V,uSun),0.),5.)*vH*vS; col+=uSunCol*(back*.6+.12*vH*vS);
@@ -146,16 +164,16 @@ function buildVillage(){
     for (let i=0;i<4;i++){ const a=i/4*Math.PI*2+vlS(0,1), len=vlS(2,3)*s, tilt=vlS(.6,1), b=new THREE.Mesh(new THREE.CylinderGeometry(.08*s,.16*s,len,6),bark);
       b.position.set(x+Math.cos(a)*Math.sin(tilt)*len/2,th*vlS(.65,.9)+Math.cos(tilt)*len/2,z+Math.sin(a)*Math.sin(tilt)*len/2); b.rotation.set(0,-a,0); b.rotateZ(-tilt); b.castShadow=true; add(b);
       crown(x+Math.cos(a)*Math.sin(tilt)*len,th*.8+Math.cos(tilt)*len+.3,z+Math.sin(a)*Math.sin(tilt)*len,1.7*s,1.3*s,1.7*s,Math.round(40*s),pal,1.1*s,1.7*s); } });
-  VL_BUSHES.forEach(([x,z,kind])=>{ const s=vlS(.8,1.2); crown(x,.85*s,z,1.6*s,1.0*s,1.6*s,Math.round(110*s),PAL[kind],.8,1.2); VL_COLL.push({x,z,r:1.1*s}); });
+  VL_BUSHES.forEach(([x,z,kind])=>{ const s=vlS(.8,1.2); crown(x,.85*s,z,1.6*s,1.0*s,1.6*s,Math.round(110*s),PAL[kind],.8,1.2); VL_SOFT.push({x,z,r:1.4*s}); });
   for (let i=0;i<70;i++){ const a=i/70*Math.PI*2+vlS(-.04,.04), r=vlS(68,90), s=vlS(1.3,2); crown(Math.cos(a)*r,5.5*s,Math.sin(a)*r,4.2*s,4*s,4.2*s,70,PAL[['au','yl','gr','au','rd'][(vlR()*5)|0]],1.9*s,2.6*s); }
   { const m=new THREE.InstancedMesh(new THREE.PlaneGeometry(1,1),leafMat,cards.length), aN=new Float32Array(cards.length*3), q=new THREE.Quaternion(), M=new THREE.Matrix4(), S=new THREE.Vector3();
     cards.forEach((c,i)=>{ q.setFromEuler(c.r); S.setScalar(c.s); M.compose(c.p,q,S); m.setMatrixAt(i,M); m.setColorAt(i,c.c); aN[i*3]=c.n.x; aN[i*3+1]=c.n.y; aN[i*3+2]=c.n.z; });
     m.geometry.setAttribute('aN',new THREE.InstancedBufferAttribute(aN,3));
     m.castShadow=true; m.receiveShadow=true; m.customDepthMaterial=new THREE.MeshDepthMaterial({depthPacking:THREE.RGBADepthPacking,map:ltex,alphaTest:.5,side:THREE.DoubleSide}); m.frustumCulled=false; add(m); VL.leaves=m; }
   // 뾰족 소나무
-  { const pine=[]; vlSeed=31; for (let i=0;i<26;i++){ const a=vlS(0,6.3), r=vlS(40,64); pine.push([Math.cos(a)*r,Math.sin(a)*r,vlS(1,1.6)]); } pine.push([-16,-30,1.3],[-30,-26,1.5],[-36,-20,1.2]);
+  { const pine=[]; vlSeed=31; for (let i=0;i<26;i++){ const a=vlS(0,6.3), r=vlS(40,64); pine.push([Math.cos(a)*r,Math.sin(a)*r,vlS(1,1.6)]); } pine.push([-16,-30,1.3],[-30,-26,1.5],[-36,-20,1.2]); VL_DPINES.forEach(([lx,lz,s])=>{ const w=vlPortalW(lx,lz); pine.push([w.x,w.z,s,1]); });
     const m=new THREE.InstancedMesh(new THREE.ConeGeometry(1,1,8),new THREE.MeshStandardMaterial({roughness:.9}),pine.length*3), M=new THREE.Matrix4(), q=new THREE.Quaternion(); let k=0;
-    pine.forEach(([x,z,s])=>{ if (vlInHouse(x,z,2)||vlPolyD(VL_PATHP,x,z)<VL_PATH_W+2||Math.hypot(x-VL_PORTAL.x,z-VL_PORTAL.z)<9) return;
+    pine.forEach(([x,z,s,keep])=>{ if (!keep&&(vlInHouse(x,z,2)||vlPolyD(VL_PATHP,x,z)<VL_PATH_W+2||Math.hypot(x-VL_PORTAL.x,z-VL_PORTAL.z)<9)) return;
       for (let j=0;j<3;j++){ M.compose(new THREE.Vector3(x,(2.2+j*1.5)*s,z),q,new THREE.Vector3((2.2-j*.55)*s,(2.6-j*.3)*s,(2.2-j*.55)*s)); m.setMatrixAt(k,M); m.setColorAt(k,VL_LIN(['#2f5e34','#3a6d3c','#2a5530'][j])); k++; }
       const tr=add(new THREE.Mesh(new THREE.CylinderGeometry(.2*s,.3*s,2*s,7),bark)); tr.position.set(x,s,z); tr.castShadow=true; VL_COLL.push({x,z,r:.5*s}); });
     m.count=k; m.castShadow=true; m.receiveShadow=true; add(m); }
@@ -170,18 +188,8 @@ function buildVillage(){
   vlSeed=5; VL_HOUSES.forEach(H=>H.cozy?vlCozy2(H,R):vlHouse2(H,R));
   VL_TREES.forEach(t=>VL.camObs.push({x:t[0],z:t[1],r:.95*t[2],h:3.8*t[2]}));
 
-  /* 던전 입구: 돌 아치 + 보랏빛 소용돌이 */
-  { const g=new THREE.Group(); g.position.set(VL_PORTAL.x,0,VL_PORTAL.z); g.rotation.y=VL_PORTAL.r; add(g);
-    const dark=vlMats().stoneDark;
-    for (const s of [-1,1]){ mesh(g,vlBox(1.1,4.2,1.1,1.2),dark,s*2.0,2.1,0); mesh(g,vlBox(1.4,.4,1.4,1.2),dark,s*2.0,.2,0); VL.camObs.push({x:VL_PORTAL.x+Math.cos(VL_PORTAL.r)*2*s,z:VL_PORTAL.z-Math.sin(VL_PORTAL.r)*2*s,r:.75,h:5}); }
-    const ah=new THREE.Mesh(new THREE.TorusGeometry(2.0,.55,8,20,Math.PI),dark); ah.position.set(0,4.2,0); ah.castShadow=true; g.add(ah);
-    for (let i=0;i<9;i++) mesh(g,new THREE.DodecahedronGeometry(vlS(.5,1.1),0),dark,vlS(-3.4,3.4),vlS(.2,.6),vlS(-2.6,-.8));
-    const pt=vlTex(vlCanvas(256,256,g2=>{ const gr=g2.createRadialGradient(128,128,10,128,128,128); gr.addColorStop(0,'#fff0ff'); gr.addColorStop(.35,'#b36bff'); gr.addColorStop(.8,'#4a1a8a'); gr.addColorStop(1,'rgba(40,10,80,0)'); g2.fillStyle=gr; g2.fillRect(0,0,256,256);
-      g2.strokeStyle='rgba(255,255,255,.35)'; g2.lineWidth=5; for (let i=0;i<5;i++){ g2.beginPath(); for (let t=0;t<6;t+=.1){ const r=t*18, a=t*1.6+i*1.26; g2.lineTo(128+Math.cos(a)*r,128+Math.sin(a)*r); } g2.stroke(); } }));
-    const pm=new THREE.Mesh(new THREE.CircleGeometry(1.75,40),new THREE.MeshBasicMaterial({map:pt,transparent:true,depthWrite:false,toneMapped:false,side:THREE.DoubleSide})); pm.position.set(0,2.6,0); pm.scale.y=1.35; g.add(pm); VL.portal=pm;
-    const tl=new THREE.PointLight(0xb36bff,1.2,9); tl.position.set(0,2.6,1); g.add(tl);
-    pm.userData.keep=true; vlMerge(g);
-    VL_COLL.push({x:VL_PORTAL.x+Math.cos(VL_PORTAL.r)*2,z:VL_PORTAL.z-Math.sin(VL_PORTAL.r)*2,r:.8},{x:VL_PORTAL.x-Math.cos(VL_PORTAL.r)*2,z:VL_PORTAL.z+Math.sin(VL_PORTAL.r)*2,r:.8},{x:VL_PORTAL.x,z:VL_PORTAL.z,r:1.1}); }
+  /* 던전 입구: 큰길 끝 바위 언덕 · 돌 아치 · 보랏빛 소용돌이 · 횃불 · 수정 (04w) */
+  vlDungeon(R);
 
   /* 울타리 · 돌기둥 문 · 디딤돌 · 꽃 · 돌 · 소품 */
   const fp=[];
@@ -198,6 +206,8 @@ function buildVillage(){
   const ST=new THREE.Group(); add(ST);   // 움직이지 않는 작은 소품 (끝에서 하나로 합쳐요)
   for (const x of [5,8.4]){ mesh(ST,vlBox(.75,1.7,.75,1.2),vlMats().stoneLight,x,.85,-12.4); mesh(ST,new THREE.BoxGeometry(.95,.18,.95),white,x,1.78,-12.4); mesh(ST,new THREE.SphereGeometry(.26,14,10),white,x,2.1,-12.4); VL_COLL.push({x,z:-12.4,r:.55}); VL_AO.push({x,z:-12.4,r:.9,k:.4}); }
   mesh(ST,vlBox(1.4,1.1,.08,1),vlMats().woodLight,5.75,.65,-11.8).rotation.y=-1.1;
+  // 내 집 앞 디딤돌 길: 바위 대신 집에 어울리는 꽃밭 두 개 · 작은 정원등 두 개
+  VL_GARDEN.beds.forEach(b=>vlFlowerBed(b,ST)); VL_GARDEN.lights.forEach(l=>vlGardenLight(l.x,l.z,R));
   if (VL.natOK) vlNatureGround(); else { const nn=26, m=new THREE.InstancedMesh(new THREE.BoxGeometry(1,1,1),new THREE.MeshStandardMaterial({color:0xd3cec4,roughness:1}),nn*2), M=new THREE.Matrix4(), q=new THREE.Quaternion(), e=new THREE.Euler(); let k=0;
     for (let i=0;i<nn;i++){ const p=VL_SIDEC.getPoint(i/(nn-1)); for (let j=0;j<2;j++){ if (j&&vlR()<.4) continue; e.set(0,vlS(0,3),0); q.setFromEuler(e);
       M.compose(new THREE.Vector3(p.x+vlS(-.45,.45),.05,p.y+vlS(-.3,.3)),q,new THREE.Vector3(vlS(.55,.8),.12,vlS(.4,.6))); m.setMatrixAt(k,M); m.setColorAt(k,VL_LIN(['#d6d1c6','#c8c2b6','#e0dbd0'][k%3])); k++; } }
@@ -262,8 +272,8 @@ function vlLoadNature(){
       if (leaf){ m.alphaTest=.45; m.side=THREE.DoubleSide; m.transparent=false;
         if (m.name==='Leaves_NormalTree') m.map=whiteTex('Leaves_NormalTree'); if (m.name==='Leaves_TwistedTree') m.map=whiteTex('Leaves_TwistedTree');
         m.onBeforeCompile=sh=>{ sh.uniforms.uTime=VL.U?VL.U.uTime:{value:0}; sh.uniforms.uCam=VL.U?VL.U.uCam:{value:new THREE.Vector3(0,-999,0)}; sh.uniforms.uPlr=VL.U?VL.U.uPlr:{value:new THREE.Vector3(0,-999,0)};
-          sh.vertexShader='uniform float uTime;\nvarying vec3 vWP;\n'+sh.vertexShader.replace('#include <begin_vertex>',
-          '#include <begin_vertex>\n#ifdef USE_INSTANCING\n float ph=instanceMatrix[3].x*.37+instanceMatrix[3].z*.29;\n#else\n float ph=0.;\n#endif\n float hh=max(position.y,0.); transformed.x+=sin(uTime*1.5+ph)*.035*hh; transformed.z+=cos(uTime*1.2+ph*1.3)*.035*hh;\n vec4 vwp=vec4(transformed,1.);\n#ifdef USE_INSTANCING\n vwp=instanceMatrix*vwp;\n#endif\n vWP=(modelMatrix*vwp).xyz;');
+          sh.vertexShader='uniform float uTime;\nuniform vec3 uPlr;\nvarying vec3 vWP;\n'+sh.vertexShader.replace('#include <project_vertex>','#include <project_vertex>\n gl_Position=projectionMatrix*viewMatrix*vec4(vWP,1.);').replace('#include <begin_vertex>',
+          '#include <begin_vertex>\n#ifdef USE_INSTANCING\n float ph=instanceMatrix[3].x*.37+instanceMatrix[3].z*.29;\n#else\n float ph=0.;\n#endif\n float hh=max(position.y,0.); transformed.x+=sin(uTime*1.5+ph)*.035*hh; transformed.z+=cos(uTime*1.2+ph*1.3)*.035*hh;\n vec4 vwp=vec4(transformed,1.);\n#ifdef USE_INSTANCING\n vwp=instanceMatrix*vwp;\n#endif\n vWP=(modelMatrix*vwp).xyz;\n { vec2 pd=vWP.xz-uPlr.xz; float pl=length(pd)+1e-4; float pk=(1.-smoothstep(.2,1.3,pl))*smoothstep(.04,.45,vWP.y)*(1.-smoothstep(1.5,2.3,vWP.y)); vWP.xz+=pd/pl*pk*.4; vWP.y-=pk*.08; }');
           sh.fragmentShader='uniform vec3 uCam,uPlr;\nvarying vec3 vWP;\n'+sh.fragmentShader.replace('#include <clipping_planes_fragment>',
           '{ vec3 ab=uPlr-uCam; float tt=clamp(dot(vWP-uCam,ab)/max(dot(ab,ab),1e-4),0.,1.); float dd=length(vWP-(uCam+ab*tt)); if (tt<.9){ float rr=.55+tt*1.15; float k=smoothstep(rr*.5,rr,dd); float di=fract(52.9829189*fract(dot(gl_FragCoord.xy,vec2(.06711056,.00583715)))); if (k<di) discard; } }\n#include <clipping_planes_fragment>'); };
         m.customProgramCacheKey=()=>'vlwind'+m.name; }
@@ -277,7 +287,8 @@ function vlLoadNature(){
 function vlInst(name,P,opt){
   const parts=VL.nat[name]; if (!parts||!P.length) return;
   const M=new THREE.Matrix4(), T=new THREE.Matrix4(), q=new THREE.Quaternion(), e=new THREE.Euler(), S=new THREE.Vector3(), V=new THREE.Vector3();
-  parts.forEach(pt=>{ const im=new THREE.InstancedMesh(pt.geo,pt.mat,P.length);
+  parts.forEach(pt=>{ let mat=pt.mat; if (opt&&opt.col){ mat=pt.mat.clone(); mat.color.multiply(opt.col); }   // 색만 바꾼 복사본 (인스턴스 색을 쓰면 같은 재질을 쓰는 다른 바위와 셰이더가 엇갈려요)
+    const im=new THREE.InstancedMesh(pt.geo,mat,P.length);
     P.forEach((p,i)=>{ e.set(0,p.ry||0,0); q.setFromEuler(e); S.setScalar(p.s||1); T.compose(V.set(p.x,p.y||0,p.z),q,S); M.multiplyMatrices(T,pt.m); im.setMatrixAt(i,M);
       if (pt.tint) im.setColorAt(i,p.c||new THREE.Color(1,1,1)); });
     const sh=!opt||opt.shadow!==false; im.castShadow=sh; im.receiveShadow=true; im.frustumCulled=false;
@@ -287,15 +298,19 @@ function vlInst(name,P,opt){
 }
 const VL_TINT={au:['#e8572a','#f07a2c','#f39a34','#d9432a','#ee6a2a'],rd:['#e4502e','#d8432a','#ee6234'],yl:['#f2b13c','#f6c94e','#eba232'],gr:['#7cae46','#8fbd4f','#6a9e3c']};
 const vlTint=k=>VL_LIN(VL_TINT[k][(vlR()*VL_TINT[k].length)|0]).multiplyScalar(vlS(.9,1.08));
-function vlFree(x,z,pad){ if (vlInPond(x,z,pad+.6)||vlPolyD(VL_PATHP,x,z)<VL_PATH_W+pad||vlPolyD(VL_SIDEP,x,z)<1+pad*.6||vlInHouse(x,z,pad)) return false; for (const d of VL_DOORS) if (Math.hypot(x-d.x,z-d.z)<2.4) return false; for (const l of VL_LAMPS) if (Math.hypot(x-l[0],z-l[1])<.9+pad*.5) return false; return Math.hypot(x-VL_PORTAL.x,z-VL_PORTAL.z)>4.5; }
+function vlFree(x,z,pad){ if (vlInPond(x,z,pad+.6)||vlPolyD(VL_PATHP,x,z)<VL_PATH_W+pad||vlPolyD(VL_SIDEP,x,z)<1+pad*.6||vlInHouse(x,z,pad)) return false; for (const d of VL_DOORS) if (Math.hypot(x-d.x,z-d.z)<2.4) return false; for (const l of VL_LAMPS) if (Math.hypot(x-l[0],z-l[1])<.9+pad*.5) return false; return Math.hypot(x-VL_PORTAL.x,z-VL_PORTAL.z)>9.5; }
+const vlInYard=(x,z)=>x>-1.5&&x<16.5&&z>-25.5&&z<-12.9;   // 내 집 울타리 안 마당 (꽃은 잔디 마당에도 피어요)
+// 풀 높이 지도 (0 풀 없음 · 약 .33 짧은 잔디 · 1 키 큰 풀)
+function vlGrassAt(x,z){ const M=VL.maskR; if (!M) return 1; const S=VL.maskS, px=Math.max(0,Math.min(S-1,((x/VL_MAP+.5)*S)|0)), pz=Math.max(0,Math.min(S-1,((z/VL_MAP+.5)*S)|0)); return M[pz*S+px]/255; }
 function vlNatureTrees(){
   vlSeed=3; const by={};
   const put=(n,p)=>(by[n]=by[n]||[]).push(p);
   VL_TREES.forEach(([x,z,s,kind],i)=>{ const big=(i===1||i===6); put(big?'TwistedTree_'+(i===1?1:3):'CommonTree_'+(1+i%5),{x,z,ry:vlS(0,6.3),s:big?s*.62:s*1.05,c:vlTint(kind)}); });
-  VL_BUSHES.forEach(([x,z,kind])=>{ const s=vlS(1.0,1.45); put(kind==='gr'&&vlR()<.6?'Bush_Common_Flowers':'Bush_Common',{x,z,ry:vlS(0,6.3),s,c:vlTint(kind)}); VL_COLL.push({x,z,r:1.0*s}); });
+  VL_BUSHES.forEach(([x,z,kind])=>{ const s=vlS(1.0,1.45); put(kind==='gr'&&vlR()<.6?'Bush_Common_Flowers':'Bush_Common',{x,z,ry:vlS(0,6.3),s,c:vlTint(kind)}); VL_SOFT.push({x,z,r:.95*s}); });
   for (let i=0;i<80;i++){ const a=i/80*Math.PI*2+vlS(-.04,.04), r=vlS(66,90); put('Ring_'+(1+(vlR()*5|0)),{x:Math.cos(a)*r,z:Math.sin(a)*r,ry:vlS(0,6.3),s:vlS(1.2,1.9),c:vlTint(['au','yl','au','rd','gr'][(vlR()*5)|0])}); }
   vlSeed=31; for (let i=0;i<30;i++){ const a=vlS(0,6.3), r=vlS(38,64), x=Math.cos(a)*r, z=Math.sin(a)*r, s=vlS(1,1.5); if (!vlFree(x,z,2)||Math.hypot(x-VL_PORTAL.x,z-VL_PORTAL.z)<9) continue; put('Pine_'+[1,2,4][i%3],{x,z,ry:vlS(0,6.3),s}); VL_COLL.push({x,z,r:.5*s}); }
   [[-16,-30,1.3],[-30,-26,1.5],[-36,-20,1.2]].forEach(([x,z,s],i)=>{ put('Pine_'+[1,2,4][i],{x,z,ry:vlS(0,6.3),s}); VL_COLL.push({x,z,r:.5*s}); });
+  VL_DPINES.forEach(([lx,lz,s],i)=>{ const w=vlPortalW(lx,lz); put('Pine_'+[2,4,1][i%3],{x:w.x,z:w.z,ry:vlS(0,6.3),s}); VL_COLL.push({x:w.x,z:w.z,r:.5*s}); });
   for (const n in by){ const ring=n.startsWith('Ring_'); vlInst(ring?'CommonTree_'+n.slice(5):n,by[n],{shadow:!ring}); }
 }
 function vlNatureGround(){
@@ -303,19 +318,24 @@ function vlNatureGround(){
   // 집으로 가는 디딤돌
   for (let i=0;i<22;i++){ const p=VL_SIDEC.getPoint(i/21); put('RockPath_Round_Small_'+(1+i%3),{x:p.x+vlS(-.25,.25),y:.02,z:p.y+vlS(-.2,.2),ry:vlS(0,6.3),s:vlS(.85,1.1)}); }
   // 풀 뭉치 · 꽃 · 고사리 · 클로버 · 버섯 · 바위 · 자갈
-  const scatter=(n,cnt,R,pad,sMin,sMax,clump)=>{ let k=0, t=0; while (k<cnt&&t<cnt*30){ t++; let x,z;
+  const scatter=(n,cnt,R,pad,sMin,sMax,clump,lv)=>{ let k=0, t=0; while (k<cnt&&t<cnt*30){ t++; let x,z;
       if (clump){ const c=clump[(vlR()*clump.length)|0], a=vlS(0,6.3), r=Math.sqrt(vlR())*c[2]; x=c[0]+Math.cos(a)*r; z=c[1]+Math.sin(a)*r; } else { const a=vlS(0,6.3), r=Math.sqrt(vlR())*R; x=Math.cos(a)*r; z=Math.sin(a)*r; }
-      if (!vlFree(x,z,pad)) continue; let bad=false; for (const c of VL_COLL) if (Math.hypot(x-c.x,z-c.z)<c.r*.7){ bad=true; break; } if (bad) continue;
+      if (!vlFree(x,z,pad)||(lv==='flower'?!(vlGrassAt(x,z)>.7||vlInYard(x,z)):vlGrassAt(x,z)<(lv||0))) continue; let bad=false; for (const c of VL_COLL) if (Math.hypot(x-c.x,z-c.z)<c.r*.7){ bad=true; break; } for (const c of VL_SOFT) if (Math.hypot(x-c.x,z-c.z)<c.r*.6){ bad=true; break; } if (bad) continue;
       put(n,{x,z,ry:vlS(0,6.3),s:vlS(sMin,sMax)}); k++; } };
-  const edge=[]; VL_PATHP.forEach((p,i)=>{ if (i%3) return; edge.push([p.x,p.y,4.2]); });
-  scatter('Grass_Wispy_Tall',500,56,.3,.3,.5); scatter('Grass_Wispy_Short',600,56,.2,.3,.5); scatter('Grass_Common_Tall',400,56,.3,.26,.42); scatter('Grass_Common_Short',400,30,.7,.3,.45,edge);
+  scatter('Grass_Wispy_Tall',500,56,.3,.3,.5,null,.85); scatter('Grass_Wispy_Short',600,56,.2,.3,.5,null,.7); scatter('Grass_Common_Tall',400,56,.3,.26,.42,null,.85); scatter('Grass_Common_Short',300,40,.3,.3,.45,null,.7);
   const trees=VL_TREES.map(t=>[t[0],t[1],4.5]);
-  scatter('Fern_1',40,0,.5,.1,.15,trees); scatter('Plant_1_Big',35,0,.5,.22,.32,trees); scatter('Mushroom_Common',40,0,.4,.6,.95,trees); scatter('Clover_2',90,50,.3,.35,.5);
-  scatter('Flower_3_Group',110,0,.3,.28,.4,[[0,9,4],[6,9,3],[-3,4,3],[10,-2,3],[-12,10,3],[14,-6,3],[22,4,3],[-16,20,3]]);
-  scatter('Flower_4_Group',110,0,.3,.26,.38,[[-6,-4,3],[3,-11,2.5],[11,-15,2.5],[16,-8,3],[-20,4,3],[-12,16,3],[6,16,3],[-9,2,3]]);
+  scatter('Fern_1',40,0,.5,.1,.15,trees,.5); scatter('Plant_1_Big',35,0,.5,.22,.32,trees,.5); scatter('Mushroom_Common',40,0,.4,.6,.95,trees,.5); scatter('Clover_2',90,50,.3,.35,.5,null,.25);
+  scatter('Flower_3_Group',110,0,.3,.28,.4,[[0,9,4],[6,9,3],[-3,4,3],[10,-2,3],[-12,10,3],[14,-6,3],[22,4,3],[-16,20,3]],'flower');
+  scatter('Flower_4_Group',110,0,.3,.26,.38,[[-6,-4,3],[3,-11,2.5],[11,-15,2.5],[16,-8,3],[-20,4,3],[-12,16,3],[6,16,3],[-9,2,3]],'flower');
   const purple=[[-13,6,3],[2,-10,2.5],[12,-10,2.5],[-18,-2,3],[18,8,3],[-4,12,3],[-28,12,3],[8,-14,2],[-2,6.5,2],[24,6,3],[-6,-12,3]];
-  scatter('Plant_7',160,0,.3,.45,.75,purple); scatter('Plant_7_Big',60,0,.3,.45,.7,purple);
-  for (let i=0;i<16;i++){ const a=vlS(0,7), r=vlS(8,52), x=Math.cos(a)*r, z=Math.sin(a)*r; if (!vlFree(x,z,1)) continue; const s=vlS(.35,.8); put('Rock_Medium_'+(1+i%3),{x,z,ry:vlS(0,6.3),s}); VL_COLL.push({x,z,r:1.3*s}); }
+  scatter('Plant_7',160,0,.3,.45,.75,purple,.3); scatter('Plant_7_Big',60,0,.3,.45,.7,purple,.3);
+  // 내 집 앞 꽃밭에 심은 꽃
+  VL.bedFlowers.forEach(f=>put(f.k?'Flower_4_Group':'Flower_3_Group',{x:f.x,y:f.y,z:f.z,ry:f.ry,s:f.s}));
+  // 바위: 길 · 집 · 마당 · 시작 자리에서 떨어진 나무 곁과 바깥 풀밭에만 (집 앞에는 두지 않아요)
+  { let k=0; for (let i=0;i<70&&k<12;i++){ let x,z; if (i%2){ const t=VL_TREES[(vlR()*VL_TREES.length)|0], a=vlS(0,6.3), r=vlS(3.2,6); x=t[0]+Math.cos(a)*r; z=t[1]+Math.sin(a)*r; } else { const a=vlS(0,6.3), r=vlS(28,54); x=Math.cos(a)*r; z=Math.sin(a)*r; }
+      if (!vlFree(x,z,1.5)||vlPolyD(VL_PATHP,x,z)<VL_PATH_W+4.5||vlPolyD(VL_SIDEP,x,z)<6.5||vlInHouse(x,z,5)||Math.hypot(x-5.6,z-8.2)<9||Math.hypot(x,z)>56||vlGrassAt(x,z)<.75) continue;
+      let bad=false; for (const c of VL_COLL) if (Math.hypot(x-c.x,z-c.z)<c.r+1.5){ bad=true; break; } for (const c of VL_SOFT) if (Math.hypot(x-c.x,z-c.z)<c.r+1.5){ bad=true; break; } if (bad) continue;
+      const s=vlS(.35,.72); put('Rock_Medium_'+(1+k%3),{x,z,ry:vlS(0,6.3),s}); VL_COLL.push({x,z,r:1.3*s}); k++; } }
   for (let i=0;i<130;i++){ const p=VL_PATHP[(vlR()*VL_PATHP.length)|0], a=vlS(0,6.3), r=VL_PATH_W+vlS(-.1,.7); put('Pebble_Round_'+(1+i%3),{x:p.x+Math.cos(a)*r,y:.01,z:p.y+Math.sin(a)*r,ry:vlS(0,6.3),s:vlS(.5,1.1)}); }
   const noShadow=n=>/Grass|Clover|Pebble|Flower|Fern|Plant|Mushroom|RockPath/.test(n);
   for (const n in by) vlInst(n,by[n],{shadow:!noShadow(n),lod:/Grass|Clover|Flower/.test(n)});
@@ -323,7 +343,7 @@ function vlNatureGround(){
 function villageReset(){
   document.body.classList.remove('village'); ['#vlHud','#vlPrompt','#vlCall','#vlMini','#vlClock'].forEach(s=>{ const e=$(s); if (e) e.hidden=true; });
   if (MAPK!=='village'){ if (VL.on) vlRestore(); VL.on=false; return; }
-  VL.on=true; VL.yaw=.3; VL.pitch=.2; VL.dist=6.5; VL.door=null; VL.run=false; VL.camAt=null; VL.camD=null;
+  VL.on=true; VL.yaw=.3; VL.pitch=.2; VL.dist=6.5; VL.door=null; VL.run=false; VL.slow=1; VL.camAt=null; VL.camD=null;
   P.x=5.6; P.z=8.2; P.fx=0; P.fz=-1; W.nextWaveAt=-1; W.nextQuiz=1e9; W.snapCam=true;
   // 캐릭터 키를 마을 크기(약 1.75)에 맞춰요
   pg.scale.setScalar(1); if (knight){ const b=new THREE.Box3().setFromObject(knight.root), h=b.max.y-b.min.y; VL.ks=h>.3?1.75/h:1; } pg.scale.setScalar(VL.ks);
@@ -372,7 +392,9 @@ function villageFrame(dt,real,now){
     const am=arrowsMove();
     let ix=(keys.KeyD||am&&keys.ArrowRight?1:0)-(keys.KeyA||am&&keys.ArrowLeft?1:0)+joy.x, iz=(keys.KeyS||am&&keys.ArrowDown?1:0)-(keys.KeyW||am&&keys.ArrowUp?1:0)+joy.y;
     const L=Math.hypot(ix,iz);
-    if (L>.12){ if (L>1){ ix/=L; iz/=L; } const c=Math.cos(VL.yaw), s=Math.sin(VL.yaw), dx=ix*c+iz*s, dz=-ix*s+iz*c, sp=VL.run?7.5:4.6;
+    // 키 큰 풀밭 · 덤불: 지나갈 수 있지만 느려져요 (길 · 짧은 잔디는 그대로)
+    { let f=1-.3*Math.max(0,Math.min(1,(vlGrassAt(P.x,P.z)-.5)/.4)); for (const b of VL_SOFT){ const d=Math.hypot(P.x-b.x,P.z-b.z); if (d<b.r){ const k=d/b.r; f=Math.min(f,.45+.55*k*k); } } VL.slow+=(f-VL.slow)*Math.min(1,dt*8); }
+    if (L>.12){ if (L>1){ ix/=L; iz/=L; } const c=Math.cos(VL.yaw), s=Math.sin(VL.yaw), dx=ix*c+iz*s, dz=-ix*s+iz*c, sp=(VL.run?7.5:4.6)*VL.slow;
       P.x+=dx*sp*dt; P.z+=dz*sp*dt; P.fx=dx; P.fz=dz; moving=true; }
     for (const c of VL_COLL){ const dx=P.x-c.x, dz=P.z-c.z, d=Math.hypot(dx,dz), r=c.r+.35; if (d<r&&d>1e-4){ P.x=c.x+dx/d*r; P.z=c.z+dz/d*r; } }
     for (const H of VL_HOUSES){ const c=Math.cos(H.r), s=Math.sin(H.r); let lx=(P.x-H.x)*c-(P.z-H.z)*s, lz=(P.x-H.x)*s+(P.z-H.z)*c; const hw=H.w/2+.5+(H.cozy&&lx>0?1.5:0), hd=H.d/2+.5;
@@ -381,7 +403,7 @@ function villageFrame(dt,real,now){
   }
   pg.position.set(P.x,0,P.z);
   { let dy=Math.atan2(P.fx,P.fz)-pg.rotation.y; dy=Math.atan2(Math.sin(dy),Math.cos(dy)); pg.rotation.y+=dy*Math.min(1,dt*12); }
-  if (knight){ setBaseSynced(knight.anim,moving?'run':'idle',moving?(VL.run?1.25:.9):1); knight.mixer.update(W.paused?0:dt); }
+  if (knight){ setBaseSynced(knight.anim,moving?'run':'idle',moving?(VL.run?1.25:.9)*(.45+.55*VL.slow):1); knight.mixer.update(W.paused?0:dt); }
   const U=VL.U; U.uTime.value=real; U.uPlayer.value.set(P.x,0,P.z); U.uCenter.value.set(P.x,P.z);
   U.uFog.value.copy(scene.fog.color); U.uFogN.value=scene.fog.near; U.uFogF.value=scene.fog.far; VL.skyU.uFog.value.copy(scene.fog.color);
   // 카메라: 캐릭터 뒤 · 마우스로 돌려요
@@ -395,6 +417,7 @@ function villageFrame(dt,real,now){
   VL.sky.position.copy(camera.position);
   { const o=sun.userData.off||[-29,14,-62]; sun.position.set(P.x+o[0],o[1],P.z+o[2]); sun.target.position.set(P.x,0,P.z); sun.target.updateMatrixWorld(); }
   if (VL.portal) VL.portal.rotation.z=real*.8;
+  VL.torches.forEach((f,i)=>{ const k=1+.14*Math.sin(real*11.3+i*2.1)+.08*Math.sin(real*17.9+i*.7); f.scale.set(1.08-k*.08,k,1.08-k*.08); });
   VL.pads.forEach((r,i)=>{ r.scale.setScalar(1+.08*Math.sin(real*4+i)); });
   VL_DOORS.forEach(d=>{ if (d.label) d.label.visible=Math.hypot(P.x-d.x,P.z-d.z)>7.5; });
   // 빛줄기

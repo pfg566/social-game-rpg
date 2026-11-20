@@ -336,7 +336,7 @@ function vlBuildGround(R){
   const cR=vlCanvas(S,S,g=>{ g.fillStyle='#000'; g.fillRect(0,0,S,S); g.strokeStyle='#fff'; g.fillStyle='#fff';
     strokeP(g,VL_PATHP,VL_PATH_W*2+1.4,7,.5); strokeP(g,VL_PATHP,VL_PATH_W*2-.2,3,1); strokeP(g,VL_SIDEP,2.4,5,.55); strokeP(g,VL_SIDEP,1.5,2,1);
     VL_DOORS.forEach(d=>disc(g,d.x,d.z,d.id==='home'?1.4:2.6,.95));
-    disc(g,VL_PORTAL.x,VL_PORTAL.z,3.6,.9,6); disc(g,-1.5,-17.5,2.4,.7); disc(g,-17.5,-7.5,2.4,.75); disc(g,21.8,-1.2,2.2,.55);
+    { const f=vlPortalW(0,2.4), k=vlPortalW(0,-.4); disc(g,f.x,f.z,4.6,.92,7); disc(g,k.x,k.z,3.2,.85,6); } disc(g,-1.5,-17.5,2.4,.7); disc(g,-17.5,-7.5,2.4,.75); disc(g,21.8,-1.2,2.2,.55);
     g.save(); g.filter='blur(5px)'; pondPath(g,.8); g.fill(); g.restore(); });
   const cG=vlCanvas(S,S,g=>{ g.fillStyle='#fff'; g.fillRect(0,0,S,S); });
   const cB=vlCanvas(S,S,g=>{ g.fillStyle='#000'; g.fillRect(0,0,S,S);
@@ -533,6 +533,66 @@ function vlProps(par){ const M=vlMats(), g=new THREE.Group(), put=vlPutter(g), B
     p(B(1.6,.08,.42,1),M.woodLight,0,.48,0); p(B(1.6,.34,.06,1),M.woodLight,0,.8,-.2,-.15,0,0);
     for (const x of [-.65,.65]){ p(B(.08,.48,.08),M.wood,x,.24,.15); p(B(.08,.48,.08),M.wood,x,.24,-.17); p(B(.08,.45,.08),M.wood,x,.66,-.2,-.15,0,0); }
     VL_COLL.push({x:-3.3,z:-1.1,r:.8}); VL_AO.push({x:-3.3,z:-1.1,r:1.2,k:.35}); }
+  vlMerge(g); }
+
+/* ---------- 내 집 앞 꽃밭 (나무 테두리 · 흙 · 꽃) · 작은 정원등 ---------- */
+function vlFlowerBed(b,par){ const M=vlMats(), g=new THREE.Group(), put=vlPutter(g), B=vlBox; g.position.set(b.x,0,b.z); g.rotation.y=b.ry; par.add(g);
+  const w=b.w, l=b.l, h=.26, t=.1, soil=VLT.soil||(VLT.soil=new THREE.MeshStandardMaterial({color:0x4b3324,roughness:1}));
+  for (const s of [-1,1]){ put(B(t,h,l,1),M.woodLight,s*(w/2-t/2),h/2,0); put(B(w-2*t,h,t,1),M.woodLight,0,h/2,s*(l/2-t/2)); }
+  for (const sx of [-1,1]) for (const sz of [-1,1]) put(B(.15,h+.08,.15,.6),M.wood,sx*(w/2-.07),(h+.08)/2,sz*(l/2-.07));
+  put(B(w-2*t,.05,l-2*t,1),soil,0,h-.07,0);
+  g.updateMatrixWorld(true);
+  const n=5; for (let i=0;i<n*2;i++){ const row=i%2, lz=-l/2+.4+Math.floor(i/2)*(l-.8)/(n-1)+(row?.18:-.18), lx=row?.2:-.2, v=g.localToWorld(new THREE.Vector3(lx,h-.05,lz));
+    if (VL.natOK) VL.bedFlowers.push({x:v.x,y:v.y,z:v.z,ry:vlS(0,6.3),s:vlS(.27,.34),k:(i+Math.floor(i/2))%2});
+    else for (let k=0;k<5;k++) put(new THREE.SphereGeometry(.1,8,6),M.flowers[(i+k)%M.flowers.length],lx+vlS(-.25,.25),h+.12+vlS(0,.15),lz+vlS(-.2,.2)); }
+  for (const k of [-1,0,1]){ const v=g.localToWorld(new THREE.Vector3(0,0,k*l*.34)); VL_COLL.push({x:v.x,z:v.z,r:.55}); }
+  VL_AO.push({x:b.x,z:b.z,r:2.1,k:.3}); }
+function vlGardenLight(x,z,par){ const M=vlMats(), g=new THREE.Group(), put=vlPutter(g), B=vlBox; g.position.set(x,0,z); par.add(g);
+  put(B(.34,.16,.34,1),M.stone,0,.08,0); put(B(.1,.8,.1,.6),M.wood,0,.56,0);
+  put(B(.21,.04,.21),M.iron,0,.97,0); for (const [sx,sz] of [[1,1],[1,-1],[-1,1],[-1,-1]]) put(B(.025,.17,.025),M.iron,sx*.09,1.07,sz*.09);
+  put(B(.15,.15,.15),M.lantern,0,1.07,0); put(B(.25,.03,.25),M.iron,0,1.17,0); put(new THREE.ConeGeometry(.2,.15,4),M.iron,0,1.26,0,0,Math.PI/4,0);
+  vlHalo(g,0,1.07,0,1.05); vlMerge(g);
+  VL_COLL.push({x,z,r:.22}); VL_AO.push({x,z,r:.6,k:.3}); }
+
+/* ---------- 던전 입구: 큰길 끝 · 바위 언덕에 박힌 돌 아치 · 보랏빛 소용돌이 · 횃불 · 수정 ---------- */
+function vlNatBox(name){ const parts=VL.nat&&VL.nat[name]; if (!parts) return null; const bb=new THREE.Box3(), t=new THREE.Box3();
+  parts.forEach(pt=>{ if (!pt.geo.boundingBox) pt.geo.computeBoundingBox(); t.copy(pt.geo.boundingBox).applyMatrix4(pt.m); bb.union(t); }); return bb; }
+function vlDungeon(par){
+  const M=vlMats(), g=new THREE.Group(), put=vlPutter(g), B=vlBox, dark=M.stoneDark; g.position.set(VL_PORTAL.x,0,VL_PORTAL.z); g.rotation.y=VL_PORTAL.r; par.add(g);
+  // 돌 아치 (앞쪽 +z가 길을 바라봐요)
+  for (const s of [-1,1]){ put(B(1.1,4.2,1.1,1.2),dark,s*2.0,2.1,0); put(B(1.4,.4,1.4,1.2),dark,s*2.0,.2,0); put(B(1.28,.2,1.28,1.2),dark,s*2.0,4.12,0);
+    const w=vlPortalW(s*2,0); VL.camObs.push({x:w.x,z:w.z,r:.75,h:5}); VL_COLL.push({x:w.x,z:w.z,r:.8}); }
+  put(new THREE.TorusGeometry(2.0,.55,8,20,Math.PI),dark,0,4.2,0);
+  put(B(.8,.85,1.25,1),dark,0,6.42,0);
+  // 아치 안: 어두운 굴 (뒤 풀밭이 비치지 않게)
+  put(new THREE.BoxGeometry(3.3,5.8,.8),VLT.cave||(VLT.cave=new THREE.MeshStandardMaterial({color:0x140b1d,roughness:1})),0,2.9,-.75);
+  { const w=vlPortalW(0,0); VL_COLL.push({x:w.x,z:w.z,r:1.1}); VL_AO.push({x:w.x,z:w.z,r:3.6,k:.45}); }
+  // 보랏빛 소용돌이 · 빛
+  const pt=vlTex(vlCanvas(256,256,g2=>{ const gr=g2.createRadialGradient(128,128,10,128,128,128); gr.addColorStop(0,'#fff0ff'); gr.addColorStop(.35,'#b36bff'); gr.addColorStop(.8,'#4a1a8a'); gr.addColorStop(1,'rgba(40,10,80,0)'); g2.fillStyle=gr; g2.fillRect(0,0,256,256);
+    g2.strokeStyle='rgba(255,255,255,.35)'; g2.lineWidth=5; for (let i=0;i<5;i++){ g2.beginPath(); for (let t=0;t<6;t+=.1){ const r=t*18, a=t*1.6+i*1.26; g2.lineTo(128+Math.cos(a)*r,128+Math.sin(a)*r); } g2.stroke(); } }));
+  const pm=new THREE.Mesh(new THREE.CircleGeometry(1.75,40),new THREE.MeshBasicMaterial({map:pt,transparent:true,depthWrite:false,toneMapped:false,side:THREE.DoubleSide})); pm.position.set(0,2.6,.02); pm.scale.y=1.35; pm.userData.keep=true; g.add(pm); VL.portal=pm;
+  const tl=new THREE.PointLight(0xb36bff,1.2,9); tl.position.set(0,2.6,1); g.add(tl);
+  // 횃불 두 개 (불꽃은 매 프레임 흔들려요)
+  const fA=new THREE.MeshBasicMaterial({color:0xff8a30,toneMapped:false}), fB=new THREE.MeshBasicMaterial({color:0xffe4a8,toneMapped:false});
+  for (const s of [-1,1]){ const tx=s*3.1, tz=2.4;
+    put(B(.13,1.5,.13,.6),M.wood,tx,.75,tz); put(new THREE.CylinderGeometry(.21,.12,.22,10),M.iron,tx,1.6,tz); put(new THREE.TorusGeometry(.2,.025,5,14),M.iron,tx,1.71,tz,Math.PI/2,0,0);
+    for (const [geo,mat,y] of [[new THREE.ConeGeometry(.17,.55,8),fA,1.98],[new THREE.ConeGeometry(.09,.32,8),fB,1.88]]){ const f=new THREE.Mesh(geo,mat); f.position.set(tx,y,tz); f.userData.keep=true; g.add(f); VL.torches.push(f); }
+    vlHalo(g,tx,2.0,tz,2.1); const w=vlPortalW(tx,tz); VL_COLL.push({x:w.x,z:w.z,r:.25}); VL_AO.push({x:w.x,z:w.z,r:.7,k:.3}); }
+  // 바위 틈 보라 수정
+  const cm=new THREE.MeshStandardMaterial({color:0x7a3cf0,emissive:0x5a20d8,emissiveIntensity:1.25,roughness:.25,flatShading:true});
+  [[-2.8,.85],[2.9,.9],[-5.5,1.9],[5.7,1.7]].forEach(([cx,cz])=>{ for (let k=0;k<3;k++){ const h=vlS(.45,.95)*(k?.75:1), c=put(new THREE.OctahedronGeometry(.2,0),cm,cx+vlS(-.28,.28),h*.42,cz+vlS(-.2,.2),vlS(-.4,.4),vlS(0,3),vlS(-.4,.4)); c.scale.set(1,h/.2*.55,1); } });
+  // 바위 언덕: [모양, 회전, 크기, 놓는 법, a, b] · 'c' 가운데 x=a · 'L'/'R' 아치 쪽 끝이 x=a · b는 앞쪽 끝 z
+  const RK=[[1,.5,3.3,'c',-4.2,-1.3],[2,1.9,3.8,'c',.2,-1.35],[3,3.6,3.3,'c',4.4,-1.3],[3,5.2,1.5,'L',-2.45,.55],[1,2.6,1.55,'R',2.45,.6],[2,1.1,.9,'c',-6.1,2.0],[3,.2,1.0,'c',6.2,1.8],[1,4.4,4.2,'c',-.4,-4.8],[2,.7,2.2,'c',-7.6,-.4],[1,3.1,2.3,'c',7.8,-.6]];
+  const by={};
+  RK.forEach(([mi,ry,s,mode,a,b])=>{ const n='Rock_Medium_'+mi, bb=VL.natOK?vlNatBox(n):null;
+    const box=bb||new THREE.Box3(new THREE.Vector3(-1.6,0,-1.3),new THREE.Vector3(1.6,1.9,1.3)), c=Math.cos(ry), sn=Math.sin(ry); let x0=1e9,x1=-1e9,z0=1e9,z1=-1e9;
+    for (const X of [box.min.x,box.max.x]) for (const Z of [box.min.z,box.max.z]){ const rx=(X*c+Z*sn)*s, rz=(-X*sn+Z*c)*s; x0=Math.min(x0,rx); x1=Math.max(x1,rx); z0=Math.min(z0,rz); z1=Math.max(z1,rz); }
+    const lz=b-z1, lx=mode==='L'?a-x1:mode==='R'?a-x0:a, w=vlPortalW(lx,lz), top=box.max.y*s*.82;
+    if (bb) (by[n]=by[n]||[]).push({x:w.x,y:-.2*s,z:w.z,ry:VL_PORTAL.r+ry,s});
+    else { const m=put(new THREE.DodecahedronGeometry(1,0),dark,lx,.55*s,lz,vlS(0,3),ry,vlS(0,3)); m.scale.set(1.6*s,1.15*s,1.3*s); }
+    const fc=vlPortalW(lx+(x0+x1)/2,lz+(z0+z1)/2), rr=Math.min(x1-x0,z1-z0)*.42;
+    VL_COLL.push({x:fc.x,z:fc.z,r:rr}); VL.camObs.push({x:fc.x,z:fc.z,r:Math.max(x1-x0,z1-z0)*.45,h:top}); VL_AO.push({x:fc.x,z:fc.z,r:rr*1.5,k:.5}); });
+  for (const n in by) vlInst(n,by[n],{col:new THREE.Color(.8,.77,.86)});
   vlMerge(g); }
 
 /* ---------- 효과: 떨어지는 낙엽 · 반딧불이 · 굴뚝 연기 · 등불 깜빡임 ---------- */
