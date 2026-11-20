@@ -867,3 +867,31 @@ body.cafe #hud, body.cafe #skillbar, body.cafe #hint, body.cafe #touch, body.caf
 .pm-list{row-gap:10px;column-gap:6px}.pm-col{gap:7px}
 .pm-gift{top:-9px}
 .pm-gift{top:-8px;right:-5px;padding:0 3px;font-size:10px}
+/* 로비 패널: 가로로 넘치지 않게 (긴 단원 이름 · 모드 칸) */
+#title .panel{overflow-x:hidden}
+#title .panel select{width:100%;max-width:100%;min-width:0;text-overflow:ellipsis}
+.unitpick,.playpick,.pmodes,.pm-col,.pm-list,.pm-btn,.pm-btn span{min-width:0}
+.pm-btn b{overflow:hidden;text-overflow:ellipsis}
+/* 화면 높이가 낮을 때(노트북 · 확대 배율 125% 등): 한 화면에 다 보이도록 촘촘하게 */
+@media (max-height:1000px){
+  #title:not(.step-login) .panel{padding-top:14px;padding-bottom:12px}
+  .round-h.lobby{font-size:20px}
+  .unitpick{margin:0 0 4px}.unitpick select{padding:5px 8px;font-size:14px}
+  .pp-lock{padding:3px 8px;font-size:12px}
+  .playpick{gap:5px}
+  #mapDesc{font-size:12.5px;line-height:1.35;margin:2px 0 4px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .howto{margin:2px 0 5px;padding:2px 10px}.howto summary{font-size:13px;padding:2px 0}
+  .modepick .mode span{padding:4px 4px!important}.mode b{font-size:16px}
+  .mode-desc{margin:0 0 2px!important}.bankinfo{margin:0 0 6px;font-size:12px}
+  .title-actions{gap:6px}.title-actions .btn{padding-top:9px;padding-bottom:9px}
+  .title-actions #startBtn{font-size:20px}.title-actions #liveBtn{font-size:16px}
+  .gatenote{margin:0!important;font-size:12px}
+  #title:not(.step-login) .history{display:none}
+  #title:not(.step-login) .teacher-row{margin-top:6px}
+}
+@media (max-height:1000px){
+  #title:not(.step-login) .mode-desc{display:none}
+  #title:not(.step-login) .modepick{margin-bottom:4px}
+  #title:not(.step-login) .teacher-row{margin-top:4px;font-size:12px}
+  .pm-explore{margin:0 0 3px!important}
+}
