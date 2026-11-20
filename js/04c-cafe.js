@@ -2,7 +2,7 @@
    한 주문 = 4지선다 1개(재료 선반) + O/X 1개(토핑대) → 오븐 → 카운터에서 서빙. 답이 맞았는지는 서빙할 때 손님 반응으로 알 수 있어요.
    몬스터 · 쓰러짐이 없는 평화 모드예요. 파일은 01 → 13 순서로 불러와요. 모든 파일이 같은 전역 공간을 함께 써요. */
 const CF_SHELF=[{x:-6.6,c:'#ff6b8a',n:'딸기',hex:0xff6b8a},{x:-2.2,c:'#8b5a3c',n:'초콜릿',hex:0x8b5a3c},{x:2.2,c:'#e0a800',n:'레몬',hex:0xffd84a},{x:6.6,c:'#6c5ce7',n:'블루베리',hex:0x7c6cf0}];
-const CF_PAD_Z=-5.9, CF_OX=[{x:-7.3,z:-.4,c:'#e5484d',n:'O 체리'},{x:-7.3,z:2.8,c:'#22a35a',n:'X 민트'}], CF_OVEN={x:-7.4,z:-3.6}, CF_SERVE={x:3.6,z:-.2};
+const CF_PAD_Z=-5.9, CF_OX=[{x:-7.3,z:-1.5,c:'#e5484d',n:'O 체리'},{x:-7.3,z:1.05,c:'#22a35a',n:'X 민트'}], CF_OVEN={x:-7.4,z:-4.1}, CF_SERVE={x:3.6,z:-.2};
 const CF_SLOT=[{x:8.3,z:-3.2},{x:8.3,z:-.4},{x:8.3,z:2.4}], CF_DOOR={x:9.6,z:9.5};
 const CF_LV={easy:{n:8,pat:95,gap:11},normal:{n:10,pat:80,gap:10},hard:{n:12,pat:66,gap:9},hero:{n:14,pat:54,gap:8}};
 const CF_GUEST=['mage','rogue','barbarian'];
@@ -31,11 +31,11 @@ function buildCafe(){
       if (i===3){ sph(.17,0x5b4bd6,x-.15,y,-8.2); sph(.17,0x6f5ff0,x+.15,y,-8.1); sph(.17,0x4a3cc0,x,y+.2,-8.25); } }
     cfPad(root,s.x,CF_PAD_Z,s.hex); });
   // 오븐 · 토핑대 · 카운터 · 서빙 발판
-  box(2.6,2.6,2.2,0xff6f96,-9.4,1.3,-3.6); box(1.9,1.2,.1,0x3a2230,-9.4,1.35,-2.45); CAFE.ovenGlow=box(1.6,.9,.12,0xffa63d,-9.4,1.35,-2.42,{emissive:0xff7a1a,emissiveIntensity:.25});
-  cyl(.25,.25,.6,0xd8d8e0,-8.8,2.9,-4.1); cfPad(root,CF_OVEN.x,CF_OVEN.z,0xff8a3d);
-  box(2.4,1.1,4.6,0xffffff,-9.6,.55,1.2);
-  sph(.22,0xe8143c,-9.9,1.3,-.3); sph(.22,0xe8143c,-9.6,1.3,-.2);
-  for (let k=0;k<3;k++){ const lf=sph(.18,0x5fd38d,-9.8+k*.15,1.25,2.7+k*.12,1,.4,.6); lf.rotation.y=k; }
+  box(2.6,2.6,2.2,0xff6f96,-9.4,1.3,-4.1); box(1.9,1.2,.1,0x3a2230,-9.4,1.35,-2.95); CAFE.ovenGlow=box(1.6,.9,.12,0xffa63d,-9.4,1.35,-2.92,{emissive:0xff7a1a,emissiveIntensity:.25});
+  cyl(.25,.25,.6,0xd8d8e0,-8.8,2.9,-4.6); cfPad(root,CF_OVEN.x,CF_OVEN.z,0xff8a3d);
+  box(2.4,1.1,4.2,0xffffff,-9.6,.55,-.2);
+  sph(.22,0xe8143c,-9.9,1.3,-1.4); sph(.22,0xe8143c,-9.6,1.3,-1.3);
+  for (let k=0;k<3;k++){ const lf=sph(.18,0x5fd38d,-9.8+k*.15,1.25,.95+k*.12,1,.4,.6); lf.rotation.y=k; }
   CF_OX.forEach((o,i)=>cfPad(root,o.x,o.z,i?0x22a35a:0xe5484d));
   box(2.2,1.3,8,0xffffff,6,.65,.4); box(2.4,.18,8.2,0xf3c6a4,6,1.38,.4); box(.8,.6,.6,0x7ec8e3,6,1.75,3.6);
   cfPad(root,CF_SERVE.x,CF_SERVE.z,0xffc531);
@@ -259,13 +259,46 @@ function cafeFrame(dt,real,now){
   { const o=sun.userData.off||[22,38,14]; sun.position.set(P.x+o[0],o[1],P.z+o[2]); sun.target.position.set(P.x,0,P.z); sun.target.updateMatrixWorld(); }
   const cx=.8+P.x*.06, cz=P.z*.06, tgt=new THREE.Vector3(cx,16,12.6+cz); camera.position.lerp(tgt,W.snapCam?1:Math.min(1,dt*5)); W.snapCam=false; camera.lookAt(cx,0,-3.0+cz);
   limitTick(); if (W.state!=='play'){ renderFrame(); return; }
-  cfHUD(); renderFrame(); cfBubbles();
+  cfHUD(); cfArrowTick(); renderFrame(); cfBubbles();
 }
 /* 카페에서는 공격 · 스킬 키를 쓰지 않아요 (이동 키는 그대로) */
 addEventListener('keydown',e=>{ if (MAPK!=='cafe'||W.state!=='play') return; if (/^(Space|KeyE|KeyQ|KeyR|KeyF|ShiftLeft|ShiftRight|Digit\d)$/.test(e.code)){ e.preventDefault(); e.stopImmediatePropagation(); } },true);
 addEventListener('mousedown',e=>{ if (MAPK==='cafe'&&W.state==='play'&&e.target===renderer.domElement){ e.stopImmediatePropagation(); } },true);
+/* 다음에 갈 곳 위에 통통 튀는 화살표 (재료 → 토핑 → 오븐 → 서빙) */
+function cfArrowMake(){
+  const g=new THREE.Group(), mat=new THREE.MeshBasicMaterial({color:0xffb800,toneMapped:false,fog:false}), line=new THREE.MeshBasicMaterial({color:0x3a2230,side:THREE.BackSide,toneMapped:false,fog:false});
+  const head=new THREE.Mesh(new THREE.ConeGeometry(.55,.9,4),mat); head.rotation.x=Math.PI; head.rotation.y=Math.PI/4; g.add(head);
+  const hl=new THREE.Mesh(head.geometry,line); hl.rotation.copy(head.rotation); hl.scale.setScalar(1.14); g.add(hl);
+  const stem=new THREE.Mesh(new THREE.BoxGeometry(.32,.6,.32),mat); stem.position.y=.72; g.add(stem);
+  const sl=new THREE.Mesh(stem.geometry,line); sl.position.copy(stem.position); sl.scale.setScalar(1.22); g.add(sl);
+  const ring=new THREE.Mesh(new THREE.RingGeometry(1.0,1.3,40),new THREE.MeshBasicMaterial({color:0xffb800,transparent:true,opacity:.7,depthWrite:false,side:THREE.DoubleSide,toneMapped:false}));
+  ring.rotation.x=-Math.PI/2; g.userData.ring=ring; CAFE.dyn.add(ring);
+  g.renderOrder=6; CAFE.dyn.add(g); return g;
+}
+function cfLabelTex(t){ return canvasTex(512,128,g=>{ g.fillStyle='#3a2230'; roundRect(g,8,8,496,112,56); g.fill(); g.fillStyle='#ffd23f'; g.font='bold 64px Jua, "Malgun Gothic", sans-serif'; g.textAlign='center'; g.textBaseline='middle'; g.fillText(t,256,68); }); }
+function cfArrowTick(){
+  if (!CAFE.arrows){ CAFE.arrows=[0,1,2,3].map(cfArrowMake); CAFE.labels={};
+    const sp=new THREE.Sprite(new THREE.SpriteMaterial({transparent:true,depthTest:false,toneMapped:false})); sp.scale.set(3.4,.85,1); sp.renderOrder=7; CAFE.dyn.add(sp); CAFE.label=sp; }
+  const C=cfFront(); let pts=[], txt='';
+  if (C&&W.state==='play'){
+    if (CAFE.step==='mc'){ pts=CF_SHELF.map(s=>[s.x,CF_PAD_Z]); txt='① 정답 재료 고르기'; }
+    else if (CAFE.step==='ox'){ pts=CF_OX.map(s=>[s.x,s.z]); txt='② 토핑 O / X'; }
+    else if (CAFE.step==='oven'){ pts=[[CF_OVEN.x,CF_OVEN.z]]; txt=CAFE.bake>0?'굽는 중…':'③ 오븐에서 굽기'; }
+    else if (CAFE.step==='serve'){ pts=[[CF_SERVE.x,CF_SERVE.z]]; txt='④ 손님에게 서빙!'; }
+  }
+  const t=performance.now()/1000;
+  CAFE.arrows.forEach((a,i)=>{ const p=pts[i]; a.visible=!!p; a.userData.ring.visible=!!p; if (!p) return;
+    const here=Math.hypot(P.x-p[0],P.z-p[1])<1.15, bob=Math.abs(Math.sin(t*3.4+i*.5))*.45;
+    a.position.set(p[0],(here?2.3:1.7)+bob,p[1]); a.rotation.y=t*1.6; a.scale.setScalar(pts.length>2?.8:1);
+    a.userData.ring.position.set(p[0],.06,p[1]); a.userData.ring.scale.setScalar(1+.12*Math.sin(t*5+i)); a.userData.ring.material.opacity=here?.95:.6; });
+  const L=CAFE.label; L.visible=!!txt;
+  if (txt){ if (!CAFE.labels[txt]) CAFE.labels[txt]=cfLabelTex(txt); if (L.material.map!==CAFE.labels[txt]){ L.material.map=CAFE.labels[txt]; L.material.needsUpdate=true; }
+    const cx=pts.reduce((s,p)=>s+p[0],0)/pts.length, cz=pts.reduce((s,p)=>s+p[1],0)/pts.length;
+    L.position.set(cx,(CAFE.step==='mc'?.9:3.6)+Math.sin(t*2)*.08,cz+(CAFE.step==='mc'?1.7:0)); }
+}
 function cafeEndUI(){
   document.body.classList.remove('cafe'); ['#cfHud','#cfQ','#cfRes','#cfHelp','#cfOven'].forEach(s=>{ const e=$(s); if (e) e.hidden=true; });
   for (const C of CAFE.cust){ C.el&&C.el.remove(); } $('#cfBubs')&&($('#cfBubs').innerHTML=''); cfCarry(null);
+  if (CAFE.arrows){ CAFE.arrows.forEach(a=>{ a.visible=false; a.userData.ring.visible=false; }); CAFE.label.visible=false; }
 }
 function cafeSummary(){ const st=cfStars(); return `손님 ${CAFE.n}명 중 ${CAFE.perfect}명이 완벽한 디저트를 받았어요 · 별점 ★${st.toFixed(1)} · 팁 ${CAFE.tips.toLocaleString('ko-KR')}`+(CAFE.lost?` · 기다리다 간 손님 ${CAFE.lost}명`:'')+'. '; }
