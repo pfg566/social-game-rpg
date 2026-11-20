@@ -263,7 +263,7 @@ function buildVillage(){
     m.castShadow=m.receiveShadow=true; add(m); }
   for (const x of [5,8.4]){ mesh(R,new THREE.BoxGeometry(.75,1.7,.75),white,x,.85,-12.4); mesh(R,new THREE.BoxGeometry(.95,.18,.95),white,x,1.78,-12.4); mesh(R,new THREE.SphereGeometry(.26,14,10),white,x,2.1,-12.4); VL_COLL.push({x,z:-12.4,r:.55}); }
   mesh(R,new THREE.BoxGeometry(1.4,1.1,.08),wood,5.75,.65,-11.8).rotation.y=-1.1;
-  if (VL.natOK) vlNatureGround(); else { const nn=26, m=new THREE.InstancedMesh(new THREE.BoxGeometry(1,1,1),new THREE.MeshStandardMaterial({color:0xd3cec4,roughness:1}),nn*2), M=new THREE.Matrix4(), q=new THREE.Quaternion(), e=new THREE.Euler(); let k=0;
+  if (VL.natOK){ vlNatureGround(); vlGrassField(); } else { const nn=26, m=new THREE.InstancedMesh(new THREE.BoxGeometry(1,1,1),new THREE.MeshStandardMaterial({color:0xd3cec4,roughness:1}),nn*2), M=new THREE.Matrix4(), q=new THREE.Quaternion(), e=new THREE.Euler(); let k=0;
     for (let i=0;i<nn;i++){ const p=VL_SIDEC.getPoint(i/(nn-1)); for (let j=0;j<2;j++){ if (j&&vlR()<.4) continue; e.set(0,vlS(0,3),0); q.setFromEuler(e);
       M.compose(new THREE.Vector3(p.x+vlS(-.45,.45),.05,p.y+vlS(-.3,.3)),q,new THREE.Vector3(vlS(.55,.8),.12,vlS(.4,.6))); m.setMatrixAt(k,M); m.setColorAt(k,VL_LIN(['#d6d1c6','#c8c2b6','#e0dbd0'][k%3])); k++; } }
     m.count=k; m.receiveShadow=m.castShadow=true; add(m); }
@@ -368,6 +368,33 @@ function vlNatureTrees(){
   [[-16,-30,1.3],[-30,-26,1.5],[-36,-20,1.2]].forEach(([x,z,s],i)=>{ put('Pine_'+[1,2,4][i],{x,z,ry:vlS(0,6.3),s}); VL_COLL.push({x,z,r:.5*s}); });
   for (const n in by){ const ring=n.startsWith('Ring_'); vlInst(ring?'CommonTree_'+n.slice(5):n,by[n],{shadow:!ring}); }
 }
+/* MegaKit 풀 뭉치로 깐 풀밭: 캐릭터 주변(한 변 40m)에 빽빽하게 · 따라와요 · 길과 집은 풀 지도로 비워요 · 뿌리는 바닥 색 */
+const VL_GF={R:20,list:[['Grass_Common_Short',7000,.36,.56],['Grass_Wispy_Short',2600,.34,.5],['Grass_Common_Tall',1400,.3,.44],['Grass_Wispy_Tall',600,.3,.42]]};
+function vlGrassField(){
+  VL.gf=[]; const U=VL.U, R=VL_GF.R; vlSeed=77;
+  VL_GF.list.forEach(([name,cnt,a,b])=>{ const parts=VL.nat[name]; if (!parts) return;
+    parts.forEach(pt=>{ const mat=pt.mat.clone(); mat.side=THREE.DoubleSide; mat.alphaTest=.45; mat.color.setRGB(1.04,.98,.78);
+      mat.onBeforeCompile=sh=>{ Object.assign(sh.uniforms,{uTime:U.uTime,uCenter:U.uCenter,uR:{value:R},uMap:U.uMap,uMask:U.uMask,uGround:U.uGround,uPlayer:U.uPlayer,uGK:U.uGK});
+        sh.vertexShader='uniform float uTime,uR,uMap; uniform vec2 uCenter; uniform vec3 uPlayer; uniform sampler2D uMask,uGround; varying float vGH; varying vec3 vGC; varying float vGS;\n'+sh.vertexShader
+          .replace('#include <beginnormal_vertex>','vec3 objectNormal=vec3(0.,1.,0.);\n#ifdef USE_TANGENT\nvec3 objectTangent=vec3(tangent.xyz);\n#endif')
+          .replace('#include <project_vertex>',`
+            vec4 ip=instanceMatrix*vec4(transformed,1.); vec2 o=instanceMatrix[3].xz; vec2 rel=mod(o-uCenter+uR,2.*uR)-uR; vec2 root=uCenter+rel; ip.xz+=root-o;
+            vec2 guv=vec2(root.x/uMap+.5,1.-(root.y/uMap+.5)); vec4 mk=texture2D(uMask,guv);
+            float k=smoothstep(.2,.65,mk.r)*(1.-smoothstep(uR*.7,uR,max(abs(rel.x),abs(rel.y))));
+            float hy=max(ip.y,0.); ip.y=hy*k; ip.xz=root+(ip.xz-root)*min(1.,k*1.6);
+            ip.xz+=vec2(.85,.45)*(sin(uTime*1.3+root.x*.21+root.y*.17)*.55+sin(uTime*2.6+root.x*.7-root.y*.5)*.2+.3)*.18*hy*hy;
+            vec2 dd=ip.xz-uPlayer.xz; float dl=length(dd)+1e-4; float push=smoothstep(1.,.0,dl)*hy; ip.xz+=dd/dl*push*.35; ip.y-=push*.2;
+            vGH=clamp(hy/.45,0.,1.); vGS=mk.g; vGC=pow(texture2D(uGround,guv).rgb,vec3(2.2));
+            vec4 mvPosition=viewMatrix*ip; gl_Position=projectionMatrix*mvPosition;`);
+        sh.fragmentShader='uniform float uGK; varying float vGH; varying vec3 vGC; varying float vGS;\n'+sh.fragmentShader
+          .replace('#include <color_fragment>','#include <color_fragment>\n diffuseColor.rgb=mix(vGC*uGK*.62,diffuseColor.rgb,smoothstep(.0,.55,vGH))*mix(.55,1.,vGS);'); };
+      mat.customProgramCacheKey=()=>'vlgf'+name;
+      const im=new THREE.InstancedMesh(pt.geo,mat,cnt), M=new THREE.Matrix4(), T=new THREE.Matrix4(), q=new THREE.Quaternion(), e=new THREE.Euler(), S=new THREE.Vector3(), V=new THREE.Vector3();
+      for (let i=0;i<cnt;i++){ e.set(0,vlS(0,6.3),0); q.setFromEuler(e); S.setScalar(vlS(a,b)); T.compose(V.set(vlS(-R,R),0,vlS(-R,R)),q,S); M.multiplyMatrices(T,pt.m); im.setMatrixAt(i,M); }
+      im.frustumCulled=false; im.castShadow=false; im.receiveShadow=false; scene.add(im); VL.gf.push({im,n:cnt}); }); });
+}
+function vlGrassMode(m){ VL.gmode=m; const af=m==='asset'&&VL.gf&&VL.gf.length;
+  if (VL.grass) VL.grass.visible=!af; (VL.gf||[]).forEach(g=>g.im.visible=!!af); }
 function vlNatureGround(){
   vlSeed=51; const by={}, put=(n,p)=>(by[n]=by[n]||[]).push(p);
   // 집으로 가는 디딤돌
@@ -399,6 +426,8 @@ function villageReset(){
   vlSetSky(false); if (VL.rays) VL.rays.enabled=QCUR!=='low';
   const C=QUALITY[QCUR]||QUALITY.medium; if (VL.grass) VL.grass.geometry.instanceCount=Math.floor(VL.grass.geometry.userData.max*Math.max(.25,C.grass));
   (VL.lod||[]).forEach(L=>{ L.im.count=Math.floor(L.n*(QCUR==='high'?1:QCUR==='medium'?.6:.2)); });
+  (VL.gf||[]).forEach(L=>{ L.im.count=Math.floor(L.n*(QCUR==='high'?1:QCUR==='medium'?.6:.3)); });
+  vlGrassMode(VL.gmode||(()=>{ try{ return localStorage.getItem('gsd-vgrass')||'asset'; }catch(e){ return 'asset'; } })());
   document.body.classList.add('village'); $('#vlHud').hidden=false; $('#vlMini').hidden=false; $('#vlClock').hidden=false;
   VL.t0=performance.now();
   setTimeout(()=>{ if (MAPK==='village'&&W.state==='play') showBanner('🏡 노을 마을에 왔어요'); },300);
@@ -490,6 +519,7 @@ function vlMini(real){
 /* ---------- 조작: 이동 키는 그대로 · 공격 키는 막고 · Shift 달리기 · E 들어가기 · 마우스 드래그 시점 ---------- */
 addEventListener('keydown',e=>{ if (MAPK!=='village'||W.state!=='play') return; if (e.target.closest&&e.target.closest('input,textarea')) return;
   if (e.code==='ShiftLeft'||e.code==='ShiftRight') VL.run=true;
+  if (e.code==='KeyG'){ e.preventDefault(); e.stopImmediatePropagation(); const m=VL.gmode==='asset'?'blade':'asset'; vlGrassMode(m); try{ localStorage.setItem('gsd-vgrass',m); }catch(er){} vlToast(m==='asset'?'🌾 풀: MegaKit 풀 뭉치':'🌿 풀: 가는 풀잎'); return; }
   if ((e.code==='KeyE'||e.code==='Enter')&&VL.door){ e.preventDefault(); e.stopImmediatePropagation(); vlEnterDoor(); return; }
   if (/^(Space|KeyE|KeyQ|KeyR|KeyF|ShiftLeft|ShiftRight|Digit\d|Enter)$/.test(e.code)){ e.preventDefault(); e.stopImmediatePropagation(); } },true);
 addEventListener('keyup',e=>{ if (e.code==='ShiftLeft'||e.code==='ShiftRight') VL.run=false; },true);
