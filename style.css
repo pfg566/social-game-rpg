@@ -855,3 +855,15 @@ body.cafe #hud, body.cafe #skillbar, body.cafe #hint, body.cafe #touch, body.caf
 .qx-row .btn,.qx-row2 .btn{flex:none;width:auto;min-width:96px;padding:10px 18px;margin:0}
 .qx-row input{flex:1 1 auto;width:auto;min-width:0}
 .qx-row2 #qxGo{margin-left:auto}
+/* 모드 고르기 칸 줄이기: 전투 모드는 두 줄로, 평화 모드 칸은 좁게 */
+.pmodes{grid-template-columns:minmax(0,1.75fr) minmax(0,1fr);gap:6px}
+.pm-col.battle .pm-list{grid-template-columns:repeat(2,minmax(0,1fr))}
+.pm-btn{padding:4px 6px;gap:4px;min-height:0}
+.pm-btn i{font-size:15px}
+.pm-btn b{font-size:12.5px}
+.pm-btn b em{display:none}
+.pm-btn small.pm-best{font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pm-gift{top:-6px;right:-3px;font-size:9.5px;line-height:13px;padding:0 4px}
+.pm-list{row-gap:10px;column-gap:6px}.pm-col{gap:7px}
+.pm-gift{top:-9px}
+.pm-gift{top:-8px;right:-5px;padding:0 3px;font-size:10px}
