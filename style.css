@@ -905,3 +905,9 @@ body.cafe #hud, body.cafe #skillbar, body.cafe #hint, body.cafe #touch, body.caf
 .pm-btn small.pm-best{margin-left:auto;font-size:10px}
 .pm-gift{top:-6px}
 .pm-list{row-gap:4px}.pm-col{gap:5px;padding-top:4px;padding-bottom:4px}
+/* 모드 칸: 아래로 죽 내려오게 · 칸 폭은 글자 길이만큼만 */
+.pmodes{grid-template-columns:max-content max-content;justify-content:center;gap:10px}
+.pm-col{min-width:150px}
+.pm-col.battle .pm-list,.pm-list{grid-template-columns:max-content;justify-content:stretch}
+.pm-btn{width:100%;box-sizing:border-box;padding:3px 26px 3px 7px}
+.pm-btn span{flex:none}
