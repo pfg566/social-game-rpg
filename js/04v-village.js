@@ -13,6 +13,8 @@ const VL_HOUSES=[{x:7,z:-20,r:0,w:10,d:7,h:4.4,roof:'#6d5a8e',cozy:true},{x:-24,
 const VL_TREES=[[-8,-6,1.15,'au'],[16,6,1.3,'au'],[-30,10,1.2,'au'],[22,-24,1.1,'yl'],[-14,-24,1.05,'au'],[-2,16,.95,'yl'],[34,-6,1.2,'au'],[-40,-16,1.25,'gr'],[12,24,1.1,'gr'],[-20,30,1.15,'au'],[44,8,1.0,'yl'],[-44,26,1.05,'au'],[0,-36,1.2,'au'],[26,-40,1.0,'gr']];
 const VL_BUSHES=[[-2.2,-4.0,'rd'],[-13.5,4.2,'au'],[12,4,'au'],[14.5,1.5,'rd'],[-1,-11,'gr'],[13,-12,'gr'],[-12,8,'au'],[18,-4,'rd'],[-17,2,'gr'],[3,10,'au'],[-26,16,'rd'],[26,-14,'au'],[30,0,'gr'],[-10,-14,'rd'],[8,14,'gr'],[-34,4,'au'],[20,12,'rd']];
 const VL_PORTAL={x:31,z:-19,r:-2.2};
+// 가로등: 큰길을 따라 약 12.5m마다 양쪽을 번갈아 세우고, 등불 팔은 길 쪽을 향해요 (시작 위치 앞 시야는 비워 둬요) [x, z, 회전]
+const VL_LAMPS=[[-33.58,21.47,2.05],[-24.64,11.38,-1.127],[-11.18,11.24,1.908],[-5.39,3.86,-1.197],[12.34,1.53,2.103],[19.74,-9.69,-.89],[31.13,-13.63,2.401],[37.51,-27.2,-.876]];
 const VL_COLL=[];
 const vlSegD=(p,a,b)=>{ const abx=b.x-a.x, aby=b.y-a.y, t=Math.max(0,Math.min(1,((p.x-a.x)*abx+(p.y-a.y)*aby)/(abx*abx+aby*aby))); return Math.hypot(p.x-(a.x+abx*t),p.y-(a.y+aby*t)); };
 const VL_PATHC=new THREE.SplineCurve(VL_PATH), VL_PATHP=VL_PATHC.getPoints(160), VL_SIDEC=new THREE.SplineCurve(VL_SIDE), VL_SIDEP=VL_SIDEC.getPoints(40);
@@ -221,7 +223,7 @@ function buildVillage(){
   vlWell(-1.5,-17.5,R); vlBarrel(13.6,-15.2,R); vlBarrel(14.4,-16.1,R,.9); vlBarrel(-.8,-14.2,R);
   potF(3.6,-15.6); potF(10.6,-15.8,'#ff6b8a'); potF(1.2,-13.4,'#ffd84a'); potF(12.2,-13.3);
   mesh(ST,vlBox(.12,1.1,.12,.6),vlMats().wood,9.6,.55,-11.6); mesh(ST,new THREE.BoxGeometry(.45,.38,.6),new THREE.MeshStandardMaterial({color:0xd8402a,roughness:.6}),9.6,1.25,-11.6); mesh(ST,new THREE.CylinderGeometry(.225,.225,.6,12,1,false,0,Math.PI),new THREE.MeshStandardMaterial({color:0xd8402a,roughness:.6}),9.6,1.44,-11.6).rotation.set(Math.PI/2,0,Math.PI/2);
-  [[9.5,-11.2,0],[2.2,4.2,Math.PI],[-14,10.6,.3],[16,-1.6,2.6],[-30,17.3,.4],[27,-15,-.6],[-4.2,3.6,Math.PI*.92]].forEach(([x,z,r])=>vlLamp(x,z,r,R));
+  VL_LAMPS.forEach(([x,z,r])=>vlLamp(x,z,r,R));
   vlBarrel(VL_DOORS[1].x+2.4,VL_DOORS[1].z-.6,R); potF(VL_DOORS[1].x-2.2,VL_DOORS[1].z-.2);
   vlMerge(ST); vlProps(R); vlPond(R);
 
@@ -285,7 +287,7 @@ function vlInst(name,P,opt){
 }
 const VL_TINT={au:['#e8572a','#f07a2c','#f39a34','#d9432a','#ee6a2a'],rd:['#e4502e','#d8432a','#ee6234'],yl:['#f2b13c','#f6c94e','#eba232'],gr:['#7cae46','#8fbd4f','#6a9e3c']};
 const vlTint=k=>VL_LIN(VL_TINT[k][(vlR()*VL_TINT[k].length)|0]).multiplyScalar(vlS(.9,1.08));
-function vlFree(x,z,pad){ if (vlInPond(x,z,pad+.6)||vlPolyD(VL_PATHP,x,z)<VL_PATH_W+pad||vlPolyD(VL_SIDEP,x,z)<1+pad*.6||vlInHouse(x,z,pad)) return false; for (const d of VL_DOORS) if (Math.hypot(x-d.x,z-d.z)<2.4) return false; return Math.hypot(x-VL_PORTAL.x,z-VL_PORTAL.z)>4.5; }
+function vlFree(x,z,pad){ if (vlInPond(x,z,pad+.6)||vlPolyD(VL_PATHP,x,z)<VL_PATH_W+pad||vlPolyD(VL_SIDEP,x,z)<1+pad*.6||vlInHouse(x,z,pad)) return false; for (const d of VL_DOORS) if (Math.hypot(x-d.x,z-d.z)<2.4) return false; for (const l of VL_LAMPS) if (Math.hypot(x-l[0],z-l[1])<.9+pad*.5) return false; return Math.hypot(x-VL_PORTAL.x,z-VL_PORTAL.z)>4.5; }
 function vlNatureTrees(){
   vlSeed=3; const by={};
   const put=(n,p)=>(by[n]=by[n]||[]).push(p);

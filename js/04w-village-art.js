@@ -275,7 +275,7 @@ function vlCozy2(H,parent){
   for (const x of [-H.w*.13,H.w*.13]) put(B(.18,H.h*.48,.18,.6),M.wood,x,y0+H.h*.74,D+.03);
   const sc=vlScallopTex('#3f6fd8','#24438a'), rm=new THREE.MeshStandardMaterial({map:sc,roughness:.55});
   const pitch=.82, over=.7, rise=D*Math.tan(pitch), slab=(D+over)/Math.cos(pitch); sc.repeat.set(H.w/2.4,slab/2.4);
-  for (const s of [-1,1]){ const r=put(new THREE.BoxGeometry(H.w+1.1,.26,slab),rm,0,top+rise/2+.05,s*(D/2+over*.22)); r.rotation.x=s*pitch;
+  for (const s of [-1,1]){ const rg=new THREE.BoxGeometry(H.w+1.1,.26,slab); if (s<0) rg.rotateY(Math.PI); const r=put(rg,rm,0,top+rise/2+.05,s*(D/2+over*.22)); r.rotation.x=s*pitch;
     for (const k of [1,-1]){ const b=put(B(.09,.32,slab+.04,.6),M.wood,k*(H.w/2+.57),top+rise/2+.01,s*(D/2+over*.22)); b.rotation.x=s*pitch; } }
   const tri=new THREE.Shape(); tri.moveTo(-D,0); tri.lineTo(D,0); tri.lineTo(0,rise); tri.lineTo(-D,0);
   for (const s of [-1,1]) put(vlUVScale(new THREE.ExtrudeGeometry(tri,{depth:.12,bevelEnabled:false}),1/2.4),M.plasterW,s*(H.w/2-.06),top,0,0,Math.PI/2,0);
@@ -288,8 +288,16 @@ function vlCozy2(H,parent){
     if (box){ p(B(w+.3,.25,.35,.5),M.woodLight,0,-.2,.2); for (let i=0;i<5;i++){ p(new THREE.SphereGeometry(.11,7,5),M.leaf,(i-2)*(w/5),-.04,.24); p(new THREE.SphereGeometry(.08,6,4),M.flowers[i%M.flowers.length],(i-2)*(w/5)+.04,.02,.3); } } };
   const dx=-H.w*.22, dz=D-.3, dy=top+.9;
   put(B(1.8,1.6,1.4,2.4),M.plasterW,dx,dy,dz-.2);
-  const dt=new THREE.Shape(); dt.moveTo(-1.05,0); dt.lineTo(1.05,0); dt.lineTo(0,.9); dt.lineTo(-1.05,0); put(vlUVScale(new THREE.ExtrudeGeometry(dt,{depth:.1,bevelEnabled:false}),1/2.4),M.plasterW,dx,dy+.8,dz+.45);
-  for (const s of [-1,1]) put(new THREE.BoxGeometry(.2,1.4,1.7),rm,dx+s*.55,dy+1.15,dz-.25).rotation.z=-s*.95;
+  // 지붕창 지붕 (Λ): 박공과 같은 기울기로 덮고, 뒤쪽은 큰 지붕 속까지 이어 붙여 틈이 안 보이게 해요
+  const da=Math.atan2(.9,1.05), dca=Math.cos(da), dsa=Math.sin(da), dL=1.62, ay=dy+1.7, zf=dz+.72, zb=dz-2.05, dD=zf-zb, dzc=(zf+zb)/2;
+  const dt=new THREE.Shape(); dt.moveTo(-1.05,0); dt.lineTo(1.05,0); dt.lineTo(0,.9); dt.lineTo(-1.05,0);
+  put(vlUVScale(new THREE.ExtrudeGeometry(dt,{depth:dz+.55-zb,bevelEnabled:false}),1/2.4),M.plasterW,dx,dy+.8,zb);
+  for (const s of [-1,1]){
+    const sg=new THREE.BoxGeometry(dD,.12,dL); sg.rotateY(s*Math.PI/2); vlUVScale(sg,dD/(H.w+1.1),dL/slab);   // 큰 지붕과 같은 비늘 크기 · 방향
+    put(sg,rm,dx+s*(dca*dL/2+dsa*.06),ay-dsa*dL/2+dca*.06,dzc,0,0,-s*da);
+    put(vlBox(dL,.2,.07,.6),M.wood,dx+s*(dca*dL/2+dsa*.02),ay-dsa*dL/2+dca*.02,zf+.035,0,0,-s*da); }
+  put(vlBox(.18,.16,dD,.6),M.wood,dx,ay+.09,dzc);
+  put(vlBox(.14,.34,.1,.6),M.wood,dx,ay,zf+.045);
   archWin(dx,dy-.55,dz+.5,0,.8,1.05,true); archWin(-H.w*.32,1.5,D,0,1.1,1.6,true); archWin(H.w*.28,1.5,D,0,1.0,1.5,true);
   // 아치 문
   const dg=vlUVScale(new THREE.ExtrudeGeometry(arch(1.3,2.4),{depth:.12,bevelEnabled:false}),1/1.3,1/2.4); { const uv=dg.attributes.uv; for (let i=0;i<uv.count;i++) uv.setX(i,uv.getX(i)+.5); uv.needsUpdate=true; }
@@ -364,7 +372,10 @@ function vlBuildGround(R){
       diffuseColor.rgb*=col;`); };
   mat.customProgramCacheKey=()=>'vlground';
   const ground=new THREE.Mesh(new THREE.PlaneGeometry(VL_MAP,VL_MAP),mat); ground.rotation.x=-Math.PI/2; ground.receiveShadow=true; R.add(ground);
-  const far=new THREE.Mesh(new THREE.PlaneGeometry(600,600),new THREE.MeshStandardMaterial({color:0x5a682c,roughness:1})); far.rotation.x=-Math.PI/2; far.position.y=-.03; R.add(far);
+  // 바깥 땅: 마을 땅과 겹치는 가운데를 비워 둬요 (겹치면 멀리서 줄무늬처럼 깜빡여요)
+  const fs=new THREE.Shape(); fs.moveTo(-300,-300); fs.lineTo(300,-300); fs.lineTo(300,300); fs.lineTo(-300,300); fs.lineTo(-300,-300);
+  { const h=VL_MAP/2-.5, hp=new THREE.Path(); hp.moveTo(-h,-h); hp.lineTo(-h,h); hp.lineTo(h,h); hp.lineTo(h,-h); hp.lineTo(-h,-h); fs.holes.push(hp); }
+  const far=new THREE.Mesh(new THREE.ShapeGeometry(fs),new THREE.MeshStandardMaterial({color:0x5a682c,roughness:1})); far.rotation.x=-Math.PI/2; far.position.y=-.03; R.add(far);
 }
 function vlGroundFinish(){
   const C=VL.gcv; if (!C) return; const S=C.S, mp=C.mp, g=C.G.getContext('2d');
@@ -457,11 +468,24 @@ function vlPond(par){
 
 /* ---------- 소품: 가로등 · 우물 · 나무통 · 수레 · 건초 · 이정표 · 과일 가판대 · 벤치 · 상자 ---------- */
 function vlLamp(x,z,ry,par){ const M=vlMats(), g=new THREE.Group(), put=vlPutter(g), B=vlBox; g.position.set(x,0,z); g.rotation.y=ry||0; par.add(g);
-  put(B(.44,.36,.44,1),M.stone,0,.18,0); put(B(.17,3.25,.17,.6),M.wood,0,1.95,0); put(B(1.0,.12,.12,.6),M.wood,.42,3.32,0); put(B(.08,.55,.08,.6),M.wood,.2,3.05,0,0,0,-.78);
-  put(B(.05,.22,.05),M.iron,.82,3.18,0); put(B(.36,.46,.36),M.iron,.82,2.8,0); put(B(.28,.38,.38),M.lantern,.82,2.8,0); put(B(.38,.38,.28),M.lantern,.82,2.8,0);
-  put(new THREE.ConeGeometry(.3,.22,4),M.iron,.82,3.13,0,0,Math.PI/4,0);
-  vlHalo(g,.82,2.8,0,1.9);
-  vlMerge(g); VL_COLL.push({x,z,r:.3}); VL_AO.push({x,z,r:.8,k:.35}); VL.camObs.push({x:x+Math.cos(ry||0)*.45,z:z-Math.sin(ry||0)*.45,r:.85,h:3.6}); }
+  put(B(.5,.28,.5,1),M.stone,0,.14,0); put(B(.34,.2,.34,1),M.stone,0,.38,0);
+  put(new THREE.CylinderGeometry(.06,.085,3.0,10),M.iron,0,1.98,0);
+  for (const y of [.6,3.4]) put(new THREE.CylinderGeometry(.095,.095,.08,10),M.iron,0,y,0);
+  put(new THREE.SphereGeometry(.085,10,8),M.iron,0,3.56,0);
+  put(B(.95,.055,.055),M.iron,.47,3.38,0);
+  put(new THREE.TorusGeometry(.19,.022,6,16,Math.PI*1.5),M.iron,.21,3.17,0,0,0,Math.PI*.25);
+  const lx=.86, ly=2.88;
+  put(new THREE.CylinderGeometry(.012,.012,.2,4),M.iron,lx,3.27,0);
+  put(new THREE.ConeGeometry(.24,.2,4),M.iron,lx,ly+.3,0,0,Math.PI/4,0);
+  put(B(.3,.04,.3),M.iron,lx,ly+.19,0); put(B(.26,.05,.26),M.iron,lx,ly-.2,0);
+  put(new THREE.ConeGeometry(.08,.1,4),M.iron,lx,ly-.28,0,Math.PI,Math.PI/4,0);
+  for (const [sx,sz] of [[1,1],[1,-1],[-1,1],[-1,-1]]) put(B(.03,.36,.03),M.iron,lx+sx*.12,ly,sz*.12);
+  put(B(.22,.34,.22),M.lantern,lx,ly,0);
+  vlHalo(g,lx,ly,0,1.9);
+  vlMerge(g);
+  const c=Math.cos(ry||0), sn=Math.sin(ry||0);
+  VL_COLL.push({x,z,r:.32}); VL_AO.push({x,z,r:.8,k:.35});
+  VL.camObs.push({x,z,r:.25,h:3.7},{x:x+c*lx,z:z-sn*lx,r:.45,h:3.4}); }
 function vlWell(x,z,par){ const M=vlMats(), g=new THREE.Group(), put=vlPutter(g), B=vlBox; g.position.set(x,0,z); par.add(g);
   put(vlUVScale(new THREE.CylinderGeometry(1.25,1.35,1.0,20,1,true),2*Math.PI*1.3/1.4,1/1.4),M.stone2,0,.5,0);
   put(new THREE.TorusGeometry(1.27,.16,8,24),M.stoneLight,0,1.0,0,Math.PI/2,0,0);
