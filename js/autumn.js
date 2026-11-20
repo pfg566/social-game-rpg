@@ -60,7 +60,7 @@ const TREES=[[-8,-6,1.15,'au'],[16,6,1.3,'au'],[-30,10,1.2,'au'],[22,-24,1.1,'yl
 const BUSHES=[[-4,1,'rd'],[-6.5,-1.5,'au'],[12,4,'au'],[14.5,1.5,'rd'],[-1,-11,'gr'],[13,-12,'gr'],[-12,8,'au'],[18,-4,'rd'],[-17,2,'gr'],[3,10,'au'],[-26,16,'rd'],[26,-14,'au'],[30,0,'gr'],[-10,-14,'rd'],[8,14,'gr'],[-34,4,'au'],[20,12,'rd']];
 const COLL=[];   // 부딪히는 곳 (원)
 TREES.forEach(t=>COLL.push({x:t[0],z:t[1],r:.7*t[2]}));
-function inHouse(x,z,pad){ for (const H of HOUSES){ const c=Math.cos(-H.r), s=Math.sin(-H.r), dx=x-H.x, dz=z-H.z, lx=dx*c-dz*s, lz=dx*s+dz*c; if (Math.abs(lx)<H.w/2+pad&&Math.abs(lz)<H.d/2+pad) return true; } return false; }
+function inHouse(x,z,pad){ for (const H of HOUSES){ const c=Math.cos(H.r), s=Math.sin(H.r), dx=x-H.x, dz=z-H.z, lx=dx*c-dz*s, lz=dx*s+dz*c; if (Math.abs(lx)<H.w/2+pad&&Math.abs(lz)<H.d/2+pad) return true; } return false; }
 
 /* ---------- 바닥 (흙길을 그린 큰 텍스처) ---------- */
 const MAP=140;
@@ -73,7 +73,7 @@ function groundTex(){
   stroke(pathPts,PATH_W*2+1.4,'#8a7a4e',10); stroke(pathPts,PATH_W*2,'#c9ad84',4);
   stroke(sidePts,2.4,'#8a7a4e',8); stroke(sidePts,1.7,'#b9a07a',3);
   for (let i=0;i<14000;i++){ const p=pathPts[(Math.random()*pathPts.length)|0]; const x=toPx(p.x+rnd(-PATH_W,PATH_W)), y=toPx(p.y+rnd(-PATH_W,PATH_W)); g.fillStyle=`rgba(${rnd(150,215)|0},${rnd(130,185)|0},${rnd(95,140)|0},.35)`; g.fillRect(x,y,rnd(1,4),rnd(1,4)); }
-  HOUSES.forEach(H=>{ g.save(); g.translate(toPx(H.x),toPx(H.z)); g.rotate(H.r); g.filter='blur(6px)'; g.fillStyle='#4a4a2a'; const w=(H.w+1.2)/MAP*N, d=(H.d+1.2)/MAP*N; g.fillRect(-w/2,-d/2,w,d); g.restore(); });
+  HOUSES.forEach(H=>{ g.save(); g.translate(toPx(H.x),toPx(H.z)); g.rotate(-H.r); g.filter='blur(6px)'; g.fillStyle='#4a4a2a'; const w=(H.w+1.2)/MAP*N, d=(H.d+1.2)/MAP*N; g.fillRect(-w/2,-d/2,w,d); g.restore(); });
   const t=new THREE.CanvasTexture(cv); t.encoding=THREE.sRGBEncoding; t.anisotropy=8; return t;
 }
 const ground=new THREE.Mesh(new THREE.PlaneGeometry(MAP,MAP),new THREE.MeshStandardMaterial({map:groundTex(),roughness:1}));
@@ -523,7 +523,7 @@ function frame(){
   if (moving){ const L=Math.hypot(ix,iz); ix/=L; iz/=L; const c=Math.cos(camYaw), s=Math.sin(camYaw), dx=ix*c+iz*s, dz=-ix*s+iz*c, sp=keys.ShiftLeft||keys.ShiftRight?7.5:4.2;
     P.x+=dx*sp*dt; P.z+=dz*sp*dt; const ty=Math.atan2(dx,dz); let d=ty-P.yaw; d=Math.atan2(Math.sin(d),Math.cos(d)); P.yaw+=d*Math.min(1,dt*12); }
   for (const c of COLL){ const dx=P.x-c.x, dz=P.z-c.z, d=Math.hypot(dx,dz), r=c.r+.35; if (d<r&&d>1e-4){ P.x=c.x+dx/d*r; P.z=c.z+dz/d*r; } }
-  for (const H of HOUSES){ const c=Math.cos(-H.r), s=Math.sin(-H.r); let lx=(P.x-H.x)*c-(P.z-H.z)*s, lz=(P.x-H.x)*s+(P.z-H.z)*c; const hw=H.w/2+.5, hd=H.d/2+.5;
+  for (const H of HOUSES){ const c=Math.cos(H.r), s=Math.sin(H.r); let lx=(P.x-H.x)*c-(P.z-H.z)*s, lz=(P.x-H.x)*s+(P.z-H.z)*c; const hw=H.w/2+.5, hd=H.d/2+.5;
     if (Math.abs(lx)<hw&&Math.abs(lz)<hd){ if (hw-Math.abs(lx)<hd-Math.abs(lz)) lx=Math.sign(lx)*hw; else lz=Math.sign(lz)*hd; P.x=H.x+lx*Math.cos(H.r)+lz*Math.sin(H.r); P.z=H.z-lx*Math.sin(H.r)+lz*Math.cos(H.r); } }
   const R=Math.hypot(P.x,P.z); if (R>62){ P.x*=62/R; P.z*=62/R; }
   P.vy-=18*dt; P.y=Math.max(0,P.y+P.vy*dt); if (P.y===0) P.vy=Math.max(0,P.vy);

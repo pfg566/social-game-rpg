@@ -8,6 +8,8 @@ const MOODS={
          bloom:[.8,.7,.72], grade:{sat:1.15,tint:[1.08,1.0,.88],lift:[.035,.018,0],con:1.05,vig:.46}, motes:[1.3,1.05,.7], size:.26},
  arctic:{name:'북극', exp:.72, grass:[0x2a5418,0x93c24c], sky:[0x5d97d6,0xb9dcf0,0xe8f3fa], fog:[0xe2eef7,40,150], hemi:[0xeef6ff,0x8fb0c8,.7], sun:[0xfff1dc,1.05,24,34,16], fill:[0xbfd8ff,.42],
          bloom:[.4,.55,.9], grade:{sat:1.12,tint:[.95,.99,1.06],lift:[.0,.008,.025],con:1.1,vig:.45}, motes:[1.15,1.2,1.35], size:.3},
+ village:{name:'노을 마을', exp:.95, grass:[0x3b4f1a,0xd9c25e], sky:[0x7fa1cf,0xffc58e,0xeab384], fog:[0xeab384,12,95], hemi:[0xffd8b0,0x6b5638,.6], sun:[0xffb46e,1.9,-29,14,-62], fill:[0xffc8a0,.18],
+         bloom:[.42,.7,.82], grade:{sat:1.08,tint:[1.03,1,.95],lift:[.012,.006,0],con:1.03,vig:.5}, motes:[1.3,1.05,.7], size:.26},
  dusk:  {name:'보랏빛 황혼', exp:.74, grass:[0x232a48,0x6a6f9c], sky:[0x1e2160,0x7a4fa8,0xf09a8c], fog:[0x8f6c9c,24,110], hemi:[0xc9b4ff,0x2c2645,.55], sun:[0xff8a66,1.0,-36,14,10], fill:[0x6f7cff,.6],
          bloom:[.95,.8,.62], grade:{sat:1.0,tint:[.95,.86,1.08],lift:[.015,0,.04],con:1.08,vig:.62}, motes:[.95,.95,1.5], size:.34},
 };
@@ -27,7 +29,7 @@ function applyMood(k){
 }
 
 /* 판마다 분위기를 무작위로 (방금 것과 다르게). 파티는 방 번호로 정해서 모두 같은 분위기 */
-const MOOD_KEYS=Object.keys(MOODS).filter(k=>k!=='arctic');   // 북극은 빙하 맵 전용
+const MOOD_KEYS=Object.keys(MOODS).filter(k=>k!=='arctic'&&k!=='village');   // 북극은 빙하 맵 전용
 function pickMood(seed){
   if (seed){ let h=0; for (const c of String(seed)) h=(h*31+c.charCodeAt(0))|0; return MOOD_KEYS[Math.abs(h)%MOOD_KEYS.length]; }
   const c=MOOD_KEYS.filter(k=>k!==MOOD); return c[Math.floor(Math.random()*c.length)];

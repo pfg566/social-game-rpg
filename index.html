@@ -7,7 +7,7 @@
 <style>body{margin:0}[hidden]{display:none!important}img{max-width:100%}</style>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jua&family=IBM+Plex+Sans+KR:wght@400;600;700&display=swap">
-<link rel="stylesheet" href="style.css?v=20261120k">
+<link rel="stylesheet" href="style.css?v=20261120l">
 </head>
 <body>
 
@@ -67,6 +67,12 @@
 <div class="cf-oven" id="cfOven" hidden><i></i><span>굽는 중…</span></div>
 <div class="cf-toast" id="cfToast"></div>
 <div id="cfBubs"></div>
+<div class="vl-hud card" id="vlHud" hidden><b>🏡 노을 마을</b><span class="vl-keys">WASD 걷기 · Shift 달리기 · 마우스 드래그로 둘러보기 · 휠 거리</span><button class="btn ghost small" id="vlLeave">로비로</button></div>
+<canvas id="vlMini" width="160" height="160" hidden></canvas>
+<div class="vl-clock" id="vlClock" hidden></div>
+<div class="vl-prompt card" id="vlPrompt" hidden></div>
+<button class="btn vl-call" id="vlCall" hidden></button>
+<div class="vl-toast" id="vlToast"></div>
 <div class="run-help card" id="cfHelp" hidden>WASD로 움직여요 · 주문서를 보고 화살표를 따라 재료 → 토핑 → 오븐 → 서빙 순서로 발판에 서 보세요 (📝 특별 메뉴는 정답을 직접 써요)</div>
 <div class="run-help card" id="runHelp" hidden>← → (A D) 줄 바꾸기 · 스페이스 점프 · 정답 색깔 문이 있는 줄로 통과!</div>
 <div class="run-hud card" id="stHud" hidden><span id="stLives">❤️❤️❤️</span><b id="stProg"></b><span id="stScore">0점</span></div>
@@ -268,6 +274,7 @@
     </div>
   </div>
   <button class="btn ghost shopbtn shopcorner lobby" id="shopBtn" disabled>🎒 상점 · 꾸미기</button>
+  <button class="btn ghost shopbtn shopcorner vilcorner lobby" id="vilBtn" disabled>🏡 노을 마을<small>시험 중</small></button>
   <div class="partypanel card" id="partyPanel" hidden>
     <div class="pp-top"><h2>👥 파티 모드 · 점령전</h2><button class="btn small ghost" id="ppClose">닫기</button></div>
     <div id="ppList">
@@ -468,38 +475,39 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="firebase-config.js"></script>
-<script src="js/01-data.js?v=20261120k"></script>
-<script src="js/02-graphics.js?v=20261120k"></script>
-<script src="js/02m-mood.js?v=20261120k"></script>
-<script src="js/03-world.js?v=20261120k"></script>
-<script src="js/04-island.js?v=20261120k"></script>
-<script src="js/04g-glacier.js?v=20261120k"></script>
-<script src="js/04r-runner.js?v=20261120k"></script>
-<script src="js/04s-stage.js?v=20261120k"></script>
-<script src="js/04t-teamwar.js?v=20261120k"></script>
-<script src="js/04L-live.js?v=20261120k"></script>
-<script src="js/04c-cafe.js?v=20261120k"></script>
-<script src="js/05-play.js?v=20261120k"></script>
-<script src="js/06-jobs.js?v=20261120k"></script>
-<script src="js/06p-player.js?v=20261120k"></script>
-<script src="js/07-quiz.js?v=20261120k"></script>
-<script src="js/07b-prep.js?v=20261120k"></script>
-<script src="js/07c-fun.js?v=20261120k"></script>
-<script src="js/08-hud.js?v=20261120k"></script>
-<script src="js/09-server.js?v=20261120k"></script>
-<script src="js/09k-kick.js?v=20261120k"></script>
-<script src="js/09o-online.js?v=20261120k"></script>
-<script src="js/10-shop.js?v=20261120k"></script>
-<script src="js/10w-wings.js?v=20261120k"></script>
-<script src="js/10p-pets.js?v=20261120k"></script>
-<script src="js/10e-eggs.js?v=20261120k"></script>
-<script src="js/10f-face.js?v=20261120k"></script>
-<script src="js/10a-ach.js?v=20261120k"></script>
-<script src="js/11-gate-editor.js?v=20261120k"></script>
-<script src="js/12-lobby.js?v=20261120k"></script>
-<script src="js/13-loop.js?v=20261120k"></script>
-<script src="js/14-party.js?v=20261120k"></script>
-<script src="js/15-board.js?v=20261120k"></script>
-<script src="js/16-notes.js?v=20261120k"></script>
+<script src="js/01-data.js?v=20261120l"></script>
+<script src="js/02-graphics.js?v=20261120l"></script>
+<script src="js/02m-mood.js?v=20261120l"></script>
+<script src="js/03-world.js?v=20261120l"></script>
+<script src="js/04-island.js?v=20261120l"></script>
+<script src="js/04g-glacier.js?v=20261120l"></script>
+<script src="js/04r-runner.js?v=20261120l"></script>
+<script src="js/04s-stage.js?v=20261120l"></script>
+<script src="js/04t-teamwar.js?v=20261120l"></script>
+<script src="js/04L-live.js?v=20261120l"></script>
+<script src="js/04c-cafe.js?v=20261120l"></script>
+<script src="js/04v-village.js?v=20261120l"></script>
+<script src="js/05-play.js?v=20261120l"></script>
+<script src="js/06-jobs.js?v=20261120l"></script>
+<script src="js/06p-player.js?v=20261120l"></script>
+<script src="js/07-quiz.js?v=20261120l"></script>
+<script src="js/07b-prep.js?v=20261120l"></script>
+<script src="js/07c-fun.js?v=20261120l"></script>
+<script src="js/08-hud.js?v=20261120l"></script>
+<script src="js/09-server.js?v=20261120l"></script>
+<script src="js/09k-kick.js?v=20261120l"></script>
+<script src="js/09o-online.js?v=20261120l"></script>
+<script src="js/10-shop.js?v=20261120l"></script>
+<script src="js/10w-wings.js?v=20261120l"></script>
+<script src="js/10p-pets.js?v=20261120l"></script>
+<script src="js/10e-eggs.js?v=20261120l"></script>
+<script src="js/10f-face.js?v=20261120l"></script>
+<script src="js/10a-ach.js?v=20261120l"></script>
+<script src="js/11-gate-editor.js?v=20261120l"></script>
+<script src="js/12-lobby.js?v=20261120l"></script>
+<script src="js/13-loop.js?v=20261120l"></script>
+<script src="js/14-party.js?v=20261120l"></script>
+<script src="js/15-board.js?v=20261120l"></script>
+<script src="js/16-notes.js?v=20261120l"></script>
 </body>
 </html>

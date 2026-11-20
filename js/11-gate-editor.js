@@ -217,7 +217,7 @@ function setMap(k){
   MAPK=k;
   ensureMap(k);
   for (const g in mapGroups) mapGroups[g].visible=g===k;
-  bgGroup.visible=!['island','glacier','runner','stage','teamwar','live','cafe'].includes(k); ground.visible=!['glacier','runner','stage','teamwar','live','cafe'].includes(k);
+  bgGroup.visible=!['island','glacier','runner','stage','teamwar','live','cafe','village'].includes(k); ground.visible=!['glacier','runner','stage','teamwar','live','cafe','village'].includes(k);
   colliders=MAPSTATE[k].colliders; stations=MAPSTATE[k].stations; npcs=MAPSTATE[k].npcs;
   WAVES=wavesFor(k==='zones'?(MAPS.zones.waves||'zones'):k);
   const M=MAPS[k];

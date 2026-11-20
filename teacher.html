@@ -1596,7 +1596,7 @@ async function lvCsv(){
 /* 👥 지금 접속 중 (동시 접속자) */
 let ONLD={};
 function watchOnline(){ db.ref('online').on('value',s=>{ ONLD=s.val()||{}; renderOnline(); },()=>{ $('#onlSum').textContent='👥 접속자 수를 불러오지 못했어요'; $('#onlSub').textContent='새 보안 규칙(database.rules.json)을 Firebase에 올렸는지 확인해 주세요.'; }); }
-const ONL_MODE={zones:'세 거점',general:'들판 마을',glacier:'녹는 빙하',defense:'성벽 디펜스',island:'서비스업 섬','island-p':'택배 배달',runner:'정답 러너',cafe:'디저트 카페','defense-p':'성 지휘관',party:'파티',stage:'발판 서바이벌',teamwar:'조별 점령전',live:'수업 모드',conquest:'파티'};
+const ONL_MODE={zones:'세 거점',general:'들판 마을',glacier:'녹는 빙하',defense:'성벽 디펜스',island:'서비스업 섬','island-p':'택배 배달',runner:'정답 러너',cafe:'디저트 카페','defense-p':'성 지휘관',party:'파티',stage:'발판 서바이벌',teamwar:'조별 점령전',live:'수업 모드',conquest:'파티',village:'노을 마을'};
 function renderOnline(){
   const now=pNow(), by={}; let tot=0, play=0;
   for (const cid in ONLD) for (const u in ONLD[cid]){ const o=ONLD[cid][u]; if (!o||now-(+o.t||0)>90000) continue; (by[cid]=by[cid]||[]).push(o); tot++; if (o.s==='play') play++; }
