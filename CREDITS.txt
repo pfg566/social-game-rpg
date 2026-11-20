@@ -1,3 +1,5 @@
 3D 모델: KayKit (Kay Lousberg, www.kaylousberg.com) — CC0, 교육·상업 용도 자유 이용
   - Adventurers Character Pack 1.0, Skeletons Character Pack 1.0, Medieval Hexagon Pack 1.0
 3D 엔진: three.js r128 (MIT)
+
+자연 에셋(나무 · 덤불 · 풀 · 꽃 · 바위): Quaternius — Stylized Nature MegaKit (Standard) — CC0, 교육·상업 용도 자유 이용

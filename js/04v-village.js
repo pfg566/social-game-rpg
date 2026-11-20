@@ -121,6 +121,7 @@ function buildVillage(){
     const L=Math.hypot(x,y,z)||1, k=Math.pow(L,.35)/L; x*=k; y*=k; z*=k; const col=VL_LIN(pal[(vlR()*pal.length)|0]).multiplyScalar((.8+.35*(y+1)/2)*vlS(.85,1.1));
     cards.push({p:new THREE.Vector3(cx+x*rx,cy+y*ry,cz+z*rz),r:new THREE.Euler(vlS(0,6.3),vlS(0,6.3),vlS(0,6.3)),s:vlS(a,b),c:col,n:new THREE.Vector3(x,y*.8+.25,z).normalize()}); } };
   vlSeed=3;
+  if (VL.natOK) vlNatureTrees(add); else {
   VL_TREES.forEach(([x,z,s,kind])=>{ const th=4.2*s, tr=add(new THREE.Mesh(new THREE.CylinderGeometry(.22*s,.42*s,th,9),bark)); tr.position.set(x,th/2,z); tr.castShadow=tr.receiveShadow=true;
     const pal=PAL[kind]; crown(x,th+1.5*s,z,3.4*s,2.5*s,3.4*s,Math.round(240*s),pal,1.4*s,2.1*s);
     for (let i=0;i<4;i++){ const a=i/4*Math.PI*2+vlS(0,1), len=vlS(2,3)*s, tilt=vlS(.6,1), b=new THREE.Mesh(new THREE.CylinderGeometry(.08*s,.16*s,len,6),bark);
@@ -139,6 +140,7 @@ function buildVillage(){
       for (let j=0;j<3;j++){ M.compose(new THREE.Vector3(x,(2.2+j*1.5)*s,z),q,new THREE.Vector3((2.2-j*.55)*s,(2.6-j*.3)*s,(2.2-j*.55)*s)); m.setMatrixAt(k,M); m.setColorAt(k,VL_LIN(['#2f5e34','#3a6d3c','#2a5530'][j])); k++; }
       const tr=add(new THREE.Mesh(new THREE.CylinderGeometry(.2*s,.3*s,2*s,7),bark)); tr.position.set(x,s,z); tr.castShadow=true; VL_COLL.push({x,z,r:.5*s}); });
     m.count=k; m.castShadow=true; m.receiveShadow=true; add(m); }
+  }
 
   /* 집 */
   const stone=new THREE.MeshStandardMaterial({color:0x9a958c,roughness:1}), white=new THREE.MeshStandardMaterial({color:0xe6e1d6,roughness:.9});
@@ -243,7 +245,7 @@ function buildVillage(){
     m.castShadow=m.receiveShadow=true; add(m); }
   for (const x of [5,8.4]){ mesh(R,new THREE.BoxGeometry(.75,1.7,.75),white,x,.85,-12.4); mesh(R,new THREE.BoxGeometry(.95,.18,.95),white,x,1.78,-12.4); mesh(R,new THREE.SphereGeometry(.26,14,10),white,x,2.1,-12.4); VL_COLL.push({x,z:-12.4,r:.55}); }
   mesh(R,new THREE.BoxGeometry(1.4,1.1,.08),wood,5.75,.65,-11.8).rotation.y=-1.1;
-  { const nn=26, m=new THREE.InstancedMesh(new THREE.BoxGeometry(1,1,1),new THREE.MeshStandardMaterial({color:0xd3cec4,roughness:1}),nn*2), M=new THREE.Matrix4(), q=new THREE.Quaternion(), e=new THREE.Euler(); let k=0;
+  if (VL.natOK) vlNatureGround(); else { const nn=26, m=new THREE.InstancedMesh(new THREE.BoxGeometry(1,1,1),new THREE.MeshStandardMaterial({color:0xd3cec4,roughness:1}),nn*2), M=new THREE.Matrix4(), q=new THREE.Quaternion(), e=new THREE.Euler(); let k=0;
     for (let i=0;i<nn;i++){ const p=VL_SIDEC.getPoint(i/(nn-1)); for (let j=0;j<2;j++){ if (j&&vlR()<.4) continue; e.set(0,vlS(0,3),0); q.setFromEuler(e);
       M.compose(new THREE.Vector3(p.x+vlS(-.45,.45),.05,p.y+vlS(-.3,.3)),q,new THREE.Vector3(vlS(.55,.8),.12,vlS(.4,.6))); m.setMatrixAt(k,M); m.setColorAt(k,VL_LIN(['#d6d1c6','#c8c2b6','#e0dbd0'][k%3])); k++; } }
     m.count=k; m.receiveShadow=m.castShadow=true; add(m); }
@@ -254,10 +256,11 @@ function buildVillage(){
       m.setColorAt(k,VL_LIN(kind==='lav'?['#8a6fd1','#9b7fe0','#7a5fc0'][k%3]:kind==='daisy'?'#ffffff':['#f5c934','#f8d64e','#eeb92a'][k%3])); k++; }
     m.count=k; add(m); };
   const cl=(cs,sp)=>()=>{ const c=cs[(Math.random()*cs.length)|0], a=Math.random()*7, r=Math.sqrt(Math.random())*sp; return [c[0]+Math.cos(a)*r,c[1]+Math.sin(a)*r]; };
+  if (VL.natOK){ flowers('lav',350,cl([[-9,2],[2,-10],[12,-10],[-18,-2],[18,8],[-4,12],[-28,12],[8,-14]],2.6)); flowers('daisy',500,cl([[0,9],[6,9],[-3,4],[10,-2],[-12,10],[14,-6],[-6,-10],[22,4],[-16,20]],3.4)); } else {
   flowers('lav',900,cl([[-9,2],[2,-10],[12,-10],[-18,-2],[18,8],[-4,12],[-28,12],[8,-14]],3.2));
   flowers('daisy',1100,cl([[0,9],[6,9],[-3,4],[10,-2],[-12,10],[14,-6],[-6,-10],[22,4],[-16,20]],4));
-  flowers('yel',1300,cl([[-6,-4],[3,-11],[11,-15],[-1,-15],[16,-8],[-20,4],[-12,16],[6,16]],3.5));
-  for (let i=0;i<18;i++){ const a=vlS(0,7), r=vlS(6,50), x=Math.cos(a)*r, z=Math.sin(a)*r; if (vlPolyD(VL_PATHP,x,z)<VL_PATH_W+.8||vlInHouse(x,z,1)) continue;
+  flowers('yel',1300,cl([[-6,-4],[3,-11],[11,-15],[-1,-15],[16,-8],[-20,4],[-12,16],[6,16]],3.5)); }
+  if (!VL.natOK) for (let i=0;i<18;i++){ const a=vlS(0,7), r=vlS(6,50), x=Math.cos(a)*r, z=Math.sin(a)*r; if (vlPolyD(VL_PATHP,x,z)<VL_PATH_W+.8||vlInHouse(x,z,1)) continue;
     const s=vlS(.4,1.1), m=mesh(R,new THREE.DodecahedronGeometry(s,0),stone,x,s*.35,z); m.scale.y=.6; m.rotation.set(vlS(0,3),vlS(0,3),0); }
   // 소품
   const lamp=VL.lampMat=new THREE.MeshStandardMaterial({color:0xfff0c0,emissive:0xffc060,emissiveIntensity:1.6,roughness:.5});
@@ -293,7 +296,80 @@ MAP_BUILD.village=()=>buildVillage();
 GRASS_OK.village=null;
 
 /* ---------- 들어가기 · 나가기 ---------- */
-function villageJoin(){ if (!assetsReady||W.state==='play') return; VL.joining=true; startGame(); VL.joining=false; }
+function villageJoin(){ if (!assetsReady||W.state==='play'||VL.loading) return;
+  if (!VL.natDone){ const b=$('#vilBtn'), t=b&&b.innerHTML; VL.loading=true; if (b){ b.disabled=true; b.innerHTML='🏡 마을 불러오는 중…'; }
+    vlLoadNature().then(()=>{ VL.loading=false; if (b){ b.innerHTML=t; b.disabled=false; } if (W.state!=='play'&&!$('#title').hidden) villageJoin(); }); return; }
+  VL.joining=true; startGame(); VL.joining=false; }
+
+/* ---------- 자연 에셋 (Quaternius · Stylized Nature MegaKit, CC0) ---------- */
+const VL_NAT=['CommonTree_1','CommonTree_2','CommonTree_3','CommonTree_4','CommonTree_5','TwistedTree_1','TwistedTree_3','Pine_1','Pine_2','Pine_4',
+  'Bush_Common','Bush_Common_Flowers','Grass_Common_Short','Grass_Common_Tall','Grass_Wispy_Short','Grass_Wispy_Tall','Flower_3_Group','Flower_4_Group',
+  'Fern_1','Plant_1_Big','Clover_2','Rock_Medium_1','Rock_Medium_2','Rock_Medium_3','Pebble_Round_1','Pebble_Round_2','Pebble_Round_3','Mushroom_Common',
+  'RockPath_Round_Small_1','RockPath_Round_Small_2','RockPath_Round_Small_3'];
+VL.nat={};
+function vlLoadNature(){
+  if (VL.natP) return VL.natP;
+  const L=new THREE.GLTFLoader(), TL=new THREE.TextureLoader(), white={};
+  const whiteTex=n=>{ if (!white[n]){ const t=TL.load('env/nature/tex/'+n+'.png'); t.encoding=THREE.sRGBEncoding; t.flipY=false; t.anisotropy=4; white[n]=t; } return white[n]; };
+  const one=n=>new Promise(res=>L.load('env/nature/'+n+'.gltf',g=>{ g.scene.updateMatrixWorld(true); const parts=[];
+    g.scene.traverse(o=>{ if (!o.isMesh) return; const m=o.material, leaf=/Leaves|Leaf_Pine|Grass|Flowers/.test(m.name);
+      if (m.map) m.map.anisotropy=4;
+      if (leaf){ m.alphaTest=.45; m.side=THREE.DoubleSide; m.transparent=false;
+        if (m.name==='Leaves_NormalTree') m.map=whiteTex('Leaves_NormalTree'); if (m.name==='Leaves_TwistedTree') m.map=whiteTex('Leaves_TwistedTree');
+        m.onBeforeCompile=sh=>{ sh.uniforms.uTime=VL.U?VL.U.uTime:{value:0}; sh.vertexShader='uniform float uTime;\n'+sh.vertexShader.replace('#include <begin_vertex>',
+          '#include <begin_vertex>\n#ifdef USE_INSTANCING\n float ph=instanceMatrix[3].x*.37+instanceMatrix[3].z*.29;\n#else\n float ph=0.;\n#endif\n float hh=max(position.y,0.); transformed.x+=sin(uTime*1.5+ph)*.035*hh; transformed.z+=cos(uTime*1.2+ph*1.3)*.035*hh;'); };
+        m.customProgramCacheKey=()=>'vlwind'+m.name; }
+      m.roughness=.9; m.metalness=0; if (m.name==='PathRocks') m.color.setRGB(1.45,1.4,1.32); if (m.name==='Rocks') m.color.setRGB(1.2,1.15,1.08);
+      parts.push({geo:o.geometry,mat:m,m:o.matrixWorld.clone(),leaf,tint:m.name==='Leaves_NormalTree'||m.name==='Leaves_TwistedTree'}); });
+    VL.nat[n]=parts; res(); },undefined,()=>res()));
+  VL.natP=Promise.all(VL_NAT.map(one)).then(()=>{ VL.natOK=Object.keys(VL.nat).length>=VL_NAT.length-3; VL.natDone=true; });
+  return VL.natP;
+}
+/* 모델 하나를 여러 곳에 (InstancedMesh). P: [{x,y,z,ry,s,c}] · c는 잎 색 */
+function vlInst(name,P,opt){
+  const parts=VL.nat[name]; if (!parts||!P.length) return;
+  const M=new THREE.Matrix4(), T=new THREE.Matrix4(), q=new THREE.Quaternion(), e=new THREE.Euler(), S=new THREE.Vector3(), V=new THREE.Vector3();
+  parts.forEach(pt=>{ const im=new THREE.InstancedMesh(pt.geo,pt.mat,P.length);
+    P.forEach((p,i)=>{ e.set(0,p.ry||0,0); q.setFromEuler(e); S.setScalar(p.s||1); T.compose(V.set(p.x,p.y||0,p.z),q,S); M.multiplyMatrices(T,pt.m); im.setMatrixAt(i,M);
+      if (pt.tint) im.setColorAt(i,p.c||new THREE.Color(1,1,1)); });
+    const sh=!opt||opt.shadow!==false; im.castShadow=sh; im.receiveShadow=true; im.frustumCulled=false;
+    if (pt.leaf&&sh) im.customDepthMaterial=new THREE.MeshDepthMaterial({depthPacking:THREE.RGBADepthPacking,map:pt.mat.map,alphaTest:.45,side:THREE.DoubleSide});
+    if (opt&&opt.lod){ (VL.lod=VL.lod||[]).push({im,n:P.length}); }
+    scene.add(im); });
+}
+const VL_TINT={au:['#e8572a','#f07a2c','#f39a34','#d9432a','#ee6a2a'],rd:['#e4502e','#d8432a','#ee6234'],yl:['#f2b13c','#f6c94e','#eba232'],gr:['#7cae46','#8fbd4f','#6a9e3c']};
+const vlTint=k=>VL_LIN(VL_TINT[k][(vlR()*VL_TINT[k].length)|0]).multiplyScalar(vlS(.9,1.08));
+function vlFree(x,z,pad){ if (vlPolyD(VL_PATHP,x,z)<VL_PATH_W+pad||vlPolyD(VL_SIDEP,x,z)<1+pad*.6||vlInHouse(x,z,pad)) return false; for (const d of VL_DOORS) if (Math.hypot(x-d.x,z-d.z)<2.4) return false; return Math.hypot(x-VL_PORTAL.x,z-VL_PORTAL.z)>4.5; }
+function vlNatureTrees(){
+  vlSeed=3; const by={};
+  const put=(n,p)=>(by[n]=by[n]||[]).push(p);
+  VL_TREES.forEach(([x,z,s,kind],i)=>{ const big=(i===1||i===6); put(big?'TwistedTree_'+(i===1?1:3):'CommonTree_'+(1+i%5),{x,z,ry:vlS(0,6.3),s:big?s*.62:s*1.05,c:vlTint(kind)}); });
+  VL_BUSHES.forEach(([x,z,kind])=>{ const s=vlS(1.0,1.45); put(kind==='gr'&&vlR()<.6?'Bush_Common_Flowers':'Bush_Common',{x,z,ry:vlS(0,6.3),s,c:vlTint(kind)}); VL_COLL.push({x,z,r:1.0*s}); });
+  for (let i=0;i<80;i++){ const a=i/80*Math.PI*2+vlS(-.04,.04), r=vlS(66,90); put('Ring_'+(1+(vlR()*5|0)),{x:Math.cos(a)*r,z:Math.sin(a)*r,ry:vlS(0,6.3),s:vlS(1.2,1.9),c:vlTint(['au','yl','au','rd','gr'][(vlR()*5)|0])}); }
+  vlSeed=31; for (let i=0;i<30;i++){ const a=vlS(0,6.3), r=vlS(38,64), x=Math.cos(a)*r, z=Math.sin(a)*r, s=vlS(1,1.5); if (!vlFree(x,z,2)||Math.hypot(x-VL_PORTAL.x,z-VL_PORTAL.z)<9) continue; put('Pine_'+[1,2,4][i%3],{x,z,ry:vlS(0,6.3),s}); VL_COLL.push({x,z,r:.5*s}); }
+  [[-16,-30,1.3],[-30,-26,1.5],[-36,-20,1.2]].forEach(([x,z,s],i)=>{ put('Pine_'+[1,2,4][i],{x,z,ry:vlS(0,6.3),s}); VL_COLL.push({x,z,r:.5*s}); });
+  for (const n in by){ const ring=n.startsWith('Ring_'); vlInst(ring?'CommonTree_'+n.slice(5):n,by[n],{shadow:!ring}); }
+}
+function vlNatureGround(){
+  vlSeed=51; const by={}, put=(n,p)=>(by[n]=by[n]||[]).push(p);
+  // 집으로 가는 디딤돌
+  for (let i=0;i<22;i++){ const p=VL_SIDEC.getPoint(i/21); put('RockPath_Round_Small_'+(1+i%3),{x:p.x+vlS(-.25,.25),y:.02,z:p.y+vlS(-.2,.2),ry:vlS(0,6.3),s:vlS(.85,1.1)}); }
+  // 풀 뭉치 · 꽃 · 고사리 · 클로버 · 버섯 · 바위 · 자갈
+  const scatter=(n,cnt,R,pad,sMin,sMax,clump)=>{ let k=0, t=0; while (k<cnt&&t<cnt*30){ t++; let x,z;
+      if (clump){ const c=clump[(vlR()*clump.length)|0], a=vlS(0,6.3), r=Math.sqrt(vlR())*c[2]; x=c[0]+Math.cos(a)*r; z=c[1]+Math.sin(a)*r; } else { const a=vlS(0,6.3), r=Math.sqrt(vlR())*R; x=Math.cos(a)*r; z=Math.sin(a)*r; }
+      if (!vlFree(x,z,pad)) continue; let bad=false; for (const c of VL_COLL) if (Math.hypot(x-c.x,z-c.z)<c.r*.7){ bad=true; break; } if (bad) continue;
+      put(n,{x,z,ry:vlS(0,6.3),s:vlS(sMin,sMax)}); k++; } };
+  const edge=[]; VL_PATHP.forEach((p,i)=>{ if (i%3) return; edge.push([p.x,p.y,4.2]); });
+  scatter('Grass_Wispy_Tall',500,56,.3,.3,.5); scatter('Grass_Wispy_Short',600,56,.2,.3,.5); scatter('Grass_Common_Tall',400,56,.3,.26,.42); scatter('Grass_Common_Short',500,30,.1,.3,.45,edge);
+  const trees=VL_TREES.map(t=>[t[0],t[1],4.5]);
+  scatter('Fern_1',40,0,.5,.1,.15,trees); scatter('Plant_1_Big',35,0,.5,.22,.32,trees); scatter('Mushroom_Common',40,0,.4,.6,.95,trees); scatter('Clover_2',90,50,.3,.35,.5);
+  scatter('Flower_3_Group',110,0,.3,.28,.4,[[0,9,4],[6,9,3],[-3,4,3],[10,-2,3],[-12,10,3],[14,-6,3],[22,4,3],[-16,20,3]]);
+  scatter('Flower_4_Group',110,0,.3,.26,.38,[[-6,-4,3],[3,-11,2.5],[11,-15,2.5],[16,-8,3],[-20,4,3],[-12,16,3],[6,16,3],[-9,2,3]]);
+  for (let i=0;i<16;i++){ const a=vlS(0,7), r=vlS(8,52), x=Math.cos(a)*r, z=Math.sin(a)*r; if (!vlFree(x,z,1)) continue; const s=vlS(.35,.8); put('Rock_Medium_'+(1+i%3),{x,z,ry:vlS(0,6.3),s}); VL_COLL.push({x,z,r:1.3*s}); }
+  for (let i=0;i<130;i++){ const p=VL_PATHP[(vlR()*VL_PATHP.length)|0], a=vlS(0,6.3), r=VL_PATH_W+vlS(-.1,.7); put('Pebble_Round_'+(1+i%3),{x:p.x+Math.cos(a)*r,y:.01,z:p.y+Math.sin(a)*r,ry:vlS(0,6.3),s:vlS(.5,1.1)}); }
+  const noShadow=n=>/Grass|Clover|Pebble|Flower|Fern|Plant|Mushroom|RockPath/.test(n);
+  for (const n in by) vlInst(n,by[n],{shadow:!noShadow(n),lod:/Grass|Clover|Flower/.test(n)});
+}
 function villageReset(){
   document.body.classList.remove('village'); ['#vlHud','#vlPrompt','#vlCall','#vlMini','#vlClock'].forEach(s=>{ const e=$(s); if (e) e.hidden=true; });
   if (MAPK!=='village'){ if (VL.on) vlRestore(); VL.on=false; return; }
@@ -304,12 +380,13 @@ function villageReset(){
   camera.fov=55; camera.updateProjectionMatrix();
   vlSetSky(false); if (VL.rays) VL.rays.enabled=QCUR!=='low';
   const C=QUALITY[QCUR]||QUALITY.medium; if (VL.grass) VL.grass.geometry.instanceCount=Math.floor(VL.grass.geometry.userData.max*Math.max(.25,C.grass));
+  (VL.lod||[]).forEach(L=>{ L.im.count=Math.floor(L.n*(QCUR==='high'?1:QCUR==='medium'?.6:.2)); });
   document.body.classList.add('village'); $('#vlHud').hidden=false; $('#vlMini').hidden=false; $('#vlClock').hidden=false;
   VL.t0=performance.now();
   setTimeout(()=>{ if (MAPK==='village'&&W.state==='play') showBanner('🏡 노을 마을에 왔어요'); },300);
 }
 function vlRestore(){ pg.scale.setScalar(1); camera.fov=42; camera.updateProjectionMatrix(); vlSetSky(true); if (VL.rays) VL.rays.enabled=false; }
-function vlSetSky(on){ scene.children.forEach(o=>{ if (o.material===SKY) o.visible=on; }); }
+function vlSetSky(on){ scene.children.forEach(o=>{ if (o.material===SKY) o.visible=on; }); try{ clouds.forEach(c=>c.visible=on); }catch(e){} }
 function villageEndUI(){ document.body.classList.remove('village'); ['#vlHud','#vlPrompt','#vlCall','#vlMini','#vlClock'].forEach(s=>{ const e=$(s); if (e) e.hidden=true; }); vlRestore(); }
 function villageLeave(after){
   VL.on=false; villageEndUI(); W.state='end'; W.paused=true;
