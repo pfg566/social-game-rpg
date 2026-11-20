@@ -173,15 +173,21 @@ const TYPES={
   ox:{label:'O/X',desc:'몬스터가 떨어뜨린 지식 카드를 주우면 나와요. 10초 안에 풀어야 해요.',
       cols:['문장','정답(O/X)','해설']},
   cls:{label:'분류',desc:'어떤 변화가 "공장이 들어선 지역"과 "공장이 빠져나간 지역" 중 어디의 모습인지 고르는 문제예요. 지식 카드에서 나와요.',
-      cols:['변화 문장','정답(들어선/빠져나간)','해설']}
+      cols:['변화 문장','정답(들어선/빠져나간)','해설']},
+  sa:{label:'단답형',desc:'퀴즈 창에서는 정답을 직접 써요(띄어쓰기 무시 · 막히면 초성 힌트). 러너 · 카페 · 발판처럼 몸으로 고르는 모드에서는 같은 단원의 다른 답들로 보기 4개를 자동으로 만들어요. 정답이 여러 개면 | 로 나눠 써요 (예: 지방 의회|의회).',
+      cols:['문제','정답(여러 개면 | 로)','해설']},
+  ord:{label:'순서 맞히기',desc:'항목을 일어난 순서(또는 정해진 순서)대로 3~5개 써요. 퀴즈 창에서는 카드를 순서대로 누르고, 몸으로 고르는 모드에서는 "A → B → C" 보기 4개 중에서 골라요.',
+      cols:['문제','1번째','2번째','3번째','4번째','5번째','해설']},
+  cmb:{label:'보기 조합(ㄱㄴㄷ)',desc:'보기 ㄱ~ㄹ(3~4개) 중 옳은 것을 모두 고르는 문제예요. 정답 칸에는 옳은 보기 글자를 써요 (예: ㄱ,ㄷ). 퀴즈 창에서는 직접 모두 고르고, 몸으로 고르는 모드에서는 "ㄱ, ㄷ" 같은 조합 보기 4개 중에서 골라요.',
+      cols:['문제','ㄱ','ㄴ','ㄷ','ㄹ','정답(예: ㄱ,ㄷ)','해설']}
 };
 const ZOPTS=[['hq','본사'],['lab','연구소'],['fac','생산 공장'],['any','공통']];
 function zopts(){ const c=zcfgOf(curU()); return [['hq',c.n[0]],['lab',c.n[1]],['fac',c.n[2]],['any','공통']]; }
 const DEFAULT_UNIT_NAME='중3 사회2 · IX-2 다국적 기업의 공간적 분업';
-const defaultBank=()=>JSON.parse(JSON.stringify({mc:DEF_MC,ox:DEF_OX,cls:DEF_CLS,loc:DEF_LOC}));
-const emptyBank=()=>({mc:[],ox:[],cls:[],loc:[]});
+const defaultBank=()=>JSON.parse(JSON.stringify({mc:DEF_MC,ox:DEF_OX,cls:DEF_CLS,loc:DEF_LOC,sa:[],ord:[],cmb:[]}));
+const emptyBank=()=>({mc:[],ox:[],cls:[],loc:[],sa:[],ord:[],cmb:[]});
 const isReady=u=>MAPS[mapOf(u)].need.every(k=>u.bank[k].length>0);
-const countOf=b=>b.mc.length+b.loc.length+b.ox.length+b.cls.length;
+const countOf=b=>b.mc.length+b.loc.length+b.ox.length+b.cls.length+(b.sa||[]).length+(b.ord||[]).length+(b.cmb||[]).length;
 
 /* 저장 형식: {version:2, active, units:[{id,name,bank}]} — 예전 형식(문제은행 하나)도 첫 단원으로 읽어요 */
 function normalize(d){
@@ -189,7 +195,7 @@ function normalize(d){
   if (d && d.units && typeof d.units==='object'){
     const arr=x=>Array.isArray(x)?x.filter(Boolean):(x&&typeof x==='object'?Object.values(x):[]);
     const units=arr(d.units).filter(u=>u&&typeof u.id==='string').map(u=>{ const b=u.bank||{}; return {id:u.id,name:String(u.name||'이름 없는 단원'),map:MAPS[u.map]?u.map:(u.id==='u1'?'zones':'general'),sch:String(u.sch||'').slice(0,30),grade:[1,2,3].includes(+u.grade)?+u.grade:0,...(u.zcfg&&typeof u.zcfg==='object'?{zcfg:zcfgOf(u)}:{}),
-      bank:{mc:arr(b.mc).map(x=>({...x,o:arr(x.o)})),ox:arr(b.ox),cls:arr(b.cls),loc:arr(b.loc)}}; });
+      bank:{mc:arr(b.mc).map(x=>({...x,o:arr(x.o)})),ox:arr(b.ox),cls:arr(b.cls),loc:arr(b.loc),sa:arr(b.sa),ord:arr(b.ord).map(x=>({...x,it:arr(x.it)})),cmb:arr(b.cmb).map(x=>({...x,s:arr(x.s)}))}}; });
     if (units.length){ const active=units.some(u=>u.id===d.active&&isReady(u))?d.active:(units.find(isReady)||units[0]).id; const su=d.settings&&typeof d.settings.submitUrl==='string'&&/^https:\/\//.test(d.settings.submitUrl)?d.settings.submitUrl:''; return {version:2,active,units,settings:{submitUrl:su}}; }
   }
   return null;
@@ -349,7 +355,7 @@ assetsPromise.then(()=>{ buildWorld(); WORLD_READY=true; ensureMap(MAPK); applyL
 
 const curU=()=>ED.units.find(u=>u.id===edUnit);
 const B=()=>curU().bank;
-const blankItem={mc:()=>({z:'any',q:'',o:['','','',''],e:''}),loc:()=>({q:'',a:'hq',e:''}),ox:()=>({q:'',a:true,e:''}),cls:()=>({q:'',a:0,e:''})};
+const blankItem={mc:()=>({z:'any',q:'',o:['','','',''],e:''}),loc:()=>({q:'',a:'hq',e:''}),ox:()=>({q:'',a:true,e:''}),cls:()=>({q:'',a:0,e:''}),sa:()=>({q:'',a:'',e:''}),ord:()=>({q:'',it:['','','','',''],e:''}),cmb:()=>({q:'',s:['','','',''],a:'',e:''})};
 function fieldHTML(t,item,i){
   const inp=(f,label,val,cls='',sub)=>`<label class="fld ${cls}"><span${sub===0?' class="ans"':''}>${label}</span><input data-i="${i}" data-f="${f}"${sub!==undefined?` data-s="${sub}"`:''} value="${esc(String(val))}"></label>`;
   const area=(label,val)=>`<label class="fld wide"><span>${label}</span><textarea data-i="${i}" data-f="q" rows="2">${esc(val)}</textarea></label>`;
@@ -358,6 +364,9 @@ function fieldHTML(t,item,i){
     area('문제',item.q)+inp('o','정답',item.o[0]||'','',0)+inp('o','오답 1',item.o[1]||'','',1)+inp('o','오답 2',item.o[2]||'','',2)+inp('o','오답 3',item.o[3]||'','',3)+inp('e','해설 (답한 뒤 보여줘요)',item.e,'wide');
   if (t==='loc') return area('상황',item.q)+sel('a','정답 거점',item.a,zopts().slice(0,3))+'<div></div>'+inp('e','해설',item.e,'wide');
   if (t==='ox') return area('문장',item.q)+sel('a','정답',item.a,[[true,'O (맞다)'],[false,'X (틀리다)']])+'<div></div>'+inp('e','해설',item.e,'wide');
+  if (t==='sa') return area('문제',item.q)+inp('a','정답 (여러 개면 | 로 나눠요)',item.a||'','wide',0)+inp('e','해설',item.e,'wide');
+  if (t==='ord'){ const it=[...(item.it||[]),'','','','',''].slice(0,5); return area('문제',item.q)+it.map((v,k)=>inp('it',`${k+1}번째${k>=3?' (없으면 비워요)':''}`,v,'',k)).join('')+inp('e','해설',item.e,'wide'); }
+  if (t==='cmb'){ const s=[...(item.s||[]),'','','',''].slice(0,4); return area('문제',item.q)+s.map((v,k)=>inp('s',`${'ㄱㄴㄷㄹ'[k]}${k===3?' (없으면 비워요)':''}`,v,'',k)).join('')+inp('a','정답 (옳은 보기 글자, 예: ㄱ,ㄷ)',item.a||'','wide',0)+inp('e','해설',item.e,'wide'); }
   return area('문장',item.q)+sel('a','정답',item.a,[[0,zcfgOf(curU()).c[0]],[1,zcfgOf(curU()).c[1]]])+'<div></div>'+inp('e','해설',item.e,'wide');
 }
 function renderUnitBar(){
@@ -414,7 +423,8 @@ $('#edList').addEventListener('input',e=>{
   const el=e.target, i=+el.dataset.i, f=el.dataset.f; if (!f) return;
   const it=B()[edTab][i];
   if (f==='o') it.o[+el.dataset.s]=el.value;
-  else if (f==='a') it.a = edTab==='ox' ? el.value==='true' : edTab==='cls' ? +el.value : el.value;
+  else if (f==='it'||f==='s'){ if (!Array.isArray(it[f])) it[f]=[]; it[f][+el.dataset.s]=el.value; }
+  else if (f==='a') it.a = edTab==='ox' ? el.value==='true' : edTab==='cls' ? +el.value : el.value;   // 단답형 · 보기 조합은 글자 그대로
   else it[f]=el.value;
   el.closest('.fld').classList.remove('bad');
 });
@@ -427,7 +437,7 @@ $('#edZcfg').addEventListener('click',e=>{ const b=e.target.closest('[data-zpre]
 $('#edZcfg').addEventListener('change',e=>{ const el=e.target.closest('[data-zc]'); if (!el) return; const u=curU(), c=zcfgOf(u), f=el.dataset.zc, v=el.value.trim();
   if (f==='q') c.q=v||c.q; else if (v) c[f[0]][+f[1]]=v; u.zcfg=c; renderEditor(); });
 // 학교·학년 칸: 예전 index.html이 캐시에 남아 있어도 보이도록, 없으면 여기서 만들어 넣어요
-const ED_VER='20261112a';   // 문제 관리 화면에 보이는 버전 (업로드가 반영됐는지 확인용)
+const ED_VER='20261120a';   // 문제 관리 화면에 보이는 버전 (업로드가 반영됐는지 확인용)
 function ensureEdTarget(){ if (document.getElementById('edSch')) return; const m=$('#edMap'); if (!m) return; const lab=m.closest('label');
   const d=document.createElement('div'); d.className='ed-target';
   d.innerHTML='<label class="fld"><span>어느 학교 문제인가요?</span><select id="edSch"></select></label><label class="fld"><span>몇 학년 문제인가요?</span><select id="edGrade"><option value="0">모든 학년</option><option value="1">1학년</option><option value="2">2학년</option><option value="3">3학년</option></select></label>';
@@ -470,6 +480,9 @@ function parseRows(t,text){
     if (!line.trim()) continue;
     const c=line.split('\t').map(x=>x.trim());
     if (t==='mc'){ if (!c[1]||/^문제$/.test(c[1])) continue; out.push({z:parseZone(c[0]),q:c[1],o:[c[2]||'',c[3]||'',c[4]||'',c[5]||''],e:c[6]||''}); }
+    else if (t==='sa'){ if (!c[0]||/^문제$/.test(c[0])) continue; out.push({q:c[0],a:c[1]||'',e:c[2]||''}); }
+    else if (t==='ord'){ if (!c[0]||/^문제$/.test(c[0])) continue; out.push({q:c[0],it:[1,2,3,4,5].map(k=>c[k]||''),e:c[6]||''}); }
+    else if (t==='cmb'){ if (!c[0]||/^문제$/.test(c[0])) continue; out.push({q:c[0],s:[1,2,3,4].map(k=>c[k]||''),a:(c[5]||'').replace(/[^ㄱㄴㄷㄹ]/g,''),e:c[6]||''}); }
     else { if (!c[0]||/^(상황|문장|변화|변화 문장|제도)$/.test(c[0])) continue;
       const a = t==='loc' ? (parseZone(c[1])==='any'?'hq':parseZone(c[1])) : t==='ox' ? /^(o|ㅇ|맞|참|true)/i.test(c[1]||'') : (()=>{ const v=(c[1]||'').trim(), zc=zcfgOf(curU()); if (v&&(v===zc.c[1]||v.includes(zc.c[1]))) return 1; if (v&&(v===zc.c[0]||v.includes(zc.c[0]))) return 0; if (v==='1'||v==='2') return +v-1; return v.includes('빠져')?1:0; })();
       out.push({q:c[0],a,e:c[2]||''}); }
@@ -483,6 +496,9 @@ function toTSV(t){
     if (t==='mc') rows.push([ZK.includes(it.z)?zn(it.z):'공통',it.q,...it.o,it.e]);
     else if (t==='loc') rows.push([it.q,zn(it.a),it.e]);
     else if (t==='ox') rows.push([it.q,it.a?'O':'X',it.e]);
+    else if (t==='sa') rows.push([it.q,it.a||'',it.e]);
+    else if (t==='ord') rows.push([it.q,...[...(it.it||[]),'','','','',''].slice(0,5),it.e]);
+    else if (t==='cmb') rows.push([it.q,...[...(it.s||[]),'','','',''].slice(0,4),[...String(it.a||'')].filter(ch=>'ㄱㄴㄷㄹ'.includes(ch)).join(','),it.e]);
     else rows.push([it.q,zc.c[it.a?1:0],it.e]);
   }
   return rows.map(r=>r.map(x=>String(x).replace(/[\t\n]/g,' ')).join('\t')).join('\n');
@@ -512,7 +528,10 @@ function cleanData(){
     mc:u.bank.mc.map(x=>({z:x.z,q:tr(x.q),o:x.o.map(tr),e:tr(x.e)})),
     loc:u.bank.loc.map(x=>({q:tr(x.q),a:x.a,e:tr(x.e)})),
     ox:u.bank.ox.map(x=>({q:tr(x.q),a:!!x.a,e:tr(x.e)})),
-    cls:u.bank.cls.map(x=>({q:tr(x.q),a:x.a?1:0,e:tr(x.e)}))}}))};
+    cls:u.bank.cls.map(x=>({q:tr(x.q),a:x.a?1:0,e:tr(x.e)})),
+    sa:(u.bank.sa||[]).map(x=>({q:tr(x.q),a:String(x.a||'').split('|').map(tr).filter(Boolean).join('|'),e:tr(x.e)})),
+    ord:(u.bank.ord||[]).map(x=>({q:tr(x.q),it:(x.it||[]).map(tr).filter(Boolean),e:tr(x.e)})),
+    cmb:(u.bank.cmb||[]).map(x=>{ const s=(x.s||[]).map(tr).filter(Boolean); return {q:tr(x.q),s,a:[...new Set([...String(x.a||'')].filter(ch=>'ㄱㄴㄷㄹ'.slice(0,s.length).includes(ch)))].sort().join(''),e:tr(x.e)}; })}}))};
 }
 $('#edBackup').addEventListener('click',async()=>{
   const json=JSON.stringify(cleanData(),null,1);
@@ -543,6 +562,10 @@ function validate(){
         const at={u:u.id,t,i};
         if (!String(it.q).trim()) errs.push({...at,f:'q',msg:`[${u.name}] ${L} ${i+1}번: 문제 내용이 비어 있어요.`});
         if (t==='mc') it.o.forEach((o,k)=>{ if (!String(o).trim()) errs.push({...at,f:'o',s:k,msg:`[${u.name}] ${L} ${i+1}번: ${k?'오답 '+k:'정답'}이 비어 있어요.`}); });
+        if (t==='sa'&&!String(it.a||'').trim()) errs.push({...at,f:'a',msg:`[${u.name}] ${L} ${i+1}번: 정답이 비어 있어요.`});
+        if (t==='ord'&&(it.it||[]).filter(v=>String(v).trim()).length<3) errs.push({...at,f:'it',s:0,msg:`[${u.name}] ${L} ${i+1}번: 항목을 3개 이상 써 주세요.`});
+        if (t==='cmb'){ const n=(it.s||[]).filter(v=>String(v).trim()).length; if (n<3) errs.push({...at,f:'s',s:0,msg:`[${u.name}] ${L} ${i+1}번: 보기를 ㄱ~ㄷ까지 3개 이상 써 주세요.`});
+          else if (![...String(it.a||'')].some(ch=>'ㄱㄴㄷㄹ'.slice(0,n).includes(ch))) errs.push({...at,f:'a',msg:`[${u.name}] ${L} ${i+1}번: 정답 칸에 옳은 보기 글자(예: ㄱ,ㄷ)를 써 주세요.`}); }
         if (!String(it.e).trim()) errs.push({...at,f:'e',msg:`[${u.name}] ${L} ${i+1}번: 해설이 비어 있어요.`});
       });
     }

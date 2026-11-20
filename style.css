@@ -834,3 +834,24 @@ body.cafe #hud, body.cafe #skillbar, body.cafe #hint, body.cafe #touch, body.caf
 .cf-res{top:84px}
 .cf-bub .nm{font-family:Jua,sans-serif;font-size:16px;color:#3a2230;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .cf-bub{width:130px;padding:4px 8px;font-size:12px;border-width:2.5px;box-shadow:2px 2px 0 #3a2230}.cf-bub .nm{font-size:15px;margin:0;max-width:78px;display:inline-block;vertical-align:bottom}.cf-bub .t{align-items:baseline}.cf-bub .bar{margin-top:3px;height:6px}
+/* 새 문제 방식 (단답형 · 순서 · 보기 조합) */
+#qtext,.run-qtext{white-space:pre-line}
+.opts.qx{display:flex;flex-direction:column;gap:10px}
+.qx-row{display:flex;gap:8px}.qx-row input{flex:1;font:inherit;font-size:20px;padding:10px 14px;border:2px solid var(--ink);border-radius:12px;min-width:0}
+.qx-row input.right{background:#d5f2e1;border-color:var(--good)}.qx-row input.wrong{background:#fadadb;border-color:var(--bad)}
+.qx-row2{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.qx-hint{font-family:var(--display);font-size:20px;letter-spacing:2px;color:#7a4fd0}
+.qx-help{margin:0;font-size:14px;color:#5a5f73}
+.qx-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
+.qx-card,.qx-st{display:flex;gap:10px;align-items:center;text-align:left;padding:10px 12px;border:2px solid var(--ink);border-radius:12px;background:#fff;color:var(--ink);font:inherit;font-size:15px;line-height:1.4;cursor:pointer}
+.qx-card b{flex:none;width:28px;height:28px;border-radius:50%;border:2px dashed #9aa1b5;display:grid;place-items:center;font-size:15px}
+.qx-card.on{background:#fff4cc}.qx-card.on b{background:var(--ink);color:#fff;border:2px solid var(--ink)}
+.qx-list{display:grid;gap:8px}
+.qx-st b{flex:none;width:28px;height:28px;border-radius:8px;background:#eef0f6;display:grid;place-items:center;font-family:var(--display);font-size:17px}
+.qx-st span{flex:1}.qx-st i{flex:none;width:24px;height:24px;border:2px solid var(--ink);border-radius:6px;background:#fff}
+.qx-st.on{background:#fff4cc}.qx-st.on i{background:var(--ink);box-shadow:inset 0 0 0 4px #fff}
+.qx-card.right,.qx-st.right{background:#d5f2e1;border-color:var(--good)}.qx-card.wrong,.qx-st.wrong{background:#fadadb;border-color:var(--bad)}
+.qx-seq{flex:1;font-size:14px;color:#5a5f73}
+.qx button:disabled{cursor:default}
+.qx-row .btn,.qx-row2 .btn{flex:none;width:auto;min-width:96px;padding:10px 18px;margin:0}
+.qx-row input{flex:1 1 auto;width:auto;min-width:0}
+.qx-row2 #qxGo{margin-left:auto}

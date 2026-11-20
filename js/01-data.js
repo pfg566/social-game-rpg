@@ -68,10 +68,39 @@ const DEF_LOC = [
 
 let MC=[],OX=[],CLS=[],LOC=[];
 function applyBank(b){
-  MC=b.mc.map(x=>({...x,kind:'mc'})); OX=b.ox.map(x=>({...x,kind:'ox'}));
+  MC=b.mc.map(x=>({...x,kind:'mc'})).concat(qxDerive(b)); OX=b.ox.map(x=>({...x,kind:'ox'}));
   CLS=b.cls.map(x=>({...x,kind:'cls'})); LOC=b.loc.map(x=>({...x,kind:'loc'}));
 }
-function rawBank(){ const strip=a=>a.map(({kind,...r})=>r); return {mc:strip(MC),ox:strip(OX),cls:strip(CLS),loc:strip(LOC)}; }
+function rawBank(){ const strip=a=>a.filter(x=>!x.src).map(({kind,...r})=>r); return {mc:strip(MC),ox:strip(OX),cls:strip(CLS),loc:strip(LOC)}; }
+/* ---------- 새 문제 방식: 단답형(초성 힌트) · 순서 맞히기 · 보기 조합형(ㄱㄴㄷ) ----------
+   팝업 퀴즈 창에서는 직접 입력 · 순서대로 누르기 · 모두 고르기로 풀고,
+   러너 · 카페처럼 몸으로 고르는 모드에서는 아래에서 자동으로 만든 4지선다(o[0]이 정답)로 나와요. */
+const QX_LET='ㄱㄴㄷㄹㅁ';
+const qxNorm=s=>String(s||'').replace(/\s+/g,'').toLowerCase();
+function qxCho(s){ const C='ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ'; return [...String(s)].map(ch=>{ const c=ch.charCodeAt(0)-0xAC00; return c>=0&&c<11172?C[Math.floor(c/588)]:ch; }).join(''); }
+function qxShuffle(a){ a=[...a]; for (let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+function qxCmbAns(a){ return [...new Set([...String(a||'')].map(ch=>QX_LET.indexOf(ch)).filter(i=>i>=0))].sort(); }
+function qxDerive(b){
+  const out=[], sa=b.sa||[], ord=b.ord||[], cmb=b.cmb||[];
+  const pool=[]; sa.forEach(x=>pool.push(String(x.a||'').split('|')[0].trim())); (b.mc||[]).forEach(x=>(x.o||[]).forEach(o=>pool.push(String(o).trim())));
+  sa.forEach(x=>{ const ans=String(x.a||'').split('|').map(s=>s.trim()).filter(Boolean); if (!x.q||!ans.length) return;
+    const bad=new Set(ans.map(qxNorm)), seen=new Set(), ds=[];
+    for (const p of qxShuffle(pool)){ const k=qxNorm(p); if (!p||bad.has(k)||seen.has(k)||p.length>24) continue; seen.add(k); ds.push(p); if (ds.length===3) break; }
+    if (ds.length<3) return;
+    out.push({kind:'mc',src:'sa',z:'any',q:x.q,o:[ans[0],...ds],e:x.e||'',sa:{ans,cho:qxCho(ans[0]),h:x.h||''}}); });
+  ord.forEach(x=>{ const it=(x.it||[]).map(s=>String(s).trim()).filter(Boolean); if (!x.q||it.length<3) return;
+    const key=a=>a.join(' → '), right=key(it), seen=new Set([right]), ds=[];
+    for (let t=0;t<60&&ds.length<3;t++){ const p=key(qxShuffle(it)); if (!seen.has(p)){ seen.add(p); ds.push(p); } }
+    if (ds.length<3) return;
+    out.push({kind:'mc',src:'ord',z:'any',q:`[순서] ${x.q}`,o:[right,...ds],e:x.e||'',ord:{it}}); });
+  cmb.forEach(x=>{ const s=(x.s||[]).map(v=>String(v).trim()).filter(Boolean), a=qxCmbAns(x.a).filter(i=>i<s.length); if (!x.q||s.length<3||!a.length) return;
+    const lab=ids=>ids.map(i=>QX_LET[i]).join(', '), right=lab(a), subs=[];
+    for (let m=1;m<(1<<s.length);m++){ const ids=[...Array(s.length).keys()].filter(i=>m&(1<<i)); const l=lab(ids); if (l!==right) subs.push({l,n:ids.length}); }
+    const ds=qxShuffle(subs).sort((p,q)=>Math.abs(p.n-a.length)-Math.abs(q.n-a.length)).slice(0,3).map(v=>v.l);
+    const q=`${x.q}\n`+s.map((v,i)=>`${QX_LET[i]}. ${v}`).join('\n');
+    out.push({kind:'mc',src:'cmb',z:'any',q,o:[right,...qxShuffle(ds)],e:x.e||'',cmb:{s,a,q0:x.q}}); });
+  return out;
+}
 function looksLikeBank(d){ return d && ['mc','ox','cls','loc'].every(k=>Array.isArray(d[k]) && d[k].length>0); }
 applyBank({mc:DEF_MC,ox:DEF_OX,cls:DEF_CLS,loc:DEF_LOC});
 const ZINFO = {hq:{name:'본사',color:'#3b6fd9'}, lab:{name:'연구소',color:'#21966f'}, fac:{name:'생산 공장',color:'#ea7d1f'}};

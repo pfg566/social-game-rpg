@@ -29,7 +29,9 @@ function openQuiz(item,source){
   $('#qtag').textContent=tagName; $('#qtag').style.background=tagColor;
   $('#qtext').textContent = item.kind==='cls' ? `“${item.q}” ${ZCFG.q}` : item.q;
   const box=$('#qopts'); box.innerHTML=''; box.className='opts'+(opts.length===2?' two':''); box.hidden=false;
-  opts.forEach((t,i)=>{ const b=document.createElement('button'); b.className='opt'; b.id='opt'+i;
+  Q.custom=null;
+  if (item.src==='sa'||item.src==='ord'||item.src==='cmb'){ qxOpen(item,box); }
+  else opts.forEach((t,i)=>{ const b=document.createElement('button'); b.className='opt'; b.id='opt'+i;
     b.innerHTML=`<span class="n">${i+1}</span><span></span>`; b.lastChild.textContent=t;
     b.addEventListener('click',()=>answer(i)); box.appendChild(b); });
   $('#qtimer').hidden=false; $('#qtime').hidden=false;
@@ -38,16 +40,63 @@ function openQuiz(item,source){
   blurAll(); Q.lockUntil=performance.now()+QUIZ_LOCK_MS; box.classList.add('locked'); setTimeout(()=>box.classList.remove('locked'),QUIZ_LOCK_MS);
 }
 function answer(i){
-  if (Q.answered) return; if (i>=0 && performance.now()<(Q.lockUntil||0)) return; Q.answered=true;
+  if (Q.answered) return; if (i>=0 && performance.now()<(Q.lockUntil||0)) return;
+  if (Q.custom){ if (i>=0) return; qxDone(false,true); return; }   // 새 문제 방식은 시간이 끝났을 때만 여기로 와요
+  Q.answered=true;
   const ok=i===Q.correctIdx;
   [...document.querySelectorAll('.opt')].forEach((b,j)=>{ b.disabled=true; if (j===Q.correctIdx) b.classList.add('right'); else if (j===i) b.classList.add('wrong'); });
   showResult(ok, i<0, Q.item);
 }
 function correctText(item){
-  if (item.kind==='mc') return item.o[0];
+  if (item.kind==='mc') return item.src==='sa'?item.sa.ans.join(' 또는 '):item.o[0];
   if (item.kind==='ox') return item.a?'O (맞다)':'X (틀리다)';
   if (item.kind==='cls') return CLS_OPTS[item.a];
   return ZINFO[item.a].name;
+}
+
+/* ---------- 새 문제 방식의 퀴즈 창 (단답형 · 순서 · 보기 조합) ---------- */
+const QX_TIME={sa:30,ord:35,cmb:35};
+function qxOpen(item,box){
+  const k=item.src; Q.custom={k,sel:[],hint:false}; Q.nOpts=0; Q.correctIdx=-1;
+  Q.dur=Math.round(QX_TIME[k]*(MODE==='hero'&&Q.source&&Q.source.type!=='revive'?HERO.quiz:1)*(MODE==='hero'?1:EASEF.quiz));
+  box.className='opts qx qx-'+k;
+  if (k==='sa'){
+    $('#qtag').textContent='✏️ 단답형 · '+$('#qtag').textContent;
+    box.innerHTML=`<div class="qx-row"><input id="qxIn" maxlength="30" autocomplete="off" placeholder="정답을 써요 (띄어쓰기는 상관없어요)"><button class="btn" id="qxGo">확인</button></div>
+      <div class="qx-row2"><button class="btn ghost small" id="qxHint">💡 초성 힌트</button><span id="qxHintTxt" class="qx-hint"></span></div>`;
+    const go=()=>{ const v=$('#qxIn').value.trim(); if (!v) { $('#qxIn').focus(); return; } qxDone(item.sa.ans.map(qxNorm).includes(qxNorm(v)),false,v); };
+    $('#qxGo').onclick=go;
+    $('#qxIn').addEventListener('keydown',e=>{ e.stopPropagation(); if (e.key==='Enter'){ e.preventDefault(); go(); } });
+    $('#qxHint').onclick=()=>{ Q.custom.hint=true; $('#qxHint').disabled=true; $('#qxHintTxt').textContent=`${item.sa.cho} (${item.sa.ans[0].replace(/\s/g,'').length}글자)`+(item.sa.h?` · ${item.sa.h}`:''); $('#qxIn').focus(); };
+    setTimeout(()=>{ const el=$('#qxIn'); if (el) el.focus(); },QUIZ_LOCK_MS);
+  } else if (k==='ord'){
+    $('#qtag').textContent='🔢 순서 맞히기 · '+$('#qtag').textContent; $('#qtext').textContent=item.ord?String(item.q).replace(/^\[순서\]\s*/,''):item.q;
+    const its=qxShuffle(item.ord.it.map((t,i)=>({t,i})));
+    box.innerHTML=`<p class="qx-help">먼저 일어나는 것부터 차례로 눌러요</p><div class="qx-cards">${its.map(o=>`<button class="qx-card" data-oi="${o.i}"><b></b><span>${esc(o.t)}</span></button>`).join('')}</div>
+      <div class="qx-row2"><span class="qx-seq" id="qxSeq"></span><button class="btn ghost small" id="qxReset">다시</button><button class="btn" id="qxGo" disabled>확인</button></div>`;
+    const paint=()=>{ box.querySelectorAll('.qx-card').forEach(b=>{ const n=Q.custom.sel.indexOf(+b.dataset.oi); b.classList.toggle('on',n>=0); b.querySelector('b').textContent=n>=0?n+1:''; });
+      $('#qxGo').disabled=Q.custom.sel.length!==item.ord.it.length; };
+    box.querySelectorAll('.qx-card').forEach(b=>b.onclick=()=>{ if (Q.answered) return; const i=+b.dataset.oi, s=Q.custom.sel, n=s.indexOf(i); if (n>=0) s.splice(n); else s.push(i); paint(); });
+    $('#qxReset').onclick=()=>{ Q.custom.sel=[]; paint(); };
+    $('#qxGo').onclick=()=>qxDone(Q.custom.sel.every((v,j)=>v===j),false);
+  } else {
+    $('#qtag').textContent='📋 보기 조합 · '+$('#qtag').textContent; $('#qtext').textContent=item.cmb.q0;
+    box.innerHTML=`<p class="qx-help">옳은 것을 모두 골라요</p><div class="qx-list">${item.cmb.s.map((t,i)=>`<button class="qx-st" data-si="${i}"><b>${QX_LET[i]}</b><span>${esc(t)}</span><i></i></button>`).join('')}</div>
+      <div class="qx-row2"><span class="qx-seq" id="qxSeq"></span><button class="btn" id="qxGo" disabled>확인</button></div>`;
+    box.querySelectorAll('.qx-st').forEach(b=>b.onclick=()=>{ if (Q.answered) return; b.classList.toggle('on'); const sel=[...box.querySelectorAll('.qx-st.on')].map(x=>+x.dataset.si); Q.custom.sel=sel;
+      $('#qxSeq').textContent=sel.length?'고른 것: '+sel.map(i=>QX_LET[i]).join(', '):''; $('#qxGo').disabled=!sel.length; });
+    $('#qxGo').onclick=()=>{ const a=item.cmb.a, s=[...Q.custom.sel].sort(); qxDone(s.length===a.length&&s.every((v,j)=>v===a[j]),false); };
+  }
+}
+function qxDone(ok,timeout,typed){
+  if (Q.answered) return; Q.answered=true;
+  const box=$('#qopts'); box.querySelectorAll('input,button').forEach(el=>{ el.disabled=true; });
+  const it=Q.item;
+  if (it.src==='ord') box.querySelectorAll('.qx-card').forEach(b=>{ const i=+b.dataset.oi; b.querySelector('b').textContent=i+1; b.classList.add(Q.custom.sel.indexOf(i)===i?'right':'wrong'); });
+  if (it.src==='cmb') box.querySelectorAll('.qx-st').forEach(b=>{ const i=+b.dataset.si, should=it.cmb.a.includes(i), on=b.classList.contains('on'); b.classList.add(should?'right':on?'wrong':'plain'); });
+  if (it.src==='sa'){ const el=$('#qxIn'); if (el) el.classList.add(ok?'right':'wrong'); }
+  if (ok && Q.custom && Q.custom.hint) Q.start-=Q.dur*500;   // 힌트를 봤으면 빠른 정답 점수가 줄어요
+  showResult(ok,timeout,it);
 }
 
 /* 정답·오답 처리: 효과, 틀린 문제 기록, 보스 보호막, 웨이브 잠금 */
