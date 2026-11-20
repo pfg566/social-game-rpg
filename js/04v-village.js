@@ -51,8 +51,8 @@ function buildVillage(){
   /* 바닥: 흙길을 그린 큰 텍스처 */
   const N=2048, toPx=v=>(v/VL_MAP+.5)*N;
   const gcv=vlCanvas(N,N,g=>{
-    g.fillStyle='#55662a'; g.fillRect(0,0,N,N);
-    for (let i=0;i<9000;i++){ g.fillStyle=`rgba(${vlRnd(60,110)|0},${vlRnd(80,120)|0},${vlRnd(25,50)|0},.18)`; g.beginPath(); g.arc(Math.random()*N,Math.random()*N,vlRnd(4,26),0,7); g.fill(); }
+    g.fillStyle='#5d6b2b'; g.fillRect(0,0,N,N);
+    for (let i=0;i<9000;i++){ g.fillStyle=`rgba(${vlRnd(80,140)|0},${vlRnd(95,130)|0},${vlRnd(30,55)|0},.2)`; g.beginPath(); g.arc(Math.random()*N,Math.random()*N,vlRnd(4,26),0,7); g.fill(); }
     const stroke=(pts,w,col,blur)=>{ g.save(); g.filter=`blur(${blur}px)`; g.strokeStyle=col; g.lineWidth=w/VL_MAP*N; g.lineCap='round'; g.lineJoin='round'; g.beginPath(); pts.forEach((p,i)=>i?g.lineTo(toPx(p.x),toPx(p.y)):g.moveTo(toPx(p.x),toPx(p.y))); g.stroke(); g.restore(); };
     stroke(VL_PATHP,VL_PATH_W*2+1.4,'#8a7a4e',10); stroke(VL_PATHP,VL_PATH_W*2,'#c9ad84',4);
     stroke(VL_SIDEP,2.4,'#8a7a4e',8); stroke(VL_SIDEP,1.7,'#b9a07a',3);
@@ -66,39 +66,57 @@ function buildVillage(){
   ground.rotation.x=-Math.PI/2; ground.receiveShadow=true;
   const far=add(new THREE.Mesh(new THREE.PlaneGeometry(600,600),new THREE.MeshStandardMaterial({color:0x55662a,roughness:1}))); far.rotation.x=-Math.PI/2; far.position.y=-.02;
 
-  /* 풀: 풀잎 수만 개 · 바람 · 역광 · 안개 · 캐릭터가 지나가면 눕기 */
-  const GMAX=200000, geo=new THREE.InstancedBufferGeometry();
-  geo.setAttribute('position',new THREE.Float32BufferAttribute([-1,0,0, 1,0,0, -.8,.33,0, .8,.33,0, -.5,.66,0, .5,.66,0, 0,1,0],3)); geo.setIndex([0,1,2, 1,3,2, 2,3,4, 3,5,4, 4,5,6]);
-  const off=new Float32Array(GMAX*3), pr=new Float32Array(GMAX*4), sh=new Float32Array(GMAX);
-  const hor=new THREE.Vector2(-VL_SUN.x,-VL_SUN.z).normalize(), kk=1/Math.max(.25,VL_SUN.y), spots=[];
-  VL_TREES.forEach(t=>{ const o=Math.min(14,5.5*t[2]*kk*.35); spots.push({x:t[0]+hor.x*o,z:t[1]+hor.y*o,r:3.6*t[2]}); });
-  VL_BUSHES.forEach(b=>spots.push({x:b[0]+hor.x*.8,z:b[1]+hor.y*.8,r:1.4}));
-  VL_HOUSES.forEach(H=>{ const o=Math.min(10,3*kk*.5); for (let i=-1;i<=1;i++) spots.push({x:H.x+hor.x*o+Math.cos(H.r)*i*H.w*.3,z:H.z+hor.y*o-Math.sin(H.r)*i*H.w*.3,r:H.d*.55}); });
-  vlSeed=11; let n=0;
-  while (n<GMAX){
-    const a=vlR()*Math.PI*2, r=Math.sqrt(vlR())*58, x=Math.cos(a)*r, z=Math.sin(a)*r;
-    const dp=vlPolyD(VL_PATHP,x,z), ds=vlPolyD(VL_SIDEP,x,z), e=vlS(-.35,.25);
-    if (dp<VL_PATH_W+e||ds<.95+e*.6||vlInHouse(x,z,.25)) continue;
-    let bad=false; for (const c of VL_COLL) if (Math.hypot(x-c.x,z-c.z)<c.r*.8){ bad=true; break; }
-    for (const d of VL_DOORS) if (d.id!=='home'&&Math.hypot(x-d.x,z-d.z)<2.2+e) bad=true;
-    if (bad) continue;
-    const clump=.5+.5*Math.sin(x*.21+Math.sin(z*.13)*2)*Math.cos(z*.17-x*.05), np=Math.min(1,Math.max(0,(dp-VL_PATH_W)/2.5));
-    let s=1; for (const p of spots){ const d=Math.hypot(x-p.x,z-p.z); if (d<p.r) s=Math.min(s,.35+.65*Math.pow(d/p.r,2)); }
-    off[n*3]=x; off[n*3+2]=z; pr[n*4]=vlR()*Math.PI*2; pr[n*4+1]=(.24+clump*.38+vlS(0,.18))*(.55+.45*np); pr[n*4+2]=vlS(.02,.036); pr[n*4+3]=vlR(); sh[n]=s; n++;
-  }
-  geo.setAttribute('aOff',new THREE.InstancedBufferAttribute(off,3)); geo.setAttribute('aP',new THREE.InstancedBufferAttribute(pr,4)); geo.setAttribute('aSh',new THREE.InstancedBufferAttribute(sh,1));
+  /* 풀: 캐릭터 주변(한 변 약 50m)에 가는 풀잎을 아주 빽빽하게. 움직이면 풀밭이 따라와요(먼 곳은 바닥 그림 · 풀 뭉치 · 안개).
+     뿌리 색은 바닥 그림에서 그대로 가져와서 바닥과 이어져 보여요. 길 · 집 · 문 앞은 '풀 지도(mask)'로 비워요 */
+  const MS=512, mcv=vlCanvas(MS,MS,()=>{}), mg=mcv.getContext('2d'), mp=v=>(v/VL_MAP+.5)*MS;
+  { const A=vlCanvas(MS,MS,g=>{ g.fillStyle='#fff'; g.fillRect(0,0,MS,MS); g.strokeStyle='#000'; g.fillStyle='#000'; g.lineCap='round'; g.lineJoin='round';
+      g.filter='blur(2px)';
+      const st=(pts,w)=>{ g.lineWidth=w/VL_MAP*MS; g.beginPath(); pts.forEach((p,i)=>i?g.lineTo(mp(p.x),mp(p.y)):g.moveTo(mp(p.x),mp(p.y))); g.stroke(); };
+      st(VL_PATHP,VL_PATH_W*2+.9); st(VL_SIDEP,2.0);
+      VL_HOUSES.forEach(H=>{ g.save(); g.translate(mp(H.x),mp(H.z)); g.rotate(-H.r); const w=(H.w+.5)/VL_MAP*MS, d=(H.d+.5)/VL_MAP*MS; g.fillRect(-w/2-(H.cozy?0:0),-d/2,w+(H.cozy?3.4/VL_MAP*MS:0),d); g.restore(); });
+      VL_DOORS.forEach(d=>{ if (d.id==='home') return; g.beginPath(); g.arc(mp(d.x),mp(d.z),2.2/VL_MAP*MS,0,7); g.fill(); });
+      g.beginPath(); g.arc(mp(VL_PORTAL.x),mp(VL_PORTAL.z),3/VL_MAP*MS,0,7); g.fill();
+      VL_COLL.forEach(c=>{ if (c.r>.4){ g.beginPath(); g.arc(mp(c.x),mp(c.z),c.r*.7/VL_MAP*MS,0,7); g.fill(); } }); });
+    const B=vlCanvas(MS,MS,g=>{ g.fillStyle='#fff'; g.fillRect(0,0,MS,MS);
+      const hor=new THREE.Vector2(-VL_SUN.x,-VL_SUN.z).normalize(), kk=1/Math.max(.25,VL_SUN.y);
+      const spot=(x,z,r,k)=>{ const gr=g.createRadialGradient(mp(x),mp(z),0,mp(x),mp(z),r/VL_MAP*MS); gr.addColorStop(0,`rgba(0,0,0,${k})`); gr.addColorStop(1,'rgba(0,0,0,0)'); g.fillStyle=gr; g.fillRect(0,0,MS,MS); };
+      VL_TREES.forEach(t=>{ const o=Math.min(14,5.5*t[2]*kk*.35); spot(t[0]+hor.x*o,t[1]+hor.y*o,4*t[2],.6); });
+      VL_BUSHES.forEach(b=>spot(b[0]+hor.x*.8,b[1]+hor.y*.8,1.6,.45));
+      VL_HOUSES.forEach(H=>{ const o=Math.min(10,3*kk*.5); for (let i=-1;i<=1;i++) spot(H.x+hor.x*o+Math.cos(H.r)*i*H.w*.3,H.z+hor.y*o-Math.sin(H.r)*i*H.w*.3,H.d*.7,.55); }); });
+    const a=A.getContext('2d').getImageData(0,0,MS,MS).data, b=B.getContext('2d').getImageData(0,0,MS,MS).data, out=mg.createImageData(MS,MS);
+    for (let i=0;i<a.length;i+=4){ out.data[i]=a[i]; out.data[i+1]=b[i]; out.data[i+2]=0; out.data[i+3]=255; }
+    mg.putImageData(out,0,0); }
+  VL.maskCv=mcv; const maskT=new THREE.CanvasTexture(mcv); maskT.minFilter=THREE.LinearFilter; maskT.generateMipmaps=false;
+  const gT=new THREE.CanvasTexture(gcv); gT.minFilter=THREE.LinearFilter; gT.generateMipmaps=false;
+  U.uMask={value:maskT}; U.uGround={value:gT}; U.uCenter={value:new THREE.Vector2()}; U.uR={value:24}; U.uMap={value:VL_MAP}; U.uDry={value:VL_LIN('#d9a24a')}; U.uGK={value:1.45};
+  const GMAX=240000, geo=new THREE.InstancedBufferGeometry();
+  geo.setAttribute('position',new THREE.Float32BufferAttribute([-1,0,0, 1,0,0, -.75,.4,0, .75,.4,0, -.4,.75,0, .4,.75,0, 0,1,0],3)); geo.setIndex([0,1,2, 1,3,2, 2,3,4, 3,5,4, 4,5,6]);
+  const off=new Float32Array(GMAX*3), pr=new Float32Array(GMAX*4);
+  vlSeed=11;
+  for (let n=0;n<GMAX;n++){ off[n*3]=vlS(-24,24); off[n*3+2]=vlS(-24,24); pr[n*4]=vlR()*Math.PI*2; pr[n*4+1]=vlS(.6,1.15); pr[n*4+2]=vlS(.012,.024); pr[n*4+3]=vlR(); }
+  geo.setAttribute('aOff',new THREE.InstancedBufferAttribute(off,3)); geo.setAttribute('aP',new THREE.InstancedBufferAttribute(pr,4));
   geo.userData={max:GMAX};
   VL.grass=add(new THREE.Mesh(geo,new THREE.ShaderMaterial({uniforms:U,side:THREE.DoubleSide,
-    vertexShader:`attribute vec3 aOff; attribute vec4 aP; attribute float aSh; uniform float uTime; uniform vec3 uPlayer; varying float vH,vV,vS; varying vec3 vW;
-      void main(){ float h=position.y; float c=cos(aP.x), s=sin(aP.x); vec3 p=vec3(position.x*aP.z*c, h*aP.y, position.x*aP.z*s);
-        p.xz+=vec2(-s,c)*h*h*aP.y*.28;
-        float w=sin(uTime*1.5+aOff.x*.31+aOff.z*.23)*.6+sin(uTime*2.9+aOff.x*.83-aOff.z*.4)*.25+.35; p.xz+=vec2(.85,.45)*w*.32*aP.y*h*h;
-        vec3 wp=aOff+p; vec2 d=wp.xz-uPlayer.xz; float dl=length(d)+1e-4; float push=smoothstep(1.2,.0,dl)*h; wp.xz+=d/dl*push*.55; wp.y-=push*.3*aP.y;
-        vW=wp; vH=h; vV=aP.w; vS=aSh; gl_Position=projectionMatrix*viewMatrix*vec4(wp,1.); }`,
-    fragmentShader:`uniform vec3 uBase,uTip,uTip2,uSunCol,uSun,uFog; uniform float uFogN,uFogF,uTime; varying float vH,vV,vS; varying vec3 vW;
-      void main(){ vec3 col=mix(uBase,mix(uTip,uTip2,vV),smoothstep(.0,1.,vH));
-        float cloud=.86+.14*sin(vW.x*.06+uTime*.04)*sin(vW.z*.08-uTime*.03); col*=(.42+.68*vH)*mix(.5,1.,vS)*cloud;
-        vec3 V=normalize(vW-cameraPosition); float back=pow(max(dot(V,uSun),0.),5.)*vH*vS; col+=uSunCol*(back*.75+.18*vH*vS*max(uSun.y,.2));
+    vertexShader:`attribute vec3 aOff; attribute vec4 aP; uniform float uTime,uR,uMap; uniform vec3 uPlayer; uniform vec2 uCenter; uniform sampler2D uMask,uGround;
+      varying float vH,vV,vS; varying vec3 vW,vG;
+      void main(){
+        vec2 rel=mod(aOff.xz-uCenter+uR,2.*uR)-uR; vec2 root=uCenter+rel;
+        vec2 uv=vec2(root.x/uMap+.5,1.-(root.y/uMap+.5)); vec4 mk=texture2D(uMask,uv);
+        float fade=1.-smoothstep(uR*.72,uR,max(abs(rel.x),abs(rel.y)));
+        float pch=.5+.5*sin(root.x*.23+sin(root.y*.17)*2.)*cos(root.y*.19-root.x*.07);
+        float hgt=aP.y*(.22+.34*pch)*smoothstep(.15,.6,mk.r)*fade;
+        float h=position.y; float c=cos(aP.x), s=sin(aP.x);
+        vec3 p=vec3(position.x*aP.z*c, h*hgt, position.x*aP.z*s);
+        p.xz+=vec2(-s,c)*h*h*hgt*.35;
+        float w=sin(uTime*1.3+root.x*.21+root.y*.17)*.55+sin(uTime*2.6+root.x*.7-root.y*.5)*.2+.3; p.xz+=vec2(.85,.45)*w*.35*hgt*h*h;
+        vec3 wp=vec3(root.x,0.,root.y)+p; vec2 d=wp.xz-uPlayer.xz; float dl=length(d)+1e-4; float push=smoothstep(1.,.0,dl)*h; wp.xz+=d/dl*push*.45; wp.y-=push*.25*hgt;
+        vW=wp; vH=h; vV=aP.w*.6+pch*.4; vS=mk.g; vG=pow(texture2D(uGround,uv).rgb,vec3(2.2));
+        gl_Position=projectionMatrix*viewMatrix*vec4(wp,1.); }`,
+    fragmentShader:`uniform vec3 uTip,uTip2,uDry,uSunCol,uSun,uFog; uniform float uFogN,uFogF,uTime,uGK; varying float vH,vV,vS; varying vec3 vW,vG;
+      void main(){ vec3 tip=mix(uTip2,uTip,smoothstep(.2,.8,vV)); tip=mix(tip,uDry,smoothstep(.75,1.,vV)*.6);
+        vec3 base=vG*uGK*mix(.55,1.,vS);
+        vec3 col=mix(base,tip*mix(.55,1.,vS),smoothstep(.0,1.,vH));
+        vec3 V=normalize(vW-cameraPosition); float back=pow(max(dot(V,uSun),0.),5.)*vH*vS; col+=uSunCol*(back*.6+.12*vH*vS);
         float dist=length(vW-cameraPosition); col=mix(col,uFog,smoothstep(uFogN,uFogF,dist));
         gl_FragColor=vec4(col,1.);
         #include <tonemapping_fragment>
@@ -360,7 +378,7 @@ function vlNatureGround(){
       if (!vlFree(x,z,pad)) continue; let bad=false; for (const c of VL_COLL) if (Math.hypot(x-c.x,z-c.z)<c.r*.7){ bad=true; break; } if (bad) continue;
       put(n,{x,z,ry:vlS(0,6.3),s:vlS(sMin,sMax)}); k++; } };
   const edge=[]; VL_PATHP.forEach((p,i)=>{ if (i%3) return; edge.push([p.x,p.y,4.2]); });
-  scatter('Grass_Wispy_Tall',500,56,.3,.3,.5); scatter('Grass_Wispy_Short',600,56,.2,.3,.5); scatter('Grass_Common_Tall',400,56,.3,.26,.42); scatter('Grass_Common_Short',500,30,.1,.3,.45,edge);
+  scatter('Grass_Wispy_Tall',500,56,.3,.3,.5); scatter('Grass_Wispy_Short',600,56,.2,.3,.5); scatter('Grass_Common_Tall',400,56,.3,.26,.42); scatter('Grass_Common_Short',400,30,.7,.3,.45,edge);
   const trees=VL_TREES.map(t=>[t[0],t[1],4.5]);
   scatter('Fern_1',40,0,.5,.1,.15,trees); scatter('Plant_1_Big',35,0,.5,.22,.32,trees); scatter('Mushroom_Common',40,0,.4,.6,.95,trees); scatter('Clover_2',90,50,.3,.35,.5);
   scatter('Flower_3_Group',110,0,.3,.28,.4,[[0,9,4],[6,9,3],[-3,4,3],[10,-2,3],[-12,10,3],[14,-6,3],[22,4,3],[-16,20,3]]);
@@ -431,7 +449,7 @@ function villageFrame(dt,real,now){
   pg.position.set(P.x,0,P.z);
   { let dy=Math.atan2(P.fx,P.fz)-pg.rotation.y; dy=Math.atan2(Math.sin(dy),Math.cos(dy)); pg.rotation.y+=dy*Math.min(1,dt*12); }
   if (knight){ setBaseSynced(knight.anim,moving?'run':'idle',moving?(VL.run?1.25:.9):1); knight.mixer.update(W.paused?0:dt); }
-  const U=VL.U; U.uTime.value=real; U.uPlayer.value.set(P.x,0,P.z);
+  const U=VL.U; U.uTime.value=real; U.uPlayer.value.set(P.x,0,P.z); U.uCenter.value.set(P.x,P.z);
   U.uFog.value.copy(scene.fog.color); U.uFogN.value=scene.fog.near; U.uFogF.value=scene.fog.far; VL.skyU.uFog.value.copy(scene.fog.color);
   // 카메라: 캐릭터 뒤 · 마우스로 돌려요
   const ty=1.35, cp=_vlV.set(P.x+Math.sin(VL.yaw)*Math.cos(VL.pitch)*VL.dist, ty+Math.sin(VL.pitch)*VL.dist+.4, P.z+Math.cos(VL.yaw)*Math.cos(VL.pitch)*VL.dist);
