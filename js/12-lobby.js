@@ -40,6 +40,9 @@ function lobbyTick(real,dt){
   // 발판 서바이벌: 큰 색 발판이 화면을 꽉 채워서 눈부셔요 → 빛 번짐은 아주 연하게, 밝기도 살짝 낮춰요 (매 프레임 위에서 덮어써서 여기서 맞춰야 해요)
   if (!on && (MAPK==='stage'||MAPK==='live'||MAPK==='cafe') && MOOD!=='day') applyMood('day');   // 판마다 바뀌는 분위기(황금빛·새벽·황혼)는 발판에서 특히 눈부셔서, 발판 서바이벌은 늘 '맑은 낮'으로 고정
   if (!on && MAPK==='cafe') renderer.toneMappingExposure*=.86;   // 카페: 하얀 가구가 많아 조금 어둡게
+  // 카페 안은 하늘빛 대신 따뜻한 실내 빛 (바닥에서 튀는 빛도 나무색). 다른 맵으로 가면 원래 분위기 빛으로 돌려놔요
+  if (!on && MAPK==='cafe'){ HEMI.color.setHex(0xfff1e2); HEMI.groundColor.setHex(0xb48a66); CAFE.hemi=1; }
+  else if (CAFE.hemi){ CAFE.hemi=0; const M=MOODS[MOOD]; if (M){ HEMI.color.setHex(M.hemi[0]); HEMI.groundColor.setHex(M.hemi[1]); } }
   if (!on && (MAPK==='stage'||MAPK==='live'||MAPK==='cafe') && MOODS[MOOD]){ if (bloom){ bloom.strength=Math.min(bloom.strength,.06); bloom.threshold=.98; } renderer.toneMappingExposure*=.9; sun.intensity*=.85; }
   pg.visible=!on;
   if (!on || !LOBBY.g) return false;

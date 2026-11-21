@@ -807,7 +807,7 @@ body.livemode #hud, body.livemode #skillbar, body.livemode #hint, body.livemode 
 
 /* 🍰 디저트 카페 */
 body.cafe #hud, body.cafe #skillbar, body.cafe #hint, body.cafe #touch, body.cafe #prompt{display:none!important}
-.cf-hud{gap:12px}.cf-hud .cf-name{font-family:Jua,sans-serif;font-size:20px;color:#c2185b}#cfStars{color:#b7791f;font-weight:700}
+.cf-hud{gap:12px}.cf-hud .cf-name{display:none}   /* 가게 이름은 문 위 간판에 있어요 (카드가 1번 판을 가리지 않게) */#cfStars{color:#b7791f;font-weight:700}
 .cf-q{top:auto;bottom:16px}
 .cf-qhead{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;margin-bottom:4px}
 .cf-no{background:#ff6b8a;color:#fff;border-radius:99px;padding:2px 12px;font-family:Jua,sans-serif;font-size:16px}
