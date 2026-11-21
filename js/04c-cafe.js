@@ -96,7 +96,7 @@ function cfSpawn(){
   const o=cfOrder(); if (!o.mc&&!o.ox&&!o.sp) return;
   const g=cfGuest(), c=makePlayerChar(g.job);
   dressP2(c,g.look).catch(()=>{});
-  c.root.position.set(CF_DOOR.x,0,CF_DOOR.z); c.root.rotation.y=0; CAFE.dyn.add(c.root); c.anim.setBase('idle');
+  c.root.position.set(CF_DOOR.x,0,CF_DOOR.z); c.root.rotation.y=0; CAFE.dyn.add(c.root); cfAnimKeys(c); c.anim.setBase('cidle');
   const pat=CAFE.lv.pat*(MODE==='hero'?1:(EASEF.quiz||1));
   const pat2=pat*(CF_KIND[o.k].pat||1);
   const C={id:++CAFE.id,no:++CAFE.spawned,name:g.n,c,o,pat:pat2,left:pat2,x:CF_DOOR.x,z:CF_DOOR.z,ry:0,q:3,path:null,leaving:0,mood:'',el:null,happyT:0};
@@ -168,30 +168,76 @@ function cfQUI(){
   steps.push(['오븐',CAFE.step==='serve']); steps.push(['서빙',false]);
   $('#cfSteps').innerHTML=steps.map(([n,d])=>`<span class="${d?'done':n===cur0?'now':''}">${d?'✓ ':''}${n}</span>`).join('<i>›</i>');
 }
-/* 내가 들고 있는 쟁반 */
+/* 내가 들고 있는 쟁반: 배 앞 낮은 곳에 들어요 (머리가 큰 캐릭터라 높이 들면 케이크가 얼굴에 파묻혀요)
+   두 팔은 cfCarryPose()가 쟁반 양쪽을 받치도록 움직여요 */
+const CF_TRAY={y:.86,z:.47}, CF_HAND={x:.31,y:.83,z:.39};
 function cfCarry(kind){
-  if (!CAFE.tray){ const g=new THREE.Group(); const t=new THREE.Mesh(new THREE.CylinderGeometry(.5,.5,.05,20),std(0xd8d8e0)); g.add(t);
-    const base=new THREE.Mesh(new THREE.CylinderGeometry(.34,.34,.3,18),std(0xffe0b0)); base.position.y=.18; g.add(base);
-    const top=new THREE.Mesh(new THREE.CylinderGeometry(.36,.36,.1,18),std(0xff6b8a)); top.position.y=.36; g.add(top);
-    const ch=new THREE.Mesh(new THREE.SphereGeometry(.09,10,8),std(0xe8143c)); ch.position.y=.47; g.add(ch);
-    const layers=[0,1,2,3].map(k=>{ const m=new THREE.Mesh(new THREE.CylinderGeometry(.32-k*.04,.32-k*.04,.16,18),std(0xffffff)); m.position.y=.42+k*.17; g.add(m); return m; });
-    g.position.set(0,1.45,.62); CAFE.tray={g,base,top,ch,layers}; }
+  if (!CAFE.tray){ const g=new THREE.Group(), silver=std(0xe3e7ee,{rim:.25});
+    const t=new THREE.Mesh(new THREE.CylinderGeometry(.35,.32,.025,32),silver); g.add(t);
+    const rim=new THREE.Mesh(new THREE.TorusGeometry(.345,.017,6,32),silver); rim.rotation.x=Math.PI/2; rim.position.y=.016; g.add(rim);
+    const lace=new THREE.Mesh(new THREE.CylinderGeometry(.29,.29,.006,16),std(0xffffff)); lace.position.set(0,.016,.04); g.add(lace);
+    const base=new THREE.Mesh(new THREE.CylinderGeometry(.255,.265,.15,26),std(0xffe0b0)); base.position.set(0,.094,.04); g.add(base);
+    const top=new THREE.Mesh(new THREE.CylinderGeometry(.27,.27,.05,26),std(0xff6b8a)); top.position.set(0,.194,.04); g.add(top);
+    for (let k=0;k<10;k++){ const a=k/10*Math.PI*2, d=new THREE.Mesh(new THREE.SphereGeometry(.05,8,6),top.material); d.position.set(Math.cos(a)*.255,-.024,Math.sin(a)*.255); d.scale.set(1,1.3,1); top.add(d); }
+    const ch=new THREE.Mesh(new THREE.SphereGeometry(.055,12,10),std(0xe8143c)); ch.position.set(0,.268,.04); g.add(ch);
+    const stem=new THREE.Mesh(new THREE.CylinderGeometry(.006,.006,.08,5),std(0x5d4037)); stem.position.set(.012,.06,0); stem.rotation.z=-.3; ch.add(stem);
+    const layers=[0,1,2,3].map(k=>{ const r=.255-k*.032; const m=new THREE.Mesh(new THREE.CylinderGeometry(r,r,.064,22),std(0xffffff)); m.position.set(0,.05+k*.066,.04); g.add(m); return m; });
+    g.traverse(o=>{ if (o.isMesh){ o.castShadow=true; o.receiveShadow=true; } });
+    g.position.set(0,CF_TRAY.y,CF_TRAY.z); CAFE.tray={g,base,top,ch,layers}; }
   const T=CAFE.tray; if (!kind){ if (T.g.parent) T.g.parent.remove(T.g); return; }
-  if (T.g.parent!==pg) pg.add(T.g);
+  if (T.g.parent!==pg){ pg.add(T.g); T.pop=0; }
   const mcI=CAFE.pick.mc, oxI=CAFE.pick.ox;
   T.base.visible=true; T.top.visible=mcI!=null; if (mcI!=null) T.top.material.color.setHex(CF_SHELF[mcI].hex);
   T.ch.visible=oxI!=null; if (oxI!=null) T.ch.material.color.setHex(oxI?0x5fd38d:0xe8143c);
   const C=cfFront(), k=C?C.o.k:'base', sel=CAFE.pick.sel||[];
   T.layers.forEach((m,j)=>{ m.visible=k==='ord'&&j<sel.length; if (m.visible) m.material.color.setHex(CF_SHELF[sel[j]].hex); });
   if (k==='ord'){ T.top.visible=false; T.ch.visible=false; }
-  if (k==='cmb'){ T.top.visible=true; T.top.material.color.setHex(0xfff0f5); T.ch.visible=sel.length>0; T.ch.material.color.setHex(sel.length?CF_SHELF[sel[sel.length-1]].hex:0xe8143c); T.ch.scale.setScalar(1+.25*sel.length); }
+  if (k==='cmb'){ T.top.visible=true; T.top.material.color.setHex(0xfff0f5); T.ch.visible=sel.length>0; T.ch.material.color.setHex(sel.length?CF_SHELF[sel[sel.length-1]].hex:0xe8143c); T.ch.scale.setScalar(Math.min(1.6,1+.15*sel.length)); }
   if (k==='sa'){ T.top.visible=true; T.top.material.color.setHex(0xffb3c7); T.ch.visible=true; T.ch.material.color.setHex(0xffd23f); T.ch.scale.setScalar(1.3); }
   if (k==='base') T.ch.scale.setScalar(1);
   T.base.material.color.setHex(kind==='baked'?0xe9b36a:0xffe0b0);
 }
 
+/* 카페에서는 무기 · 방패를 들지 않아요 (손 자리에 붙은 것을 숨겨요. 카페를 나가면 다시 보여요) */
+function cfHands(c,hide){ if (!c||!c.root) return; for (const n of ['handslotl','handslotr']){ const b=cfBone(c,n); if (b) b.children.forEach(o=>{ o.visible=!hide; }); } }
+/* 카페에서는 직업과 상관없이 맨손 기본 동작(서 있기 · 달리기)을 써요. 궁수의 활 든 자세가 빈손에선 어색해서요 */
+function cfAnimKeys(c){ const A=c.anim; if (A.actions.cidle) return; const by=n=>GL.pclips.animations.find(x=>x.name===n);
+  const ci=by('Idle'), cr=by('Running_A'); A.actions.cidle=ci?A.mixer.clipAction(ci):A.actions.idle; A.actions.crun=cr?A.mixer.clipAction(cr):A.actions.run; }
+/* 쟁반 드는 자세: 위팔 · 아래팔 두 뼈를 돌려서 손목이 쟁반 양쪽 아래에 오게 해요 (애니메이션 위에 덮어써요) */
+const _ik={a:new THREE.Vector3(),b:new THREE.Vector3(),c:new THREE.Vector3(),t:new THREE.Vector3(),e:new THREE.Vector3(),p:new THREE.Vector3(),d:new THREE.Vector3(),v0:new THREE.Vector3(),v1:new THREE.Vector3(),q:new THREE.Quaternion(),q2:new THREE.Quaternion(),q3:new THREE.Quaternion()};
+function cfBone(c,n){ const B=c.cfBones||(c.cfBones={}); if (!B[n]||!B[n].parent) B[n]=c.root.getObjectByName(n); return B[n]; }
+function cfTurnBone(B,from,cur,want,w){ const I=_ik;
+  I.v0.subVectors(cur,from).normalize(); I.v1.subVectors(want,from).normalize(); I.q.setFromUnitVectors(I.v0,I.v1);
+  B.getWorldQuaternion(I.q2); I.q2.premultiply(I.q); B.parent.getWorldQuaternion(I.q3).invert(); I.q3.multiply(I.q2);
+  B.quaternion.slerp(I.q3,w); B.updateMatrixWorld(true); }
+function cfArmIK(c,side,w,bob){
+  const U=cfBone(c,'upperarm'+side), L=cfBone(c,'lowerarm'+side), Wr=cfBone(c,'wrist'+side); if (!U||!L||!Wr) return;
+  const s=side==='l'?1:-1, I=_ik;
+  U.getWorldPosition(I.a); L.getWorldPosition(I.b); Wr.getWorldPosition(I.c);
+  const la=I.a.distanceTo(I.b), lb=I.b.distanceTo(I.c);
+  I.t.set(s*CF_HAND.x,CF_HAND.y+bob,CF_HAND.z); pg.localToWorld(I.t);
+  I.d.subVectors(I.t,I.a); let dist=I.d.length(); I.d.divideScalar(dist||1); dist=Math.min(la+lb-.004,Math.max(Math.abs(la-lb)+.004,dist));
+  I.p.set(s*.9,-1,-.45).applyQuaternion(pg.quaternion); I.p.addScaledVector(I.d,-I.p.dot(I.d)).normalize();   // 팔꿈치는 바깥 · 아래 · 살짝 뒤로
+  const ca=(la*la+dist*dist-lb*lb)/(2*la*dist), sa=Math.sqrt(Math.max(0,1-ca*ca));
+  I.e.copy(I.a).addScaledVector(I.d,la*ca).addScaledVector(I.p,la*sa);
+  cfTurnBone(U,I.a,I.b,I.e,w);
+  L.getWorldPosition(I.b); Wr.getWorldPosition(I.c);
+  I.t.copy(I.b).addScaledVector(I.d.subVectors(I.t,I.b).normalize(),lb);
+  cfTurnBone(L,I.b,I.c,I.t,w);
+}
+function cfCarryPose(dt,moving){
+  const T=CAFE.tray, held=!!(T&&T.g.parent===pg);
+  CAFE.carryW=(CAFE.carryW||0)+((held?1:0)-(CAFE.carryW||0))*Math.min(1,dt*12);
+  const bob=moving?Math.abs(Math.sin(W.t*10.5))*.025:0;
+  if (held){ T.pop=Math.min(1,(T.pop||0)+dt*6); const k=T.pop, e=1+2.2*(k-1)*(k-1)*(k-1)+1.2*(k-1)*(k-1); T.g.scale.setScalar(Math.max(.01,e)); T.g.position.set(0,CF_TRAY.y+bob,CF_TRAY.z); }
+  if (!knight||CAFE.carryW<.01) return;
+  pg.updateMatrixWorld(true);
+  cfArmIK(knight,'l',CAFE.carryW,bob); cfArmIK(knight,'r',CAFE.carryW,bob);
+}
+
 /* ---------- 판 진행 ---------- */
 function cafeReset(){
+  Object.values(PCH).forEach(c=>cfHands(c,false));
   document.body.classList.remove('cafe'); ['#cfHud','#cfQ','#cfRes','#cfHelp'].forEach(s=>{ const e=$(s); if (e) e.hidden=true; });
   if (MAPK!=='cafe' || !CAFE.dyn){ return; }
   cfClearPanels(); for (const C of CAFE.cust){ CAFE.dyn.remove(C.c.root); C.el&&C.el.remove(); } CAFE.cust=[]; $('#cfBubs').innerHTML='';
@@ -279,7 +325,7 @@ function cfUpdate(dt){
     if (d>.05){ const k=Math.min(1,sp*dt/d); C.x+=dx*k; C.z+=dz*k; }
     const want=walk?Math.atan2(dx,dz):(face!=null?face:C.ry); let da=want-C.ry; da=Math.atan2(Math.sin(da),Math.cos(da)); C.ry+=da*Math.min(1,dt*10);
     C.c.root.position.set(C.x,Math.abs(Math.sin(W.t*9))*(walk?.12:0),C.z); C.c.root.rotation.y=C.ry;
-    C.c.anim.setBase(walk?'run':'idle',walk?.8:1); C.c.mixer.update(dt);
+    C.c.anim.setBase(walk?'crun':'cidle',walk?.8:1); C.c.mixer.update(dt);
   }
   CAFE.cust=CAFE.cust.filter(C=>{ if (C.leaving&&C.path.length===1&&Math.hypot(C.x-C.path[0][0],C.z-C.path[0][1])<.3){ CAFE.dyn.remove(C.c.root); C.c.mixer.stopAllAction(); return false; } return true; });
   // 뒷문: 손님이 가까이 오면 안쪽으로 열려요
@@ -328,7 +374,7 @@ function cafeFrame(dt,real,now){
   }
   pg.position.set(P.x,0,P.z);
   { let dy=Math.atan2(P.fx,P.fz)-pg.rotation.y; dy=Math.atan2(Math.sin(dy),Math.cos(dy)); pg.rotation.y+=dy*Math.min(1,dt*14); }
-  if (knight){ setBaseSynced(knight.anim,moving?'run':'idle',moving?1.15:1); knight.mixer.update(W.paused?0:dt); }
+  if (knight){ cfAnimKeys(knight); cfHands(knight,true); setBaseSynced(knight.anim,moving?'crun':'cidle',moving?1.15:1); knight.mixer.update(W.paused?0:dt); cfCarryPose(W.paused?0:dt,moving); }
   fx.update(dt); updateCombatFx(dt); updateDreamy(real); qualityTick(now);
   { const o=sun.userData.off||[22,38,14]; sun.position.set(P.x+o[0],o[1],P.z+o[2]); sun.target.position.set(P.x,0,P.z); sun.target.updateMatrixWorld(); }
   // 카메라: 화면이 16:9보다 좁으면(16:10 · 4:3) 조금 뒤로 물러나서 가게 양쪽 끝(오븐 · 손님 줄)이 잘리지 않게 해요
@@ -387,6 +433,7 @@ function cfArrowTick(){
     L.position.set(cx,(shelf?.9:3.6)+Math.sin(t*2)*.08,cz+(shelf?1.7:0)); }
 }
 function cafeEndUI(){
+  Object.values(PCH).forEach(c=>cfHands(c,false)); CAFE.carryW=0;
   document.body.classList.remove('cafe'); ['#cfHud','#cfQ','#cfRes','#cfHelp','#cfOven'].forEach(s=>{ const e=$(s); if (e) e.hidden=true; });
   for (const C of CAFE.cust){ C.el&&C.el.remove(); } $('#cfBubs')&&($('#cfBubs').innerHTML=''); cfCarry(null);
   if (CAFE.arrows){ CAFE.arrows.forEach(a=>{ a.visible=false; a.userData.ring.visible=false; }); CAFE.label.visible=false; }
