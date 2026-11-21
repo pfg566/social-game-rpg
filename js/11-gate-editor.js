@@ -78,6 +78,7 @@ function renderHistory(){
 }
 renderHistory();
 function endGame(win){
+  if (MAPK==='village'){ villageLeave(); return; }   // 마을에는 결과 화면 · 기록이 없어요
   $('#rewardBox').hidden=true;
   if (MAPK==='runner') runEndUI();
   if (MAPK==='cafe') cafeEndUI();
@@ -609,12 +610,15 @@ function quitOpen(){
   if (MAPK==='live'){ liveLeave(); return; }   // 수업 모드: 묻지 않고 바로 로비로
   QUIT.solo=!isMultiMode(); QUIT.wasPaused=W.paused;
   if (QUIT.solo){ W.paused=true; for (const k in keys) keys[k]=false; }      // 혼자 하는 판은 잠깐 멈춰요 (함께 하는 판은 계속 진행돼요)
-  $('#quitMsg').textContent=isMultiMode()?'함께 하는 게임이라 화면은 멈추지 않아요. 나가면 이번 판에서 빠지고, 지금까지 푼 문제는 \'중간에 나옴\'으로 기록돼요.':'지금까지 푼 문제와 점수는 \'중간에 나옴\'으로 기록돼요.';
+  const vil=MAPK==='village';   // 노을 마을: 문제를 푸는 판이 아니라서 기록 없이 로비로 돌아가요
+  $('#quitTitle').textContent=vil?'마을에서 나갈까요?':'게임을 그만할까요?';
+  $('#quitMsg').textContent=vil?'노을 마을에서 나가 로비로 돌아가요.':isMultiMode()?'함께 하는 게임이라 화면은 멈추지 않아요. 나가면 이번 판에서 빠지고, 지금까지 푼 문제는 \'중간에 나옴\'으로 기록돼요.':'지금까지 푼 문제와 점수는 \'중간에 나옴\'으로 기록돼요.';
   $('#quitPop').hidden=false; setTimeout(()=>$('#quitNo').focus(),0);
 }
 function quitClose(){ if ($('#quitPop').hidden) return; $('#quitPop').hidden=true; if (QUIT.solo && W.state==='play') W.paused=QUIT.wasPaused; try{ canvas.focus({preventScroll:true}); }catch(e){} }
 function quitGame(){
   $('#quitPop').hidden=true; if (W.state!=='play') return;
+  if (MAPK==='village'){ W.paused=false; villageLeave(); return; }   // 마을: '로비로' 버튼과 똑같이 (지도 · 안내 · 버튼도 같이 닫혀요)
   ['#quiz','#lvUp','#reviveIntro','#prep','#locIntro'].forEach(q=>{ const e=$(q); if (e) e.hidden=true; });
   Q.answered=true; Q.item=null; W.paused=false; P.down=false; if (knight && knight.anim.dead) knight.anim.revive();
   if (PARTY&&PARTY.on){ partyEnd(false,'quit',0); }
