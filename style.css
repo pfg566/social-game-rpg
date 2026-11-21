@@ -825,8 +825,20 @@ body.cafe #hud, body.cafe #skillbar, body.cafe #hint, body.cafe #touch, body.caf
 .cf-bub .t{display:flex;justify-content:space-between;gap:4px}.cf-bub em{font-style:normal;color:#c2185b;font-size:12px}
 .cf-bub .bar{margin-top:5px;height:8px;border-radius:99px;background:#f2e6ea;overflow:hidden}.cf-bub .bar i{display:block;height:100%}
 .cf-bub .hp{color:#ff4d88;font-size:16px}.cf-bub .sd{font-size:18px}
-.cf-oven{position:fixed;left:50%;top:46%;transform:translate(-50%,-50%);z-index:12;width:220px;height:26px;border:3px solid #3a2230;border-radius:99px;background:#fff;overflow:hidden}
-.cf-oven i{position:absolute;left:0;top:0;bottom:0;background:#ff8a3d}.cf-oven span{position:relative;display:block;text-align:center;font-weight:700;line-height:20px}
+/* 🔥 오븐 굽기 게이지: 바늘이 금색 구간에 있을 때 스페이스 · 클릭 → 완벽 굽기 */
+.cf-oven{position:fixed;left:50%;top:45%;transform:translate(-50%,-50%);z-index:12;width:min(330px,80vw);padding:8px 12px 7px;border:3px solid #3a2230;border-radius:16px;background:#fff;box-shadow:3px 3px 0 #3a2230;text-align:center;cursor:pointer;user-select:none;transition:box-shadow .1s}
+.cf-oven.hot{box-shadow:0 0 0 5px #ffd23f,3px 3px 0 #3a2230}
+.cfo-bar{position:relative;height:24px;border-radius:99px;background:linear-gradient(90deg,#fff6e4,#f6d39f);border:2px solid #3a2230;overflow:hidden}
+.cfo-g{position:absolute;top:0;bottom:0;background:repeating-linear-gradient(45deg,#ffd23f 0 8px,#ffc21a 8px 16px)}
+.cfo-b{position:absolute;top:0;bottom:0;right:0;background:linear-gradient(90deg,#c27a45,#5e3218)}
+.cfo-n{position:absolute;top:-3px;bottom:-3px;width:6px;margin-left:-3px;background:#3a2230;border-radius:3px;box-shadow:0 0 0 2px #fff}
+.cfo-t{display:block;margin-top:5px;font-weight:700;font-size:15px;color:#3a2230}.cfo-t b{color:#d18a00}
+.cf-oven kbd,.cf-taste kbd,#cfHelp kbd{display:inline-block;padding:0 6px;border:2px solid #3a2230;border-radius:6px;background:#fff;font-family:inherit;font-weight:700;font-size:12px;line-height:17px;box-shadow:0 2px 0 #3a2230;vertical-align:1px}
+/* 🥄 맛보기 버튼 · 👑 VIP 말풍선 · 알림 색 */
+.cf-taste{margin-left:auto;border:2.5px solid #3a2230;border-radius:99px;background:#fff4d6;padding:3px 10px;font:inherit;font-weight:700;font-size:13px;cursor:pointer;box-shadow:2px 2px 0 #3a2230;color:#3a2230}
+.cf-taste:hover{background:#ffe7a3}.cf-tasted{margin-left:auto;font-size:13px;font-weight:700;color:#6b5560}
+.cf-bub.vip{border-color:#e0a800;background:#fffaf0;box-shadow:2px 2px 0 #e0a800}.cf-bub.vip.front{box-shadow:3px 3px 0 #ff4d88}
+.cf-toast.good{background:#1f9d55}.cf-toast.bad{background:#d93a3f}.cf-toast.gold{background:#ffb800;color:#3a2230}.cf-toast.burnt{background:#6b3a1e}
 .cf-toast{position:fixed;left:50%;top:40%;transform:translate(-50%,10px);z-index:13;background:#3a2230;color:#fff;padding:8px 16px;border-radius:99px;font-weight:700;opacity:0;pointer-events:none}
 .cf-toast.show{animation:cfToast 2.6s ease}
 @keyframes cfToast{0%{opacity:0;transform:translate(-50%,10px)}12%,80%{opacity:1;transform:translate(-50%,0)}100%{opacity:0}}

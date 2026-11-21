@@ -1,5 +1,7 @@
 /* 사회 게임 RPG · 🍰 디저트 카페 · 손님 주문서(문제)를 보고 정답 재료로 디저트를 만들어 서빙해요
    한 주문 = 4지선다 1개(재료 선반) + O/X 1개(토핑대) → 오븐 → 카운터에서 서빙. 답이 맞았는지는 서빙할 때 손님 반응으로 알 수 있어요.
+   재미 요소: 오븐 굽기 타이밍(금색에서 스페이스 → 완벽 굽기) · 🥄 맛보기(서빙 전에 맞았는지 확인, 한 주문 1번) ·
+   👑 VIP(팁 2배) · 🎉 해피 아워(40초 팁 1.5배) · 👭 친구 두 명(케이크 2개) · 🔁 다시 찾아온 손님(내가 틀린 문제를 그 손님이 다시 주문)
    몬스터 · 쓰러짐이 없는 평화 모드예요. 파일은 01 → 13 순서로 불러와요. 모든 파일이 같은 전역 공간을 함께 써요. */
 const CF_SHELF=[{x:-6.6,c:'#ff6b8a',n:'딸기',hex:0xff6b8a},{x:-2.2,c:'#8b5a3c',n:'초콜릿',hex:0x8b5a3c},{x:2.2,c:'#e0a800',n:'레몬',hex:0xffd84a},{x:6.6,c:'#6c5ce7',n:'블루베리',hex:0x7c6cf0}];
 const CF_PAD_Z=-5.9, CF_OX=[{x:-8.7,z:-2.85,c:'#e5484d',n:'O 체리'},{x:-8.7,z:-.3,c:'#22a35a',n:'X 민트'}], CF_OVEN={x:-9.3,z:-5.6}, CF_SERVE={x:4.0,z:-1.0};
@@ -11,6 +13,11 @@ const CF_OUT=[[8.6,1.6],[8.6,12]], CF_BACK=[[10.8,-8.5],[10.8,-11.6]];
 const CF_BOX=[[-8.8,8.8,-9.8,-8.45],[-12.4,-11.2,-6.0,-4.3],[-12.4,-10.66,-4.25,2.6],[-12.4,7.2,2.6,3.8],[5.4,7.2,-4.3,2.6],[7.2,8.9,-4.3,-2.5],[8.84,9.2,-9.8,-4.3]];
 const CF_ROUND=[{x:-10.8,z:-8.3,r:1.86}];
 const CF_LV={easy:{n:8,pat:95,gap:11},normal:{n:10,pat:80,gap:10},hard:{n:12,pat:66,gap:9},hero:{n:14,pat:54,gap:8}};
+const CF_WAITK=1/3;            // 줄 서 있는 손님은 메뉴판을 보며 1/3 속도로만 기다려요 (맨 앞 손님만 제 속도)
+const CF_BAKE_T=3.0;           // 오븐 바늘이 끝까지 가는 시간(초)
+function cfMild(){ return MODE!=='hero'&&((EASEF&&EASEF.quiz>1)||LEVEL==='easy'); }   // 쉬운 반 · 쉬움 단계: 탄 케이크 벌칙 없음
+function cfGold(){ return MODE==='hero'?[.64,.8]:cfMild()?[.55,.86]:[.6,.84]; }       // 금색(완벽 굽기) 구간
+function cfHappy(){ return W.t<(CAFE.happy||0); }
 const CF_GUEST=['mage','rogue','barbarian'];
 const CAFE={root:null,dyn:null,panels:[],oxPanels:[],cust:[],spawned:0,n:10,lv:null,nextSpawn:0,step:'',pick:{mc:null,ox:null},stand:null,standT:0,bake:0,carry:null,
   tips:0,served:0,perfect:0,lost:0,combo:0,maxCombo:0,scores:[],res:null,id:0,cols:[],help:0};
@@ -92,21 +99,54 @@ function cfOrder(){
   if (k==='ord'){ o.map=qxShuffle(it.ord.it.map((_,i)=>i)); o.opts=o.map.map(i=>it.ord.it[i]); }
   return o;
 }
+function cfItems(o){ return [o.mc,o.ox,o.sp].filter(Boolean); }
+function cfPatOf(o){ return CAFE.lv.pat*(MODE==='hero'?1:(EASEF.quiz||1))*(CF_KIND[o.k].pat||1); }
+function cfMakeGuest(job,look,x,z){ const c=makePlayerChar(job); dressP2(c,look).catch(()=>{}); c.root.position.set(x,0,z); c.root.rotation.y=0; CAFE.dyn.add(c.root); cfAnimKeys(c); c.anim.setBase('cidle'); return c; }
 function cfSpawn(){
-  const o=cfOrder(); if (!o.mc&&!o.ox&&!o.sp) return;
-  const g=cfGuest(), c=makePlayerChar(g.job);
-  dressP2(c,g.look).catch(()=>{});
-  c.root.position.set(CF_DOOR.x,0,CF_DOOR.z); c.root.rotation.y=0; CAFE.dyn.add(c.root); cfAnimKeys(c); c.anim.setBase('cidle');
-  const pat=CAFE.lv.pat*(MODE==='hero'?1:(EASEF.quiz||1));
-  const pat2=pat*(CF_KIND[o.k].pat||1);
-  const C={id:++CAFE.id,no:++CAFE.spawned,name:g.n,c,o,pat:pat2,left:pat2,x:CF_DOOR.x,z:CF_DOOR.z,ry:0,q:3,path:null,leaving:0,mood:'',el:null,happyT:0};
-  const el=document.createElement('div'); el.className='cf-bub'; $('#cfBubs').appendChild(el); C.el=el;
+  // 아직 가게 안에 있는 손님이 틀렸던 문제는 잠깐 미뤄요 (그 손님이 나가기도 전에 같은 손님이 또 들어오면 이상해서)
+  const hold=W.wrong.filter(w=>!w.fixed&&!w.pending&&CAFE.cust.some(c=>c.items&&c.items.includes(w.item)));
+  hold.forEach(w=>{ w.pending=true; });
+  const left=CAFE.n-CAFE.spawned, big=CAFE.n>=10;
+  const pair=left>=2&&CAFE.spawned>=2&&CAFE.pairN<(big?2:1)&&Math.random()<.22;   // 👭 친구 두 명: 주문서 한 장에 케이크 2개
+  const orders=[cfOrder()]; if (pair) orders.push(cfOrder());
+  hold.forEach(w=>{ w.pending=false; });
+  const okO=o=>o&&(o.mc||o.ox||o.sp); if (!okO(orders[0])) return; if (orders[1]&&!okO(orders[1])) orders.pop();
+  const items=orders.flatMap(cfItems);
+  const back=orders.length===1?items.map(it=>CAFE.wrongBy.get(it)).find(Boolean):null;   // 🔁 내가 틀렸던 문제면 그때 그 손님이 다시 와요
+  const vip=!back&&orders.length===1&&CAFE.spawned>=2&&CAFE.spawned-CAFE.lastVip>=3&&CAFE.vipN<(big?2:1)&&Math.random()<.25;   // 👑 VIP: 기다리는 시간은 같고 팁 2배 (연달아 오지 않게)
+  const no=CAFE.spawned+1, g=back||cfGuest(); CAFE.spawned++;
+  const look=vip?{...g.look,hat:'nohat_p0'}:g.look, c=cfMakeGuest(g.job,look,CF_DOOR.x,CF_DOOR.z);
+  if (vip){ cfCrown(c); CAFE.vipN++; CAFE.lastVip=CAFE.spawned; }
+  let c2=null, g2=null; if (orders.length>1){ g2=cfGuest(); CAFE.spawned++; c2=cfMakeGuest(g2.job,g2.look,CF_DOOR.x-.55,CF_DOOR.z+.6); CAFE.pairN++; }
+  const pat=orders.reduce((a,o)=>a+cfPatOf(o),0);
+  const C={id:++CAFE.id,no,name:g.n,job:g.job,look,c,o:orders[0],orders,oi:0,items,pat,left:pat,x:CF_DOOR.x,z:CF_DOOR.z,ry:0,q:3,path:null,leaving:0,mood:'',el:null,happyT:0,
+    vip,back:!!back,c2,name2:g2?g2.n:null,x2:CF_DOOR.x-.55,z2:CF_DOOR.z+.6,ry2:0,settled:new Set(),tasted:false,remade:false,frontAt:null,allPerfect:true};
+  const el=document.createElement('div'); el.className='cf-bub'+(vip?' vip':''); $('#cfBubs').appendChild(el); C.el=el;
   CAFE.cust.push(C); if (cfFront()===C) cfActivate();
+}
+/* 👑 VIP 손님 왕관: 머리 꼭대기에 똑바로 얹고 머리뼈에 붙여서 고개를 따라 움직여요 */
+function cfCrown(c){
+  const h=c.root.getObjectByName('head'); if (!h) return;
+  c.root.updateMatrixWorld(true);
+  const gold=std(0xffbf1f,{rim:.6,emissive:0x5a3600}), g=new THREE.Group(), gems=[0xe5484d,0x3fa9f5,0x22a35a,0xc77dff,0xffffff];
+  const band=new THREE.Mesh(new THREE.CylinderGeometry(.25,.27,.13,18,1,true),gold); g.add(band); gold.side=THREE.DoubleSide;
+  const ring=new THREE.Mesh(new THREE.TorusGeometry(.27,.024,6,18),gold); ring.rotation.x=Math.PI/2; ring.position.y=-.06; g.add(ring);
+  for (let k=0;k<5;k++){ const a=k/5*Math.PI*2;
+    const sp=new THREE.Mesh(new THREE.ConeGeometry(.065,.17,6),gold); sp.position.set(Math.cos(a)*.24,.14,Math.sin(a)*.24); g.add(sp);
+    const ball=new THREE.Mesh(new THREE.SphereGeometry(.03,8,6),gold); ball.position.set(Math.cos(a)*.24,.235,Math.sin(a)*.24); g.add(ball);
+    const jw=new THREE.Mesh(new THREE.SphereGeometry(.036,8,6),std(gems[k])); jw.position.set(Math.cos(a+.63)*.268,0,Math.sin(a+.63)*.268); g.add(jw); }
+  g.traverse(o=>{ if (o.isMesh) o.castShadow=true; });
+  const rq=c.root.getWorldQuaternion(new THREE.Quaternion()), wp=h.getWorldPosition(new THREE.Vector3()).add(new THREE.Vector3(0,1.05,0).applyQuaternion(rq));
+  h.worldToLocal(wp); g.position.copy(wp);
+  g.quaternion.copy(h.getWorldQuaternion(new THREE.Quaternion()).invert().multiply(rq).multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,0,1),.12)));
+  const ws=h.getWorldScale(new THREE.Vector3()); g.scale.set(1/ws.x,1/ws.y,1/ws.z);
+  h.add(g);
 }
 function cfFront(){ return CAFE.cust.find(c=>!c.leaving)||null; }
 function cfActivate(){
-  cfClearPanels(); CAFE.pick={mc:null,ox:null,sel:[],sa:null,hint:false}; CAFE.bake=0; cfCarry(null); CAFE.qxKey='';
+  cfClearPanels(); CAFE.pick={mc:null,ox:null,sel:[],sa:null,hint:false}; CAFE.bake=0; CAFE.bakeQ=null; cfCarry(null); CAFE.qxKey='';
   const C=cfFront(); if (!C){ $('#cfQ').hidden=true; CAFE.step=''; return; }
+  if (C.frontAt==null) C.frontAt=W.t;   // 빠름 보너스는 맨 앞이 된 뒤 걸린 시간으로 따져요
   const o=C.o;
   if (o.mc) o.opts.forEach((t,i)=>{ CAFE.panels.push(cfPanel(i,cfBoardTex(String(i+1),t,i))); });
   if (o.k==='cmb'||o.k==='ord') o.opts.forEach((t,i)=>{ CAFE.panels.push(cfPanel(i,cfBoardTex(o.k==='cmb'?QX_LET[i]:'ABCD'[i],t,i))); });
@@ -117,7 +157,7 @@ function cfActivate(){
 function cfQUI(){
   const C=cfFront(); if (!C){ $('#cfQ').hidden=true; return; } const o=C.o;
   $('#cfQ').hidden=false;
-  $('#cfQNo').textContent=`주문 #${C.no}`;
+  $('#cfQNo').textContent=`주문 #${C.no}`+(C.orders.length>1?` · 케이크 ${C.oi+1}/${C.orders.length}`:'');
   const box=$('#cfOpts'), cur0={mc:'재료',ox:'토핑',oven:'오븐',serve:'서빙',sa:'주문서',cmb:'토핑 담기',ord:'층 쌓기'}[CAFE.step];
   let steps;
   if (o.k==='base'){
@@ -165,8 +205,15 @@ function cfQUI(){
       }
     }
   }
+  const tag=(C.vip?'👑 VIP 손님 · ':'')+(C.back?'🔁 다시 찾아온 손님 · ':'')+(C.orders.length>1?'👭 친구 두 명 · ':'');
+  if (tag) $('#cfQKind').textContent=tag+$('#cfQKind').textContent;
+  if (CAFE.step==='oven') $('#cfHint').textContent='오븐 발판에 서면 굽기 시작 · 바늘이 금색에 오면 스페이스(또는 클릭)!';
+  if (CAFE.step==='serve') $('#cfHint').textContent=C.tasted?'카운터 앞 노란 발판에서 서빙!':'카운터 앞 노란 발판에서 서빙! 헷갈리면 먼저 🥄 맛보기 (T, 한 번만)';
   steps.push(['오븐',CAFE.step==='serve']); steps.push(['서빙',false]);
-  $('#cfSteps').innerHTML=steps.map(([n,d])=>`<span class="${d?'done':n===cur0?'now':''}">${d?'✓ ':''}${n}</span>`).join('<i>›</i>');
+  const taste=CAFE.step==='serve'&&!C.tasted?'<button class="cf-taste" id="cfTaste" type="button">🥄 맛보기 <kbd>T</kbd></button>'
+    :C.tasted?`<span class="cf-tasted">${C.remade?(CAFE.step==='serve'?'🥄 다시 만든 케이크':'🥄 다시 만드는 중'):'🥄 맛봄 · 맛있대요'}</span>`:'';
+  $('#cfSteps').innerHTML=steps.map(([n,d])=>`<span class="${d?'done':n===cur0?'now':''}">${d?'✓ ':''}${n}</span>`).join('<i>›</i>')+taste;
+  const tb=$('#cfTaste'); if (tb) tb.onclick=e=>{ e.preventDefault(); tb.blur(); cfTaste(); };
 }
 /* 내가 들고 있는 쟁반: 배 앞 낮은 곳에 들어요 (머리가 큰 캐릭터라 높이 들면 케이크가 얼굴에 파묻혀요)
    두 팔은 cfCarryPose()가 쟁반 양쪽을 받치도록 움직여요 */
@@ -195,7 +242,7 @@ function cfCarry(kind){
   if (k==='cmb'){ T.top.visible=true; T.top.material.color.setHex(0xfff0f5); T.ch.visible=sel.length>0; T.ch.material.color.setHex(sel.length?CF_SHELF[sel[sel.length-1]].hex:0xe8143c); T.ch.scale.setScalar(Math.min(1.6,1+.15*sel.length)); }
   if (k==='sa'){ T.top.visible=true; T.top.material.color.setHex(0xffb3c7); T.ch.visible=true; T.ch.material.color.setHex(0xffd23f); T.ch.scale.setScalar(1.3); }
   if (k==='base') T.ch.scale.setScalar(1);
-  T.base.material.color.setHex(kind==='baked'?0xe9b36a:0xffe0b0);
+  T.base.material.color.setHex(kind!=='baked'?0xffe0b0:CAFE.bakeQ==='burnt'?0x9a5a2e:CAFE.bakeQ==='soft'?0xf3d6a2:CAFE.bakeQ==='perfect'?0xf0ad52:0xe9b36a);
 }
 
 /* 카페에서는 무기 · 방패를 들지 않아요 (손 자리에 붙은 것을 숨겨요. 카페를 나가면 다시 보여요) */
@@ -240,10 +287,12 @@ function cafeReset(){
   Object.values(PCH).forEach(c=>cfHands(c,false));
   document.body.classList.remove('cafe'); ['#cfHud','#cfQ','#cfRes','#cfHelp'].forEach(s=>{ const e=$(s); if (e) e.hidden=true; });
   if (MAPK!=='cafe' || !CAFE.dyn){ return; }
-  cfClearPanels(); for (const C of CAFE.cust){ CAFE.dyn.remove(C.c.root); C.el&&C.el.remove(); } CAFE.cust=[]; $('#cfBubs').innerHTML='';
+  cfClearPanels(); for (const C of CAFE.cust){ CAFE.dyn.remove(C.c.root); if (C.c2) CAFE.dyn.remove(C.c2.root); C.el&&C.el.remove(); } CAFE.cust=[]; $('#cfBubs').innerHTML='';
   const lv=CF_LV[MODE==='hero'?'hero':LEVEL]||CF_LV.normal;
-  Object.assign(CAFE,{lv,n:lv.n,spawned:0,nextSpawn:1.2,step:'',pick:{mc:null,ox:null},stand:null,standT:0,bake:0,tips:0,served:0,perfect:0,lost:0,combo:0,maxCombo:0,scores:[],res:null,help:W.t+8});
+  Object.assign(CAFE,{lv,n:lv.n,spawned:0,nextSpawn:1.2,step:'',pick:{mc:null,ox:null},stand:null,standT:0,bake:0,tips:0,served:0,perfect:0,lost:0,combo:0,maxCombo:0,scores:[],res:null,help:W.t+12,
+    bakeQ:null,tasteT:0,happy:0,happyDone:false,confT:0,vipN:0,lastVip:-9,pairN:0,bakePerf:0,confident:0,fixedBack:0,wrongBy:new Map()});
   cfCarry(null); cfLoadClass();
+  { const ob=$('#cfOven'); if (ob&&!ob._bound){ ob._bound=1; ob.addEventListener('click',()=>cfBakeHit()); } }   // 게이지를 눌러도 꺼내져요
   P.x=-1; P.z=-1.8; P.fx=0; P.fz=-1; W.nextWaveAt=-1; W.nextQuiz=1e9; W.snapCam=true; CAFE.doorA=0; if (CAFE.door) CAFE.door.rotation.y=0;
   document.body.classList.add('cafe'); $('#cfHud').hidden=false;
   setTimeout(()=>{ if (MAPK==='cafe'&&W.state==='play') showBanner('달콤 카페 영업 시작!'); },300);
@@ -269,39 +318,93 @@ function cfPadTick(dt){
     if (C.o.k==='cmb'){ const n=sel.indexOf(i); if (n>=0) sel.splice(n,1); else sel.push(i); CAFE.step='cmb'; CAFE.bake=0; try{ SFX.card(); }catch(e){} fx.burst(P.x,1.6,P.z,CF_SHELF[i].hex,10,3); cfCarry(sel.length?'raw':null); }
     else if (CAFE.step==='ord'&&!sel.includes(i)){ sel.push(i); try{ SFX.card(); }catch(e){} fx.burst(P.x,1.6,P.z,CF_SHELF[i].hex,10,3); cfCarry('raw'); if (sel.length===C.o.opts.length) CAFE.step='oven'; }
     cfQUI(); CAFE.standT=-99; }
-  else if (here==='oven'&&(CAFE.step==='oven'||CAFE.step==='cmb'&&CAFE.pick.sel.length)){ CAFE.bake+=dt; if (CAFE.bake>=2.2){ CAFE.step='serve'; CAFE.bake=0; cfCarry('baked'); try{ SFX.wave(); }catch(e){} fx.burst(CF_OVEN.x,1.8,CF_OVEN.z,0xffc531,20,4); cfQUI(); } }
+  else if (here==='oven'&&(CAFE.step==='oven'||CAFE.step==='cmb'&&CAFE.pick.sel.length)){ CAFE.bake+=dt; const v=CAFE.bake/CF_BAKE_T;
+    if (cfMild()&&v>=cfGold()[1]) cfBakeDone('ok'); else if (v>=1) cfBakeDone('burnt'); }   // 아무것도 안 누르면: 쉬운 반은 그냥 완성, 그 밖은 살짝 타요
   else if (here==='serve'&&CAFE.step==='serve'&&CAFE.standT>=.25){ cfServe(C); CAFE.standT=-99; }
 }
-function cfServe(C){
-  const o=C.o; let n,good,lines,tip0;
-  const line=(item,ok,ans,mine,q)=>`<li class="${ok?'g':'b'}"><b>${ok?'정답':'아쉬워요'}</b> ${esc(q||item.q)}<br><small>${mine!=null&&!ok?`내 답: ${esc(mine)} → `:''}정답: ${esc(ans)}${item.e?` · ${esc(item.e)}`:''}</small></li>`;
+/* 지금 만든 디저트가 맞았는지 따져요 (서빙 · 맛보기에서 같이 써요) */
+function cfJudge(C){
+  const o=C.o, parts=[];
   if (o.k==='base'){
-    const okMc=o.mc?CAFE.pick.mc===o.ci:null, okOx=o.ox?CAFE.pick.ox===o.oxci:null;
-    if (o.mc) settle(okMc,o.mc,{type:'cafe'}); if (o.ox) settle(okOx,o.ox,{type:'cafe'});
-    n=(o.mc?1:0)+(o.ox?1:0); good=(okMc?1:0)+(okOx?1:0); tip0=good*20;
-    lines=(o.mc?line(o.mc,okMc,correctText(o.mc)):'')+(o.ox?line(o.ox,okOx,correctText(o.ox)):'');
+    if (o.mc) parts.push({item:o.mc,ok:CAFE.pick.mc===o.ci,ans:correctText(o.mc)});
+    if (o.ox) parts.push({item:o.ox,ok:CAFE.pick.ox===o.oxci,ans:correctText(o.ox)});
   } else {
     const it=o.sp, sel=CAFE.pick.sel; let ok=false, mine='', q=it.q;
     if (o.k==='sa'){ mine=CAFE.pick.sa||''; ok=it.sa.ans.map(qxNorm).includes(qxNorm(mine)); }
     if (o.k==='cmb'){ const s=sel.slice().sort(), a=it.cmb.a; ok=s.length===a.length&&s.every((v,j)=>v===a[j]); mine=s.map(i=>QX_LET[i]).join(', ')||'(없음)'; q=it.cmb.q0+' — '+it.cmb.s.map((v,i)=>`${QX_LET[i]}. ${v}`).join(' / '); }
     if (o.k==='ord'){ const seq=sel.map(i=>o.map[i]); ok=seq.length===it.ord.it.length&&seq.every((v,j)=>v===j); mine=seq.map(j=>it.ord.it[j]).join(' → '); q=String(it.q).replace(/^\[순서\]\s*/,''); }
-    settle(ok,it,{type:'cafe'});
-    n=1; good=ok?1:0; tip0=ok?Math.round(40*(CAFE.pick.hint?.7:1)):0;
-    lines=line(it,ok,correctText(it),mine,q)+(o.k==='ord'&&!ok?'<li class="b"><small>🎂 층 순서가 달라서 케이크가 기울었어요!</small></li>':'');
+    parts.push({item:it,ok,ans:correctText(it),mine,q});
   }
-  const perfect=good===n;
+  return {parts,n:parts.length,good:parts.filter(p=>p.ok).length,base:o.k==='base',ord:o.k==='ord'};
+}
+function cfServe(C){
+  const J=cfJudge(C);
+  const line=p=>`<li class="${p.ok?'g':'b'}"><b>${p.ok?'정답':'아쉬워요'}</b> ${esc(p.q||p.item.q)}<br><small>${p.mine!=null&&!p.ok?`내 답: ${esc(p.mine)} → `:''}정답: ${esc(p.ans)}${p.item.e?` · ${esc(p.item.e)}`:''}</small></li>`;
+  let fixedBack=false;
+  J.parts.forEach(p=>{ if (!C.settled.has(p.item)){ settle(p.ok,p.item,{type:'cafe'}); C.settled.add(p.item); }   // 맛보기에서 이미 틀린 걸로 기록한 문제는 다시 세지 않아요
+    if (!p.ok) CAFE.wrongBy.set(p.item,{n:C.name,job:C.job,look:C.look});
+    else if (CAFE.wrongBy.has(p.item)){ CAFE.wrongBy.delete(p.item); if (C.back) fixedBack=true; } });
+  const allOk=J.good===J.n, perfect=allOk&&!C.remade, happy=cfHappy();
+  const tip0=J.base?J.good*20:(allOk?Math.round(40*(CAFE.pick.hint?.7:1)):0);
+  const hurry=Math.max(0,1-(W.t-(C.frontAt==null?W.t:C.frontAt))/cfPatOf(C.o));
+  let tip=tip0+(perfect?Math.round(hurry*20):0)+(allOk&&CAFE.bakeQ==='perfect'?6:0);
+  const conf=perfect&&!C.tasted; if (conf){ tip=Math.round(tip*1.25); CAFE.confident++; }   // 맛보지 않고 자신 있게 서빙해서 맞히면 +25%
+  if (C.remade) tip=Math.round(tip*.5);
+  if (CAFE.bakeQ==='burnt') tip=Math.round(tip*.75);
+  if (fixedBack&&allOk){ tip+=10; CAFE.fixedBack++; }
   if (perfect){ CAFE.combo++; CAFE.perfect++; } else CAFE.combo=0; CAFE.maxCombo=Math.max(CAFE.maxCombo,CAFE.combo);
-  const mul=1+.25*Math.min(4,Math.max(0,CAFE.combo-1)), hurry=C.left/C.pat;
-  const tip=Math.round((tip0+(perfect?Math.round(hurry*20):0))*mul);
-  CAFE.tips+=tip; CAFE.served++; CAFE.scores.push(perfect?5:good?3:1);
-  W.cardCoins=(W.cardCoins||0)+(perfect?4:good?2:0);
-  C.mood=perfect?'happy':good?'ok':'sad'; C.happyT=W.t+2.2;
-  if (perfect){ C.c.anim.once('cheer',1); try{ SFX.correct(); }catch(e){} fx.burst(C.x,2.6,C.z,0xff4d88,26,5); }
-  else if (good){ try{ SFX.correct(); }catch(e){} } else { try{ SFX.wrong(); }catch(e){} }
-  const r=$('#cfRes'); r.className='run-res card cf-res '+(perfect?'good':good?'mid':'bad'); r.hidden=false;
-  r.innerHTML=`<b>${perfect?'"딱 제가 원하던 맛이에요!"':good?'"음, 괜찮네요!"':'"음… 이게 아닌데요?"'}</b> <small>${tip?`+${tip} 팁`:''}${CAFE.combo>=2?` · 🔥 ${CAFE.combo}콤보`:''}</small><ul>${lines}</ul>`;
+  const mul=1+.25*Math.min(4,Math.max(0,CAFE.combo-1));
+  tip=Math.round(tip*mul*(C.vip?2:1)*(happy?1.5:1));
+  C.allPerfect=C.allPerfect&&perfect;
+  const last=C.oi>=C.orders.length-1;
+  let pairBonus=0; if (last&&C.orders.length>1&&C.allPerfect){ pairBonus=Math.round(10*(happy?1.5:1)); tip+=pairBonus; }
+  CAFE.tips+=tip; CAFE.served++; CAFE.scores.push(perfect?5:J.good?3:1);
+  W.cardCoins=(W.cardCoins||0)+(perfect?4:J.good?2:0);
+  C.mood=perfect?'happy':J.good?'ok':'sad'; C.happyT=W.t+2.2;
+  if (perfect){ C.c.anim.once('cheer',1); if (C.c2) C.c2.anim.once('cheer',1); try{ SFX.correct(); }catch(e){} fx.burst(C.x,2.6,C.z,C.vip?0xffc93c:0xff4d88,26,5); }
+  else if (J.good){ try{ SFX.correct(); }catch(e){} } else { try{ SFX.wrong(); }catch(e){} }
+  const head=perfect?'"딱 제가 원하던 맛이에요!"':allOk?'"다시 만들어 줘서 고마워요!"':J.good?'"음, 괜찮네요!"':'"음… 이게 아닌데요?"';
+  const chips=[tip?`+${tip} 팁`:'',CAFE.combo>=2?`🔥 ${CAFE.combo}콤보`:'',allOk&&CAFE.bakeQ==='perfect'?'✨ 완벽 굽기':'',conf?'💪 자신 있게 서빙 +25%':'',
+    CAFE.bakeQ==='burnt'?'살짝 탐 −25%':'',C.vip?'👑 VIP ×2':'',happy?'🎉 해피 아워 ×1.5':'',fixedBack&&allOk?'🔁 이번엔 맞혔어요! +10':'',pairBonus?'👭 두 분 모두 만족!':''].filter(Boolean).join(' · ');
+  const r=$('#cfRes'); r.className='run-res card cf-res '+(perfect?'good':J.good?'mid':'bad'); r.hidden=false;
+  r.innerHTML=`<b>${head}</b> <small>${chips}</small><ul>${J.parts.map(line).join('')}`+
+    (C.remade?'<li class="b"><small>🥄 맛보기에서 이상한 걸 알고 다시 만든 케이크예요 · 처음 답은 틀린 것으로 기록돼요</small></li>':'')+
+    (J.ord&&!allOk?'<li class="b"><small>🎂 층 순서가 달라서 케이크가 기울었어요!</small></li>':'')+'</ul>';
   CAFE.res=W.t+(perfect?4:7);
-  cfLeave(C);
+  if (!last){ C.oi++; C.o=C.orders[C.oi]; C.settled=new Set(); C.tasted=false; C.remade=false; C.frontAt=W.t; cfActivate(); }   // 👭 두 번째 케이크 주문으로
+  else cfLeave(C);
+}
+/* 🥄 맛보기: 서빙 전에 한 번, 맞게 만들었는지만 알려줘요 (무엇이 정답인지는 안 알려줘요)
+   틀렸으면 처음 답은 틀린 것으로 기록하고 처음부터 다시 만들어요 (팁은 절반). 맞았으면 그대로 서빙 (자신 있게 보너스는 없어요) */
+function cfTaste(){
+  const C=cfFront(); if (!C||C.leaving||CAFE.step!=='serve'||C.tasted||W.paused||W.state!=='play') return;
+  C.tasted=true; CAFE.tasteT=W.t+.8;   // 맛보는 동안 잠깐 멈춰 서요
+  const J=cfJudge(C), ok=J.good===J.n;
+  fx.burst(P.x,1.9,P.z,ok?0x3fb26b:0xe5484d,14,2.5);
+  if (ok){ flashCf('🥄 음~ 맛있어요! 제대로 만든 것 같아요','good'); try{ SFX.correct(); }catch(e){} }
+  else { flashCf('🥄 음… 맛이 좀 이상해요. 다시 만들어요!','bad'); try{ SFX.wrong(); }catch(e){}
+    J.parts.forEach(p=>{ if (!p.ok&&!C.settled.has(p.item)){ settle(false,p.item,{type:'cafe'}); C.settled.add(p.item); CAFE.wrongBy.set(p.item,{n:C.name,job:C.job,look:C.look}); } });
+    C.remade=true; cfRemake(C); }
+  cfQUI();
+}
+function cfRemake(C){ const o=C.o;
+  CAFE.pick={mc:null,ox:null,sel:[],sa:null,hint:CAFE.pick.hint}; CAFE.bake=0; CAFE.bakeQ=null; cfCarry(null); CAFE.qxKey='';
+  CAFE.step=o.k==='base'?(o.mc?'mc':'ox'):o.k;
+  if (o.k==='sa') setTimeout(()=>{ const el=$('#cfSaIn'); if (el&&cfFront()===C) el.focus(); },350); }
+/* 🔥 오븐 굽기: 바늘이 금색에 있을 때 스페이스(또는 클릭) → 완벽 굽기. 너무 일찍 누르면 덜 구워지고(보너스 없음), 늦으면 살짝 타요 */
+function cfBaking(){ return CAFE.stand==='oven'&&CAFE.bake>0&&(CAFE.step==='oven'||CAFE.step==='cmb'); }
+function cfBakeHit(){
+  if (!cfBaking()||W.paused||W.state!=='play') return false;
+  const v=CAFE.bake/CF_BAKE_T, g=cfGold(); cfBakeDone(v<g[0]?'soft':v<=g[1]?'perfect':'burnt'); return true;
+}
+function cfBakeDone(q){
+  if (q==='burnt'&&cfMild()) q='ok';   // 쉬운 반은 벌칙 없이
+  CAFE.bakeQ=q; CAFE.step='serve'; CAFE.bake=0; cfCarry('baked');
+  if (q==='perfect'){ CAFE.bakePerf++; try{ SFX.correct(); }catch(e){} fx.burst(CF_OVEN.x,2.0,CF_OVEN.z,0xffd23f,30,5); fx.burst(P.x,1.4,P.z,0xfff2a8,16,3); flashCf('✨ 완벽하게 구웠어요! (팁 +6)','gold'); }
+  else if (q==='burnt'){ try{ SFX.wrong(); }catch(e){} fx.burst(CF_OVEN.x,2.2,CF_OVEN.z,0x5a4a40,22,2.5); flashCf('앗, 살짝 탔어요… (팁 조금 줄어요)','burnt'); }
+  else if (q==='soft'){ try{ SFX.card(); }catch(e){} flashCf('조금 덜 구워졌어요 · 다음엔 금색에서!'); }
+  else { try{ SFX.wave(); }catch(e){} fx.burst(CF_OVEN.x,1.8,CF_OVEN.z,0xffc531,20,4); }
+  cfQUI();
 }
 function cfLeave(C){ C.leaving=1; C.path=CF_OUT.map(p=>p.slice()); C.el.classList.add('out'); setTimeout(()=>C.el&&C.el.remove(),600); cfActivate(); }   // 디저트를 받으면 앞쪽 손님 자리로
 function cfUpdate(dt){
@@ -316,8 +419,9 @@ function cfUpdate(dt){
     else { const s=Math.min(2,slot++);
       while (C.q>s&&Math.hypot(C.x-QP[C.q].x,C.z-QP[C.q].z)<.4) C.q--;
       const tp=QP[Math.max(C.q,s)]; tx=tp.x; tz=tp.z; if (C.q<=s) face=CF_SLOT[s].ry;
-      if (C.q<=s&&Math.hypot(C.x-tx,C.z-tz)<.4) C.left-=dt;
-      if (C.left<=0){ CAFE.lost++; CAFE.combo=0; CAFE.scores.push(0); C.mood='sad'; const front=cfFront()===C;
+      if (C.q<=s&&Math.hypot(C.x-tx,C.z-tz)<.4) C.left-=dt*(s===0?1:CF_WAITK);   // 맨 앞 손님만 제 속도로 줄어요
+      if (C.left<=0){ const rest=C.orders.length-C.oi; CAFE.lost+=rest; CAFE.combo=0; for (let k=0;k<rest;k++) CAFE.scores.push(0); C.mood='sad'; const front=cfFront()===C;
+        C.items.forEach(it=>{ const w=W.wrong.find(x=>x.item===it); if (w&&w.pending) w.pending=false; });   // 못 받은 문제는 나중에 다시 나올 수 있게
         C.leaving=1; C.path=(C.z>-3?[[10.1,-3.0]]:[]).concat(CF_BACK.map(p=>p.slice()));   // 지쳐서 다시 문으로
         C.el.classList.add('out'); setTimeout(()=>C.el&&C.el.remove(),600); flashCf(`주문 #${C.no} 손님이 기다리다 갔어요…`);
         if (front) cfActivate(); continue; } }
@@ -326,8 +430,17 @@ function cfUpdate(dt){
     const want=walk?Math.atan2(dx,dz):(face!=null?face:C.ry); let da=want-C.ry; da=Math.atan2(Math.sin(da),Math.cos(da)); C.ry+=da*Math.min(1,dt*10);
     C.c.root.position.set(C.x,Math.abs(Math.sin(W.t*9))*(walk?.12:0),C.z); C.c.root.rotation.y=C.ry;
     C.c.anim.setBase(walk?'crun':'cidle',walk?.8:1); C.c.mixer.update(dt);
+    if (C.c2){ const tx2=C.x-.55, tz2=C.z+.62, dx2=tx2-C.x2, dz2=tz2-C.z2, d2=Math.hypot(dx2,dz2), walk2=d2>.12;   // 👭 친구는 왼쪽 앞에서 따라 걸어요
+      if (d2>.03){ const k=Math.min(1,(sp+.8)*dt/d2); C.x2+=dx2*k; C.z2+=dz2*k; }
+      const want2=walk2?Math.atan2(dx2,dz2):C.ry; let db=want2-C.ry2; db=Math.atan2(Math.sin(db),Math.cos(db)); C.ry2+=db*Math.min(1,dt*10);
+      C.c2.root.position.set(C.x2,Math.abs(Math.sin(W.t*9+1.3))*(walk2?.12:0),C.z2); C.c2.root.rotation.y=C.ry2;
+      C.c2.anim.setBase(walk2?'crun':'cidle',walk2?.8:1); C.c2.mixer.update(dt); }
   }
-  CAFE.cust=CAFE.cust.filter(C=>{ if (C.leaving&&C.path.length===1&&Math.hypot(C.x-C.path[0][0],C.z-C.path[0][1])<.3){ CAFE.dyn.remove(C.c.root); C.c.mixer.stopAllAction(); return false; } return true; });
+  CAFE.cust=CAFE.cust.filter(C=>{ if (C.leaving&&C.path.length===1&&Math.hypot(C.x-C.path[0][0],C.z-C.path[0][1])<.3){ CAFE.dyn.remove(C.c.root); C.c.mixer.stopAllAction(); if (C.c2){ CAFE.dyn.remove(C.c2.root); C.c2.mixer.stopAllAction(); } return false; } return true; });
+  // 🎉 해피 아워: 손님의 40%쯤 지나면 한 번, 40초 동안 팁 1.5배 (손님 오는 속도는 그대로)
+  if (!CAFE.happyDone&&CAFE.n>=6&&CAFE.served+CAFE.lost>=Math.round(CAFE.n*.4)){ CAFE.happyDone=true; CAFE.happy=W.t+40; showBanner('🎉 해피 아워! 40초 동안 팁 1.5배'); try{ SFX.wave(); }catch(e){} }
+  if (cfHappy()&&(CAFE.confT=(CAFE.confT||0)-dt)<=0){ CAFE.confT=.7; const pt=[[-3,-3],[1,-2],[5,-6],[-6,-1],[9.6,-2.4],[-1,-6.5]][(Math.random()*6)|0];
+    fx.burst(pt[0],3.3,pt[1],[0xff6b8a,0xffd23f,0x6c5ce7,0x3fb26b,0x4fc3f7][(Math.random()*5)|0],14,3); }
   // 뒷문: 손님이 가까이 오면 안쪽으로 열려요
   if (CAFE.door){ const near=CAFE.cust.some(C=>Math.hypot(C.x-10.8,C.z+9.9)<2.3); CAFE.doorA+=((near?1:0)-CAFE.doorA)*Math.min(1,dt*(near?7:3)); CAFE.door.rotation.y=-CAFE.doorA*1.55; }
   cfPadTick(dt);
@@ -339,7 +452,7 @@ function cfUpdate(dt){
   // 끝
   if (CAFE.spawned>=CAFE.n && !CAFE.cust.length && W.state==='play'){ CAFE.done=true; setTimeout(()=>{ if (MAPK==='cafe'&&W.state==='play') endGame(true); },700); CAFE.spawned=1e9; }
 }
-function flashCf(t){ const e=$('#cfToast'); e.textContent=t; e.classList.remove('show'); void e.offsetWidth; e.classList.add('show'); }
+function flashCf(t,kind){ const e=$('#cfToast'); e.textContent=t; e.className='cf-toast'+(kind?' '+kind:''); void e.offsetWidth; e.classList.add('show'); }
 const _cfV=new THREE.Vector3();
 function cfBubbles(){
   const r=renderer.domElement.getBoundingClientRect(), front=cfFront();
@@ -350,7 +463,7 @@ function cfBubbles(){
     const k=Math.max(0,C.left/C.pat), col=k>.5?'#3fb26b':k>.25?'#f2a516':'#e5484d';
     const what=CF_KIND[C.o.k].what||(C.o.mc&&C.o.ox?'케이크 + 토핑':C.o.mc?'케이크':'파르페');
     const html=C.leaving?`<b class="nm">${esc(C.name)}</b> `+(C.mood==='happy'?'<b class="hp">💖 맛있어요!</b>':C.mood==='ok'?'<b>🙂 고마워요</b>':'<b class="sd">😢</b>')
-      :`<div class="t"><b class="nm">${esc(C.name)}</b><em>${C===front?'만드는 중':'#'+C.no}</em></div><div class="bar"><i style="width:${Math.round(k*100)}%;background:${col}"></i></div>`;
+      :`<div class="t"><b class="nm">${C.back?'🔁 ':''}${C.vip?'👑 ':''}${esc(C.name)}${C.name2?' &amp; '+esc(C.name2):''}</b><em>${C===front?(C.orders.length>1?`🍰 ${C.oi+1}/${C.orders.length}`:'만드는 중'):'#'+C.no}</em></div><div class="bar"><i style="width:${Math.round(k*100)}%;background:${col}"></i></div>`;
     if (C.el._h!==html){ C.el._h=html; C.el.innerHTML=html; } C.el.classList.toggle('front',C===front&&!C.leaving); }
 }
 function cfHUD(){
@@ -358,15 +471,18 @@ function cfHUD(){
   $('#cfStars').textContent=`★ ${st.toFixed(1)}`;
   $('#cfTips').textContent=`팁 ${CAFE.tips.toLocaleString('ko-KR')}`;
   $('#cfCount').textContent=`손님 ${Math.min(CAFE.served+CAFE.lost,CAFE.n)}/${CAFE.n}`;
-  $('#cfCombo').textContent=CAFE.combo>=2?`🔥 ${CAFE.combo}콤보`:'';
-  const ob=$('#cfOven'); ob.hidden=!(CAFE.step==='oven'&&CAFE.stand==='oven'); if (!ob.hidden) ob.firstChild.style.width=Math.round(CAFE.bake/2.2*100)+'%';
+  $('#cfCombo').textContent=[cfHappy()?`🎉 해피 아워 ${Math.ceil(CAFE.happy-W.t)}초`:'',CAFE.combo>=2?`🔥 ${CAFE.combo}콤보`:''].filter(Boolean).join(' · ');
+  const ob=$('#cfOven'), baking=cfBaking(); if (ob.hidden===baking) ob.hidden=!baking;
+  if (baking){ const g=cfGold(), v=Math.min(1,CAFE.bake/CF_BAKE_T), mild=cfMild(), gz=ob.querySelector('.cfo-g'), bz=ob.querySelector('.cfo-b'), nd=ob.querySelector('.cfo-n');
+    if (gz){ gz.style.left=g[0]*100+'%'; gz.style.width=(g[1]-g[0])*100+'%'; bz.style.display=mild?'none':''; bz.style.left=g[1]*100+'%'; nd.style.left=v*100+'%'; }
+    ob.classList.toggle('hot',v>=g[0]&&v<=g[1]); }
 }
 function cafeFrame(dt,real,now){
   if (knight && (knight.anim.dead||endPose)){ knight.anim.revive(); endPose=false; }
   if (!W.paused){ W.t+=dt; cfUpdate(dt); }
   lobbyTick(real,dt);
   let moving=false;
-  if (!W.paused){
+  if (!W.paused&&!(CAFE.tasteT>W.t)){
     const am=arrowsMove();
     let ix=(keys.KeyD||am&&keys.ArrowRight?1:0)-(keys.KeyA||am&&keys.ArrowLeft?1:0)+joy.x, iz=(keys.KeyS||am&&keys.ArrowDown?1:0)-(keys.KeyW||am&&keys.ArrowUp?1:0)+joy.y;
     const L=Math.hypot(ix,iz); if (L>.12){ if (L>1){ ix/=L; iz/=L; } P.x+=ix*7.5*dt; P.z+=iz*7.5*dt; P.fx=ix; P.fz=iz; moving=true; }
@@ -394,8 +510,11 @@ function cfCollide(){
   P.x=Math.max(-12.4+R,Math.min(9.0,P.x)); P.z=Math.max(-9.8+R,Math.min(2.6-R,P.z));
 }
 /* 카페에서는 공격 · 스킬 키를 쓰지 않아요 (이동 키는 그대로) */
-addEventListener('keydown',e=>{ if (MAPK!=='cafe'||W.state!=='play') return; if (e.target.closest&&e.target.closest('input,textarea')) return; if (/^(Space|KeyE|KeyQ|KeyR|KeyF|ShiftLeft|ShiftRight|Digit\d)$/.test(e.code)){ e.preventDefault(); e.stopImmediatePropagation(); } },true);
-addEventListener('mousedown',e=>{ if (MAPK==='cafe'&&W.state==='play'&&e.target===renderer.domElement){ e.stopImmediatePropagation(); blurAll(); } },true);
+addEventListener('keydown',e=>{ if (MAPK!=='cafe'||W.state!=='play') return; if (e.target.closest&&e.target.closest('input,textarea')) return;
+  if (!e.repeat&&(e.code==='Space'||e.code==='KeyE')&&cfBakeHit()){ e.preventDefault(); e.stopImmediatePropagation(); return; }   // 오븐에서 꺼내기
+  if (e.code==='KeyT'){ e.preventDefault(); e.stopImmediatePropagation(); if (!e.repeat) cfTaste(); return; }                      // 🥄 맛보기
+  if (/^(Space|KeyE|KeyQ|KeyR|KeyF|ShiftLeft|ShiftRight|Digit\d)$/.test(e.code)){ e.preventDefault(); e.stopImmediatePropagation(); } },true);
+addEventListener('mousedown',e=>{ if (MAPK==='cafe'&&W.state==='play'&&e.target===renderer.domElement){ e.stopImmediatePropagation(); blurAll(); cfBakeHit(); } },true);
 /* 다음에 갈 곳 위에 통통 튀는 화살표 (재료 → 토핑 → 오븐 → 서빙) */
 function cfArrowMake(){
   const g=new THREE.Group(), mat=new THREE.MeshBasicMaterial({color:0xffb800,toneMapped:false,fog:false}), line=new THREE.MeshBasicMaterial({color:0x3a2230,side:THREE.BackSide,toneMapped:false,fog:false});
@@ -418,7 +537,7 @@ function cfArrowTick(){
     else if (CAFE.step==='cmb'){ pts=C.o.opts.map((_,i)=>[CF_SHELF[i].x,CF_PAD_Z]); if (CAFE.pick.sel.length) pts.push([CF_OVEN.x,CF_OVEN.z]); txt='① 옳은 보기 모두 담기'; }
     else if (CAFE.step==='ord'){ pts=C.o.opts.map((_,i)=>[CF_SHELF[i].x,CF_PAD_Z]).filter((_,i)=>!CAFE.pick.sel.includes(i)); txt=`① ${CAFE.pick.sel.length+1}층 쌓기`; }
     else if (CAFE.step==='sa'){ txt=''; }
-    else if (CAFE.step==='oven'){ pts=[[CF_OVEN.x,CF_OVEN.z]]; txt=CAFE.bake>0?'굽는 중…':'③ 오븐에서 굽기'; }
+    else if (CAFE.step==='oven'){ pts=[[CF_OVEN.x,CF_OVEN.z]]; txt=CAFE.bake>0?'금색일 때 스페이스!':'③ 오븐에서 굽기'; }
     else if (CAFE.step==='serve'){ pts=[[CF_SERVE.x,CF_SERVE.z]]; txt='④ 손님에게 서빙!'; }
   }
   const t=performance.now()/1000;
@@ -438,4 +557,5 @@ function cafeEndUI(){
   for (const C of CAFE.cust){ C.el&&C.el.remove(); } $('#cfBubs')&&($('#cfBubs').innerHTML=''); cfCarry(null);
   if (CAFE.arrows){ CAFE.arrows.forEach(a=>{ a.visible=false; a.userData.ring.visible=false; }); CAFE.label.visible=false; }
 }
-function cafeSummary(){ const st=cfStars(); return `손님 ${CAFE.n}명 중 ${CAFE.perfect}명이 완벽한 디저트를 받았어요 · 별점 ★${st.toFixed(1)} · 팁 ${CAFE.tips.toLocaleString('ko-KR')}`+(CAFE.lost?` · 기다리다 간 손님 ${CAFE.lost}명`:'')+'. '; }
+function cafeSummary(){ const st=cfStars(); return `손님 ${CAFE.n}명 중 ${CAFE.perfect}명이 완벽한 디저트를 받았어요 · 별점 ★${st.toFixed(1)} · 팁 ${CAFE.tips.toLocaleString('ko-KR')}`+
+  (CAFE.bakePerf?` · ✨ 완벽 굽기 ${CAFE.bakePerf}번`:'')+(CAFE.confident?` · 💪 자신 있게 서빙 ${CAFE.confident}번`:'')+(CAFE.fixedBack?` · 🔁 다시 찾아온 손님 ${CAFE.fixedBack}명 만족`:'')+(CAFE.lost?` · 기다리다 간 손님 ${CAFE.lost}명`:'')+'. '; }

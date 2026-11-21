@@ -7,7 +7,7 @@
 <style>body{margin:0}[hidden]{display:none!important}img{max-width:100%}</style>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jua&family=IBM+Plex+Sans+KR:wght@400;600;700&display=swap">
-<link rel="stylesheet" href="style.css?v=20261122a">
+<link rel="stylesheet" href="style.css?v=20261122b">
 </head>
 <body>
 
@@ -64,7 +64,7 @@
 <div class="run-hud card cf-hud" id="cfHud" hidden><b class="cf-name">달콤 카페</b><span id="cfStars">★ 3.0</span><span id="cfTips">팁 0</span><span id="cfCount">손님 0/10</span><span id="cfCombo"></span></div>
 <div class="run-q card cf-q" id="cfQ" hidden><div class="cf-qhead"><span class="cf-no" id="cfQNo">주문 #1</span><span class="cf-kind" id="cfQKind"></span><span class="cf-hint" id="cfHint"></span></div><div class="run-qtext" id="cfQText"></div><div class="run-opts" id="cfOpts"></div><div class="cf-steps" id="cfSteps"></div></div>
 <div class="run-res card" id="cfRes" hidden></div>
-<div class="cf-oven" id="cfOven" hidden><i></i><span>굽는 중…</span></div>
+<div class="cf-oven" id="cfOven" hidden><div class="cfo-bar"><i class="cfo-g"></i><i class="cfo-b"></i><b class="cfo-n"></b></div><span class="cfo-t">바늘이 <b>금색</b>일 때 <kbd>스페이스</kbd> 또는 클릭!</span></div>
 <div class="cf-toast" id="cfToast"></div>
 <div id="cfBubs"></div>
 <div class="vl-hud card" id="vlHud" hidden><b>🏡 노을 마을</b><span class="vl-keys">WASD 걷기 · Shift 달리기 · 마우스 드래그로 둘러보기 · 휠 거리</span><button class="btn ghost small" id="vlLeave">로비로</button></div>
@@ -73,7 +73,7 @@
 <div class="vl-prompt card" id="vlPrompt" hidden></div>
 <button class="btn vl-call" id="vlCall" hidden></button>
 <div class="vl-toast" id="vlToast"></div>
-<div class="run-help card" id="cfHelp" hidden>WASD로 움직여요 · 주문서를 보고 화살표를 따라 재료 → 토핑 → 오븐 → 서빙 순서로 발판에 서 보세요 (📝 특별 메뉴는 정답을 직접 써요)</div>
+<div class="run-help card" id="cfHelp" hidden>WASD로 움직여요 · 화살표를 따라 재료 → 토핑 → 오븐 → 서빙! 🔥 오븐에서는 바늘이 <b>금색</b>일 때 <kbd>스페이스</kbd> · 🥄 헷갈리면 서빙 전에 <kbd>T</kbd>로 맛보기(한 번) · 👑 VIP 손님은 팁 2배</div>
 <div class="run-help card" id="runHelp" hidden>← → (A D) 줄 바꾸기 · 스페이스 점프 · 정답 색깔 문이 있는 줄로 통과!</div>
 <div class="run-hud card" id="stHud" hidden><span id="stLives">❤️❤️❤️</span><b id="stProg"></b><span id="stScore">0점</span></div>
 <div class="run-q card" id="stQ" hidden><div class="run-qtext" id="stQText"></div><div class="run-opts" id="stOpts"></div><div class="run-bar"><i id="stBar"></i></div><div class="st-lock"><span id="stLock"></span><b id="stTime"></b></div></div>
@@ -485,7 +485,7 @@
 <script src="js/04s-stage.js?v=20261121a"></script>
 <script src="js/04t-teamwar.js?v=20261121a"></script>
 <script src="js/04L-live.js?v=20261121a"></script>
-<script src="js/04c-cafe.js?v=20261122b"></script>
+<script src="js/04c-cafe.js?v=20261122d"></script>
 <script src="js/04v-village.js?v=20261121f"></script>
 <script src="js/04w-village-art.js?v=20261121f"></script>
 <script src="js/04x-village-env.js?v=20261121f"></script>
