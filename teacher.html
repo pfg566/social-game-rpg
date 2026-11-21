@@ -448,6 +448,16 @@ input.rename{border:2px solid var(--line);border-radius:6px;padding:2px 6px;widt
           <p class="msg" id="freeMsg" role="status"></p>
         </div>
         <div class="card box">
+          <h3>🌇 노을 마을 시간 · 날씨</h3>
+          <p>마을의 하늘을 정해요. '자동으로 흐르기'로 두면 게임 속 시계가 돌아서 아침 → 낮 → 노을 → 밤이 차례로 와요(밤은 짧게 지나가요). 시간을 하나로 고정할 수도 있어요. 날씨도 자동(5분마다 바뀜)으로 두거나 하나로 고를 수 있어요. 모든 학생이 같은 하늘을 보고, 바꾸면 바로 반영돼요.</p>
+          <div class="row"><label>시간 <select id="envTime"><option value="auto">⏱️ 자동으로 흐르기</option><option value="morning">🌅 아침</option><option value="day">☀️ 낮</option><option value="sunset">🌇 노을</option><option value="night">🌙 밤</option></select></label>
+            <label id="envSpdL">하루 길이 <select id="envSpd"><option value="12">12분</option><option value="24" selected>24분 (추천)</option><option value="48">48분</option></select></label></div>
+          <div class="row"><label>날씨 <select id="envWeather"><option value="auto">🔄 자동으로 바뀌기</option><option value="clear">☀️ 맑음</option><option value="cloudy">☁️ 흐림</option><option value="rain">🌧️ 비</option><option value="snow">❄️ 눈</option><option value="fog">🌫️ 안개</option></select></label>
+            <button class="btn" id="envSave" disabled>적용하기</button></div>
+          <div class="row"><span class="pill lose" id="envState">불러오는 중</span></div>
+          <p class="msg" id="envMsg" role="status"></p>
+        </div>
+        <div class="card box">
           <h3>영웅 모드</h3>
           <p>학생은 쉬움(3웨이브 · 점수 0.8배) · 보통(3웨이브) · 어려움(4웨이브 · 점수 1.2배) 중에서 고를 수 있어요. 켜면 '영웅'(4웨이브 · 몬스터가 훨씬 강하고 퀴즈 시간이 짧음 · 점수 1.5배)도 생겨요. 학생들이 게임에 익숙해진 뒤 여는 걸 추천해요.</p>
           <div class="row"><span class="pill lose" id="heroState">불러오는 중</span><button class="btn" id="heroToggle" disabled>영웅 모드 열기</button></div>
@@ -535,7 +545,7 @@ auth.onAuthStateChanged(async u=>{
   $('#meEmail').textContent=u.email;
   if (!(await isAdmin(u))){ gate(`${u.email} 계정은 선생님 권한이 없어요. 권한이 있는 선생님께 '함께 볼 선생님'에 추가해 달라고 요청하세요.`,'err'); return; }
   $('#gate').hidden=true; $('#app').hidden=false;
-  loadRegistry(); subscribe(); loadAdmins(); loadHero(); loadFree(); loadPartyLock(); watchPlay(); watchLogin(); watchOnline(); watchUnits();
+  loadRegistry(); subscribe(); loadAdmins(); loadHero(); loadFree(); loadEnv(); loadPartyLock(); watchPlay(); watchLogin(); watchOnline(); watchUnits();
 });
 
 /* 데이터 */
@@ -1383,6 +1393,22 @@ function loadPartyLock(){
       finally{ $(bt).disabled=false; } });
   });
 }
+/* 노을 마을 시간 · 날씨 (settings/villageEnv) */
+const ENV_T={auto:'⏱️ 자동으로 흐르기',morning:'🌅 아침',day:'☀️ 낮',sunset:'🌇 노을',night:'🌙 밤'}, ENV_W={auto:'🔄 자동',clear:'☀️ 맑음',cloudy:'☁️ 흐림',rain:'🌧️ 비',snow:'❄️ 눈',fog:'🌫️ 안개'};
+function envFix(v){ v=v&&typeof v==='object'?v:{}; return {time:ENV_T[v.time]?v.time:'auto',speed:[12,24,48].includes(+v.speed)?+v.speed:24,weather:ENV_W[v.weather]?v.weather:'auto'}; }
+function envShow(v){ $('#envTime').value=v.time; $('#envSpd').value=String(v.speed); $('#envWeather').value=v.weather; $('#envSpdL').hidden=v.time!=='auto';
+  $('#envState').textContent=`${ENV_T[v.time]}${v.time==='auto'?` (하루 ${v.speed}분)`:''} · 날씨 ${ENV_W[v.weather]}`; $('#envState').className='pill win'; }
+function loadEnv(){
+  db.ref('settings/villageEnv').on('value',snap=>{ envShow(envFix(snap.val())); $('#envSave').disabled=false; },
+    ()=>{ $('#envState').textContent='확인 불가'; $('#envMsg').className='msg err'; $('#envMsg').textContent='설정을 불러오지 못했어요. 새 보안 규칙을 올렸는지 확인해 주세요.'; $('#envSave').disabled=false; });
+}
+$('#envTime').addEventListener('change',()=>{ $('#envSpdL').hidden=$('#envTime').value!=='auto'; });
+$('#envSave').addEventListener('click',async()=>{
+  $('#envSave').disabled=true; const v=envFix({time:$('#envTime').value,speed:$('#envSpd').value,weather:$('#envWeather').value});
+  try{ await db.ref('settings/villageEnv').set(v); $('#envMsg').className='msg ok'; $('#envMsg').textContent='바꿨어요. 마을에 있는 학생 화면에도 몇 초 안에 바뀌어요.'; }
+  catch(e){ $('#envMsg').className='msg err'; $('#envMsg').textContent='바꾸지 못했어요. 새 보안 규칙을 올렸는지 확인해 주세요.'; }
+  finally{ $('#envSave').disabled=false; }
+});
 /* 영웅 모드 */
 let heroOn=false;
 function loadHero(){

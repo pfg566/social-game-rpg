@@ -370,7 +370,7 @@ function vlBuildGround(R){
       col=mix(col,vlSL(lt.rgb),la);
       col*=mix(.42,1.,mk.g);
       diffuseColor.rgb*=col;`); };
-  mat.customProgramCacheKey=()=>'vlground';
+  mat.customProgramCacheKey=()=>'vlground'; mat.userData.vlPools=true;
   const ground=new THREE.Mesh(new THREE.PlaneGeometry(VL_MAP,VL_MAP),mat); ground.rotation.x=-Math.PI/2; ground.receiveShadow=true; R.add(ground);
   // 바깥 땅: 마을 땅과 겹치는 가운데를 비워 둬요 (겹치면 멀리서 줄무늬처럼 깜빡여요)
   const fs=new THREE.Shape(); fs.moveTo(-300,-300); fs.lineTo(300,-300); fs.lineTo(300,300); fs.lineTo(-300,300); fs.lineTo(-300,-300);
@@ -390,6 +390,7 @@ function vlGroundFinish(){
 
 /* ---------- 먼 산 (안개 속 두 겹 · 해 지는 쪽은 골짜기) ---------- */
 function vlMountains(par){
+  VL.mtnU=[];
   const sunA=Math.atan2(VL_SUN.z,VL_SUN.x);
   const layer=(R,H0,amp,seed,col,haze)=>{ const N=220, pos=[], ah=[], idx=[];
     for (let i=0;i<=N;i++){ const a=i/N*Math.PI*2; let h=0; for (let k=1;k<=6;k++) h+=Math.sin(a*(k<3?k:k*2)+seed*k*1.37)/k; h=H0+amp*h+amp*.16*Math.sin(a*31+seed);
@@ -397,11 +398,12 @@ function vlMountains(par){
       const x=Math.cos(a)*R, z=Math.sin(a)*R; pos.push(x,-6,z, x,Math.max(6,h),z); ah.push(0,1); }
     for (let i=0;i<N;i++){ const b=i*2; idx.push(b,b+1,b+2, b+1,b+3,b+2); }
     const geo=new THREE.BufferGeometry(); geo.setAttribute('position',new THREE.Float32BufferAttribute(pos,3)); geo.setAttribute('aH',new THREE.Float32BufferAttribute(ah,1)); geo.setIndex(idx);
-    const m=new THREE.Mesh(geo,new THREE.ShaderMaterial({uniforms:{uCol:{value:VL_LIN(col)},uFog:VL.U.uFog,uHaze:{value:haze},uSun:{value:VL_SUN}},side:THREE.DoubleSide,fog:false,
+    const mu={uCol:{value:VL_LIN(col)},uFog:VL.U.uFog,uHaze:{value:haze},uSun:{value:VL_SUN},uSunK:{value:.6},uHaze0:{value:haze}}; (VL.mtnU=VL.mtnU||[]).push(mu);
+    const m=new THREE.Mesh(geo,new THREE.ShaderMaterial({uniforms:mu,side:THREE.DoubleSide,fog:false,
       vertexShader:'attribute float aH; varying float vH; varying vec3 vW; void main(){ vH=aH; vec4 w=modelMatrix*vec4(position,1.); vW=w.xyz; gl_Position=projectionMatrix*viewMatrix*w; }',
-      fragmentShader:`uniform vec3 uCol,uFog,uSun; uniform float uHaze; varying float vH; varying vec3 vW;
+      fragmentShader:`uniform vec3 uCol,uFog,uSun; uniform float uHaze,uSunK; varying float vH; varying vec3 vW;
         void main(){ vec3 d=normalize(vec3(vW.x,0.,vW.z)); float s=max(dot(d,normalize(vec3(uSun.x,0.,uSun.z))),0.);
-          vec3 c=mix(uFog,uCol,uHaze*(.5+.5*vH)); c=mix(c,c*vec3(.8,.7,.84),pow(s,3.)*.6);
+          vec3 c=mix(uFog,uCol,uHaze*(.5+.5*vH)); c=mix(c,c*vec3(.8,.7,.84),pow(s,3.)*uSunK);
           gl_FragColor=vec4(c,1.);
           #include <tonemapping_fragment>
         }`}));
@@ -415,10 +417,10 @@ function vlPond(par){
   for (let s=0;s<segs;s++) idx.push(0,1+s,1+(s+1)%segs);
   for (let r=1;r<rings;r++){ const b0=1+(r-1)*segs, b1=1+r*segs; for (let s=0;s<segs;s++){ const a=b0+s, b=b0+(s+1)%segs, c=b1+s, d=b1+(s+1)%segs; idx.push(a,c,b, b,c,d); } }
   const geo=new THREE.BufferGeometry(); geo.setAttribute('position',new THREE.Float32BufferAttribute(pos,3)); geo.setAttribute('aE',new THREE.Float32BufferAttribute(ed,1)); geo.setIndex(idx);
-  const U=VL.U, WU={uTime:U.uTime,uSun:{value:VL_SUN},uSunCol:{value:VL_LIN('#ffb46e')},uTop:VL.skyU.uTop,uHor:VL.skyU.uHor,uFog:U.uFog,uFogN:U.uFogN,uFogF:U.uFogF};
+  const U=VL.U, WU=VL.WU={uTime:U.uTime,uSun:{value:VL_SUN},uSunCol:{value:VL_LIN('#ffb46e')},uTop:VL.skyU.uTop,uHor:VL.skyU.uHor,uFog:U.uFog,uFogN:U.uFogN,uFogF:U.uFogF,uLightK:{value:new THREE.Color(1,1,1)}};
   const water=new THREE.Mesh(geo,new THREE.ShaderMaterial({uniforms:WU,transparent:true,depthWrite:false,side:THREE.DoubleSide,
     vertexShader:'attribute float aE; varying float vE; varying vec3 vW; void main(){ vE=aE; vec4 w=modelMatrix*vec4(position,1.); vW=w.xyz; gl_Position=projectionMatrix*viewMatrix*w; }',
-    fragmentShader:`uniform float uTime,uFogN,uFogF; uniform vec3 uSun,uSunCol,uTop,uHor,uFog; varying float vE; varying vec3 vW;
+    fragmentShader:`uniform float uTime,uFogN,uFogF; uniform vec3 uSun,uSunCol,uTop,uHor,uFog,uLightK; varying float vE; varying vec3 vW;
       float h2(vec2 p){ p=fract(p*vec2(123.34,456.21)); p+=dot(p,p+45.32); return fract(p.x*p.y); }
       float vn(vec2 p){ vec2 i=floor(p), f=fract(p); f=f*f*(3.-2.*f); return mix(mix(h2(i),h2(i+vec2(1.,0.)),f.x),mix(h2(i+vec2(0.,1.)),h2(i+vec2(1.,1.)),f.x),f.y); }
       float wav(vec2 p){ return vn(p*1.3+vec2(uTime*.32,uTime*.18))*.6+vn(p*3.2-vec2(uTime*.45,-uTime*.28))*.3+vn(p*7.5-uTime*.7)*.1; }
@@ -428,9 +430,9 @@ function vlPond(par){
         vec3 R=reflect(-V,N); float ry=max(R.y,0.);
         vec3 sky=mix(uHor,uTop,pow(ry,.55)); float s=max(dot(R,uSun),0.); sky+=uSunCol*(pow(s,380.)*12.+pow(s,30.)*.65+pow(s,6.)*.16);
         sky=mix(sky*vec3(.3,.27,.25),sky,smoothstep(.03,.2,ry));
-        vec3 deep=vec3(.03,.065,.075), shal=vec3(.15,.18,.11);
+        vec3 deep=vec3(.03,.065,.075)*uLightK, shal=vec3(.15,.18,.11)*uLightK;
         vec3 col=mix(mix(deep,shal,smoothstep(.55,1.,vE)),sky,clamp(fr*1.15+.06,0.,1.));
-        col=mix(col,vec3(.32,.26,.18),smoothstep(.86,1.,vE)*.3);
+        col=mix(col,vec3(.32,.26,.18)*uLightK,smoothstep(.86,1.,vE)*.3);
         float a=mix(.93,0.,smoothstep(.9,1.,vE)); a=max(a,fr*.55*(1.-smoothstep(.97,1.,vE)));
         float dist=length(vW-cameraPosition); col=mix(col,uFog,smoothstep(uFogN,uFogF,dist));
         gl_FragColor=vec4(col,a);
@@ -646,7 +648,7 @@ function vlParticlesTick(dt,real){
     F.im.instanceMatrix.needsUpdate=true; }
   renderer.getDrawingBufferSize(_vlDB); const sc=_vlDB.y/(2*Math.tan(camera.fov*Math.PI/360));
   if (VL.ffU){ VL.ffU.uTime.value=real; VL.ffU.uScale.value=sc; } if (VL.smU){ VL.smU.uTime.value=real; VL.smU.uScale.value=sc; }
-  VL.halos.forEach((h,i)=>{ h.material.opacity=.5+.07*Math.sin(real*7.3+i*1.7)+.04*Math.sin(real*13.1+i); });
+  const gk=VL.glowK==null?1:VL.glowK; VL.halos.forEach((h,i)=>{ h.material.opacity=Math.min(.92,(.5+.07*Math.sin(real*7.3+i*1.7)+.04*Math.sin(real*13.1+i))*gk); });
 }
 
 /* ---------- 카메라가 집 · 나무 기둥 · 가로등에 가리지 않게 ---------- */

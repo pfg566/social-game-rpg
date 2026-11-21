@@ -49,20 +49,22 @@ function buildVillage(){
   VL_TREES.forEach(t=>VL_COLL.push({x:t[0],z:t[1],r:.7*t[2]}));
 
   /* 하늘 (해 · 노을 빛) */
-  const skyU=VL.skyU={uTop:{value:VL_LIN('#7fa1cf')},uHor:{value:VL_LIN('#ffc58e')},uFog:{value:new THREE.Color()},uSun:{value:VL_SUN.clone()},uSunCol:{value:VL_LIN('#ffb46e')},uTime:{value:0},uCloud:{value:1}};
+  const skyU=VL.skyU={uTop:{value:VL_LIN('#7fa1cf')},uHor:{value:VL_LIN('#ffc58e')},uFog:{value:new THREE.Color()},uSun:{value:VL_SUN.clone()},uSunCol:{value:VL_LIN('#ffb46e')},uTime:{value:0},uCloud:{value:1},
+    uCov:{value:.5},uCShade:{value:new THREE.Color(.24,.16,.24)},uCAdd:{value:new THREE.Color(.22,.1,.08)},uStar:{value:0},uDisc:{value:1},uSunPow:{value:600}};
   VL.sky=add(new THREE.Mesh(new THREE.SphereGeometry(280,40,20),new THREE.ShaderMaterial({uniforms:skyU,side:THREE.BackSide,depthWrite:false,fog:false,
     vertexShader:'varying vec3 vD; void main(){ vD=normalize(position); gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.); }',
-    fragmentShader:`uniform vec3 uTop,uHor,uSun,uSunCol,uFog; uniform float uTime,uCloud; varying vec3 vD;
+    fragmentShader:`uniform vec3 uTop,uHor,uSun,uSunCol,uFog,uCShade,uCAdd; uniform float uTime,uCloud,uCov,uStar,uDisc,uSunPow; varying vec3 vD;
       float h2(vec2 p){ p=fract(p*vec2(123.34,456.21)); p+=dot(p,p+45.32); return fract(p.x*p.y); }
       float vn(vec2 p){ vec2 i=floor(p), f=fract(p); f=f*f*(3.-2.*f); return mix(mix(h2(i),h2(i+vec2(1.,0.)),f.x),mix(h2(i+vec2(0.,1.)),h2(i+vec2(1.,1.)),f.x),f.y); }
       float fbm(vec2 p){ float v=0., a=.5; for (int i=0;i<5;i++){ v+=a*vn(p); p=p*2.03+vec2(1.7,9.2); a*=.5; } return v; }
       vec2 cuv(vec3 d){ vec2 c=d.xz/(max(d.y,0.)+.16)*2.1; c.x*=.55; return c+vec2(uTime*.006,uTime*.0024); }
       void main(){ vec3 d=normalize(vD); float h=max(d.y,0.); vec3 c=mix(uHor,uTop,pow(h,.55)); float s=max(dot(d,uSun),0.);
-        c+=uSunCol*(pow(s,600.)*6.+pow(s,24.)*.55+pow(s,4.)*.18);
+        c+=uSunCol*(pow(s,uSunPow)*6.*uDisc+pow(s,24.)*.55+pow(s,4.)*.18);
+        if (uStar>.01&&d.y>0.){ vec2 sp=d.xz/(d.y+.4)*64.; vec2 ci=floor(sp); float r=h2(ci); if (r>.982){ vec2 f=fract(sp)-.5-(vec2(h2(ci+3.1),h2(ci+7.7))-.5)*.5; float st=smoothstep(.12,.0,length(f))*(.55+.45*sin(uTime*1.7+r*91.)); c+=vec3(.85,.9,1.)*st*uStar*smoothstep(.04,.3,d.y)*(.4+.6*fract(r*37.)); } }
         if (uCloud>.5&&d.y>0.){ vec2 cp=cuv(d); float n=fbm(cp);
-          float cov=smoothstep(.5,.72,n)*smoothstep(.0,.16,d.y)*(1.-smoothstep(.65,.98,d.y));
+          float cov=smoothstep(uCov,uCov+.22,n)*smoothstep(.0,.16,d.y)*(1.-smoothstep(.65,.98,d.y));
           if (cov>.001){ vec2 dir=normalize(cuv(uSun)-cp+1e-4); float n2=fbm(cp+dir*.09); float lit=clamp((n-n2)*5.+.5,0.,1.);
-            vec3 shade=vec3(.24,.16,.24), litc=uSunCol*1.3+vec3(.22,.1,.08);
+            vec3 shade=uCShade, litc=uSunCol*1.3+uCAdd;
             vec3 cc=mix(shade,litc,lit*(.35+.65*pow(s,1.5)));
             cc+=uSunCol*pow(s,10.)*1.4*(1.-smoothstep(.2,.6,cov));
             c=mix(c,cc,cov*.88); } }
@@ -108,6 +110,7 @@ function buildVillage(){
     VL.maskR=new Uint8Array(MS*MS); VL.maskS=MS; for (let i=0;i<MS*MS;i++) VL.maskR[i]=a[i*4]; }
   VL.maskCv=mcv; const maskT=new THREE.CanvasTexture(mcv); maskT.minFilter=THREE.LinearFilter; maskT.generateMipmaps=false;
   U.uMask={value:maskT}; U.uGround={value:VL.macroTex}; U.uCenter={value:new THREE.Vector2()}; U.uR={value:24}; U.uMap={value:VL_MAP}; U.uDry={value:VL_LIN('#d9a24a')}; U.uGK={value:1.45};
+  U.uLightK={value:new THREE.Color(1,1,1)}; U.uShadeK={value:1}; U.uSnow=VL_ENVU.uSnow; U.uWet=VL_ENVU.uWet; U.uPoolT=VL_ENVU.uPoolT; U.uPoolK=VL_ENVU.uPoolK;
   const GMAX=240000, geo=new THREE.InstancedBufferGeometry();
   geo.setAttribute('position',new THREE.Float32BufferAttribute([-1,0,0, 1,0,0, -.75,.4,0, .75,.4,0, -.4,.75,0, .4,.75,0, 0,1,0],3)); geo.setIndex([0,1,2, 1,3,2, 2,3,4, 3,5,4, 4,5,6]);
   const off=new Float32Array(GMAX*3), pr=new Float32Array(GMAX*4);
@@ -116,8 +119,8 @@ function buildVillage(){
   geo.setAttribute('aOff',new THREE.InstancedBufferAttribute(off,3)); geo.setAttribute('aP',new THREE.InstancedBufferAttribute(pr,4));
   geo.userData={max:GMAX};
   VL.grass=add(new THREE.Mesh(geo,new THREE.ShaderMaterial({uniforms:U,side:THREE.DoubleSide,
-    vertexShader:`attribute vec3 aOff; attribute vec4 aP; uniform float uTime,uR,uMap; uniform vec3 uPlayer,uSoil; uniform vec2 uCenter; uniform sampler2D uMask,uGround;
-      varying float vH,vV,vS,vT; varying vec3 vW,vG;
+    vertexShader:`attribute vec3 aOff; attribute vec4 aP; uniform float uTime,uR,uMap,uPoolK; uniform vec3 uPlayer,uSoil; uniform vec2 uCenter; uniform sampler2D uMask,uGround,uPoolT;
+      varying float vH,vV,vS,vT,vP; varying vec3 vW,vG;
       void main(){
         vec2 rel=mod(aOff.xz-uCenter+uR,2.*uR)-uR; vec2 root=uCenter+rel;
         vec2 uv=vec2(root.x/uMap+.5,1.-(root.y/uMap+.5)); vec4 mk=texture2D(uMask,uv);
@@ -129,13 +132,15 @@ function buildVillage(){
         p.xz+=vec2(-s,c)*h*h*hgt*.35;
         float w=sin(uTime*1.3+root.x*.21+root.y*.17)*.55+sin(uTime*2.6+root.x*.7-root.y*.5)*.2+.3; p.xz+=vec2(.85,.45)*w*.35*hgt*h*h;
         vec3 wp=vec3(root.x,0.,root.y)+p; vec2 d=wp.xz-uPlayer.xz; float dl=length(d)+1e-4; float push=smoothstep(1.,.0,dl)*h*tl; wp.xz+=d/dl*push*min(.45,hgt*.8); wp.y-=push*.25*hgt;
-        vW=wp; vH=h; vV=aP.w*.6+pch*.4; vS=mk.g; vG=texture2D(uGround,uv).rgb*2.*uSoil;
+        vW=wp; vH=h; vV=aP.w*.6+pch*.4; vS=mk.g; vG=texture2D(uGround,uv).rgb*2.*uSoil; vP=uPoolK>.001?texture2D(uPoolT,uv).r:0.;
         gl_Position=projectionMatrix*viewMatrix*vec4(wp,1.); }`,
-    fragmentShader:`uniform vec3 uTip,uTip2,uDry,uSunCol,uSun,uFog; uniform float uFogN,uFogF,uTime,uGK; varying float vH,vV,vS,vT; varying vec3 vW,vG;
-      void main(){ vec3 tip=mix(uTip2,uTip,smoothstep(.2,.8,vV)); tip=mix(tip,uDry,smoothstep(.75,1.,vV)*.6); tip=mix(uTip2,tip,.5+.5*vT);
-        vec3 base=vG*uGK*mix(.55,1.,vS);
-        vec3 col=mix(base,tip*mix(.55,1.,vS),smoothstep(.0,1.,vH));
-        vec3 V=normalize(vW-cameraPosition); float back=pow(max(dot(V,uSun),0.),5.)*vH*vS; col+=uSunCol*(back*.6+.12*vH*vS);
+    fragmentShader:`uniform vec3 uTip,uTip2,uDry,uSunCol,uSun,uFog,uLightK; uniform float uFogN,uFogF,uTime,uGK,uShadeK,uSnow,uWet,uPoolK; varying float vH,vV,vS,vT,vP; varying vec3 vW,vG;
+      void main(){ float sS=mix(1.,vS,uShadeK); vec3 tip=mix(uTip2,uTip,smoothstep(.2,.8,vV)); tip=mix(tip,uDry,smoothstep(.75,1.,vV)*.6); tip=mix(uTip2,tip,.5+.5*vT);
+        vec3 base=vG*uGK*mix(.55,1.,sS);
+        vec3 alb=mix(base,tip*mix(.55,1.,sS),smoothstep(.0,1.,vH))*(1.-.18*uWet); vec3 col=alb*uLightK;
+        col+=alb*vec3(1.,.66,.3)*vP*uPoolK*1.5;
+        col=mix(col,vec3(.8,.84,.9)*uLightK*1.1,uSnow*(.25+.5*vH));
+        vec3 V=normalize(vW-cameraPosition); float back=pow(max(dot(V,uSun),0.),5.)*vH*sS; col+=uSunCol*(back*.6+.12*vH*sS);
         float dist=length(vW-cameraPosition); col=mix(col,uFog,smoothstep(uFogN,uFogF,dist));
         gl_FragColor=vec4(col,1.);
         #include <tonemapping_fragment>
@@ -244,7 +249,7 @@ function buildVillage(){
     sp.scale.set(3.2,.8,1); sp.position.set(d.x,d.id==='dungeon'?5.9:3.4,d.z); add(sp); d.label=sp;
     const ring=new THREE.Mesh(new THREE.RingGeometry(1.0,1.25,40),new THREE.MeshBasicMaterial({color:0xffd27a,transparent:true,opacity:.75,depthWrite:false,toneMapped:false})); ring.rotation.x=-Math.PI/2; ring.position.set(d.x,.06,d.z); add(ring); VL.pads.push(ring);
   });
-  vlParticles(R); vlGroundFinish();
+  vlParticles(R); vlGroundFinish(); vlEnvBuild(R);
   VL.built=true;
 }
 MAP_BUILD.village=()=>buildVillage();
@@ -351,7 +356,7 @@ function villageReset(){
   vlSetSky(false); if (VL.rays) VL.rays.enabled=QCUR!=='low';
   const C=QUALITY[QCUR]||QUALITY.medium; if (VL.grass) VL.grass.geometry.instanceCount=Math.floor(VL.grass.geometry.userData.max*Math.max(.25,C.grass));
   (VL.lod||[]).forEach(L=>{ L.im.count=Math.floor(L.n*(QCUR==='high'?1:QCUR==='medium'?.6:.2)); });
-  if (VL.skyU) VL.skyU.uCloud.value=QCUR==='low'?0:1; vlParticlesReset();
+  if (VL.skyU) VL.skyU.uCloud.value=QCUR==='low'?0:1; vlParticlesReset(); vlEnvClockInit(); vlEnvReset();
   document.body.classList.add('village'); $('#vlHud').hidden=false; $('#vlMini').hidden=false; $('#vlClock').hidden=false;
   VL.t0=performance.now();
   setTimeout(()=>{ if (MAPK==='village'&&W.state==='play') showBanner('🏡 노을 마을에 왔어요'); },300);
@@ -404,6 +409,7 @@ function villageFrame(dt,real,now){
   pg.position.set(P.x,0,P.z);
   { let dy=Math.atan2(P.fx,P.fz)-pg.rotation.y; dy=Math.atan2(Math.sin(dy),Math.cos(dy)); pg.rotation.y+=dy*Math.min(1,dt*12); }
   if (knight){ setBaseSynced(knight.anim,moving?'run':'idle',moving?(VL.run?1.25:.9)*(.45+.55*VL.slow):1); knight.mixer.update(W.paused?0:dt); }
+  vlEnvTick(dt,real);
   const U=VL.U; U.uTime.value=real; U.uPlayer.value.set(P.x,0,P.z); U.uCenter.value.set(P.x,P.z);
   U.uFog.value.copy(scene.fog.color); U.uFogN.value=scene.fog.near; U.uFogF.value=scene.fog.far; VL.skyU.uFog.value.copy(scene.fog.color);
   // 카메라: 캐릭터 뒤 · 마우스로 돌려요
@@ -422,7 +428,7 @@ function villageFrame(dt,real,now){
   VL_DOORS.forEach(d=>{ if (d.label) d.label.visible=Math.hypot(P.x-d.x,P.z-d.z)>7.5; });
   // 빛줄기
   if (VL.rays&&VL.rays.enabled){ const sp=_vlV2.copy(camera.position).addScaledVector(VL_SUN,200).project(camera), fr=camera.getWorldDirection(new THREE.Vector3()).dot(VL_SUN);
-    VL.rays.uniforms.uSun.value.set((sp.x+1)/2,(sp.y+1)/2); VL.rays.uniforms.uStr.value=Math.max(0,Math.min(1,(fr-.1)*2.2)); VL.rays.uniforms.uAsp.value=camera.aspect; }
+    VL.rays.uniforms.uSun.value.set((sp.x+1)/2,(sp.y+1)/2); VL.rays.uniforms.uStr.value=Math.max(0,Math.min(1,(fr-.1)*2.2))*(VL.raysK==null?1:VL.raysK); VL.rays.uniforms.uAsp.value=camera.aspect; }
   // 장소 발판
   let near=null; for (const d of VL_DOORS) if (Math.hypot(P.x-d.x,P.z-d.z)<1.5) near=d;
   if (near!==VL.door){ VL.door=near; const pe=$('#vlPrompt'); pe.hidden=!near; if (near){ const [a,b]=vlDoorText(near); pe.innerHTML=`<b>${a}</b><span>${esc(b)}</span><button class="btn small" id="vlGo">${near.id==='home'?'둘러보기':'들어가기'} (E)</button>`; $('#vlGo').onclick=vlEnterDoor; } }
@@ -445,12 +451,13 @@ function vlMini(real){
   g.lineWidth=7; g.strokeStyle='#f6ecd8'; g.beginPath(); g.arc(R,R,R-4.5,0,7); g.stroke(); g.lineWidth=2; g.strokeStyle='#8a6a48'; g.beginPath(); g.arc(R,R,R-1.2,0,7); g.stroke();
   g.save(); g.translate(R,R); g.rotate(Math.atan2(P.fx,-P.fz)*-1+Math.PI); g.rotate(Math.PI); g.restore();
   g.save(); g.translate(R,R); g.rotate(Math.atan2(P.fx,P.fz)*-1+Math.PI); g.fillStyle='#ff4d6d'; g.strokeStyle='#fff'; g.lineWidth=2; g.beginPath(); g.moveTo(0,-9); g.lineTo(6.5,7); g.lineTo(0,3.5); g.lineTo(-6.5,7); g.closePath(); g.fill(); g.stroke(); g.restore();
-  const dn=new Date(), h=dn.getHours(), mi=dn.getMinutes();
-  const ce=$('#vlClock'); const txt=`지금 ${h<12?'오전':'오후'} ${((h+11)%12)+1}:${String(mi).padStart(2,'0')}`; if (ce._t!==txt){ ce._t=txt; ce.innerHTML=`<b>🌇 노을 마을</b><br>${txt}`; }
+  vlEnvClockInit(); const dn=new Date(), h=dn.getHours(), mi=dn.getMinutes(), te=$('#vlClockT'), re=$('#vlClockR');
+  const gt=vlEnvClockText(); if (te&&te._t!==gt){ te._t=gt; te.textContent=gt; }
+  const rt=`지금 ${h<12?'오전':'오후'} ${((h+11)%12)+1}:${String(mi).padStart(2,'0')}`; if (re&&re._t!==rt){ re._t=rt; re.textContent=rt; }
 }
 
 /* ---------- 조작: 이동 키는 그대로 · 공격 키는 막고 · Shift 달리기 · E 들어가기 · 마우스 드래그 시점 ---------- */
-addEventListener('keydown',e=>{ if (MAPK!=='village'||W.state!=='play') return; if (e.target.closest&&e.target.closest('input,textarea')) return;
+addEventListener('keydown',e=>{ if (MAPK!=='village'||W.state!=='play') return; if (e.target.closest&&e.target.closest('input,textarea,select')) return;
   if (e.code==='ShiftLeft'||e.code==='ShiftRight') VL.run=true;
   if ((e.code==='KeyE'||e.code==='Enter')&&VL.door){ e.preventDefault(); e.stopImmediatePropagation(); vlEnterDoor(); return; }
   if (/^(Space|KeyE|KeyQ|KeyR|KeyF|ShiftLeft|ShiftRight|Digit\d|Enter)$/.test(e.code)){ e.preventDefault(); e.stopImmediatePropagation(); } },true);

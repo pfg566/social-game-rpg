@@ -31,6 +31,21 @@
       "loginFree": {
         ".validate": "newData.isBoolean()"
       },
+      "villageEnv": {
+        ".validate": "newData.hasChildren(['time', 'weather'])",
+        "time": {
+          ".validate": "newData.isString() && newData.val().matches(/^(auto|morning|day|sunset|night)$/)"
+        },
+        "speed": {
+          ".validate": "newData.isNumber() && newData.val() >= 6 && newData.val() <= 120"
+        },
+        "weather": {
+          ".validate": "newData.isString() && newData.val().matches(/^(auto|clear|cloudy|rain|snow|fog)$/)"
+        },
+        "$other": {
+          ".validate": false
+        }
+      },
       "$other": {
         ".validate": false
       }
