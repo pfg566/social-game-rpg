@@ -356,15 +356,16 @@ function vlBuildGround(R){
     g.fillStyle='#4f8a9a'; pondPath(g,0); g.fill(); });
   const grassT=vlGrassDetail(), dirtT=vlDirtDetail(), litT=vlLitterTex(), noiseT=vlNoiseTex();
   const mat=new THREE.MeshStandardMaterial({map:macroT,roughness:1,metalness:0});
-  mat.onBeforeCompile=sh=>{ Object.assign(sh.uniforms,{tMask:{value:maskT},tNoise:{value:noiseT},tGrassD:{value:grassT},tDirtD:{value:dirtT},tLit:{value:litT},uTile:{value:VL_MAP/3.0}});
-    sh.fragmentShader='uniform sampler2D tMask,tNoise,tGrassD,tDirtD,tLit; uniform float uTile;\nvec3 vlSL(vec3 c){ return pow(c,vec3(2.2)); }\n'+sh.fragmentShader.replace('#include <map_fragment>',`
+  const GU=VL.GU={uGSat:{value:1.2},uGMul:{value:new THREE.Color(0.72,0.84,0.7)},uDSat:{value:1.05},uDMul:{value:new THREE.Color(0.8,0.73,0.66)},uEdge:{value:0.35}};   // 풀밭 · 흙길 색 진하기 (카툰풍으로 진하게)
+  mat.onBeforeCompile=sh=>{ Object.assign(sh.uniforms,{tMask:{value:maskT},tNoise:{value:noiseT},tGrassD:{value:grassT},tDirtD:{value:dirtT},tLit:{value:litT},uTile:{value:VL_MAP/3.0}},GU);
+    sh.fragmentShader='uniform sampler2D tMask,tNoise,tGrassD,tDirtD,tLit; uniform float uTile,uGSat,uDSat,uEdge; uniform vec3 uGMul,uDMul;\nvec3 vlSL(vec3 c){ return pow(c,vec3(2.2)); }\nvec3 vlSat(vec3 c,float s){ return max(mix(vec3(dot(c,vec3(.2126,.7152,.0722))),c,s),0.); }\n'+sh.fragmentShader.replace('#include <map_fragment>',`
       vec4 mk=texture2D(tMask,vUv); vec2 tu=vUv*uTile;
       float n1=texture2D(tNoise,tu*.21).r, n2=texture2D(tNoise,tu*1.63).r;
       float dirt=smoothstep(.40,.60,mk.r+(n1-.5)*.45+(n2-.5)*.18);
       vec3 macro=texture2D(map,vUv).rgb*2.;
-      vec3 gC=vlSL(texture2D(tGrassD,tu).rgb)*macro;
-      vec3 dC=vlSL(texture2D(tDirtD,tu*1.37+.31).rgb)*mix(vec3(1.),macro,.4);
-      float edge=smoothstep(.1,.5,mk.r)*(1.-dirt); gC=mix(gC,gC*vec3(.95,.84,.62),edge*.75);
+      vec3 gC=vlSat(vlSL(texture2D(tGrassD,tu).rgb)*macro,uGSat)*uGMul;
+      vec3 dC=vlSat(vlSL(texture2D(tDirtD,tu*1.37+.31).rgb)*mix(vec3(1.),macro,.4),uDSat)*uDMul;
+      float edge=smoothstep(.1,.5,mk.r)*(1.-dirt); gC=mix(gC,gC*vec3(.95,.84,.62),edge*uEdge);
       vec3 col=mix(gC,dC,dirt);
       vec4 lt=texture2D(tLit,tu*.83+vec2(.37,.11)); float la=lt.a*smoothstep(.2,.65,mk.b+(n2-.5)*.35)*(1.-dirt*.6);
       col=mix(col,vlSL(lt.rgb),la);
@@ -375,7 +376,7 @@ function vlBuildGround(R){
   // 바깥 땅: 마을 땅과 겹치는 가운데를 비워 둬요 (겹치면 멀리서 줄무늬처럼 깜빡여요)
   const fs=new THREE.Shape(); fs.moveTo(-300,-300); fs.lineTo(300,-300); fs.lineTo(300,300); fs.lineTo(-300,300); fs.lineTo(-300,-300);
   { const h=VL_MAP/2-.5, hp=new THREE.Path(); hp.moveTo(-h,-h); hp.lineTo(-h,h); hp.lineTo(h,h); hp.lineTo(h,-h); hp.lineTo(-h,-h); fs.holes.push(hp); }
-  const far=new THREE.Mesh(new THREE.ShapeGeometry(fs),new THREE.MeshStandardMaterial({color:0x5a682c,roughness:1})); far.rotation.x=-Math.PI/2; far.position.y=-.03; R.add(far);
+  const far=new THREE.Mesh(new THREE.ShapeGeometry(fs),new THREE.MeshStandardMaterial({color:0x4d6326,roughness:1})); far.rotation.x=-Math.PI/2; far.position.y=-.03; R.add(far);
 }
 function vlGroundFinish(){
   const C=VL.gcv; if (!C) return; const S=C.S, mp=C.mp, g=C.G.getContext('2d');

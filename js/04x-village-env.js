@@ -50,7 +50,9 @@ const VL_PN={};
 for (const k in VL_PRE){ const p=Object.assign({},VL_PRE[k]);
   ['fog','hemiC','hemiG','sunC','fillC'].forEach(n=>{ const c=new THREE.Color(p[n]); p[n]=[c.r,c.g,c.b]; });
   ['top','hor','sunCol','mtn1','mtn2','smoke'].forEach(n=>{ const c=VL_LIN(p[n]); p[n]=[c.r,c.g,c.b]; });
-  p.cov=.5; p.hazeK=1; p.rain=0; p.snow=0; VL_PN[k]=p; }
+  p.cov=.5; p.hazeK=1; p.rain=0; p.snow=0;
+  p.sat*=1.04; p.con*=1.05; p.lift=p.lift.map(v=>v*0.5); p.fogN*=1.3; p.fogF*=1.08;   // 진한 카툰 색감: 채도 · 대비 조금 올리고, 어두운 곳 들뜸은 줄여요
+  VL_PN[k]=p; }
 function vlMixInto(o,a,b,t){ for (const k in a){ const x=a[k], y=b[k]; if (Array.isArray(x)){ const r=o[k]||(o[k]=x.slice()); for (let i=0;i<x.length;i++) r[i]=x[i]+(y[i]-x[i])*t; } else o[k]=x+(y-x)*t; } return o; }
 VL_PN.twiN=Object.assign(vlMixInto({},VL_PN.dusk,VL_PN.night,.55),{sunI:.05,rays:0});   // 해가 지고 달이 뜨기 전 (빛 방향이 바뀌는 때)
 VL_PN.twiD=Object.assign(vlMixInto({},VL_PN.night,VL_PN.dawn,.5),{sunI:.05,rays:0});
