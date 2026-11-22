@@ -554,6 +554,9 @@ function dfGrass(R){
   const U=DF.U={uTime:NAT_U.uTime,uPlayer:{value:new THREE.Vector3()},uCenter:{value:new THREE.Vector2()},uR:{value:21},uMap:{value:DF_MAP},uMask:{value:mt},uGround:{value:DF.mask},
     uTip:{value:VL_LIN('#a4c04a')},uTip2:{value:VL_LIN('#5f8f32')},uDry:{value:VL_LIN('#c2a64e')},uRoot:{value:VL_LIN('#3a5a1c')},uSun:{value:new THREE.Vector3(.5,.62,.3).normalize()},uSunCol:{value:new THREE.Color(1,.9,.7)},
     uFog:{value:new THREE.Color()},uFogN:{value:40},uFogF:{value:150},uLightK:{value:new THREE.Color(1,1,1)}};
+  const m=dfGrassMesh(U); R.add(m); DF.grass=m; GRASS.push(m); }
+// 풀잎 덩어리 (들판 마을 풀 셰이더): 지도 · 색은 U로 받아요 (서비스업 섬도 같이 써요)
+function dfGrassMesh(U){
   const GMAX=120000, geo=new THREE.InstancedBufferGeometry();
   geo.setAttribute('position',new THREE.Float32BufferAttribute([-1,0,0, 1,0,0, -.75,.4,0, .75,.4,0, -.4,.75,0, .4,.75,0, 0,1,0],3)); geo.setIndex([0,1,2, 1,3,2, 2,3,4, 3,5,4, 4,5,6]);
   const off=new Float32Array(GMAX*3), pr=new Float32Array(GMAX*4);
@@ -569,6 +572,7 @@ function dfGrass(R){
         float fade=1.-smoothstep(uR*.72,uR,max(abs(rel.x),abs(rel.y)));
         float pch=.5+.5*sin(root.x*.23+sin(root.y*.17)*2.)*cos(root.y*.19-root.x*.07);
         float tl=smoothstep(.45,.92,mk.r); float hgt=aP.y*mix(.1,.18+.26*pch,tl)*smoothstep(.06,.26,mk.r)*fade; vT=tl;
+        if (hgt<.003){ gl_Position=vec4(0.,0.,2.,1.); vH=vV=vS=vD=0.; vW=vec3(0.); return; }   // 풀이 없는 곳(길 · 모래): 납작한 잎이 점처럼 찍히지 않게 버려요
         float h=position.y; float c=cos(aP.x), s=sin(aP.x);
         vec3 p=vec3(position.x*aP.z*c, h*hgt, position.x*aP.z*s);
         p.xz+=vec2(-s,c)*h*h*hgt*.35;
@@ -584,7 +588,7 @@ function dfGrass(R){
         gl_FragColor=vec4(col,1.);
         #include <tonemapping_fragment>
       }`}));
-  m.frustumCulled=false; m.userData.max=GMAX; R.add(m); DF.grass=m; GRASS.push(m); }
+  m.frustumCulled=false; m.userData.max=GMAX; return m; }
 
 /* ---------- 성벽 디펜스 짓기 ---------- */
 function buildDefense(){

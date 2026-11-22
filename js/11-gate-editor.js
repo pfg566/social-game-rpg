@@ -105,7 +105,7 @@ function endGame(win){
   const unit=DATA.units.find(u=>u.id===playUnit);
   const fixedN=W.wrong.filter(w=>w.fixed).length;
   const gls=glScore(), rnb=MAPK==='runner'?{pts:RUN.coinsN*2+RUN.maxCombo*20,c:RUN.coinsN,m:RUN.maxCombo}:null;
-  const dlv=MAPK==='island'&&W.isl?W.isl.delivered:0, stars=PEACE_RUN&&W.isl?(W.isl.stars|0):0;
+  const dlv=MAPK==='island'&&W.isl?W.isl.delivered:0, stars=PEACE_RUN&&W.isl?(W.isl.stars|0):0, itips=MAPK==='island'&&W.isl?(W.isl.tips|0):0;
   // 점수는 퀴즈 중심: 정답 · 빠른 정답 · 정답률 보너스가 대부분이고, 몬스터 처치는 조금만
   const spd=Math.round(W.speedPts||0), accK=accBonusK(W.correct,W.asked), quizPts=W.correct*100+fixedN*50+spd, accPts=Math.round(quizPts*accK);
   const rateP=W.asked?Math.round(W.correct/W.asked*100):0;
@@ -114,18 +114,18 @@ function endGame(win){
   // 모드 기록(재미용, 같은 모드끼리만 비교): 처치 · 배달 · 별 · 빙하 · 러너 연속 · 승리 · 웨이브 · 빠른 정답 × 난이도
   const lvMul=PARTY.on||MODE==='hero'?HERO.score:LEVELS[LEVEL].score;
   const cfp=MAPK==='cafe'?CAFE.tips:0;
-  const modePts=Math.round((spd+W.kills*2+dlv*30+stars*30+gls.pts+(rnb?rnb.pts:0)+cfp+(win?300:0)+wc*50+(PARTY.on?PARTY.bonus:0))*lvMul);
+  const modePts=Math.round((spd+W.kills*2+dlv*30+itips+stars*30+gls.pts+(rnb?rnb.pts:0)+cfp+(win?300:0)+wc*50+(PARTY.on?PARTY.bonus:0))*lvMul);
   const gm=gameModeId(), prevBest=PROFILE&&PROFILE.mb&&+PROFILE.mb[gm]||0;
   $('#sScoreNote').textContent=`서로 다른 문제 ${uniqN}개 맞힘 ×100 · 다시 맞힘 ${fixedN}개 ×50 · 정답률 ${rateP}% 보너스 +${Math.round(accK*100)}%(${offAcc}점) · 같은 문제는 한 번만 세요`;
   const mparts=[]; if (spd) mparts.push(`빠른 정답 +${spd}`); if (W.kills) mparts.push(`처치 ${W.kills}×2`);
-  if (MAPK==='island') mparts.push(`배달 ${dlv}×30`); if (MAPK==='cafe') mparts.push(`팁 ${cfp}`); if (stars) mparts.push(`별 ${stars}×30`); if (rnb) mparts.push(`최고 ${rnb.m}연속×20 + 코인 ${rnb.c}×2`);
+  if (MAPK==='island'){ mparts.push(`배달 ${dlv}×30`); if (W.isl&&W.isl.expN) mparts.push(`⚡ 빠른 배송 ${W.isl.expN}×20`); if (W.isl&&W.isl.tourN) mparts.push(`🧳 관광객 안내 ${W.isl.tourN}×40`); } if (MAPK==='cafe') mparts.push(`팁 ${cfp}`); if (stars) mparts.push(`별 ${stars}×30`); if (rnb) mparts.push(`최고 ${rnb.m}연속×20 + 코인 ${rnb.c}×2`);
   if (MAPK==='glacier') mparts.push(`빙하 ${gls.pts}`); if (PARTY.on) mparts.push(`거점 +${PARTY.bonus}`); if (tu&&wc) mparts.push(`깬 웨이브 ${wc}×50`); if (win) mparts.push('승리 300');
   if (lvMul!==1) mparts.push(`${PARTY.on||MODE==='hero'?'영웅':LEVELS[LEVEL].name} ×${lvMul}`);
   const isNew=!!PROFILE&&modePts>prevBest&&modePts>0;
   $('#sMode').innerHTML=`<div class="mb-top"><span>${modeIcon(gm)} ${esc(modeName(gm))} 모드 기록</span><b>${modePts.toLocaleString('ko-KR')}</b>${isNew?'<em class="mb-new">🎉 새 기록!</em>':prevBest?`<small>내 최고 ${prevBest.toLocaleString('ko-KR')}</small>`:''}</div><small class="mb-note">${mparts.join(' · ')} · 모드 기록은 같은 모드끼리만 비교해요</small>`;
   $('#sMode').hidden=false;
   if (MAPK==='cafe') $('#endMsg').textContent=cafeSummary()+$('#endMsg').textContent;
-  if (MAPK==='island'&&W.isl) $('#endMsg').textContent=`택배 ${W.isl.delivered}개 배달`+(stars?` · 제시간 배달 ★${stars}`:'')+(W.isl.lost?` · 도둑에게 ${W.isl.lost}개 잃어버림`:'')+'. '+$('#endMsg').textContent;
+  if (MAPK==='island'&&W.isl) $('#endMsg').textContent=`택배 ${W.isl.delivered}개 배달`+(W.isl.expN?` · 빠른 배송 ${W.isl.expN}번`:'')+(W.isl.tourN?` · 관광객 ${W.isl.tourN}명 안내`:'')+(stars?` · 제시간 배달 ★${stars}`:'')+(W.isl.lost?` · 도둑에게 ${W.isl.lost}개 잃어버림`:'')+'. '+$('#endMsg').textContent;
   const newSkill=PARTY.on||tu?loadSkill():updateSkill(win);
   const d=new Date();
   const when=`${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
@@ -219,12 +219,13 @@ function setMap(k){
   const prevK=MAPK; MAPK=k;
   ensureMap(k);
   for (const g in mapGroups) mapGroups[g].visible=g===k;
-  bgGroup.visible=!['general','defense','island','glacier','runner','stage','teamwar','live','cafe','village'].includes(k); ground.visible=!['general','defense','glacier','runner','stage','teamwar','live','cafe','village'].includes(k);
+  bgGroup.visible=!['general','defense','island','glacier','runner','stage','teamwar','live','cafe','village'].includes(k); ground.visible=!['general','defense','island','glacier','runner','stage','teamwar','live','cafe','village'].includes(k);
   // 들판 마을 · 성벽 디펜스는 자기 하늘(구름) · 먼 산 · 분위기를 써요 (들판: 낮 · 황금빛 오후 / 성벽: + 해 질 녘)
-  const ownSky=k==='general'||k==='defense';
+  const OWN=['general','defense','island'], ownSky=OWN.includes(k);
   if (k==='general'){ gfSkyVis(false); applyMood(['day','golden'].includes(MOOD)?MOOD:gfPickMood()); }
   else if (k==='defense'){ gfSkyVis(false); applyMood(DF_MOODS[MOOD]?MOOD:dfPickMood()); }
-  if (!ownSky){ GF_SEE.value=0; if (prevK==='general'||prevK==='defense') gfSkyVis(true); }
+  else if (k==='island'){ gfSkyVis(false); applyMood(IS_MOODS[MOOD]?MOOD:islPickMood()); }
+  if (!ownSky){ GF_SEE.value=0; if (OWN.includes(prevK)) gfSkyVis(true); }
   colliders=MAPSTATE[k].colliders; stations=MAPSTATE[k].stations; npcs=MAPSTATE[k].npcs;
   WAVES=wavesFor(k==='zones'?(MAPS.zones.waves||'zones'):k);
   const M=MAPS[k];

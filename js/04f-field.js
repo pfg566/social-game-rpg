@@ -52,7 +52,7 @@ function gfBridgeY(x){ const u=Math.abs(x-GF_BR.x); return u<GF_BR.hl-.4?GF_BR.h
 // 시냇물 바닥(땅 모양)
 function gfBed(x,z){ const d=gfStreamD(x,z); if (d>GF_SW+.7) return 0; const k=Math.max(0,1-d/(GF_SW+.7)), far=1-Math.min(1,Math.max(0,(Math.abs(z)-56)/7)); return -.46*Math.pow(k,1.25)*far; }
 // 캐릭터 · 몬스터 발 높이: 다리 위는 올라가고, 시냇물에서는 살짝 잠겨요
-function gfY(x,z){ if (MAPK!=='general') return 0; if (gfOnBridge(x,z)) return gfBridgeY(x); const d=gfStreamD(x,z); if (d>GF_SW) return 0; const k=1-d/GF_SW; return -.27*k*k*(3-2*k); }
+function gfY(x,z){ if (MAPK==='island') return Math.max(-.3,islH(x,z)); if (MAPK!=='general') return 0; if (gfOnBridge(x,z)) return gfBridgeY(x); const d=gfStreamD(x,z); if (d>GF_SW) return 0; const k=1-d/GF_SW; return -.27*k*k*(3-2*k); }
 
 /* ---------- 텍스처 ---------- */
 function gfCobbleTex(seed,rad){   // 둥근 돌 포장 (rad: 광장처럼 동심원 무늬)
@@ -264,6 +264,7 @@ function gfGrass(R){
         float fade=1.-smoothstep(uR*.72,uR,max(abs(rel.x),abs(rel.y)));
         float pch=.5+.5*sin(root.x*.23+sin(root.y*.17)*2.)*cos(root.y*.19-root.x*.07);
         float tl=smoothstep(.45,.92,mk.r); float hgt=aP.y*mix(.1,.18+.26*pch,tl)*smoothstep(.06,.26,mk.r)*fade; vT=tl;
+        if (hgt<.003){ gl_Position=vec4(0.,0.,2.,1.); vH=vV=vS=vD=0.; vW=vec3(0.); return; }   // 풀이 없는 곳(길 · 모래): 납작한 잎이 점처럼 찍히지 않게 버려요
         float h=position.y; float c=cos(aP.x), s=sin(aP.x);
         vec3 p=vec3(position.x*aP.z*c, h*hgt, position.x*aP.z*s);
         p.xz+=vec2(-s,c)*h*h*hgt*.35;

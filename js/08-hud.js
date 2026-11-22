@@ -29,7 +29,7 @@ function updateHUD(){
       $('#bossHelp').textContent=NEWQ()?(boss.shield>0?'지식 방패! 보스의 문제를 맞히거나, 보라색 빛줄기를 따라 수정에서 퀴즈를 맞히면 깨져요':'방패가 깨졌어요! 공격하세요 · 체력 75·50·25%가 되면 방패가 다시 생겨요'):boss.shield>0?'퀴즈를 맞히면 보호막이 깨지고, 틀리면 되살아나요. 붉은 원이 보이면 피하세요!':'보호막이 모두 깨졌어요. 지금 공격하세요! 오답이면 보호막이 되살아나요.'; }
   }
   $('#gateCard').hidden=!W.gate||!!W.prep;
-  if (MAPK==='island' && W.isl){ const S=W.isl, show=S.quota>0; $('#parcelRow').hidden=!show; if (show){ const cp=S.carry; $('#parcelTxt').textContent=`${S.done-0} / ${S.quota}`+(S.lost?` · 잃어버림 ${S.lost}`:'')+(PEACE_RUN&&S.stars?` · ★${S.stars}`:'')+(PEACE_RUN&&cp&&cp.due?(W.t<=cp.due?` · ⏱ ${Math.ceil(cp.due-W.t)}초`:' · ⏱ 늦었어요'):''); $('#parcelBar').style.width=(S.done/S.quota*100)+'%'; } }
+  if (MAPK==='island' && W.isl){ const S=W.isl, show=S.quota>0; $('#parcelRow').hidden=!show; if (show){ const cp=S.carry; $('#parcelTxt').textContent=`${S.done-0} / ${S.quota}`+(S.lost?` · 잃어버림 ${S.lost}`:'')+(PEACE_RUN&&S.stars?` · ★${S.stars}`:'')+(PEACE_RUN&&cp&&cp.due?(W.t<=cp.due?` · ⏱ ${Math.ceil(cp.due-W.t)}초`:' · ⏱ 늦었어요'):'')+(!PEACE_RUN&&cp&&cp.express&&cp.due?(W.t<=cp.due?` · ⚡ ${Math.ceil(cp.due-W.t)}초`:' · ⚡ 늦었어요'):'')+(S.tour&&S.tour.st==='follow'?' · 🧳 안내 중':''); $('#parcelBar').style.width=(S.done/S.quota*100)+'%'; } }
   glHUD();
   if (MAPK==='defense'){ const dk=Math.max(0,W.door); $('#doorTxt').textContent=`${Math.ceil(dk)} / ${W.doorMax}`; $('#doorBar').style.width=(dk/W.doorMax*100)+'%'; }
   if (W.loc){
@@ -145,7 +145,7 @@ function startGame(){
   setTimeout(()=>{ W.snapCam=true; },0);
   if (PEACE_RUN) $('#hint').textContent='🕊️ 평화 모드 · WASD 이동 · Shift '+(JOB==='knight'?'막기':'구르기')+' · '+(MAPK==='island'?'상자에 다가가면 집어요 · 배달 깔개에 서면 배달':'빛나는 수정에 다가가 퀴즈를 맞혀 포탑을 깨워요');
   reset(); canvas.focus({preventScroll:true});
-  try{ applyMood(MAPK==='village'?'village':MAPK==='general'?gfPickMood(PARTY.on?PARTY.rid:''):MAPK==='defense'?dfPickMood(PARTY.on?PARTY.rid:''):!PARTY.on&&MAPK==='glacier'?'arctic':pickMood(PARTY.on?PARTY.rid:'')); }catch(e){}
+  try{ applyMood(MAPK==='village'?'village':MAPK==='general'?gfPickMood(PARTY.on?PARTY.rid:''):MAPK==='defense'?dfPickMood(PARTY.on?PARTY.rid:''):MAPK==='island'?islPickMood(PARTY.on?PARTY.rid:''):!PARTY.on&&MAPK==='glacier'?'arctic':pickMood(PARTY.on?PARTY.rid:'')); }catch(e){}
   // 한 판 시간 제한: 선생님이 '게임 열기'에서 정한 분(퀴즈 푸는 시간 포함, 실제 시계 기준)
   { const g=!PARTY.on&&MAPK!=='stage'&&MAPK!=='teamwar'&&MAPK!=='live'&&MAPK!=='village'&&typeof activeGate==='function'?activeGate():null, lim=g&&g.lim>0?g.lim:0;
     W.lim=lim; W.limEnd=lim?performance.now()+lim*60000:0; W.limWarn=0; W.timeUp=false; $('#timeCard').hidden=!lim; $('#timeCard').classList.remove('hurry'); }

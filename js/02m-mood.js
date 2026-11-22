@@ -17,6 +17,7 @@ let MOOD='day';
 function applyMood(k){
   if (MAPK==='general' && k!=='day' && k!=='golden' && typeof gfPickMood==='function') k=gfPickMood();   // 들판 마을은 맑은 낮 · 황금빛 오후만
   if (MAPK==='defense' && typeof DF_MOODS!=='undefined' && !DF_MOODS[k]) k=dfPickMood();                 // 성벽 디펜스는 + 해 질 녘
+  if (MAPK==='island' && typeof IS_MOODS!=='undefined' && !IS_MOODS[k]) k=islPickMood();                 // 서비스업 섬은 맑은 낮 · 황금빛 오후
   const M=MOODS[k]||MOODS.day; MOOD=MOODS[k]?k:'day';
   renderer.toneMappingExposure=M.exp;
   if (SKY){ SKY.uniforms.top.value.setHex(M.sky[0]); SKY.uniforms.mid.value.setHex(M.sky[1]); SKY.uniforms.bot.value.setHex(M.sky[2]); }
@@ -30,6 +31,7 @@ function applyMood(k){
   if (MOTES){ MOTES.material.uniforms.uTint.value.set(...M.motes); MOTES.material.uniforms.uSize.value=M.size; }
   if (MAPK==='general' && typeof gfApplyMood==='function') gfApplyMood(MOOD);   // 들판 마을: 하늘 · 안개를 맵에 맞춰요
   if (MAPK==='defense' && typeof dfApplyMood==='function') dfApplyMood(MOOD);
+  if (MAPK==='island' && typeof islApplyMood==='function') islApplyMood(MOOD);
 }
 
 /* 판마다 분위기를 무작위로 (방금 것과 다르게). 파티는 방 번호로 정해서 모두 같은 분위기 */
