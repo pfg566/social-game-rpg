@@ -36,9 +36,10 @@ const VL_PRE={
   morning:{exp:.92,top:'#6f9cd6',hor:'#ffd2a8',fog:'#f0d4bc',fogN:15,fogF:104,hemiC:'#ffe8d2',hemiG:'#5d6248',hemiI:.62,sunC:'#ffc890',sunI:1.55,fillC:'#c0ccff',fillI:.28,
            bS:.5,bR:.7,bT:.8,sat:1.05,tint:[1.04,1,.95],lift:[.016,.01,.016],con:1.02,vig:.44,sunCol:'#ffc48a',lightK:[1.02,.97,.9],cShade:[.5,.47,.56],cAdd:[.25,.2,.16],
            mtn1:'#a49eb4',mtn2:'#8b8b94',mtnSun:.3,rays:.7,glow:.3,win:.3,lan:.8,star:0,disc:1,sunPow:600,shadeK:.6,ff:0,smoke:'#a8a2ac'},
-  day:    {exp:.9,top:'#4f8ad6',hor:'#c4dcf2',fog:'#d4e0ec',fogN:20,fogF:122,hemiC:'#e8efff',hemiG:'#5d6e40',hemiI:.64,sunC:'#fff2dc',sunI:1.65,fillC:'#b9c9ff',fillI:.3,
-           bS:.32,bR:.6,bT:.9,sat:1.06,tint:[1,1,1],lift:[.008,.008,.02],con:1.03,vig:.38,sunCol:'#fff4e2',lightK:[1.1,1.1,1.08],cShade:[.62,.67,.76],cAdd:[.26,.27,.29],
-           mtn1:'#8fa4bf',mtn2:'#73888c',mtnSun:.08,rays:.28,glow:.12,win:.15,lan:.5,star:0,disc:1,sunPow:600,shadeK:.38,ff:0,smoke:'#b4b0b8'},
+  // 낮: 파란 하늘 · 흰 뭉게구름(조금만) · 하늘색 안개는 멀리 · 먼 산은 또렷한 청록 · 빛 번짐은 약하게 (희뿌옇지 않게)
+  day:    {exp:.88,top:'#2a6fd6',hor:'#7fb8ee',fog:'#9cc6ee',fogN:32,fogF:180,hemiC:'#dce9ff',hemiG:'#5d6e40',hemiI:.6,sunC:'#fff4e0',sunI:1.65,fillC:'#b9c9ff',fillI:.3,
+           bS:.18,bR:.55,bT:.96,sat:1.12,tint:[1,1,1],lift:[.003,.005,.012],con:1.07,vig:.36,sunCol:'#fff6e8',lightK:[1.1,1.1,1.08],cShade:[.76,.84,.96],cAdd:[.32,.32,.32],
+           mtn1:'#6a8cb8',mtn2:'#557a72',mtnSun:.05,rays:.1,glow:.12,win:.15,lan:.5,star:0,disc:1,sunPow:600,shadeK:.38,ff:0,smoke:'#b4b0b8',cov:.62,hazeK:1.75},
   sunset: {exp:.95,top:'#7fa1cf',hor:'#ffc58e',fog:'#eab384',fogN:12,fogF:95,hemiC:'#ffd8b0',hemiG:'#6b5638',hemiI:.6,sunC:'#ffb46e',sunI:1.9,fillC:'#ffc8a0',fillI:.18,
            bS:.42,bR:.7,bT:.82,sat:1.08,tint:[1.03,1,.95],lift:[.012,.006,0],con:1.03,vig:.5,sunCol:'#ffb46e',lightK:[1,1,1],cShade:[.24,.16,.24],cAdd:[.22,.1,.08],
            mtn1:'#9c829a',mtn2:'#7e6a72',mtnSun:.6,rays:1,glow:1,win:.72,lan:1.9,star:0,disc:1,sunPow:600,shadeK:1,ff:1,smoke:'#9a92a0'},
@@ -50,13 +51,14 @@ const VL_PN={};
 for (const k in VL_PRE){ const p=Object.assign({},VL_PRE[k]);
   ['fog','hemiC','hemiG','sunC','fillC'].forEach(n=>{ const c=new THREE.Color(p[n]); p[n]=[c.r,c.g,c.b]; });
   ['top','hor','sunCol','mtn1','mtn2','smoke'].forEach(n=>{ const c=VL_LIN(p[n]); p[n]=[c.r,c.g,c.b]; });
-  p.cov=.5; p.hazeK=1; p.rain=0; p.snow=0;
+  p.cov=p.cov??.5; p.hazeK=p.hazeK??1; p.rain=0; p.snow=0;   // cov: 구름 덮개(클수록 구름 적게) · hazeK: 먼 산이 안개에 묻히는 정도(클수록 또렷)
   p.sat*=1.04; p.con*=1.05; p.lift=p.lift.map(v=>v*0.5); p.fogN*=1.3; p.fogF*=1.08;   // 진한 카툰 색감: 채도 · 대비 조금 올리고, 어두운 곳 들뜸은 줄여요
   VL_PN[k]=p; }
 function vlMixInto(o,a,b,t){ for (const k in a){ const x=a[k], y=b[k]; if (Array.isArray(x)){ const r=o[k]||(o[k]=x.slice()); for (let i=0;i<x.length;i++) r[i]=x[i]+(y[i]-x[i])*t; } else o[k]=x+(y-x)*t; } return o; }
 VL_PN.twiN=Object.assign(vlMixInto({},VL_PN.dusk,VL_PN.night,.55),{sunI:.05,rays:0});   // 해가 지고 달이 뜨기 전 (빛 방향이 바뀌는 때)
 VL_PN.twiD=Object.assign(vlMixInto({},VL_PN.night,VL_PN.dawn,.5),{sunI:.05,rays:0});
-const VL_KEYS=[[0,'night'],[4.4,'night'],[5.2,'twiD'],[5.9,'dawn'],[7.2,'morning'],[9.6,'day'],[15.4,'day'],[17.67,'sunset'],[18.6,'dusk'],[19.3,'twiN'],[20.2,'night'],[24,'night']];
+// 낮(파란 하늘)은 오후 4시 12분까지 그대로 · 그 뒤 노을로 (파랑 → 주황 사이 회색빛 시간을 짧게)
+const VL_KEYS=[[0,'night'],[4.4,'night'],[5.2,'twiD'],[5.9,'dawn'],[7.2,'morning'],[9.6,'day'],[16.2,'day'],[17.67,'sunset'],[18.6,'dusk'],[19.3,'twiN'],[20.2,'night'],[24,'night']];
 const VL_T={};
 function vlTimeState(h){ for (let i=1;i<VL_KEYS.length;i++){ const [h1,k1]=VL_KEYS[i]; if (h<=h1){ const [h0,k0]=VL_KEYS[i-1]; return vlMixInto(VL_T,VL_PN[k0],VL_PN[k1],(h-h0)/Math.max(1e-6,h1-h0)); } }
   return vlMixInto(VL_T,VL_PN.night,VL_PN.night,0); }
@@ -100,7 +102,7 @@ function vlStLerp(T,t){ for (const k in T){ const b=T[k]; if (Array.isArray(b)){
 function vlEnvTick(dt,real){
   const h=vlGameHour(), w=vlWeatherNow(), sn=!!VL.envSnap; VL.envSnap=false; VL.envHour=h; VL.envW=w;
   for (const k in VL_WK){ const tg=w===k?1:0; VL_WK[k]=sn?tg:VL_WK[k]+(tg-VL_WK[k])*Math.min(1,dt*.22); }
-  const T=vlTimeState(h); T.cov=.5; T.hazeK=1; T.rain=0; T.snow=0; vlWeatherApply(T);
+  const T=vlTimeState(h); T.rain=0; T.snow=0; vlWeatherApply(T);
   if (sn) VL_STOK=false; vlStLerp(T,Math.min(1,dt*.8));
   const body=vlSunDir(h,_vlSunT); if (sn||body!==VL_BODY){ VL_SUN.copy(_vlSunT); VL_BODY=body; } else VL_SUN.lerp(_vlSunT,Math.min(1,dt*.8)).normalize();
   const su=VL_ENVU.uSnow, wu=VL_ENVU.uWet;
