@@ -15,6 +15,7 @@ const MOODS={
 };
 let MOOD='day';
 function applyMood(k){
+  if (MAPK==='general' && k!=='day' && k!=='golden' && typeof gfPickMood==='function') k=gfPickMood();   // 들판 마을은 맑은 낮 · 황금빛 오후만
   const M=MOODS[k]||MOODS.day; MOOD=MOODS[k]?k:'day';
   renderer.toneMappingExposure=M.exp;
   if (SKY){ SKY.uniforms.top.value.setHex(M.sky[0]); SKY.uniforms.mid.value.setHex(M.sky[1]); SKY.uniforms.bot.value.setHex(M.sky[2]); }
@@ -26,6 +27,7 @@ function applyMood(k){
   if (GRADE){ const G=M.grade, u=GRADE.uniforms; u.uSat.value=G.sat; u.uTint.value.set(...G.tint); u.uLift.value.set(...G.lift); u.uCon.value=G.con; u.uVig.value=G.vig; }
   try{ grassMat.uniforms.uBase.value.setHex(M.grass[0]); grassMat.uniforms.uTip.value.setHex(M.grass[1]); }catch(e){}
   if (MOTES){ MOTES.material.uniforms.uTint.value.set(...M.motes); MOTES.material.uniforms.uSize.value=M.size; }
+  if (MAPK==='general' && typeof gfApplyMood==='function') gfApplyMood(MOOD);   // 들판 마을: 하늘 · 안개를 맵에 맞춰요
 }
 
 /* 판마다 분위기를 무작위로 (방금 것과 다르게). 파티는 방 번호로 정해서 모두 같은 분위기 */

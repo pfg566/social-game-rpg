@@ -74,10 +74,21 @@ function prepAfter(ok){
   if (ok) prepShow('pick'); else prepNext();
 }
 function prepChoose(i){
-  const c=PREP_CARDS[i], p=W.prep; if (!c||!p||performance.now()<UI_LOCK) return;
-  c.go(); p.got.push(c.name); W.up.list.push(c.name); SFX.correct();
+  const c=PREP_CARDS[i], p=W.prep; if (!c||(!p&&!W.bonus)||performance.now()<UI_LOCK) return;
+  c.go(); W.up.list.push(c.name); SFX.correct();
   fx.rise(P.x,P.z,0xffd34d,20);
-  prepNext();
+  if (W.bonus){ W.bonus=false; PREP_CARDS=[]; $('#prep').hidden=true; W.paused=false; showBanner(`강화 카드: ${c.name}`); canvas.focus({preventScroll:true}); return; }
+  p.got.push(c.name); prepNext();
+}
+/* 보너스 강화 카드 (들판 마을 다리 수정): 정비 시간 카드 화면을 그대로 써요 */
+function bonusCardOpen(){
+  W.bonus=true; W.paused=true; for (const k in keys) keys[k]=false;
+  const el=$('#prep'); el.hidden=false; el.dataset.kind='pick'; blurAll(); UI_LOCK=performance.now()+QUIZ_LOCK_MS;
+  $('#prepSteps').innerHTML=''; PREP_CARDS=drawCards();
+  $('#prepTitle').textContent='🌉 보너스 강화 카드를 골라요'; $('#prepQ').hidden=true; $('#prepGo').hidden=true;
+  const cards=$('#prepCards'); cards.hidden=false;
+  cards.innerHTML=PREP_CARDS.map((c,i)=>`<button class="upcard" data-up="${i}"><span class="n">${i+1}</span><span class="ic">${c.icon}</span><b>${c.name}</b><small>${c.desc}</small></button>`).join('');
+  $('#prepNote').textContent='숫자 키 1·2·3 또는 클릭으로 골라요';
 }
 function prepFinish(){
   const p=W.prep; if (!p) return;

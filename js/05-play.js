@@ -104,7 +104,7 @@ function startWave(i){
   for (let k=0;k<d.n;k++) spawnMob(d,false);
   if (d.groups){ const lanes=[-20,0,20]; d.groups.forEach((g,gi)=>W.spawnQ.push({at:W.t+g.at,n:g.n,runner:!!g.runner,lane:lanes[Math.floor(Math.random()*3)],def:d,first:gi===0})); }
   if (d.boss && typeof FUN!=='undefined' && FUN.am && !FUN.am.done){ amClear(true); W.nextQuiz=W.t+25; flashPrompt('보스가 나타나 정답 몬스터가 물러났어요',2); }
-  if (d.boss){ spawnMob(d,true); if (NEWQ()) bgBossSpawned(liveBoss()); else stations.forEach(s=>s.readyAt=Math.min(s.readyAt,W.t)); }
+  if (d.boss){ spawnMob(d,true); if (MAPK==='general') gfBossRise(liveBoss()); if (NEWQ()) bgBossSpawned(liveBoss()); else stations.forEach(s=>s.readyAt=Math.min(s.readyAt,W.t)); }
   if (W.up && W.up.turret && MAPK==='defense'){ TURRETS.forEach(t=>{ t.until=W.t+W.up.turret; t.cd=.3; }); W.up.turret=0; setTimeout(()=>flashPrompt('강화 카드: 포탑 3개가 자동으로 쏴요!',2.5),1200); }
   const nr=rangedCount(i); for (let k=0;k<nr;k++) spawnRanged(d);
   const nl=leapCount(i); for (let k=0;k<nl;k++) spawnMob({...d,leaper:true,hp:Math.round(d.hp*.8)},false);
@@ -349,6 +349,7 @@ function doHit(c){
     }
   }
   if (n){ hitStop=Math.max(hitStop,big?.09:.055); SFX.hit(big); if (big) shake=Math.max(shake,.16); }
+  gfBrkHit(P.x,P.z,c.r);   // 들판 마을: 짚단 · 나무통
 }
 function dodge(){
   if (P.down) return;
@@ -388,4 +389,5 @@ function spinHit(h){
   }
   if (n){ hitStop=Math.max(hitStop,h.last?.08:.04); SFX.hit(!!h.last); if (h.last) shake=Math.max(shake,.2); }
   if (h.last) fx.shock(P.x,P.z,SPIN_R+.5);
+  gfBrkHit(P.x,P.z,SPIN_R);
 }

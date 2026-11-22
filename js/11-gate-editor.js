@@ -216,10 +216,12 @@ function useUnit(id){
 function setMap(k){
   if (!MAPS[k]) k='zones';
   if (k!==MAPK){ clearWorld(); bolts.forEach(b=>scene.remove(b.mesh)); bolts=[]; }
-  MAPK=k;
+  const prevK=MAPK; MAPK=k;
   ensureMap(k);
   for (const g in mapGroups) mapGroups[g].visible=g===k;
-  bgGroup.visible=!['island','glacier','runner','stage','teamwar','live','cafe','village'].includes(k); ground.visible=!['glacier','runner','stage','teamwar','live','cafe','village'].includes(k);
+  bgGroup.visible=!['general','island','glacier','runner','stage','teamwar','live','cafe','village'].includes(k); ground.visible=!['general','glacier','runner','stage','teamwar','live','cafe','village'].includes(k);
+  // 들판 마을은 자기 하늘(구름) · 먼 산 · 분위기(맑은 낮 · 황금빛 오후)를 써요
+  if (k==='general'){ gfSkyVis(false); applyMood(['day','golden'].includes(MOOD)?MOOD:gfPickMood()); } else { GF_SEE.value=0; if (prevK==='general') gfSkyVis(true); }
   colliders=MAPSTATE[k].colliders; stations=MAPSTATE[k].stations; npcs=MAPSTATE[k].npcs;
   WAVES=wavesFor(k==='zones'?(MAPS.zones.waves||'zones'):k);
   const M=MAPS[k];

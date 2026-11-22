@@ -224,6 +224,7 @@ function updateProj(dt){
           const d=p.dmg*atkMult()*(p.crit?CRIT_MULT:1);
           hitMob(m,d,p.x-p.vx*.02,p.z-p.vz*.02,.5,'#ffffff',true,{crit:p.crit,stun:.15}); SFX.hit(p.crit); if (!p.pierce){ boom=true; break; } }
         else { boom=true; break; } } }
+    if (!boom && MAPK==='general' && gfBrkHit(p.x,p.z,.1)) boom=!(p.kind==='arrow'&&p.pierce);   // 들판 마을: 짚단 · 나무통
     const out=Math.abs(p.x)>36||Math.abs(p.z)>36;
     if (boom||p.life<=0||out){ if (p.kind==='orb') orbBurst(p); scene.remove(p.mesh); PROJ.splice(i,1); }
   }
@@ -279,7 +280,7 @@ function mageBlink(){
   const dir=inputDir()||{x:P.fx,z:P.fz}, col=ELEM[MELEM].color;
   fx.burst(P.x,1,P.z,col,14,4); impactFx(P.x,1.1,P.z,col,2.4);
   P.x+=dir.x*4.8; P.z+=dir.z*4.8; resolve(P,.6); P.fx=dir.x; P.fz=dir.z;
-  pg.position.set(P.x,0,P.z); camera.position.x+=dir.x*2.4; camera.position.z+=dir.z*2.4;
+  pg.position.set(P.x,gfY(P.x,P.z),P.z); camera.position.x+=dir.x*2.4; camera.position.z+=dir.z*2.4;
   fx.burst(P.x,1,P.z,col,14,4); impactFx(P.x,1.1,P.z,col,2.4);
   W.invuln=Math.max(W.invuln||0,W.t+.3); P.dodgeCd=JOBS.mage.dodgeCd; SFX.dodge();
 }
@@ -375,7 +376,8 @@ function jobFx(fx,ok){
 function jobQuiz(ok,source,extras){
   W.streak=ok?(W.streak||0)+1:0;
   if (ok){ const before=W.ult||0; W.ult=Math.min(ULT_NEED,before+1); if (W.ult>=ULT_NEED && before<ULT_NEED) extras.push(`필살기 ${ultLabel()} 준비 완료! Q를 누르세요.`); }
-  if (JOB==='knight'){ if (ok){ W.qshield=Math.min(60,(W.qshield||0)+30); extras.push('기사: 방어막 +30'); } else extras.push('기사: 오답 너프를 절반만 받아요.'); }
+  // 기사: 다른 곳에서 받은 큰 방어막(강화 카드 · 부탁 보상)을 60으로 깎지 않아요
+  if (JOB==='knight'){ if (ok){ W.qshield=Math.max(W.qshield||0,Math.min(60,(W.qshield||0)+30)); extras.push('기사: 방어막 +30'); } else extras.push('기사: 오답 너프를 절반만 받아요.'); }
   if (JOB==='archer'){ if (ok) extras.push(`궁수: ${W.streak}연속 정답 · 치명타 ${Math.round(archerCrit()*100)}%${W.streak>=5?' · 관통 화살!':''}`); else extras.push('궁수: 연속 정답이 0으로 돌아갔어요.'); }
   if (JOB==='mage'){ if (ok && source && (source.type==='station'||source.type==='loc')){ W.orbBoost=(W.orbBoost||0)+3; extras.push('마법사: 다음 구슬 3개가 커져요.'); }
     extras.push(ok?'마법사: 정답 효과가 1.5배 오래가요.':'마법사: 오답 효과도 1.5배 오래가요.'); }

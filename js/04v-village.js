@@ -4,6 +4,8 @@
 const VL={on:false,joining:false,built:false,yaw:0,pitch:.2,dist:6.5,run:false,slow:1,drag:null,ks:1,door:null,callT:0,toastT:0,backShop:false,
   U:null,grass:null,leaves:null,sky:null,skyU:null,rays:null,mini:null,miniSrc:null};
 const VL_LIN=h=>new THREE.Color(h).convertSRGBToLinear();
+// 자연 에셋(나무 · 풀 뭉치)의 바람 · 캐릭터 앞 잎 비치기: 마을과 들판 마을이 같은 값을 함께 써요
+const NAT_U={uTime:{value:0},uCam:{value:new THREE.Vector3(0,-999,0)},uPlr:{value:new THREE.Vector3(0,-999,0)}};
 let vlSeed=7; const vlR=()=>{ vlSeed=(vlSeed*16807)%2147483647; return (vlSeed-1)/2147483646; }, vlS=(a,b)=>a+vlR()*(b-a);
 const VL_SUN=new THREE.Vector3(-.42,.2,-.88).normalize();
 const VL_MAP=140, VL_PATH_W=1.7;
@@ -45,7 +47,7 @@ function buildVillage(){
   const add=o=>{ R.add(o); return o; };
   const U=VL.U={uTime:{value:0},uPlayer:{value:new THREE.Vector3()},uBase:{value:VL_LIN('#3b4f1a')},uTip:{value:VL_LIN('#9ea23a')},uTip2:{value:VL_LIN('#5f8a30')},
     uSunCol:{value:VL_LIN('#ffb46e')},uSun:{value:VL_SUN.clone()},uFog:{value:new THREE.Color()},uFogN:{value:12},uFogF:{value:95},
-    uCam:{value:new THREE.Vector3(0,-999,0)},uPlr:{value:new THREE.Vector3(0,-999,0)},uSoil:{value:VL_LIN('#44611c')}};
+    uCam:NAT_U.uCam,uPlr:NAT_U.uPlr,uSoil:{value:VL_LIN('#44611c')}}; U.uTime=NAT_U.uTime;
   VL_TREES.forEach(t=>VL_COLL.push({x:t[0],z:t[1],r:.7*t[2]}));
 
   /* 하늘 (해 · 노을 빛) */
@@ -267,16 +269,25 @@ const VL_NAT=['CommonTree_1','CommonTree_2','CommonTree_3','CommonTree_4','Commo
   'Fern_1','Plant_1_Big','Clover_2','Rock_Medium_1','Rock_Medium_2','Rock_Medium_3','Pebble_Round_1','Pebble_Round_2','Pebble_Round_3','Mushroom_Common',
   'RockPath_Round_Small_1','RockPath_Round_Small_2','RockPath_Round_Small_3','Plant_7','Plant_7_Big'];
 VL.nat={};
+// 모델마다 한 번만 불러와요 (들판 마을은 시작할 때 필요한 것만, 마을은 들어갈 때 나머지까지)
+const VL_NATP={}; let VL_NATL=null;
+function vlLoadNat(list){ return Promise.all(list.map(vlNatOne)); }
 function vlLoadNature(){
   if (VL.natP) return VL.natP;
-  const L=new THREE.GLTFLoader(), TL=new THREE.TextureLoader(), white={};
+  VL.natP=vlLoadNat(VL_NAT).then(()=>{ VL.natOK=Object.keys(VL.nat).length>=VL_NAT.length-3; VL.natDone=true; });
+  return VL.natP;
+}
+function vlNatOne(n){
+  if (VL_NATP[n]) return VL_NATP[n];
+  if (!VL_NATL) VL_NATL={L:new THREE.GLTFLoader(),TL:new THREE.TextureLoader(),white:{}};
+  const L=VL_NATL.L, TL=VL_NATL.TL, white=VL_NATL.white;
   const whiteTex=n=>{ if (!white[n]){ const t=TL.load('env/nature/tex/'+n+'.png'); t.encoding=THREE.sRGBEncoding; t.flipY=false; t.anisotropy=4; white[n]=t; } return white[n]; };
-  const one=n=>new Promise(res=>L.load('env/nature/'+n+'.gltf',g=>{ g.scene.updateMatrixWorld(true); const parts=[];
+  return VL_NATP[n]=new Promise(res=>L.load('env/nature/'+n+'.gltf',g=>{ g.scene.updateMatrixWorld(true); const parts=[];
     g.scene.traverse(o=>{ if (!o.isMesh) return; const m=o.material, leaf=/Leaves|Leaf_Pine|Grass|Flowers/.test(m.name);
       if (m.map) m.map.anisotropy=4;
       if (leaf){ m.alphaTest=.45; m.side=THREE.DoubleSide; m.transparent=false;
         if (m.name==='Leaves_NormalTree') m.map=whiteTex('Leaves_NormalTree'); if (m.name==='Leaves_TwistedTree') m.map=whiteTex('Leaves_TwistedTree');
-        m.onBeforeCompile=sh=>{ sh.uniforms.uTime=VL.U?VL.U.uTime:{value:0}; sh.uniforms.uCam=VL.U?VL.U.uCam:{value:new THREE.Vector3(0,-999,0)}; sh.uniforms.uPlr=VL.U?VL.U.uPlr:{value:new THREE.Vector3(0,-999,0)};
+        m.onBeforeCompile=sh=>{ sh.uniforms.uTime=NAT_U.uTime; sh.uniforms.uCam=NAT_U.uCam; sh.uniforms.uPlr=NAT_U.uPlr;
           sh.vertexShader='uniform float uTime;\nuniform vec3 uPlr;\nvarying vec3 vWP;\n'+sh.vertexShader.replace('#include <project_vertex>','#include <project_vertex>\n gl_Position=projectionMatrix*viewMatrix*vec4(vWP,1.);').replace('#include <begin_vertex>',
           '#include <begin_vertex>\n#ifdef USE_INSTANCING\n float ph=instanceMatrix[3].x*.37+instanceMatrix[3].z*.29;\n#else\n float ph=0.;\n#endif\n float hh=max(position.y,0.); transformed.x+=sin(uTime*1.5+ph)*.035*hh; transformed.z+=cos(uTime*1.2+ph*1.3)*.035*hh;\n vec4 vwp=vec4(transformed,1.);\n#ifdef USE_INSTANCING\n vwp=instanceMatrix*vwp;\n#endif\n vWP=(modelMatrix*vwp).xyz;\n { vec2 pd=vWP.xz-uPlr.xz; float pl=length(pd)+1e-4; float pk=(1.-smoothstep(.2,1.3,pl))*smoothstep(.2,.6,vWP.y)*(1.-smoothstep(1.5,2.3,vWP.y)); vWP.xz+=pd/pl*pk*.4; vWP.y-=pk*.08; }');
           sh.fragmentShader='uniform vec3 uCam,uPlr;\nvarying vec3 vWP;\n'+sh.fragmentShader.replace('#include <clipping_planes_fragment>',
@@ -286,12 +297,10 @@ function vlLoadNature(){
       m.roughness=.9; m.metalness=0; if (m.name==='PathRocks') m.color.setRGB(1.45,1.4,1.32); if (m.name==='Rocks') m.color.setRGB(1.2,1.15,1.08);
       parts.push({geo:o.geometry,mat:m,m:o.matrixWorld.clone(),leaf,tint:m.name==='Leaves_NormalTree'||m.name==='Leaves_TwistedTree'}); });
     VL.nat[n]=parts; res(); },undefined,()=>res()));
-  VL.natP=Promise.all(VL_NAT.map(one)).then(()=>{ VL.natOK=Object.keys(VL.nat).length>=VL_NAT.length-3; VL.natDone=true; });
-  return VL.natP;
 }
 /* 모델 하나를 여러 곳에 (InstancedMesh). P: [{x,y,z,ry,s,c}] · c는 잎 색 */
 function vlInst(name,P,opt){
-  const parts=VL.nat[name]; if (!parts||!P.length) return;
+  const parts=VL.nat[name], out=[]; if (!parts||!P.length) return out;
   const M=new THREE.Matrix4(), T=new THREE.Matrix4(), q=new THREE.Quaternion(), e=new THREE.Euler(), S=new THREE.Vector3(), V=new THREE.Vector3();
   parts.forEach(pt=>{ let mat=pt.mat; if (opt&&opt.col){ mat=pt.mat.clone(); mat.color.multiply(opt.col); }   // 색만 바꾼 복사본 (인스턴스 색을 쓰면 같은 재질을 쓰는 다른 바위와 셰이더가 엇갈려요)
     const im=new THREE.InstancedMesh(pt.geo,mat,P.length);
@@ -300,7 +309,8 @@ function vlInst(name,P,opt){
     const sh=!opt||opt.shadow!==false; im.castShadow=sh; im.receiveShadow=true; im.frustumCulled=false;
     if (pt.leaf&&sh) im.customDepthMaterial=new THREE.MeshDepthMaterial({depthPacking:THREE.RGBADepthPacking,map:pt.mat.map,alphaTest:.45,side:THREE.DoubleSide});
     if (opt&&opt.lod){ (VL.lod=VL.lod||[]).push({im,n:P.length}); }
-    scene.add(im); });
+    scene.add(im); out.push(im); });
+  return out;
 }
 const VL_TINT={au:['#e8572a','#f07a2c','#f39a34','#d9432a','#ee6a2a'],rd:['#e4502e','#d8432a','#ee6234'],yl:['#f2b13c','#f6c94e','#eba232'],gr:['#7cae46','#8fbd4f','#6a9e3c']};
 const vlTint=k=>VL_LIN(VL_TINT[k][(vlR()*VL_TINT[k].length)|0]).multiplyScalar(vlS(.9,1.08));

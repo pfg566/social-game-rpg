@@ -49,12 +49,12 @@ function reset(){
   clearWorld();
   const st=MAPS[MAPK].start;
   Object.assign(P,{x:st[0],z:st[1],hp:100,fx:0,fz:-1,atkCd:0,swingT:0,combo:0,lastAtk:-9,buffer:false,pendingHit:null,lunge:0,dodgeT:0,dodgeCd:0,spinT:0,spinCd:0,spinHits:[],spinBuf:false,blockT:0,dashT:0,ultT:0,dodgeMax:1,spinMax:1,backstep:false}); P.max=jobInfo().hp; P.hp=P.max; hitStop=0; skKey=''; clearProj(); clearEBolts();
-  Object.assign(W,{won:false,door:DOOR_HP,doorMax:DOOR_HP,doorWarnAt:0,revived:false,revive:null,review:null,reviewDone:false,amFreeze:0,invuln:0,t:0,paused:false,state:'play',wave:-1,nextWaveAt:1.2,gate:false,nextQuiz:timedEvery(),cardCoins:0,timedFlip:0,kills:0,correct:0,asked:0,effects:[],wrong:[],loc:null,spawnQ:[],runnerSeen:false,ult:0,streak:0,qshield:0,speedPts:0,right:new Set(),locLeftFrac:0,prep:null,up:{atk:1,spd:1,turret:0,list:[]},orbBoost:0,rangedSeen:false,stats:{dealt:0,taken:0,minHp:1,melee:0,ranged:0,boss:0,quiz:0,blocks:0,blocked:0,dodges:0,ults:0,evaded:0,shots:0,ws:[]}});
+  Object.assign(W,{won:false,door:DOOR_HP,doorMax:DOOR_HP,doorWarnAt:0,revived:false,revive:null,review:null,reviewDone:false,amFreeze:0,bonus:false,bonusCard:false,invuln:0,t:0,paused:false,state:'play',wave:-1,nextWaveAt:1.2,gate:false,nextQuiz:timedEvery(),cardCoins:0,timedFlip:0,kills:0,correct:0,asked:0,effects:[],wrong:[],loc:null,spawnQ:[],runnerSeen:false,ult:0,streak:0,qshield:0,speedPts:0,right:new Set(),locLeftFrac:0,prep:null,up:{atk:1,spd:1,turret:0,list:[]},orbBoost:0,rangedSeen:false,stats:{dealt:0,taken:0,minHp:1,melee:0,ranged:0,boss:0,quiz:0,blocks:0,blocked:0,dodges:0,ults:0,evaded:0,shots:0,ws:[]}});
   W.used=new Set(); stations.forEach(s=>s.readyAt=0); bgReset(); $('#prep').hidden=true; chipKey=''; shieldKey=''; $('#chips').innerHTML='';
   $('#locCard').hidden=true; $('#gateCard').hidden=true;
   TURRETS.forEach(t=>{ t.until=0; t.cd=0; }); bolts.forEach(b=>scene.remove(b.mesh)); bolts=[]; doorFlash=0;
   $('#doorRow').hidden=MAPK!=='defense';
-  $('#parcelRow').hidden=true; islReset(); glacierReset(); runnerReset(); cafeReset(); villageReset(); stageReset(); liveReset(); twReset(); funReset();
+  $('#parcelRow').hidden=true; islReset(); glacierReset(); runnerReset(); cafeReset(); villageReset(); stageReset(); liveReset(); twReset(); funReset(); gfReset();
 }
 let NICK='', BAN='', CI=null;
 try{ NICK=localStorage.getItem('gsd-nick')||''; }catch(e){}
@@ -145,7 +145,7 @@ function startGame(){
   setTimeout(()=>{ W.snapCam=true; },0);
   if (PEACE_RUN) $('#hint').textContent='🕊️ 평화 모드 · WASD 이동 · Shift '+(JOB==='knight'?'막기':'구르기')+' · '+(MAPK==='island'?'상자에 다가가면 집어요 · 배달 깔개에 서면 배달':'빛나는 수정에 다가가 퀴즈를 맞혀 포탑을 깨워요');
   reset(); canvas.focus({preventScroll:true});
-  try{ applyMood(MAPK==='village'?'village':!PARTY.on&&MAPK==='glacier'?'arctic':pickMood(PARTY.on?PARTY.rid:'')); }catch(e){}
+  try{ applyMood(MAPK==='village'?'village':MAPK==='general'?gfPickMood(PARTY.on?PARTY.rid:''):!PARTY.on&&MAPK==='glacier'?'arctic':pickMood(PARTY.on?PARTY.rid:'')); }catch(e){}
   // 한 판 시간 제한: 선생님이 '게임 열기'에서 정한 분(퀴즈 푸는 시간 포함, 실제 시계 기준)
   { const g=!PARTY.on&&MAPK!=='stage'&&MAPK!=='teamwar'&&MAPK!=='live'&&MAPK!=='village'&&typeof activeGate==='function'?activeGate():null, lim=g&&g.lim>0?g.lim:0;
     W.lim=lim; W.limEnd=lim?performance.now()+lim*60000:0; W.limWarn=0; W.timeUp=false; $('#timeCard').hidden=!lim; $('#timeCard').classList.remove('hurry'); }

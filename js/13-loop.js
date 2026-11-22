@@ -158,7 +158,7 @@ function frame(now){
           const own=MC.filter(b=>b.z===near.zone&&!W.used.has(b));
           const zoneOrAny=MC.filter(b=>b.z===near.zone||b.z==='any');
           item=pick(['mc'], own.length?own:(zoneOrAny.length?zoneOrAny:MC), zf);
-        } else item=pick(['mc'],MC);
+        } else item=(MAPK==='general'&&near.qk)?gfStationItem(near):pick(['mc'],MC);   // 들판 마을: 수정마다 문제 종류가 달라요
         openQuiz(item,{type:'station',station:near});
       }
       else if (!W.loc && !W.prep && W.t>=W.nextQuiz && NEWQ()){ if (!amStart()) W.nextQuiz=W.t+8; }   // 돌발 퀴즈 대신 정답 몬스터
@@ -203,7 +203,7 @@ function frame(now){
   // 주인공 동작
   const animDt=W.paused&&W.state==='play'&&!PARTY.on?0:dt;
   const moved=Math.hypot(P.x-pg.position.x,P.z-pg.position.z);
-  pg.position.set(P.x,0,P.z);
+  pg.position.set(P.x,gfY(P.x,P.z),P.z);
   { let dy=Math.atan2(P.fx,P.fz)-pg.rotation.y; dy=Math.atan2(Math.sin(dy),Math.cos(dy)); pg.rotation.y+=dy*Math.min(1,dt*14); }
   const walking=moved>.004 && !W.paused && W.state==='play';
   if (P.swingT>0 && !W.paused){ P.swingT-=dt; }
@@ -236,7 +236,7 @@ function frame(now){
 
   // 몬스터 동작
   for (const m of mobs){
-    m.g.position.set(m.x,(m.ay||0)-(m.sink||0),m.z);
+    m.g.position.set(m.x,(m.ay||0)-(m.sink||0)+gfY(m.x,m.z),m.z);
     if (!W.paused) animMob(m,real,dt);
     if (m.mixer) m.mixer.update(animDt);
     if (m.slamMesh){ const on=m.slamT>0&&m.dying<0; m.slamMesh.visible=on; if (on){ const B=m.def.boss; const k=1-m.slamT/B.slamWarn; m.slamMesh.position.set(m.slamX,.07,m.slamZ); m.slamMesh.material.opacity=.15+k*.45; m.slamMesh.scale.setScalar(.4+.6*Math.min(1,k*1.4)); } }
@@ -263,6 +263,7 @@ function frame(now){
     camera.lookAt(P.x,1.4,P.z);
   }
   if (shake>0){ shake=Math.max(0,shake-dt); camera.position.x+=rnd(-1,1)*shake*.9; camera.position.y+=rnd(-1,1)*shake*.9; }
+  gfTick(dt,real);
 
   hurtT=Math.max(0,hurtT-dt); $('#hurt').style.opacity=hurtT>0?1:0;
   if (W.state==='play'){
