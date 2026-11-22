@@ -155,14 +155,15 @@ function gfCobble(R,x,z,r,rad){
   return m; }
 
 /* ---------- 시냇물 (하늘 · 해가 비치고, 남쪽으로 흘러요) ---------- */
-function gfWater(R){
-  const N=GF_SP.length, pos=[], uv=[], idx=[], ed=[];
-  for (let i=0;i<N;i++){ const p=GF_SP[i], q=GF_SP[Math.min(N-1,i+1)], o=GF_SP[Math.max(0,i-1)]; let tx=q.x-o.x, tz=q.z-o.z; const tl=Math.hypot(tx,tz)||1; tx/=tl; tz/=tl;
-    const w=GF_SW+.35, nx=-tz, nz=tx, v=i*.4;
+function gfWater(R,SP,SW,T){   // SP · SW · T: 다른 맵(성벽 디펜스 해자)도 같은 물을 써요
+  SP=SP||GF_SP; SW=SW||GF_SW; T=T||GF;
+  const N=SP.length, pos=[], uv=[], idx=[], ed=[];
+  for (let i=0;i<N;i++){ const p=SP[i], q=SP[Math.min(N-1,i+1)], o=SP[Math.max(0,i-1)]; let tx=q.x-o.x, tz=q.z-o.z; const tl=Math.hypot(tx,tz)||1; tx/=tl; tz/=tl;
+    const w=SW+.35, nx=-tz, nz=tx, v=i*.4;
     pos.push(p.x+nx*w,-.1,p.z+nz*w, p.x,-.1,p.z, p.x-nx*w,-.1,p.z-nz*w); uv.push(0,v,.5,v,1,v); ed.push(1,0,1);
     if (i<N-1){ const a=i*3; idx.push(a,a+3,a+1, a+1,a+3,a+4, a+1,a+4,a+2, a+2,a+4,a+5); } }
   const geo=new THREE.BufferGeometry(); geo.setAttribute('position',new THREE.Float32BufferAttribute(pos,3)); geo.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2)); geo.setAttribute('aE',new THREE.Float32BufferAttribute(ed,1)); geo.setIndex(idx);
-  const WU=GF.WU={uTime:{value:0},uSun:{value:new THREE.Vector3(.5,.62,.3).normalize()},uSunCol:{value:new THREE.Color(1,.92,.76)},uTop:{value:new THREE.Color()},uHor:{value:new THREE.Color()},uFog:{value:new THREE.Color()},uFogN:{value:40},uFogF:{value:150},uLightK:{value:new THREE.Color(1,1,1)}};
+  const WU=T.WU={uTime:{value:0},uSun:{value:new THREE.Vector3(.5,.62,.3).normalize()},uSunCol:{value:new THREE.Color(1,.92,.76)},uTop:{value:new THREE.Color()},uHor:{value:new THREE.Color()},uFog:{value:new THREE.Color()},uFogN:{value:40},uFogF:{value:150},uLightK:{value:new THREE.Color(1,1,1)}};
   const m=new THREE.Mesh(geo,new THREE.ShaderMaterial({uniforms:WU,transparent:true,depthWrite:false,
     vertexShader:'attribute float aE; varying float vE; varying vec2 vU; varying vec3 vW; void main(){ vE=aE; vU=uv; vec4 w=modelMatrix*vec4(position,1.); vW=w.xyz; gl_Position=projectionMatrix*viewMatrix*w; }',
     fragmentShader:`uniform float uTime,uFogN,uFogF; uniform vec3 uSun,uSunCol,uTop,uHor,uFog,uLightK; varying float vE; varying vec2 vU; varying vec3 vW;
@@ -182,12 +183,13 @@ function gfWater(R){
         gl_FragColor=vec4(col,a);
         #include <tonemapping_fragment>
       }`}));
-  m.renderOrder=1; R.add(m); GF.water=m;
+  m.renderOrder=1; R.add(m); T.water=m;
 }
 
 /* ---------- 하늘 (구름 · 해) · 먼 산 ---------- */
-function gfSky(R){
-  const U=GF.skyU={uTop:{value:new THREE.Color()},uHor:{value:new THREE.Color()},uFog:{value:new THREE.Color()},uSun:{value:new THREE.Vector3(.5,.62,.3).normalize()},uSunCol:{value:new THREE.Color(1,.93,.8)},uTime:{value:0},uCov:{value:.56},uCShade:{value:new THREE.Color(.72,.8,.94)},uCAdd:{value:new THREE.Color(.3,.3,.3)},uCloud:{value:1}};
+function gfSky(R,T){
+  T=T||GF;
+  const U=T.skyU={uTop:{value:new THREE.Color()},uHor:{value:new THREE.Color()},uFog:{value:new THREE.Color()},uSun:{value:new THREE.Vector3(.5,.62,.3).normalize()},uSunCol:{value:new THREE.Color(1,.93,.8)},uTime:{value:0},uCov:{value:.56},uCShade:{value:new THREE.Color(.72,.8,.94)},uCAdd:{value:new THREE.Color(.3,.3,.3)},uCloud:{value:1}};
   const sky=new THREE.Mesh(new THREE.SphereGeometry(300,40,20),new THREE.ShaderMaterial({uniforms:U,side:THREE.BackSide,depthWrite:false,fog:false,
     vertexShader:'varying vec3 vD; void main(){ vD=normalize(position); gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.); }',
     fragmentShader:`uniform vec3 uTop,uHor,uSun,uSunCol,uFog,uCShade,uCAdd; uniform float uTime,uCov,uCloud; varying vec3 vD;
@@ -205,15 +207,15 @@ function gfSky(R){
         gl_FragColor=vec4(c,1.);
         #include <tonemapping_fragment>
       }`}));
-  sky.renderOrder=-2; sky.frustumCulled=false; R.add(sky); GF.sky=sky;
+  sky.renderOrder=-2; sky.frustumCulled=false; R.add(sky); T.sky=sky;
   // 먼 산 두 겹 (안개 속)
-  GF.mtnU=[];
+  T.mtnU=[];
   const layer=(Rr,H0,amp,seed,col,haze)=>{ const N=200, pos=[], ah=[], idx=[];
     for (let i=0;i<=N;i++){ const a=i/N*Math.PI*2; let h=0; for (let q=1;q<=6;q++) h+=Math.sin(a*(q<3?q:q*2)+seed*q*1.37)/q; h=H0+amp*h+amp*.16*Math.sin(a*31+seed);
       const x=Math.cos(a)*Rr, z=Math.sin(a)*Rr; pos.push(x,-6,z, x,Math.max(6,h),z); ah.push(0,1); }
     for (let i=0;i<N;i++){ const b=i*2; idx.push(b,b+1,b+2, b+1,b+3,b+2); }
     const geo=new THREE.BufferGeometry(); geo.setAttribute('position',new THREE.Float32BufferAttribute(pos,3)); geo.setAttribute('aH',new THREE.Float32BufferAttribute(ah,1)); geo.setIndex(idx);
-    const mu={uCol:{value:new THREE.Color(col)},uFog:U.uFog,uHaze:{value:haze}}; GF.mtnU.push(mu);
+    const mu={uCol:{value:new THREE.Color(col)},uFog:U.uFog,uHaze:{value:haze}}; T.mtnU.push(mu);
     const m=new THREE.Mesh(geo,new THREE.ShaderMaterial({uniforms:mu,side:THREE.DoubleSide,fog:false,
       vertexShader:'attribute float aH; varying float vH; void main(){ vH=aH; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.); }',
       fragmentShader:`uniform vec3 uCol,uFog; uniform float uHaze; varying float vH; void main(){ vec3 c=mix(uFog,uCol,uHaze*(.45+.55*vH)); gl_FragColor=vec4(c,1.);
@@ -722,22 +724,22 @@ function gfForest(R){
     im.receiveShadow=true; im.frustumCulled=false; R.add(im); gfSector(k,[im],L.map(([x,z])=>({x,z}))); } }
 /* 구역별 숲 묶음: 카메라 시야에 구역 상자가 걸릴 때만 그려요 (인스턴스 묶음은 three.js가 스스로 못 걸러서) */
 GF.secs={};
-function gfSector(k,ims,P){ const S=GF.secs[k]||(GF.secs[k]={ims:[],box:new THREE.Box3()}); S.ims.push(...ims); P.forEach(p=>S.box.expandByPoint(new THREE.Vector3(p.x-6,0,p.z-6)).expandByPoint(new THREE.Vector3(p.x+6,16,p.z+6))); }
+function gfSector(k,ims,P,T){ T=T||GF; const S=T.secs[k]||(T.secs[k]={ims:[],box:new THREE.Box3()}); S.ims.push(...ims); P.forEach(p=>S.box.expandByPoint(new THREE.Vector3(p.x-6,0,p.z-6)).expandByPoint(new THREE.Vector3(p.x+6,16,p.z+6))); }
 const GF_FR=new THREE.Frustum(), GF_PM=new THREE.Matrix4();
 /* 굴뚝 연기 (부드러운 점) */
-function gfSmoke(R){
-  const src=GF.smoke; if (!src.length) return; const per=16, N=src.length*per, sp=new Float32Array(N*3), ph=new Float32Array(N), sd=new Float32Array(N);
+function gfSmoke(R,T){
+  T=T||GF; const src=T.smoke; if (!src.length) return; const per=16, N=src.length*per, sp=new Float32Array(N*3), ph=new Float32Array(N), sd=new Float32Array(N);
   src.forEach((o,j)=>{ for (let k=0;k<per;k++){ const i=j*per+k; sp[i*3]=o.x; sp[i*3+1]=o.y; sp[i*3+2]=o.z; ph[i]=k/per+Math.random()*.03; sd[i]=Math.random(); } });
   const g=new THREE.BufferGeometry(); g.setAttribute('position',new THREE.BufferAttribute(sp,3)); g.setAttribute('aPh',new THREE.BufferAttribute(ph,1)); g.setAttribute('aSd',new THREE.BufferAttribute(sd,1));
-  GF.smU={uTime:NAT_U.uTime,uScale:{value:400},uCol:{value:new THREE.Color(.78,.77,.8)}};
-  const m=new THREE.Points(g,new THREE.ShaderMaterial({uniforms:GF.smU,transparent:true,depthWrite:false,
+  T.smU={uTime:NAT_U.uTime,uScale:{value:400},uCol:{value:new THREE.Color(.78,.77,.8)}};
+  const m=new THREE.Points(g,new THREE.ShaderMaterial({uniforms:T.smU,transparent:true,depthWrite:false,
     vertexShader:`attribute float aPh,aSd; uniform float uTime,uScale; varying float vA,vL;
       void main(){ float life=fract(uTime*.08+aPh); vec3 p=position+vec3((.7+aSd*.5)*life*life*2.,life*4.8,(.3+aSd*.4)*life*life*1.2+sin(life*7.+aSd*20.)*.2*life);
         vec4 mv=modelViewMatrix*vec4(p,1.); vL=life; vA=smoothstep(0.,.12,life)*(1.-life); gl_PointSize=clamp(uScale*(.35+life*1.3)/(-mv.z),1.,160.); gl_Position=projectionMatrix*mv; }`,
     fragmentShader:`uniform vec3 uCol; varying float vA,vL; void main(){ float d=length(gl_PointCoord-.5); float a=smoothstep(.5,.1,d)*vA*.5; gl_FragColor=vec4(uCol*mix(1.1,.85,vL),a);
       #include <tonemapping_fragment>
     }`}));
-  m.frustumCulled=false; R.add(m); GF.smokePts=m; }
+  m.frustumCulled=false; R.add(m); T.smokePts=m; }
 
 /* 집 · 성당 · 풍차가 캐릭터를 가리면 그 부분만 점점이 비춰 보여요 (전투 카메라는 위에서 비스듬히 내려다봐서) */
 const GF_SEE={value:0};

@@ -33,8 +33,8 @@ function openQuiz(item,source){
   else if (item.kind==='ox'){ opts=['O','X']; correctIdx=item.a?0:1; }
   else { opts=CLS_OPTS; correctIdx=item.a; }
   Object.assign(Q,{item,correctIdx,nOpts:opts.length,start:performance.now(),dur:Math.round(quizTime(item,opts)*(MODE==='hero'&&source.type!=='revive'?HERO.quiz:1)*(MODE==='hero'?1:EASEF.quiz)),answered:false,source,resultOnly:false});
-  const tagName = source.type==='npc'?`🙋 ${source.req.name}의 부탁 · ${item.kind==='ox'?'O/X':'4지선다'}`:source.type==='review'?'📒 복습 찬스':source.type==='prep'?`정비 퀴즈 ${W.prep?W.prep.step+1:1}/${W.prep?W.prep.n:PREP_N}`:(source.type==='station'&&W.bg&&W.bg.st===source.station&&NEWQ())?'보스의 힘 끊기':source.type==='cap'?`점령 퀴즈 · ${CQ.pts[source.point].k} ${CQ.pts[source.point].name}`:source.type==='station'?(source.station.title||`${ZINFO[source.station.zone].name} 퀴즈`):source.type==='card'?(item.kind==='ox'?'지식 카드 · O/X':'지식 카드 · 분류'):source.type==='parcel'?'택배 퀴즈':'돌발 퀴즈';
-  const tagColor = source.type==='npc'?'#c0661e':source.type==='review'?'#2f6fed':source.type==='prep'?'#2fb36b':(source.type==='station'&&W.bg&&W.bg.st===source.station&&NEWQ())?'#7b2fd0':source.type==='cap'?'#2f6fed':source.type==='station'?(source.station.hex||ZINFO[source.station.zone].color):source.type==='card'?'#c28a00':source.type==='parcel'?'#b86b1f':'#18213a';
+  const tagName = source.type==='repair'?`🔨 성문 수리 · ${item.kind==='ox'?'O/X':'4지선다'}`:source.type==='npc'?`🙋 ${source.req.name}의 부탁 · ${item.kind==='ox'?'O/X':'4지선다'}`:source.type==='review'?'📒 복습 찬스':source.type==='prep'?`정비 퀴즈 ${W.prep?W.prep.step+1:1}/${W.prep?W.prep.n:PREP_N}`:(source.type==='station'&&W.bg&&W.bg.st===source.station&&NEWQ())?'보스의 힘 끊기':source.type==='cap'?`점령 퀴즈 · ${CQ.pts[source.point].k} ${CQ.pts[source.point].name}`:source.type==='station'?(source.station.title||`${ZINFO[source.station.zone].name} 퀴즈`):source.type==='card'?(item.kind==='ox'?'지식 카드 · O/X':'지식 카드 · 분류'):source.type==='parcel'?'택배 퀴즈':'돌발 퀴즈';
+  const tagColor = source.type==='repair'?'#9a5b22':source.type==='npc'?'#c0661e':source.type==='review'?'#2f6fed':source.type==='prep'?'#2fb36b':(source.type==='station'&&W.bg&&W.bg.st===source.station&&NEWQ())?'#7b2fd0':source.type==='cap'?'#2f6fed':source.type==='station'?(source.station.hex||ZINFO[source.station.zone].color):source.type==='card'?'#c28a00':source.type==='parcel'?'#b86b1f':'#18213a';
   $('#qtag').textContent=tagName; $('#qtag').style.background=tagColor;
   $('#qtext').textContent = item.kind==='cls' ? `“${item.q}” ${ZCFG.q}` : item.q;
   const box=$('#qopts'); box.innerHTML=''; box.className='opts'+(opts.length===2?' two':''); box.hidden=false;
@@ -128,10 +128,10 @@ function settle(ok,item,source){
   const parcelQ=source&&source.type==='parcel';
   const prepQ=!!W.prep && source && (source.type==='prep'||source.type==='loc');
   const cardQ=NEWQ() && source && source.type==='card' && ok;
-  const lvQ=source && source.type==='lv', npcQ=source && source.type==='npc';
-  const FXL=ok?GOOD:BAD, fx=npcQ?gfReqFx(ok,source):lvQ?lvFx(ok,source):prepQ?prepFx(ok):cardQ?cardFx(ok):jobFx(FXL[parcelQ||PEACE_RUN?1:Math.floor(Math.random()*FXL.length)],ok);
+  const lvQ=source && source.type==='lv', npcQ=source && source.type==='npc', repQ=source && source.type==='repair';
+  const FXL=ok?GOOD:BAD, fx=repQ?dfRepairFx(ok):npcQ?gfReqFx(ok,source):lvQ?lvFx(ok,source):prepQ?prepFx(ok):cardQ?cardFx(ok):jobFx(FXL[parcelQ||PEACE_RUN?1:Math.floor(Math.random()*FXL.length)],ok);
   if (parcelQ) extras.push(ok?'급행 배송! 빨리 달려서 배달하세요.':'상자가 무거워졌어요… 그래도 배달은 할 수 있어요.');
-  if (!prepQ && !cardQ && !lvQ && !npcQ) applyEffect(fx);
+  if (!prepQ && !cardQ && !lvQ && !npcQ && !repQ) applyEffect(fx);
   if (cardQ && W.cardCoins) extras.push(`이번 판 카드 코인 ${W.cardCoins} (판이 끝나면 받아요)`);
   if (entry && ok) extras.push('지난번에 틀린 문제를 이번엔 맞혔어요!');
   if (!entry && !ok) extras.push('이 문제는 잠시 뒤에 다시 나와요.');
@@ -145,7 +145,7 @@ function settle(ok,item,source){
     boss.shield++; extras.push(`오답이라 보스 보호막이 하나 되살아났어요 (${boss.shield}개)`);
   }
   if (ok && MAPK==='defense' && source && source.type==='station' && source.station.turret){
-    const tt=PEACE_RUN?PEACE_TURRET:TURRET_TIME; const t=source.station.turret; t.until=W.t+tt; t.cd=.3; extras.push(PEACE_RUN?`${t.title}이 ${tt}초 동안 정화의 빛을 쏴요!`:`${t.title}이 ${tt}초 동안 자동으로 공격해요!`);
+    const tt=PEACE_RUN?PEACE_TURRET:TURRET_TIME; const t=source.station.turret; t.until=W.t+tt; t.cd=.3; extras.push((PEACE_RUN?`${t.title}이 ${tt}초 동안 정화의 빛을 쏴요!`:`${t.title}이 ${tt}초 동안 자동으로 공격해요!`)+' '+dfTurretOn(t,source.station));
   }
   if (ok && MAPK==='defense' && source && source.type==='timed'){
     const before=W.door; W.door=Math.min(W.doorMax,W.door+Math.round(W.doorMax*.1)); extras.push(W.door>before?`성문 수리 +${W.door-before}`:'성문은 이미 튼튼해요.');

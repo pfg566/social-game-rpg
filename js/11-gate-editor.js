@@ -219,9 +219,12 @@ function setMap(k){
   const prevK=MAPK; MAPK=k;
   ensureMap(k);
   for (const g in mapGroups) mapGroups[g].visible=g===k;
-  bgGroup.visible=!['general','island','glacier','runner','stage','teamwar','live','cafe','village'].includes(k); ground.visible=!['general','glacier','runner','stage','teamwar','live','cafe','village'].includes(k);
-  // 들판 마을은 자기 하늘(구름) · 먼 산 · 분위기(맑은 낮 · 황금빛 오후)를 써요
-  if (k==='general'){ gfSkyVis(false); applyMood(['day','golden'].includes(MOOD)?MOOD:gfPickMood()); } else { GF_SEE.value=0; if (prevK==='general') gfSkyVis(true); }
+  bgGroup.visible=!['general','defense','island','glacier','runner','stage','teamwar','live','cafe','village'].includes(k); ground.visible=!['general','defense','glacier','runner','stage','teamwar','live','cafe','village'].includes(k);
+  // 들판 마을 · 성벽 디펜스는 자기 하늘(구름) · 먼 산 · 분위기를 써요 (들판: 낮 · 황금빛 오후 / 성벽: + 해 질 녘)
+  const ownSky=k==='general'||k==='defense';
+  if (k==='general'){ gfSkyVis(false); applyMood(['day','golden'].includes(MOOD)?MOOD:gfPickMood()); }
+  else if (k==='defense'){ gfSkyVis(false); applyMood(DF_MOODS[MOOD]?MOOD:dfPickMood()); }
+  if (!ownSky){ GF_SEE.value=0; if (prevK==='general'||prevK==='defense') gfSkyVis(true); }
   colliders=MAPSTATE[k].colliders; stations=MAPSTATE[k].stations; npcs=MAPSTATE[k].npcs;
   WAVES=wavesFor(k==='zones'?(MAPS.zones.waves||'zones'):k);
   const M=MAPS[k];

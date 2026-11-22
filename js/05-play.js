@@ -102,9 +102,10 @@ function startWave(i){
   W.wave=i; W.nextWaveAt=-1; W.gate=false;
   const d=WAVES[i];
   for (let k=0;k<d.n;k++) spawnMob(d,false);
-  if (d.groups){ const lanes=[-20,0,20]; d.groups.forEach((g,gi)=>W.spawnQ.push({at:W.t+g.at,n:g.n,runner:!!g.runner,lane:lanes[Math.floor(Math.random()*3)],def:d,first:gi===0})); }
+  // 무리마다 길을 바꿔 가며 와요 (성벽 디펜스: 2.6초 먼저 빨간 화살표 · 북소리로 알려 줘요)
+  if (d.groups){ const lanes=[-20,0,20]; let li=Math.floor(Math.random()*3); d.groups.forEach((g,gi)=>{ if (gi) li=(li+1+Math.floor(Math.random()*2))%3; W.spawnQ.push({at:W.t+g.at+(MAPK==='defense'?2.6:0),n:g.n,runner:!!g.runner,lane:lanes[li],def:d,first:gi===0}); }); }
   if (d.boss && typeof FUN!=='undefined' && FUN.am && !FUN.am.done){ amClear(true); W.nextQuiz=W.t+25; flashPrompt('보스가 나타나 정답 몬스터가 물러났어요',2); }
-  if (d.boss){ spawnMob(d,true); if (MAPK==='general') gfBossRise(liveBoss()); if (NEWQ()) bgBossSpawned(liveBoss()); else stations.forEach(s=>s.readyAt=Math.min(s.readyAt,W.t)); }
+  if (d.boss){ spawnMob(d,true); if (MAPK==='general') gfBossRise(liveBoss()); if (MAPK==='defense' && !PEACE_RUN && !PARTY.on) dfRam(liveBoss()); if (NEWQ()) bgBossSpawned(liveBoss()); else stations.forEach(s=>s.readyAt=Math.min(s.readyAt,W.t)); }
   if (W.up && W.up.turret && MAPK==='defense'){ TURRETS.forEach(t=>{ t.until=W.t+W.up.turret; t.cd=.3; }); W.up.turret=0; setTimeout(()=>flashPrompt('강화 카드: 포탑 3개가 자동으로 쏴요!',2.5),1200); }
   const nr=rangedCount(i); for (let k=0;k<nr;k++) spawnRanged(d);
   const nl=leapCount(i); for (let k=0;k<nl;k++) spawnMob({...d,leaper:true,hp:Math.round(d.hp*.8)},false);
@@ -253,7 +254,13 @@ const SFX=(()=>{
     door(){ if (!ok('door',250)) return; tone('sine',95,55,.18,.4); nz(.12,700,250,2,.25); },
     zap(){ if (!ok('zap',120)) return; tone('sine',900,1600,.1,.07); },
     card(){ if (!ok('card',100)) return; tone('sine',880,1320,.14,.18); },
-    wave(){ if (!ok('wave',500)) return; tone('triangle',330,330,.18,.18); tone('triangle',440,440,.18,.18,.16); tone('triangle',660,660,.3,.18,.32); }
+    wave(){ if (!ok('wave',500)) return; tone('triangle',330,330,.18,.18); tone('triangle',440,440,.18,.18,.16); tone('triangle',660,660,.3,.18,.32); },
+    drum(){ if (!ok('drum',600)) return; for (let i=0;i<3;i++){ tone('sine',96,42,.34,.55,i*.27); nz(.12,320,90,1.2,.3,i*.27); } },
+    boom(){ if (!ok('boom',300)) return; tone('sine',72,30,.55,.6); nz(.42,600,80,.8,.45); tone('square',120,40,.25,.1); },
+    ice(){ if (!ok('ice',120)) return; tone('triangle',1800,2600,.08,.07); nz(.12,6000,3000,2,.07); },
+    fire(){ if (!ok('fire',150)) return; nz(.35,900,250,.7,.2); tone('sine',180,90,.2,.1); },
+    thunder(){ if (!ok('thu',150)) return; nz(.16,3500,600,.6,.28); nz(.5,500,90,.5,.22,.05); tone('sawtooth',90,40,.25,.07); },
+    repair(){ if (!ok('rep',200)) return; for (let i=0;i<3;i++){ tone('square',880,620,.06,.1,i*.16); nz(.05,4000,2000,3,.1,i*.16); } }
   };
 })();
 addEventListener('pointerdown',()=>SFX.init(),{passive:true});

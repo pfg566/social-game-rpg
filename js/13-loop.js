@@ -68,7 +68,7 @@ function frame(now){
       if (m.leaper && leapAI(m,dt)) continue;
       const pdx=P.x-m.x, pdz=P.z-m.z, pd=Math.hypot(pdx,pdz)||1;
       let dx=pdx, dz=pdz, d=pd, atDoor=false;
-      if (MAPK==='defense' && (m.runner || PEACE_RUN || pd>(m.boss?9:7))){ dx=DOOR.x-m.x; dz=DOOR.z-m.z; d=Math.hypot(dx,dz)||1; atDoor=d<m.r+2.6; }
+      if (MAPK==='defense' && (m.runner || PEACE_RUN || pd>(m.boss?9:7))){ const T=dfGateWay(m); dx=T.x-m.x; dz=T.z-m.z; d=Math.hypot(dx,dz)||1; atDoor=Math.hypot(DOOR.x-m.x,DOOR.z-m.z)<m.r+2.6; }   // 해자 옆에 끼지 않게 바깥 성문 앞으로 먼저 모여요
       else if (MAPK==='glacier' && !PEACE_RUN){ const b=glTarget(m); if (b && (m.runner || pd>(m.boss?GL_CHASE+2:GL_CHASE))){ dx=b.x-m.x; dz=b.z-m.z; d=Math.hypot(dx,dz)||1; atDoor=d<b.r+m.r+.5; m.glB=b; } else m.glB=null; }
       m.atDoor=atDoor;
       if (m.boss){
@@ -100,7 +100,7 @@ function frame(now){
       m.atkCd=Math.max(0,m.atkCd-dt);
       if (!PEACE_RUN && pd<m.r+.75 && m.atkCd<=0 && W.t>W.invuln){ if (m.anim) m.anim.once('attack',1.6); hurtPlayer(m.dmg,{x:m.x,z:m.z,mob:m}); m.atkCd=1; }
       if (atDoor && MAPK==='glacier') glMobHit(m,dt);
-      else if (atDoor){ m.doorCd=(m.doorCd||0)-dt;
+      else if (atDoor && !m.ram){ m.doorCd=(m.doorCd||0)-dt;   // 공성 망치 보스는 망치로만 성문을 쳐요 (dfRamTick)
         const dh=Math.round(m.dmg*DOOR_HIT);
         if (m.doorCd<=0){ m.doorCd=1.2; W.door-=dh; doorFlash=.2; SFX.door(); if (m.anim) m.anim.once('attack',1.6,true);
           fx.burst(m.x+(DOOR.x-m.x)*.6,1.6,DOOR.z+.2,0xc9a06a,6,3); fx.num(m.x+(DOOR.x-m.x)*.6,4.4,DOOR.z+.5,'-'+dh,'#ffb36b');
