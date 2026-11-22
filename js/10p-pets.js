@@ -16,7 +16,10 @@ const PET_TYPES={
   ribbon: {move:'walk',  size:.95, spd:1.05,build:'ribbon'},
   fox:    {move:'walk',  size:1,   spd:1.1, build:'fox'},
   egg:    {move:'egg',   size:1,   spd:1.05,build:'egg'},
-  dragon: {move:'fly',   size:1.05,spd:1.1, build:'dragon', flyH:1.4}
+  dragon: {move:'fly',   size:1.05,spd:1.1, build:'dragon', flyH:1.4},
+  // 모델 파일(GLB) 펫: models/pets/{glb}.glb · h = 펫 크기(키) · 애니메이션 Idle + Walk/Fly
+  lbird:  {move:'fly',   size:1,   spd:1.1, glb:'lavender_bird', h:.7, flyH:1.6},
+  mfox:   {move:'walk',  size:1,   spd:1.1, glb:'maple_fox', h:.82}
 };
 const PET_SIZE=1.25;
 const PETS=[];
@@ -366,7 +369,31 @@ function petTpl(type){ if (PET_TPL[type]) return PET_TPL[type];
   if (R.cracks) R.cracks.forEach((a,k)=>a.forEach((m,i)=>tag(m,'crack'+k,i))); if (R.spark) R.spark.forEach((s,i)=>tag(s,'spark',i));
   petBake(R.g); R.g.traverse(o=>{ o.frustumCulled=false; o.userData.noFlash=true; });
   return PET_TPL[type]=R; }
+/* ---------- 모델 파일(GLB) 펫: 한 번 불러와서 뼈대째 복제 · 걷기/날기 ↔ 가만히 애니메이션을 섞어요 ---------- */
+const PET_GLB={}, PET_GLB_V='20261122a';
+function petGlbLoad(key,cb){ let E=PET_GLB[key];
+  if (!E){ E=PET_GLB[key]={g:null,cbs:[],err:false};
+    new THREE.GLTFLoader().load('models/pets/'+key+'.glb?v='+PET_GLB_V,g=>{
+      g.scene.traverse(o=>{ if (o.isMesh){ o.castShadow=true; o.frustumCulled=false; o.userData.noFlash=true; const m=o.material; if (m&&!m.userData.petPrep){ m.userData.petPrep=true; addRim(m,.22,0xfff2dc); petNoGlow(m); } } });
+      g.userData.bb=new THREE.Box3().setFromObject(g.scene); E.g=g; const c=E.cbs; E.cbs=[]; c.forEach(f=>{ try{ f(g); }catch(e){} }); },
+      undefined,()=>{ E.err=true; E.cbs=[]; }); }
+  if (E.g) cb(E.g); else if (!E.err) E.cbs.push(cb); }
+function makeGlbPet(type,T){
+  const R=newRig(); R.glb=T.glb; R.g.name='pet_'+type;
+  R.z=new THREE.Sprite(new THREE.SpriteMaterial({map:petZTex(),transparent:true,depthWrite:false})); R.z.scale.setScalar(.28); R.z.visible=false; R.bob.add(R.z);
+  petGlbLoad(T.glb,g=>{ if (R.dead) return;
+    const root=THREE.SkeletonUtils.clone(g.scene), bb=g.userData.bb, sc=T.h/Math.max(.01,bb.max.y-bb.min.y);
+    root.scale.setScalar(sc); root.position.y=(T.move==='fly'?-(bb.min.y+bb.max.y)/2:-bb.min.y)*sc;   // 나는 펫은 몸 가운데, 걷는 펫은 발바닥이 기준
+    root.traverse(o=>{ o.frustumCulled=false; o.userData.noFlash=true; });
+    R.body.add(root); R.model=root; R.bones={}; root.traverse(o=>{ if (o.isBone) R.bones[o.name]=o; });
+    const mx=R.mixer=new THREE.AnimationMixer(root), A={}; g.animations.forEach(c=>{ A[c.name]=mx.clipAction(c); });
+    R.aIdle=A.Idle||mx.clipAction(g.animations[0]); R.aMove=A[T.move==='fly'?'Fly':'Walk']||R.aIdle; R.mw=T.move==='fly'?1:0;
+    R.aIdle.play(); if (R.aMove!==R.aIdle) R.aMove.play(); R.aIdle.setEffectiveWeight(1-R.mw); if (R.aMove!==R.aIdle) R.aMove.setEffectiveWeight(R.mw);
+    mx.update(Math.random()*2); });
+  return R; }
+function petDispose(R){ R.dead=true; if (R.mixer) R.mixer.stopAllAction(); R.g.traverse(o=>{ if (o.isSkinnedMesh&&o.skeleton) o.skeleton.dispose(); }); }
 function makePet(type){
+  const T0=PET_TYPES[type]; if (T0&&T0.glb) return makeGlbPet(type,T0);
   const g=petTpl(type).g.clone(true), R={g,eyes:[],legs:[],ears:[],wings:[],tail:null,head:null}, arr={eye:R.eyes,leg:R.legs,ear:R.ears,wing:R.wings};
   g.traverse(o=>{ const r=o.userData.role; if (!r) return; const i=o.userData.ri;
     if (arr[r]) arr[r][i]=o; else if (r==='bob') R.bob=o; else if (r==='body') R.body=o; else if (r==='head') R.head=o; else if (r==='tail') R.tail=o;
@@ -400,7 +427,7 @@ const damp=(a,b,k,dt)=>a+(b-a)*Math.min(1,k*dt);
 function petsTick(){
   PET_CAP.value=(typeof bloom!=='undefined'&&bloom&&bloom.enabled&&typeof composer!=='undefined'&&composer)?Math.max(.3,bloom.threshold-.03):10;
   const now=performance.now()/1000, dt=PET_LAST?Math.min(.1,now-PET_LAST):0; PET_LAST=now;
-  for (let i=PETS.length-1;i>=0;i--){ const p=PETS[i]; if (!p.R.g.parent){ PETS.splice(i,1); continue; } if (!p.ch.root.parent) continue;
+  for (let i=PETS.length-1;i>=0;i--){ const p=PETS[i]; if (!p.R.g.parent){ PETS.splice(i,1); if (p.R.glb) petDispose(p.R); continue; } if (!p.ch.root.parent) continue;
     try{ petUpdate(p,dt,now); }catch(e){} }
 }
 function petUpdate(p,dt,now){
@@ -454,7 +481,25 @@ function petUpdate(p,dt,now){
   R.g.scale.setScalar(PET_SIZE*T.size/sc);
   petPose(p,dt,now,moving,sit,sleep,hop,sad);
 }
+/* 모델 파일 펫: 애니메이션을 섞고, 그 위에 높이 · 기울기 · 고개(졸 때 · 시무룩할 때)만 덧붙여요 */
+const PQN=new THREE.Quaternion(), PXA=new THREE.Vector3(1,0,0);
+function petPoseGlb(p,dt,moving,sleep,hop,sad){
+  const {R,st,T}=p, mv=Math.min(1,st.v/3), t=st.t, fly=T.move==='fly';
+  R.z.visible=sleep; if (sleep){ const k=(t*.6)%1; R.z.position.set(.12+.08*k,(fly?T.h*.55:T.h)+.15+.25*k,0); R.z.material.opacity=Math.sin(k*Math.PI); }
+  let bobY=hop, bodyX=0;
+  if (fly){ bobY+=st.fy+(sleep?T.h*.5:Math.sin(t*2.2)*.05); bodyX=moving?.28*mv:0; }   // 졸면 땅에 내려앉아요
+  R.bob.position.y=damp(R.bob.position.y,bobY,fly?20:30,dt); R.body.rotation.x=damp(R.body.rotation.x,bodyX,8,dt);
+  if (!R.mixer) return;
+  const want=fly?(sleep?0:1):(moving?1:0); R.mw=damp(R.mw,want,6,dt);
+  if (R.aMove!==R.aIdle){ R.aMove.setEffectiveWeight(R.mw); R.aIdle.setEffectiveWeight(1-R.mw); }
+  R.aMove.setEffectiveTimeScale(hop>0?1.7:fly?(moving?1+.3*mv:.6):Math.max(.6,Math.min(2.2,st.v/2.3)));   // 걷는 빠르기에 맞춰 발을 굴러요
+  R.aIdle.setEffectiveTimeScale(sleep?.35:1);
+  R.mixer.update(dt);
+  const hd=R.bones.Head, nod=Math.max(sleep?.55:0,sad*.45); R.nod=damp(R.nod||0,nod,6,dt);
+  if (hd&&R.nod>.002) hd.quaternion.multiply(PQN.setFromAxisAngle(PXA,R.nod));
+}
 function petPose(p,dt,now,moving,sit,sleep,hop,sad){
+  if (p.R.glb){ petPoseGlb(p,dt,moving,sleep,hop,sad); return; }
   const {R,st,T}=p, mv=Math.min(1,st.v/3), t=st.t;
   st.ph+=dt*(moving?(T.move==='hop'?9:T.move==='bounce'?8:7+st.v*1.6):2);
   const ph=st.ph;

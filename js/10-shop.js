@@ -167,6 +167,9 @@ const CATALOG=[
   {id:'pfox_egg',job:'all',slot:'pet',name:'아기 여우',pet:'fox',ico:'🦊',egg:true,desc:'복슬복슬 큰 꼬리를 살랑살랑'},
   {id:'powl_egg',job:'all',slot:'pet',name:'부엉이',pet:'owl',ico:'🦉',egg:true,was:'powl_p3000',desc:'어깨 옆을 날아다녀요 · 가끔 고개를 휙 돌려요'},
   {id:'pdragon_egg',job:'all',slot:'pet',name:'아기 용',pet:'dragon',ico:'🐲',egg:true,was:'pdragon_p5000',desc:'작은 날개로 파닥파닥 날아다니는 아기 용'},
+  /* 모델 파일 펫 (시험 중: 선생님 화면에서만 보이고 써 볼 수 있어요 · 알 확률표에 넣을 때 hidden을 빼요) */
+  {id:'plbird_egg',hidden:true,job:'all',slot:'pet',name:'라벤더 새',pet:'lbird',ico:'🐦',egg:true,desc:'보랏빛 날개로 파닥파닥 · 머리 위 깃털이 살랑'},
+  {id:'pmfox_egg',hidden:true,job:'all',slot:'pet',name:'단풍 여우',pet:'mfox',ico:'🍁',egg:true,desc:'커다란 단풍잎 꼬리를 흔들며 총총 따라와요'},
   {id:'eggpet',hidden:true,job:'none',slot:'pet',name:'키우는 알',pet:'egg'},
   {id:'xpgowl_p0',job:'all',slot:'pet',name:'황금 부엉이',pet:'gowl',ico:'✨',ach:'q500',desc:'업적 📖 지식 수집가 보상 · 반짝이가 맴돌아요'}
 ];
