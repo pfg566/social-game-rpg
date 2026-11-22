@@ -655,6 +655,8 @@ body.twmode #hud, body.twmode #skillbar, body.twmode #hint, body.twmode #touch, 
 .am-card.big .run-qtext{font-size:22px}
 .am-card.big .am-head b{color:#e5484d}
 @media (prefers-reduced-motion:reduce){.am-card{transition:none}}
+/* 다른 창(퀴즈 · 레벨업 카드 · 부활 …)이 열려 있는 동안은 정답 몬스터 카드를 숨겨요: 창의 보기를 가리지 않게 (07c-fun.js가 body에 modal-up을 붙여요) */
+body.modal-up .am-card,body.modal-up #amRes{visibility:hidden}
 /* 쌓인 레벨업 카드 */
 .lv-pend{pointer-events:auto;display:block;width:100%;margin-top:6px;font:inherit;font-size:13px;font-weight:800;color:#fff;background:linear-gradient(90deg,#7c5cff,#b59bff);border:2px solid var(--ink);border-radius:9px;padding:4px 8px;cursor:pointer;animation:lvPend 1.4s ease-in-out infinite}
 .lv-pend[hidden]{display:none}

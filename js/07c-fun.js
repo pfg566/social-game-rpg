@@ -105,6 +105,10 @@ function amTick(){
   $('#amTime').textContent=reading?`읽는 시간 ${Math.ceil(A.start-W.t)}`:Math.ceil(Math.max(0,A.until-W.t))+'초';
   if (W.t>=A.until) amResolve(false,null,true);
 }
+/* 다른 창(포탑 수정 · 지식 카드 같은 퀴즈 · 레벨업 카드 · 부활 · 그만하기 …)이 열려 있으면 정답 몬스터 카드 · 결과 카드를 잠시 숨겨요.
+   이 카드가 창보다 위에 떠서 다른 퀴즈의 보기를 가렸어요. 창이 열린 동안은 게임 시간이 멈추니, 창이 닫히면 남은 시간 그대로 다시 보여요 */
+{ const scr=[...document.querySelectorAll('.screen')], sync=()=>document.body.classList.toggle('modal-up',scr.some(e=>!e.hidden));
+  const mo=new MutationObserver(sync); scr.forEach(e=>mo.observe(e,{attributes:true,attributeFilter:['hidden']})); sync(); }
 
 /* ---------- ④ 연속 정답 · 지식 폭발 ---------- */
 function funBlast(big){
