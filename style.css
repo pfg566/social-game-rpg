@@ -585,6 +585,46 @@ body.runner #hud, body.runner #skillbar, body.runner #hint, body.runner #touch, 
 .run-res small{font-size:15px;margin-left:6px}
 .run-res p{margin:6px 0 0;font-size:15px;line-height:1.45}
 .run-help{position:fixed;left:50%;bottom:32px;transform:translateX(-50%);z-index:12;padding:10px 18px;font-size:16px}
+/* 정답 러너 리메이크: 코스 막대 · 크게 읽기 · 지금 줄 표시 · 해설 정리 · 알림 */
+#runStar{font-weight:800;color:#b88a00}
+.run-track{position:fixed;left:50%;top:16px;transform:translateX(-50%);z-index:12;width:max(240px,min(470px,calc(100vw - 760px)));height:40px;padding:0 12px;display:flex;align-items:center;gap:8px;pointer-events:none}
+.rt-flag{font-size:18px;line-height:1}
+.rt-line{position:relative;flex:1;height:8px;border-radius:4px;background:rgba(24,33,58,.15)}
+.rt-fill{position:absolute;left:0;top:0;bottom:0;width:0;border-radius:4px;background:linear-gradient(90deg,#9fd8ab,#2fb36b)}
+.rt-t{position:absolute;top:50%;width:12px;height:12px;margin:-6px 0 0 -6px;border-radius:50%;background:#fffdf6;border:2px solid var(--ink)}
+.rt-t.ok{background:#2fb36b}.rt-t.no{background:#e5484d}.rt-t.now{box-shadow:0 0 0 3px rgba(255,197,49,.95)}
+.rt-me{position:absolute;top:50%;left:4%;transform:translate(-50%,-72%) scaleX(-1);font-size:22px;line-height:1;filter:drop-shadow(0 2px 0 rgba(0,0,0,.25))}
+#runQ{top:66px;width:min(820px,calc(100vw - 32px));padding:9px 16px 10px;transition:top .45s cubic-bezier(.2,.8,.2,1),transform .45s cubic-bezier(.2,.8,.2,1),box-shadow .45s}
+#runQ .run-qtext{font-size:19px;margin-bottom:8px}
+#runQ .run-opt{min-height:40px;font-size:14.5px;padding:6px 9px;transition:box-shadow .15s,transform .15s,opacity .3s}
+#runQ .run-opt.pick{box-shadow:0 0 0 3px #fff,0 0 0 6px var(--ink);transform:translateY(-2px)}
+#runQ .run-opt.gone{opacity:.3;filter:grayscale(1)}
+#runQ .run-opt.gone span{text-decoration:line-through}
+#runQ.big{top:44%;transform:translate(-50%,-50%) scale(1.14);box-shadow:4px 4px 0 var(--ink),0 0 0 100vmax rgba(10,14,28,.34)}
+#runQ.big .run-qtext{font-size:23px}
+.rq-head{display:flex;gap:8px;align-items:center;font-weight:800;font-size:13.5px;color:var(--muted);margin-bottom:4px}
+.rq-kind{background:var(--ink);color:#fff;border-radius:99px;padding:1px 9px;font-size:12px}
+.rq-slow{color:#2f6fed}
+.rq-head b{margin-left:auto;color:var(--ink);font-size:15px;font-variant-numeric:tabular-nums}
+#runQ.big .rq-head b{color:#e5484d}
+.rq-keys{margin-top:9px;font-size:13.5px;color:var(--muted);text-align:center}
+#runQ:not(.big) .rq-keys{display:none}
+.rq-keys kbd,.run-help kbd,.rr-foot kbd{display:inline-block;min-width:20px;padding:0 5px;border:2px solid var(--ink);border-bottom-width:3px;border-radius:6px;background:#fff;font:700 12px/18px var(--body);color:var(--ink);text-align:center}
+#runRes{top:66px;bottom:auto;width:min(720px,calc(100vw - 32px))}
+#runRes.big{top:46%;transform:translate(-50%,-50%) scale(1.06);width:min(660px,calc(100vw - 32px));padding:18px 22px 16px;text-align:left;box-shadow:4px 4px 0 var(--ink),0 0 0 100vmax rgba(10,14,28,.34)}
+#runRes.big b{font-size:26px}
+#runRes.big p{font-size:16px;line-height:1.55}
+.rr-ans{display:flex;align-items:center;gap:10px;margin:10px 0 2px;font-size:19px;font-weight:800}
+.rr-k{display:inline-grid;place-items:center;min-width:38px;height:38px;padding:0 8px;border-radius:10px;background:var(--c);color:#fff;font-size:21px;text-shadow:0 1px 2px rgba(0,0,0,.3)}
+.rr-foot{display:flex;align-items:center;gap:12px;margin-top:12px}
+.rr-bar{flex:1;height:6px;border-radius:3px;background:rgba(0,0,0,.1);overflow:hidden}
+.rr-bar i{display:block;height:100%;width:100%;background:#e5484d}
+.rr-foot small{margin:0;font-size:13.5px;color:var(--muted);white-space:nowrap}
+.run-toast{position:fixed;left:50%;bottom:76px;transform:translate(-50%,10px);z-index:13;background:rgba(24,33,58,.9);color:#fff;padding:8px 18px;border-radius:99px;font-weight:700;font-size:16px;opacity:0;transition:opacity .25s,transform .25s;pointer-events:none;white-space:nowrap}
+.run-toast.show{opacity:1;transform:translate(-50%,0)}
+.run-toast.big{top:31%;bottom:auto;font-family:var(--display);font-size:32px;font-weight:400;padding:10px 28px;background:rgba(255,253,246,.95);color:var(--ink);border:3px solid var(--ink);box-shadow:4px 4px 0 var(--ink)}
+body.modal-up #runQ,body.modal-up #runRes,body.modal-up #runToast{visibility:hidden}
+@media (prefers-reduced-motion:reduce){#runQ{transition:none}}
 
 /* 발판 서바이벌 */
 body.stagemode #hud, body.stagemode #skillbar, body.stagemode #hint, body.stagemode #touch, body.stagemode #prompt{display:none!important}

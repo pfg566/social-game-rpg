@@ -32,6 +32,7 @@ function applyMood(k){
   if (MAPK==='general' && typeof gfApplyMood==='function') gfApplyMood(MOOD);   // 들판 마을: 하늘 · 안개를 맵에 맞춰요
   if (MAPK==='defense' && typeof dfApplyMood==='function') dfApplyMood(MOOD);
   if (MAPK==='island' && typeof islApplyMood==='function') islApplyMood(MOOD);
+  if (MAPK==='runner' && typeof rnMoodApply==='function') rnMoodApply(true);   // 정답 러너: 코스 진행에 따라 낮 → 황금빛 → 노을
 }
 
 /* 판마다 분위기를 무작위로 (방금 것과 다르게). 파티는 방 번호로 정해서 모두 같은 분위기 */

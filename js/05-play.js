@@ -260,7 +260,16 @@ const SFX=(()=>{
     ice(){ if (!ok('ice',120)) return; tone('triangle',1800,2600,.08,.07); nz(.12,6000,3000,2,.07); },
     fire(){ if (!ok('fire',150)) return; nz(.35,900,250,.7,.2); tone('sine',180,90,.2,.1); },
     thunder(){ if (!ok('thu',150)) return; nz(.16,3500,600,.6,.28); nz(.5,500,90,.5,.22,.05); tone('sawtooth',90,40,.25,.07); },
-    repair(){ if (!ok('rep',200)) return; for (let i=0;i<3;i++){ tone('square',880,620,.06,.1,i*.16); nz(.05,4000,2000,3,.1,i*.16); } }
+    repair(){ if (!ok('rep',200)) return; for (let i=0;i<3;i++){ tone('square',880,620,.06,.1,i*.16); nz(.05,4000,2000,3,.1,i*.16); } },
+    // 정답 러너: 문 앞 삑 · 문 통과 · 결승선 환호 · 힌트로 문 무너짐 · 별 · 코인 흘림 · 문에 튕김 · 웅덩이
+    tick(n){ if (!ok('tick',150)) return; const f=[660,780,990][Math.max(0,Math.min(2,n|0))]; tone('sine',f,f,.09,.22); },
+    whoosh(){ if (!ok('wh',200)) return; nz(.35,300,2400,.9,.3); },
+    cheer(){ if (!ok('cheer',1200)) return; for (let i=0;i<16;i++) nz(.08+Math.random()*.08,1200+Math.random()*1800,900+Math.random()*900,1.4,.07+Math.random()*.06,i*.05+Math.random()*.6); [523,659,784,1047].forEach((f,i)=>tone('triangle',f,f,i<3?.2:.5,.15,.05+i*.17)); },
+    crumble(){ if (!ok('crm',200)) return; nz(.4,1800,250,.7,.3); tone('square',180,60,.25,.08); },
+    star(){ if (!ok('star',150)) return; [880,1109,1319,1760].forEach((f,i)=>tone('sine',f,f,.12,.16,i*.06)); },
+    coinDrop(){ if (!ok('cdrop',200)) return; [1320,990,740].forEach((f,i)=>tone('square',f,f*.9,.07,.07,i*.07)); },
+    bounce(){ if (!ok('bnc',200)) return; tone('sine',220,90,.22,.4); nz(.15,900,300,1,.25); },
+    splash(){ if (!ok('spl',250)) return; nz(.3,2400,500,.8,.22); }
   };
 })();
 addEventListener('pointerdown',()=>SFX.init(),{passive:true});

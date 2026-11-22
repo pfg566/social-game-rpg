@@ -221,10 +221,12 @@ function setMap(k){
   for (const g in mapGroups) mapGroups[g].visible=g===k;
   bgGroup.visible=!['general','defense','island','glacier','runner','stage','teamwar','live','cafe','village'].includes(k); ground.visible=!['general','defense','island','glacier','runner','stage','teamwar','live','cafe','village'].includes(k);
   // 들판 마을 · 성벽 디펜스는 자기 하늘(구름) · 먼 산 · 분위기를 써요 (들판: 낮 · 황금빛 오후 / 성벽: + 해 질 녘)
-  const OWN=['general','defense','island'], ownSky=OWN.includes(k);
+  const OWN=['general','defense','island','runner'], ownSky=OWN.includes(k);
   if (k==='general'){ gfSkyVis(false); applyMood(['day','golden'].includes(MOOD)?MOOD:gfPickMood()); }
   else if (k==='defense'){ gfSkyVis(false); applyMood(DF_MOODS[MOOD]?MOOD:dfPickMood()); }
   else if (k==='island'){ gfSkyVis(false); applyMood(IS_MOODS[MOOD]?MOOD:islPickMood()); }
+  else if (k==='runner'){ gfSkyVis(false); applyMood('day'); }   // 정답 러너: 자기 하늘 (코스 진행에 따라 바뀌어요)
+  if (k==='runner') clouds.forEach(c=>{ c.visible=false; }); else if (prevK==='runner') clouds.forEach(c=>{ c.visible=true; });   // 구름 모형은 출발점에 남아서 러너에서는 숨겨요
   if (!ownSky){ GF_SEE.value=0; if (OWN.includes(prevK)) gfSkyVis(true); }
   colliders=MAPSTATE[k].colliders; stations=MAPSTATE[k].stations; npcs=MAPSTATE[k].npcs;
   WAVES=wavesFor(k==='zones'?(MAPS.zones.waves||'zones'):k);

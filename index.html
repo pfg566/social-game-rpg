@@ -7,7 +7,7 @@
 <style>body{margin:0}[hidden]{display:none!important}img{max-width:100%}</style>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jua&family=IBM+Plex+Sans+KR:wght@400;600;700&display=swap">
-<link rel="stylesheet" href="style.css?v=20261123b">
+<link rel="stylesheet" href="style.css?v=20261123c">
 </head>
 <body>
 
@@ -58,9 +58,11 @@
     <p class="bd-note">같은 반 · 이번 게임 시간에 참여한 친구들만 보여요. 점수는 가장 잘한 판 기준이에요.</p>
   </div>
 </div>
-<div class="run-hud card" id="runHud" hidden><span id="runHearts">❤️❤️❤️</span><b id="runProg">문제 1/12</b><span id="runCombo"></span><span id="runCoins">🪙 0</span></div>
-<div class="run-q card" id="runQ" hidden><div class="run-qtext" id="runQText"></div><div class="run-opts" id="runOpts"></div><div class="run-bar"><i id="runBar"></i></div></div>
+<div class="run-hud card" id="runHud" hidden><span id="runHearts">❤️❤️❤️</span><b id="runProg">문제 1/12</b><span id="runCombo"></span><span id="runCoins">🪙 0</span><span id="runStar" hidden></span></div>
+<div class="run-track card" id="runTrack" hidden><span class="rt-flag">🚩</span><div class="rt-line" id="runTrackLine"></div><span class="rt-flag">🏁</span></div>
+<div class="run-q card" id="runQ" hidden><div class="rq-head"><span id="runQNo">문제 1</span><span class="rq-kind" id="runQKind">4지선다</span><span class="rq-slow" id="runQSlow" hidden>🐢 천천히</span><b id="runQTime"></b></div><div class="run-qtext" id="runQText"></div><div class="run-opts" id="runOpts"></div><div class="run-bar"><i id="runBar"></i></div><div class="rq-keys" id="runQKeys"></div></div>
 <div class="run-res card" id="runRes" hidden></div>
+<div class="run-toast" id="runToast"></div>
 <div class="run-hud card cf-hud" id="cfHud" hidden><b class="cf-name">달콤 카페</b><span id="cfStars">★ 3.0</span><span id="cfTips">팁 0</span><span id="cfCount">손님 0/10</span><span id="cfCombo"></span></div>
 <div class="run-q card cf-q" id="cfQ" hidden><div class="cf-qhead"><span class="cf-no" id="cfQNo">주문 #1</span><span class="cf-kind" id="cfQKind"></span><span class="cf-hint" id="cfHint"></span></div><div class="run-qtext" id="cfQText"></div><div class="run-opts" id="cfOpts"></div><div class="cf-steps" id="cfSteps"></div></div>
 <div class="run-res card" id="cfRes" hidden></div>
@@ -74,7 +76,7 @@
 <button class="btn vl-call" id="vlCall" hidden></button>
 <div class="vl-toast" id="vlToast"></div>
 <div class="run-help card" id="cfHelp" hidden>WASD로 움직여요 · 화살표를 따라 재료 → 토핑 → 오븐 → 서빙! 🔥 오븐에서는 바늘이 <b>금색</b>일 때 <kbd>스페이스</kbd> · 🥄 헷갈리면 서빙 전에 <kbd>T</kbd>로 맛보기(한 번) · 👑 VIP 손님은 팁 2배</div>
-<div class="run-help card" id="runHelp" hidden>← → (A D) 줄 바꾸기 · 스페이스 점프 · 정답 색깔 문이 있는 줄로 통과!</div>
+<div class="run-help card" id="runHelp" hidden><kbd>←</kbd> <kbd>→</kbd> 또는 <kbd>1</kbd>~<kbd>4</kbd> 줄 바꾸기 · <kbd>스페이스</kbd> 점프 · <kbd>S</kbd> 천천히 · 정답 색깔 문이 있는 줄로 달려요!</div>
 <div class="run-hud card" id="stHud" hidden><span id="stLives">❤️❤️❤️</span><b id="stProg"></b><span id="stScore">0점</span></div>
 <div class="run-q card" id="stQ" hidden><div class="run-qtext" id="stQText"></div><div class="run-opts" id="stOpts"></div><div class="run-bar"><i id="stBar"></i></div><div class="st-lock"><span id="stLock"></span><b id="stTime"></b></div></div>
 <div class="run-res card" id="stMsg" hidden></div>
@@ -483,13 +485,13 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="firebase-config.js"></script>
-<script src="js/01-data.js?v=20261123a"></script>
+<script src="js/01-data.js?v=20261123c"></script>
 <script src="js/02-graphics.js?v=20261121a"></script>
-<script src="js/02m-mood.js?v=20261123a"></script>
+<script src="js/02m-mood.js?v=20261123c"></script>
 <script src="js/03-world.js?v=20261122t"></script>
 <script src="js/04-island.js?v=20261123a"></script>
 <script src="js/04g-glacier.js?v=20261121a"></script>
-<script src="js/04r-runner.js?v=20261121a"></script>
+<script src="js/04r-runner.js?v=20261123c"></script>
 <script src="js/04s-stage.js?v=20261121a"></script>
 <script src="js/04t-teamwar.js?v=20261121a"></script>
 <script src="js/04L-live.js?v=20261121a"></script>
@@ -501,13 +503,13 @@
 <script src="js/04e-defense.js?v=20261123a"></script>
 <script src="js/04i-island.js?v=20261123a"></script>
 <script src="js/04d-cafe-art.js?v=20261122a"></script>
-<script src="js/05-play.js?v=20261123a"></script>
+<script src="js/05-play.js?v=20261123c"></script>
 <script src="js/06-jobs.js?v=20261122r"></script>
 <script src="js/06p-player.js?v=20261121a"></script>
-<script src="js/07-quiz.js?v=20261123a"></script>
+<script src="js/07-quiz.js?v=20261123c"></script>
 <script src="js/07b-prep.js?v=20261122r"></script>
 <script src="js/07c-fun.js?v=20261123b"></script>
-<script src="js/08-hud.js?v=20261123a"></script>
+<script src="js/08-hud.js?v=20261123c"></script>
 <script src="js/09-server.js?v=20261122s"></script>
 <script src="js/09k-kick.js?v=20261121a"></script>
 <script src="js/09o-online.js?v=20261121a"></script>
@@ -517,7 +519,7 @@
 <script src="js/10e-eggs.js?v=20261121a"></script>
 <script src="js/10f-face.js?v=20261121a"></script>
 <script src="js/10a-ach.js?v=20261121a"></script>
-<script src="js/11-gate-editor.js?v=20261123a"></script>
+<script src="js/11-gate-editor.js?v=20261123c"></script>
 <script src="js/12-lobby.js?v=20261122r"></script>
 <script src="js/13-loop.js?v=20261122t"></script>
 <script src="js/14-party.js?v=20261121a"></script>
