@@ -265,6 +265,11 @@ let LAST_PLAYC=null;
 function refreshModeBadges(){ try{ if (LAST_PLAYC && W.state!=='play') renderPlayModes(LAST_PLAYC); }catch(e){} }
 let MODE_PICK=''; try{ MODE_PICK=localStorage.getItem('gsd-mode')||''; }catch(e){}
 const modeById=id=>PLAY_MODES.find(x=>x.id===id);
+/* 녹는 빙하 · 세 거점: 학생에게는 단원 맵(또는 선생님이 연 게임의 맵 · 잠근 모드)이 그 맵일 때만 보여요. 선생님 계정은 모두 보여요 */
+const UNIT_ONLY=['zones','glacier'];
+const modeHidden=(c,md)=>UNIT_ONLY.includes(md.map)&&c.rec!==md.map&&c.lock!==md.id&&!(c.u&&mapOf(c.u)===md.map);
+const modeVisible=(c,md)=>isAdmin||!modeHidden(c,md);
+function visModes(c){ return PLAY_MODES.filter(m=>(m.side!=='battle'||mapOK(c.u,m.map)||m.map!=='zones')&&modeVisible(c,m)); }
 /* 단원의 학교·학년 (비어 있으면 모든 학교·학년) */
 function unitTagText(u){ if (!u) return ''; const s=u.sch?((SCHOOLS[u.sch]||{}).name||'지워진 학교'):'', g=u.grade?u.grade+'학년':''; return s&&g?`${s} · ${g}`:s?`${s} · 모든 학년`:g?`모든 학교 · ${g}`:''; }
 function unitFitsMe(u){ if (!u) return false; const c=STUDENT&&CLASSES[STUDENT.cid]; if (!c) return true; return (!u.sch||u.sch===c.sid)&&(!u.grade||u.grade===+c.grade); }
@@ -276,7 +281,7 @@ function playChoice(){
   else { const g=activeGate(), raw=g&&GATE[g.key];
     if (raw && raw.unit && byId(raw.unit) && isReady(byId(raw.unit))){ const u=byId(raw.unit); c={u,rec:mapOK(u,raw.map)?raw.map:mapOf(u),free:false,src:'gate'}; }
     else { const u=def(); c={u,rec:mapOf(u),free:false,src:'default'}; } }
-  let md=modeById(MODE_PICK); if (!md||!c.u||!mapOK(c.u,md.map)) md=modeById(c.rec)||PLAY_MODES[1];
+  let md=modeById(MODE_PICK); if (!md||!c.u||!mapOK(c.u,md.map)||!modeVisible(c,md)) md=modeById(c.rec)||PLAY_MODES[1];
   // 선생님이 '🔒 이 모드만'으로 열었으면 그 모드만 할 수 있어요 (나머지는 잠김)
   if (!isAdmin){ const g=activeGate(), raw=g&&GATE[g.key], lm=raw&&raw.mode&&modeById(raw.mode); if (lm && c.u && mapOK(c.u,lm.map)){ md=lm; c.lock=lm.id; } }
   c.mode=md; c.m=md.map; return c;
@@ -294,9 +299,9 @@ function applyPlay(force){
 }
 function renderPlayModes(c){
   const stu=!!(STUDENT&&PROFILE), ex=stu?exploredModes():[], mb=stu&&PROFILE.mb||{};
-  const card=md=>{ const ok=mapOK(c.u,md.map)&&(!c.lock||md.id===c.lock), on=md===c.mode, rec=md.map===c.rec&&!md.peace, fresh=stu&&ok&&!ex.includes(md.id), best=+mb[md.id]||0;
-    return `<button type="button" class="pm-btn${on?' on':''}${fresh?' fresh':''}" data-gmode="${md.id}" aria-pressed="${on}"${ok?'':c.lock&&mapOK(c.u,md.map)?' disabled title="선생님이 오늘은 다른 모드로 정했어요"':' disabled title="이 단원에는 이 모드에 필요한 문제가 없어요"'}>${c.lock&&md.id!==c.lock&&mapOK(c.u,md.map)?'<em class="pm-lock">🔒</em>':''}${fresh?`<em class="pm-gift" title="이번 주 처음 하는 모드예요. 문제를 ${EXPLORE_MIN_Q}개 이상 풀면 코인 +${EXPLORE_COINS}">🎁</em>`:''}<i>${md.icon}</i><span><b>${md.name}${rec?' <em>⭐ 추천</em>':''}</b><small>${md.sub}</small>${best?`<small class="pm-best" title="내 최고 기록">🏅${best.toLocaleString('ko-KR')}</small>`:''}</span></button>`; };
-  const vis=PLAY_MODES.filter(m=>m.side!=='battle'||mapOK(c.u,m.map)||m.map!=='zones');
+  const card=md=>{ const ok=mapOK(c.u,md.map)&&(!c.lock||md.id===c.lock), on=md===c.mode, rec=md.map===c.rec&&!md.peace, fresh=stu&&ok&&!ex.includes(md.id), best=+mb[md.id]||0, hid=isAdmin&&modeHidden(c,md);
+    return `<button type="button" class="pm-btn${on?' on':''}${fresh?' fresh':''}" data-gmode="${md.id}" aria-pressed="${on}"${ok?'':c.lock&&mapOK(c.u,md.map)?' disabled title="선생님이 오늘은 다른 모드로 정했어요"':' disabled title="이 단원에는 이 모드에 필요한 문제가 없어요"'}>${hid?'<em class="pm-hid" title="학생에게는 숨겨져 있어요. 단원 맵을 이 맵으로 고르면 학생에게도 보여요">🙈 숨김</em>':''}${c.lock&&md.id!==c.lock&&mapOK(c.u,md.map)?'<em class="pm-lock">🔒</em>':''}${fresh?`<em class="pm-gift" title="이번 주 처음 하는 모드예요. 문제를 ${EXPLORE_MIN_Q}개 이상 풀면 코인 +${EXPLORE_COINS}">🎁</em>`:''}<i>${md.icon}</i><span><b>${md.name}${rec?' <em>⭐ 추천</em>':''}</b><small>${md.sub}</small>${best?`<small class="pm-best" title="내 최고 기록">🏅${best.toLocaleString('ko-KR')}</small>`:''}</span></button>`; };
+  const vis=visModes(c);
   $('#pmBattle').innerHTML=vis.filter(m=>m.side==='battle').map(card).join('');
   $('#pmPeace').innerHTML=vis.filter(m=>m.side==='peace').map(card).join('');
   const okModes=vis.filter(m=>mapOK(c.u,m.map)), done=okModes.filter(m=>ex.includes(m.id)).length, pe=$('#pmExplore');

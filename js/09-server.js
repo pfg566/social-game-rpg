@@ -423,7 +423,7 @@ async function grantRewards(r,fixedN){
   try{ await save(); PROFILE={...PROFILE,...upd,updatedAt:Date.now()}; refreshModeBadges(); renderProfileCard(); renderJobPick(); lastReward={xp,coins}; if (awoke.length){ SFX.wave(); }
     if (typeof eggQuizBonus==='function') eggQuizBonus(r.correct|0,box);
     // 업적: 저장된 뒤의 기록으로 확인
-    try{ const okN=LAST_PLAYC?PLAY_MODES.filter(m=>mapOK(LAST_PLAYC.u,m.map)).length:PLAY_MODES.length;
+    try{ const okN=LAST_PLAYC?visModes(LAST_PLAYC).filter(m=>mapOK(LAST_PLAYC.u,m.map)).length:PLAY_MODES.length;
       achGrant(achCheck(PROFILE,{qsMax:W.qsMax|0,asked:r.asked|0,correct:r.correct|0,exploreAll:!!upd.mw&&String(upd.mw.m).split(',').length>=okN}),box); }catch(e){} }
   catch(e){ box.insertAdjacentHTML('beforeend','<small class="warn">보상을 저장하지 못했어요. 너무 빨리 끝난 판(10초 미만)이나 게임 시간이 끝나고 15분이 지난 판은 저장되지 않아요.</small>'); }
 }
