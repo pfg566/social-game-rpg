@@ -52,6 +52,10 @@ function frame(now){
         if (m.avy||m.ay>0){ m.avy=(m.avy||0)-22*dt; m.ay=Math.max(0,(m.ay||0)+m.avy*dt); if (m.ay===0) m.avy=0; }
         m.x=Math.max(-34,Math.min(34,m.x)); m.z=Math.max(-34,Math.min(34,m.z)); continue; }
       if (m.spawnT>0){ m.spawnT-=dt; continue; }
+      if (W.amFreeze>W.t && !m.ans){ // 정답 몬스터 문제를 읽는 3초: 다른 몬스터는 그 자리에 멈춰요
+        if (m.aimT>0){ m.aimT=0; if (m.aimLine) m.aimLine.visible=false; } if (m.leapS){ m.leapS=0; m.ay=0; m.leapCd=Math.max(m.leapCd||0,1.2); } if (m.leapRing) m.leapRing.visible=false;
+        m.x+=m.kbx*dt; m.z+=m.kbz*dt; m.kbx*=Math.pow(.02,dt); m.kbz*=Math.pow(.02,dt); resolve(m,m.r);
+        m.flash=Math.max(0,m.flash-dt); m.mat.emissive.setHex(m.flash>0?0xffffff:0x000000); if (m.anim) m.anim.setBase('idle',.8); continue; }
       mobStatus(m,dt); if (m.dying>=0) continue;
       if (m.ranged){ rangedAI(m,dt); continue; }
       if (m.stun>0){ if (m.aimT>0){ m.aimT=0; if (m.aimLine) m.aimLine.visible=false; } m.stun-=dt; m.x+=m.kbx*dt; m.z+=m.kbz*dt; m.kbx*=Math.pow(.02,dt); m.kbz*=Math.pow(.02,dt); resolve(m,m.r);

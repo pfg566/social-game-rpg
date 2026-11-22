@@ -7,7 +7,7 @@
 <style>body{margin:0}[hidden]{display:none!important}img{max-width:100%}</style>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jua&family=IBM+Plex+Sans+KR:wght@400;600;700&display=swap">
-<link rel="stylesheet" href="style.css?v=20261122b">
+<link rel="stylesheet" href="style.css?v=20261122q">
 </head>
 <body>
 
@@ -19,7 +19,7 @@
     <div class="hp-row hprow-main"><span>체력</span><b id="hpTxt">100 / 100</b></div>
     <div class="hpbar hpbar-main"><i id="hpBar" style="width:100%"></i></div>
     <div class="door-row" id="parcelRow" hidden><div class="hp-row"><span>택배 배달</span><b id="parcelTxt">0 / 0</b></div><div class="hpbar parcel"><i id="parcelBar" style="width:0%"></i></div></div>
-    <div class="lv-box" id="lvBox" hidden><div class="lv-row"><b id="lvLv">Lv.1</b><span class="lv-qs" id="lvQs"></span></div><div class="hpbar lvbar"><i id="lvXp" style="width:0%"></i></div></div>
+    <div class="lv-box" id="lvBox" hidden><div class="lv-row"><b id="lvLv">Lv.1</b><span class="lv-qs" id="lvQs"></span></div><div class="hpbar lvbar"><i id="lvXp" style="width:0%"></i></div><button class="lv-pend" id="lvPend" hidden></button></div>
     <div class="door-row" id="iceRow" hidden><div class="hp-row"><span>🧊 빙하</span><b id="iceTxt">6/6 · 100%</b></div><div class="hpbar ice"><i id="iceBar" style="width:100%"></i></div></div>
     <div class="door-row" id="doorRow" hidden><div class="hp-row"><span>성문</span><b id="doorTxt">500 / 500</b></div><div class="hpbar door"><i id="doorBar" style="width:100%"></i></div></div>
     <div class="meta"><span>웨이브 <b id="waveTxt">1/3</b></span><span>처치 <b id="killTxt">0</b></span><span>정답 <b id="corTxt">0/0</b></span></div>
@@ -295,6 +295,14 @@
 <div class="partyhud" id="partyHud" hidden><div class="cq-pts" id="cqPts"></div><div class="cq-info" id="cqInfo"></div></div>
 <div class="partylist" id="partyList" hidden></div>
 
+<div class="screen locintro reviveintro" id="reviewIntro" hidden>
+  <div class="panel card" role="dialog" aria-labelledby="reviewTitle">
+    <p class="big" id="reviewTitle">📒 복습 찬스!</p>
+    <p class="q" id="reviewQ"></p>
+    <p class="note">정답률에는 들어가지 않아요. 틀린 직후에 다시 떠올려 보면 오래 기억에 남아요.</p>
+    <button class="btn" id="reviewGo">다시 풀기 (Enter)</button> <button class="btn ghost" id="reviewSkip">결과 보기</button>
+  </div>
+</div>
 <div class="screen locintro reviveintro" id="reviveIntro" hidden>
   <div class="panel card" role="dialog" aria-labelledby="reviveTitle">
     <p class="big" id="reviveTitle">부활 찬스!</p>
@@ -475,7 +483,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="firebase-config.js"></script>
-<script src="js/01-data.js?v=20261121a"></script>
+<script src="js/01-data.js?v=20261122q"></script>
 <script src="js/02-graphics.js?v=20261121a"></script>
 <script src="js/02m-mood.js?v=20261121a"></script>
 <script src="js/03-world.js?v=20261121a"></script>
@@ -490,13 +498,13 @@
 <script src="js/04w-village-art.js?v=20261121f"></script>
 <script src="js/04x-village-env.js?v=20261122a"></script>
 <script src="js/04d-cafe-art.js?v=20261122a"></script>
-<script src="js/05-play.js?v=20261121a"></script>
-<script src="js/06-jobs.js?v=20261121a"></script>
+<script src="js/05-play.js?v=20261122q"></script>
+<script src="js/06-jobs.js?v=20261122q"></script>
 <script src="js/06p-player.js?v=20261121a"></script>
-<script src="js/07-quiz.js?v=20261121a"></script>
-<script src="js/07b-prep.js?v=20261121a"></script>
-<script src="js/07c-fun.js?v=20261121a"></script>
-<script src="js/08-hud.js?v=20261121a"></script>
+<script src="js/07-quiz.js?v=20261122q"></script>
+<script src="js/07b-prep.js?v=20261122q"></script>
+<script src="js/07c-fun.js?v=20261122q"></script>
+<script src="js/08-hud.js?v=20261122q"></script>
 <script src="js/09-server.js?v=20261121e"></script>
 <script src="js/09k-kick.js?v=20261121a"></script>
 <script src="js/09o-online.js?v=20261121a"></script>
@@ -506,9 +514,9 @@
 <script src="js/10e-eggs.js?v=20261121a"></script>
 <script src="js/10f-face.js?v=20261121a"></script>
 <script src="js/10a-ach.js?v=20261121a"></script>
-<script src="js/11-gate-editor.js?v=20261121g"></script>
+<script src="js/11-gate-editor.js?v=20261122q"></script>
 <script src="js/12-lobby.js?v=20261122a"></script>
-<script src="js/13-loop.js?v=20261121a"></script>
+<script src="js/13-loop.js?v=20261122q"></script>
 <script src="js/14-party.js?v=20261121a"></script>
 <script src="js/15-board.js?v=20261121a"></script>
 <script src="js/16-notes.js?v=20261121a"></script>

@@ -649,6 +649,20 @@ body.twmode #hud, body.twmode #skillbar, body.twmode #hint, body.twmode #touch, 
 .am-card .run-qtext{font-size:18px;margin-bottom:6px}
 .am-card .run-opt{min-height:36px;font-size:14px;padding:5px 8px}
 .am-card .run-opt b{font-size:20px}
+/* 정답 몬스터: 처음 3초는 문제를 화면 가운데에 크게 → 위로 작게 */
+.am-card{transition:top .5s cubic-bezier(.2,.8,.2,1),transform .5s cubic-bezier(.2,.8,.2,1),box-shadow .5s}
+.am-card.big{top:44%;transform:translate(-50%,-50%) scale(1.18);box-shadow:4px 4px 0 var(--ink),0 0 0 100vmax rgba(10,14,28,.32)}
+.am-card.big .run-qtext{font-size:22px}
+.am-card.big .am-head b{color:#e5484d}
+@media (prefers-reduced-motion:reduce){.am-card{transition:none}}
+/* 쌓인 레벨업 카드 */
+.lv-pend{pointer-events:auto;display:block;width:100%;margin-top:6px;font:inherit;font-size:13px;font-weight:800;color:#fff;background:linear-gradient(90deg,#7c5cff,#b59bff);border:2px solid var(--ink);border-radius:9px;padding:4px 8px;cursor:pointer;animation:lvPend 1.4s ease-in-out infinite}
+.lv-pend[hidden]{display:none}
+.lv-pend:hover{filter:brightness(1.08)}
+@keyframes lvPend{50%{box-shadow:0 0 0 4px rgba(124,92,255,.3)}}
+@media (prefers-reduced-motion:reduce){.lv-pend{animation:none}}
+#reviewIntro .panel{background:#d6e6ff}
+#reviewIntro .btn.ghost{background:transparent;color:var(--ink);border-color:transparent;box-shadow:none;font-size:17px;padding:8px;margin-top:4px;text-decoration:underline;text-underline-offset:3px}
 
 .rewardbox .explore{display:block;margin-top:4px;padding:3px 8px;border-radius:8px;background:#fff1b8;color:#5a3d00;font-weight:700}
 .rewardbox .explore.miss{background:#f4f4f4;color:#666;font-weight:600}

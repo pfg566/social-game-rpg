@@ -9,7 +9,7 @@ function updateHUD(){
   $('#waveTxt').textContent=`${Math.max(1,W.wave+1)}/${WAVES.length}`;
   $('#killTxt').textContent=W.kills;
   $('#corTxt').textContent=`${W.correct}/${W.asked}`;
-  $('#nextCard').hidden=!!W.loc||!!W.prep||!!(FUN.am&&!FUN.am.done);
+  $('#nextCard').hidden=!!W.loc||!!W.prep||!!(FUN.am&&!FUN.am.done)||(NEWQ()&&(W.gate||!!liveBoss()));   // 새 방식: 웨이브 잠김 · 보스전에는 정답 몬스터가 안 나와요
   const bgOn=NEWQ()&&W.bg&&W.bg.st; $('#bgCard').hidden=!bgOn; if (bgOn) $('#bgTxt').textContent=Math.max(0,Math.ceil(W.bg.until-W.t));
   if (W.up && W.up.list.length) { /* 강화 목록은 칩으로 */ }
   $('#nextTxt').textContent=Math.max(0,Math.ceil(W.nextQuiz-W.t));
@@ -26,7 +26,7 @@ function updateHUD(){
     $('#bossHp').style.width=Math.max(0,boss.hp/boss.max*100)+'%';
     const sk=boss.shield+'/'+boss.shieldMax+NEWQ();
     if (sk!==shieldKey){ shieldKey=sk; $('#shields').innerHTML=Array.from({length:boss.shieldMax},(_,i)=>`<i class="${i<boss.shield?'':'off'}"></i>`).join('');
-      $('#bossHelp').textContent=NEWQ()?(boss.shield>0?'보라색 빛줄기를 따라 수정으로 가서 퀴즈를 맞히면 보호막이 깨져요. 늦으면 보호막이 다시 생겨요!':'보호막이 모두 깨졌어요! 공격하세요. 수정 퀴즈를 맞히면 보스가 휘청여 피해 1.5배'):boss.shield>0?'퀴즈를 맞히면 보호막이 깨지고, 틀리면 되살아나요. 붉은 원이 보이면 피하세요!':'보호막이 모두 깨졌어요. 지금 공격하세요! 오답이면 보호막이 되살아나요.'; }
+      $('#bossHelp').textContent=NEWQ()?(boss.shield>0?'지식 방패! 보스의 문제를 맞히거나, 보라색 빛줄기를 따라 수정에서 퀴즈를 맞히면 깨져요':'방패가 깨졌어요! 공격하세요 · 체력 75·50·25%가 되면 방패가 다시 생겨요'):boss.shield>0?'퀴즈를 맞히면 보호막이 깨지고, 틀리면 되살아나요. 붉은 원이 보이면 피하세요!':'보호막이 모두 깨졌어요. 지금 공격하세요! 오답이면 보호막이 되살아나요.'; }
   }
   $('#gateCard').hidden=!W.gate||!!W.prep;
   if (MAPK==='island' && W.isl){ const S=W.isl, show=S.quota>0; $('#parcelRow').hidden=!show; if (show){ const cp=S.carry; $('#parcelTxt').textContent=`${S.done-0} / ${S.quota}`+(S.lost?` · 잃어버림 ${S.lost}`:'')+(PEACE_RUN&&S.stars?` · ★${S.stars}`:'')+(PEACE_RUN&&cp&&cp.due?(W.t<=cp.due?` · ⏱ ${Math.ceil(cp.due-W.t)}초`:' · ⏱ 늦었어요'):''); $('#parcelBar').style.width=(S.done/S.quota*100)+'%'; } }
@@ -49,7 +49,7 @@ function reset(){
   clearWorld();
   const st=MAPS[MAPK].start;
   Object.assign(P,{x:st[0],z:st[1],hp:100,fx:0,fz:-1,atkCd:0,swingT:0,combo:0,lastAtk:-9,buffer:false,pendingHit:null,lunge:0,dodgeT:0,dodgeCd:0,spinT:0,spinCd:0,spinHits:[],spinBuf:false,blockT:0,dashT:0,ultT:0,dodgeMax:1,spinMax:1,backstep:false}); P.max=jobInfo().hp; P.hp=P.max; hitStop=0; skKey=''; clearProj(); clearEBolts();
-  Object.assign(W,{won:false,door:DOOR_HP,doorMax:DOOR_HP,doorWarnAt:0,revived:false,revive:null,invuln:0,t:0,paused:false,state:'play',wave:-1,nextWaveAt:1.2,gate:false,nextQuiz:timedEvery(),cardCoins:0,timedFlip:0,kills:0,correct:0,asked:0,effects:[],wrong:[],loc:null,spawnQ:[],runnerSeen:false,ult:0,streak:0,qshield:0,speedPts:0,right:new Set(),locLeftFrac:0,prep:null,up:{atk:1,spd:1,turret:0,list:[]},orbBoost:0,rangedSeen:false,stats:{dealt:0,taken:0,minHp:1,melee:0,ranged:0,boss:0,quiz:0,blocks:0,blocked:0,dodges:0,ults:0,evaded:0,shots:0,ws:[]}});
+  Object.assign(W,{won:false,door:DOOR_HP,doorMax:DOOR_HP,doorWarnAt:0,revived:false,revive:null,review:null,reviewDone:false,amFreeze:0,invuln:0,t:0,paused:false,state:'play',wave:-1,nextWaveAt:1.2,gate:false,nextQuiz:timedEvery(),cardCoins:0,timedFlip:0,kills:0,correct:0,asked:0,effects:[],wrong:[],loc:null,spawnQ:[],runnerSeen:false,ult:0,streak:0,qshield:0,speedPts:0,right:new Set(),locLeftFrac:0,prep:null,up:{atk:1,spd:1,turret:0,list:[]},orbBoost:0,rangedSeen:false,stats:{dealt:0,taken:0,minHp:1,melee:0,ranged:0,boss:0,quiz:0,blocks:0,blocked:0,dodges:0,ults:0,evaded:0,shots:0,ws:[]}});
   W.used=new Set(); stations.forEach(s=>s.readyAt=0); bgReset(); $('#prep').hidden=true; chipKey=''; shieldKey=''; $('#chips').innerHTML='';
   $('#locCard').hidden=true; $('#gateCard').hidden=true;
   TURRETS.forEach(t=>{ t.until=0; t.cd=0; }); bolts.forEach(b=>scene.remove(b.mesh)); bolts=[]; doorFlash=0;

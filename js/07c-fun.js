@@ -6,15 +6,16 @@
    ⑤ 지식 도감: 맞힌 문제가 단원별 도감에 모여요 (dex/{반}/{번호})
    파일은 01 → 13 순서로 불러와요. 모든 파일이 같은 전역 공간을 함께 써요. */
 const AM_NEAR=7.5;   // 정답 몬스터는 이 거리 안에서만 맞아요 (멀리서 광역기·관통 화살에 엉뚱한 몬스터가 잡히지 않게)
-const AM_EVERY=45, AM_TIME=30, AM_COL=['#e5484d','#3b82f6','#22a35a','#e8a400'], AM_OXCOL=['#3b82f6','#e5484d'];
+const AM_EVERY=45, AM_TIME=30, AM_READ=3, AM_COL=['#e5484d','#3b82f6','#22a35a','#e8a400'], AM_OXCOL=['#3b82f6','#e5484d'];
 const LV_NEED=lv=>4+lv*2;
+const LV_SAFE_R=8, LV_CALM=1;   // 레벨업 카드: 8칸 안에 몬스터가 없는 채로 1초가 지나면 열려요 (F 키로 바로 열기)
 const QS_TIER=n=>n>=5?2:n>=3?1:0, QS_NAME=['','🥈 은빛','🥇 금빛'], QS_XP=[1,1.5,2];
 const FUN={am:null,lv:{n:1,xp:0,pend:0,cards:null,card:null},dex:null};
 const funOn=()=>NEWQ() && W.state==='play';
 
 function funReset(){
   amClear(true);
-  FUN.lv={n:1,xp:0,pend:0,cards:null,card:null}; W.qs=0; W.qsMax=0; W.lvUps=0;
+  FUN.lv={n:1,xp:0,pend:0,cards:null,card:null,calm:0,want:false,told:false}; W.qs=0; W.qsMax=0; W.lvUps=0; W.amFreeze=0; $('#lvPend').hidden=true;
   $('#lvUp').hidden=true; $('#amCard').hidden=true; $('#amRes').hidden=true;
   $('#lvBox').hidden=!NEWQ();
   if (NEWQ()) W.nextQuiz=W.t+AM_EVERY*.6;
@@ -53,7 +54,7 @@ function amStart(){
   opts.forEach((o,i)=>{
     const a=a0+i/n*Math.PI*2, r=n>2?10.5:9.5, at={x:P.x+Math.cos(a)*r,z:P.z+Math.sin(a)*r};
     const m=spawnMob(base,false,at); if (!m) return;
-    m.hp=m.max=Math.round(m.max*2.2); m.ans={i,ok:i===ci}; m.spd*=.85; m.hold={x:at.x,z:at.z};   // 쫓아오지 않고 제자리에서 깃발을 들고 기다려요
+    m.hp=m.max=Math.round(m.max*.75); m.ans={i,ok:i===ci}; m.spd*=.85; m.hold={x:at.x,z:at.z};   // 쫓아오지 않고 제자리에서 깃발을 들고 기다려요 · 2~3대면 쓰러져요(전투 실력보다 정답 판단)
     const col=item.kind==='mc'?AM_COL[i]:AM_OXCOL[i];
     m.body.scale.multiplyScalar(1.22);
     if (m.bar&&m.bar.fg) m.bar.fg.material.color.set(col);
@@ -62,12 +63,13 @@ function amStart(){
     elites.push(m);
   });
   if (!elites.length) return false;
-  FUN.am={item,opts,ci,elites,until:W.t+AM_TIME,start:W.t,done:false};
+  FUN.am={item,opts,ci,elites,until:W.t+AM_READ+AM_TIME,start:W.t+AM_READ,done:false};
+  W.amFreeze=W.t+AM_READ;   // 3초 동안 다른 몬스터가 멈춰요: 문제를 먼저 읽어요
   $('#amQ').textContent=(item.kind==='ox'?'[O/X] ':'')+item.q;
   const box=$('#amOpts'); box.className='run-opts'+(item.kind==='ox'?' two':'');
   box.innerHTML=opts.map((o,i)=>`<div class="run-opt" style="--c:${item.kind==='mc'?AM_COL[i]:AM_OXCOL[i]}"><b>${item.kind==='mc'?i+1:o}</b><span>${item.kind==='mc'?esc(o):(i?'X 깃발 몬스터':'O 깃발 몬스터')}</span></div>`).join('');
-  $('#amCard').hidden=false; $('#amRes').hidden=true;
-  SFX.wave(); showBanner('⚔️ 정답 몬스터 등장! 정답 깃발 몬스터에게 가까이 가서 잡아요');
+  $('#amCard').hidden=false; $('#amCard').classList.add('big'); $('#amRes').hidden=true;
+  SFX.wave(); showBanner('⚔️ 정답 몬스터 등장! 3초 동안 문제를 읽어요');
   return true;
 }
 function amKill(m){
@@ -76,7 +78,7 @@ function amKill(m){
 }
 function amResolve(ok,killed,timeout){
   const A=FUN.am; if (!A||A.done) return; A.done=true;
-  const frac=Math.max(0,(A.until-W.t)/AM_TIME); let sp=0;
+  const frac=Math.max(0,Math.min(1,(A.until-W.t)/AM_TIME)); let sp=0; W.amFreeze=0;
   if (ok){ sp=speedPts(frac); W.speedPts=(W.speedPts||0)+sp; }
   const {fx:f,extras}=settle(ok,A.item,{type:'am'});
   if (ok){ SFX.correct(); funBlast(true); }
@@ -91,15 +93,16 @@ function amResolve(ok,killed,timeout){
   setTimeout(()=>{ if (FUN.am===A) FUN.am=null; },300);
 }
 function amClear(instant,except){
-  const A=FUN.am; $('#amCard').hidden=true;
+  const A=FUN.am; $('#amCard').hidden=true; $('#amCard').classList.remove('big');
   if (!A) return;
   for (const e of A.elites){ if (e===except||e.dying>=0) continue; e.hp=0; e.dying=.6; e.noReward=true; if (e.anim) e.anim.die(); if (!instant) fx.burst(e.x,1.2,e.z,0xffffff,14,4); }
   if (instant) FUN.am=null;
 }
 function amTick(){
   const A=FUN.am; if (!A||A.done) return;
-  const k=Math.max(0,(A.until-W.t)/AM_TIME); $('#amBar').style.width=(k*100)+'%'; $('#amBar').classList.toggle('hurry',k<.3);
-  $('#amTime').textContent=Math.ceil(Math.max(0,A.until-W.t))+'초';
+  const reading=W.t<A.start; if (!reading && $('#amCard').classList.contains('big')){ $('#amCard').classList.remove('big'); showBanner('⚔️ 출발! 정답 깃발 몬스터를 잡아요'); }
+  const k=Math.max(0,Math.min(1,(A.until-W.t)/AM_TIME)); $('#amBar').style.width=(k*100)+'%'; $('#amBar').classList.toggle('hurry',k<.3);
+  $('#amTime').textContent=reading?`읽는 시간 ${Math.ceil(A.start-W.t)}`:Math.ceil(Math.max(0,A.until-W.t))+'초';
   if (W.t>=A.until) amResolve(false,null,true);
 }
 
@@ -124,7 +127,8 @@ function lvKill(m){
   if (!NEWQ()||m.noReward||m.boss) return;
   const t=QS_TIER(W.qs||0), L=FUN.lv; L.xp+=QS_XP[t];
   fx.rise(m.x,m.z,t===2?0xffd34d:t===1?0xdfe6f2:0xc9a06a,6);
-  while (L.xp>=LV_NEED(L.n)){ L.xp-=LV_NEED(L.n); L.n++; L.pend++; }
+  while (L.xp>=LV_NEED(L.n)){ L.xp-=LV_NEED(L.n); L.n++; L.pend++;
+    if (!L.told){ L.told=true; setTimeout(()=>flashPrompt('레벨 업! 카드는 주변에 몬스터가 없을 때 열려요 · F 키로 바로 열 수 있어요',3),400); } }
 }
 function lvDraw(){
   const pool=UPCARDS.filter(c=>(!c.map||c.map===MAPK)&&(!c.ok||c.ok())).sort(()=>Math.random()-.5);
@@ -164,11 +168,15 @@ function lvFx(ok,source){
 }
 function funClose(s,ok){
   if (s.type==='lv'){ const c=FUN.lv.card; FUN.lv.card=null; if (ok){ fx.rise(P.x,P.z,c&&c.tier===2?0xffd34d:0x9fd3ff,c&&c.tier===2?50:26); if (c&&c.tier===2) funBlast(true); SFX.correct(); } }
-  if (s.type==='bossq'){ if (W.bg) W.bg.next=W.t+((liveBoss()&&liveBoss().shield>0)?7:14); W.bg.asking=false; }
+  if (s.type==='bossq'){ if (W.bg){ W.bg.next=W.t+6; W.bg.asking=false; } }   // 방패가 그대로면 6초 뒤에 다시 (이번엔 수정 쪽으로)
   if (W.lastShield){ SFX.shield(); const b=W.lastShield; fx.burst(b.x,2.5,b.z,0x5cc8f0,34,8); fx.shock(b.x,b.z,4); shake=.3; W.lastShield=null; }
   W.paused=false; canvas.focus({preventScroll:true}); return true;
 }
 $('#lvCards').addEventListener('click',e=>{ const b=e.target.closest('[data-lv]'); if (b) lvChoose(+b.dataset.lv); });
+/* 쌓인 레벨업 카드 바로 열기: F 키 · 화면의 카드 버튼 */
+const lvAsk=()=>{ if (NEWQ() && W.state==='play' && FUN.lv.pend>0) FUN.lv.want=true; };
+$('#lvPend').addEventListener('click',()=>{ lvAsk(); canvas.focus({preventScroll:true}); });
+addEventListener('keydown',e=>{ if (e.code!=='KeyF' || e.repeat || (e.target.closest&&e.target.closest('input,textarea,select'))) return; if (!NEWQ()||W.state!=='play'||MAPK==='village'||MAPK==='teamwar') return; lvAsk(); });
 addEventListener('keydown',e=>{
   if ($('#lvUp').hidden) return; e.stopPropagation();
   const m=/^(Digit|Numpad)([1-3])$/.exec(e.code); if (m){ e.preventDefault(); lvChoose(+m[2]-1); }
@@ -187,12 +195,11 @@ function duelAsk(boss){
 function duelSettle(ok,extras){
   const boss=liveBoss(); if (!boss) return;
   if (ok){
-    if (boss.shield>0){ boss.shield--; W.lastShield=boss; extras.push(boss.shield>0?`지식 방패 파괴! 남은 방패 ${boss.shield}개`:'지식 방패가 모두 깨졌어요! 이제 공격이 통해요'); }
+    if (boss.shield>0){ boss.shield--; W.lastShield=boss; extras.push(boss.shield>0?`지식 방패 파괴! 남은 방패 ${boss.shield}개`:'지식 방패가 깨졌어요! 이제 공격이 통해요'); }
     boss.stun=GROGGY; boss.groggy=W.t+GROGGY; boss.slamT=0;
     extras.push(`보스가 ${GROGGY}초 동안 휘청여요 · 이때 공격하면 피해 ${GROGGY_DMG}배!`);
   } else {
-    if (boss.shield<boss.shieldMax){ boss.shield++; extras.push(`보스가 분노했어요! 지식 방패가 하나 되살아났어요 (${boss.shield}개)`); }
-    else extras.push('보스가 분노했어요!');
+    extras.push('보스가 분노해 체력을 조금 회복했어요 · 곧 다시 도전!');
     boss.hp=Math.min(boss.max,boss.hp+Math.round(boss.max*.05));
   }
 }
@@ -218,7 +225,12 @@ function funTick(dt){
   if (!NEWQ()) return;
   { const l=$('#nextLbl'); if (l) l.textContent='정답 몬스터까지'; const nc=$('#nextCard'); if (nc&&FUN.am&&!FUN.am.done) nc.hidden=true; }
   amTick();
-  if (W.state==='play' && !W.paused && FUN.lv.pend>0 && $('#quiz').hidden && $('#prep').hidden && !W.loc && !W.revive) lvOpen();
+  // 레벨업 카드: 싸우는 중에 바로 뜨지 않아요. 주변(8칸)에 몬스터가 없는 채로 1초가 지나거나 F 키를 누르면 열려요
+  const L0=FUN.lv, calm=!mobs.some(m=>m.dying<0&&!(m.spawnT>0)&&Math.hypot(m.x-P.x,m.z-P.z)<LV_SAFE_R);
+  L0.calm=calm?(L0.calm||0)+dt:0;
+  const free=W.state==='play' && !W.paused && $('#quiz').hidden && $('#prep').hidden && !W.loc && !W.revive && !W.review;
+  if (free && L0.pend>0 && (L0.want || (L0.calm>=LV_CALM && !(FUN.am&&!FUN.am.done)))){ L0.want=false; L0.calm=0; lvOpen(); }
+  { const b=$('#lvPend'); const show=L0.pend>0&&W.state==='play'; if (b.hidden===show) b.hidden=!show; if (show){ const t=`🃏 레벨업 카드 ${L0.pend}장 · F`; if (b.textContent!==t) b.textContent=t; } }
   const L=FUN.lv, need=LV_NEED(L.n), t=QS_TIER(W.qs||0);
   $('#lvLv').textContent=`Lv.${L.n}`; $('#lvXp').style.width=Math.min(100,L.xp/need*100)+'%';
   $('#lvQs').textContent=(W.qs||0)>=1?`🔥 ${W.qs}연속${t?' · '+QS_NAME[t]:''}`:'';

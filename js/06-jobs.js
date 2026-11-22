@@ -510,6 +510,7 @@ function hitMob(m,dmg,sx,sz,kbk,col,byPlayer,o){
   const k=(m.boss?3:7)*kbk; m.kbx=dx/d*k; m.kbz=dz/d*k;
   if (m.shield>0){ if (byPlayer){ flashPrompt('보호막! 퀴즈를 맞혀야 깰 수 있어요',1.5); SFX.block(); } fx.burst(m.x,2.4,m.z,0x5cc8f0,8,4); fx.num(m.x,5,m.z,'막힘','#9fe3ff'); return false; }
   if (m.boss && m.groggy>W.t) dmg=Math.round(dmg*GROGGY_DMG);
+  if (m.boss && NEWQ()) dmg=bgPhaseCap(m,dmg);   // 체력 75·50·25%에서 방패를 다시 세워요
   const hpBefore=m.hp; m.hp-=dmg; if (W.stats && o.src!=='turret' && !o.by) W.stats.dealt+=Math.max(0,Math.min(dmg,hpBefore)); m.flash=o.crit?.2:.15; if (!m.boss && !o.noStun) m.stun=Math.max(m.stun||0,o.stun||.2);
   if (!o.quiet){ fx.burst(m.x,hy,m.z,0xfff1a8,o.crit?12:7,o.crit?6:4); fx.burst(m.x,hy,m.z,0xffffff,o.crit?8:4,8); }
   if (!o.quiet) impactFx(m.x-dx/d*.35,hy,m.z-dz/d*.35,o.crit?0xffd34d:0xfff2d6,o.crit?3.4:(o.fin?2.8:2));

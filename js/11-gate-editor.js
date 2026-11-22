@@ -79,6 +79,7 @@ function renderHistory(){
 renderHistory();
 function endGame(win){
   if (MAPK==='village'){ villageLeave(); return; }   // 마을에는 결과 화면 · 기록이 없어요
+  if (typeof reviewChance==='function' && reviewChance(win)) return;   // 복습 찬스(틀린 문제 다시 풀기)가 끝나면 다시 여기로 와요
   $('#rewardBox').hidden=true;
   if (MAPK==='runner') runEndUI();
   if (MAPK==='cafe') cafeEndUI();
@@ -619,10 +620,10 @@ function quitClose(){ if ($('#quitPop').hidden) return; $('#quitPop').hidden=tru
 function quitGame(){
   $('#quitPop').hidden=true; if (W.state!=='play') return;
   if (MAPK==='village'){ W.paused=false; villageLeave(); return; }   // 마을: '로비로' 버튼과 똑같이 (지도 · 안내 · 버튼도 같이 닫혀요)
-  ['#quiz','#lvUp','#reviveIntro','#prep','#locIntro'].forEach(q=>{ const e=$(q); if (e) e.hidden=true; });
+  ['#quiz','#lvUp','#reviveIntro','#reviewIntro','#prep','#locIntro'].forEach(q=>{ const e=$(q); if (e) e.hidden=true; }); W.review=null;
   Q.answered=true; Q.item=null; W.paused=false; P.down=false; if (knight && knight.anim.dead) knight.anim.revive();
   if (PARTY&&PARTY.on){ partyEnd(false,'quit',0); }
-  else { endGame(false); $('#endTitle').textContent='중간에 나왔어요'; $('#endMsg').textContent='지금까지 푼 문제는 기록됐어요. 아래 틀린 문제를 한 번 더 읽어 보고 마무리해요.'; }
+  else { W.reviewDone=true; endGame(false); $('#endTitle').textContent='중간에 나왔어요'; $('#endMsg').textContent='지금까지 푼 문제는 기록됐어요. 아래 틀린 문제를 한 번 더 읽어 보고 마무리해요.'; }
   $('#endEyebrow').textContent='중간에 나옴';
 }
 $('#quitBtn').addEventListener('click',quitOpen);

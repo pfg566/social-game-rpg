@@ -146,11 +146,12 @@ function blurAll(){ const a=document.activeElement; if (a&&a!==document.body&&a.
 addEventListener('keydown',e=>{
   if (e.target.closest && e.target.closest('input,textarea,select')) return;
   // 퀴즈·안내 창이 떠 있을 때 스페이스바(공격 키)는 무시해요. 공격하다가 실수로 답이 눌리지 않게요.
-  const overlay=!$('#locIntro').hidden||!$('#reviveIntro').hidden||!$('#quiz').hidden;
+  const overlay=!$('#locIntro').hidden||!$('#reviveIntro').hidden||!$('#reviewIntro').hidden||!$('#quiz').hidden;
   if (overlay){ if (e.code==='Space'||e.code==='KeyJ'||e.code==='KeyE'||e.code==='KeyL'||e.code==='KeyQ'||e.key==='Shift'){ e.preventDefault(); return; } for (const k in keys) keys[k]=false; }
   const nowMs=performance.now();
   if (!$('#locIntro').hidden){ if (e.key==='Enter' && nowMs>=UI_LOCK){ e.preventDefault(); goLoc(); } return; }
   if (!$('#reviveIntro').hidden){ if (e.key==='Enter' && nowMs>=UI_LOCK){ e.preventDefault(); reviveStart(); } return; }
+  if (!$('#reviewIntro').hidden){ if (e.key==='Enter' && nowMs>=UI_LOCK){ e.preventDefault(); reviewStart(); } return; }
   if (!$('#quiz').hidden){
     if (Q.answered){ if (e.key==='Enter' && nowMs>=Q.closeAt){ e.preventDefault(); closeQuiz(); } }
     else if (nowMs<Q.lockUntil) {}

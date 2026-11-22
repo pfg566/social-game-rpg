@@ -1,7 +1,8 @@
 /* 사회 게임 RPG · 정비 시간(웨이브 사이 퀴즈 → 강화 카드) · 보스 기믹(수정에서 힘 끌어오기)
    싸우는 도중에 갑자기 퀴즈가 뜨지 않아요. 평화 모드와 파티 모드는 예전 방식 그대로예요. */
 const NEWQ=()=>!PEACE_RUN && !PARTY.on;
-const PREP_N=2, BG_GAP=5, BG_FIRST=4, BOSS_SHIELD_NEW=3, GROGGY=5, GROGGY_DMG=1.5;
+const PREP_N=2, BG_GAP=5, BG_FIRST=4, BOSS_SHIELD_NEW=1, GROGGY=5, GROGGY_DMG=1.5;
+const BG_TH=[.75,.5,.25];   // 보스 지식 방패: 처음 나올 때 + 체력 75% · 50% · 25%에서 다시 세워요
 const bgTime=()=>MODE==='hero'?16:20;
 const timedEvery=()=>NEWQ()?TIMED_NEW:TIMED_EVERY;   // 돌발 퀴즈 간격: 새 방식 50초, 평화 모드 30초
 
@@ -27,9 +28,10 @@ function drawCards(){
 
 /* ---------- 정비 시간 ---------- */
 function startPrep(){
-  W.gate=true; W.prep={step:0,n:PREP_N,got:[],seen:[]};
+  W.gate=true; const p=W.prep={step:0,n:PREP_N,got:[],seen:[]};
   W.paused=true; for (const k in keys) keys[k]=false;
-  prepShow('intro');
+  showBanner(`웨이브 클리어! 정비 시간 · 문제 ${p.n}개 · 맞히면 강화 카드`);
+  setTimeout(()=>{ if (W.prep===p && W.state==='play' && $('#prep').hidden && $('#quiz').hidden) prepNext(); },1100);   // 안내 화면 없이 바로 첫 문제
 }
 function prepShow(kind){
   const p=W.prep; if (!p) return;
@@ -59,12 +61,12 @@ function prepShow(kind){
 function prepNext(){
   const p=W.prep; if (!p) return;
   $('#prep').hidden=true;
-  if (p.step>=p.n){ prepShow('done'); return; }
+  if (p.step>=p.n){ prepFinish(); return; }
   if (MAPK==='zones' && p.step===0 && LOC.length){ startLoc(); if (W.loc) return; }
   const fresh=it=>!p.seen.includes(it);
   let item=pick(['mc'],MC,fresh); if (!item) item=pick(['ox'],OX,fresh);
   if (item) p.seen.push(item);
-  if (!item){ p.step=p.n; prepShow('done'); return; }
+  if (!item){ p.step=p.n; prepFinish(); return; }
   openQuiz(item,{type:'prep'});
 }
 function prepAfter(ok){
@@ -78,9 +80,10 @@ function prepChoose(i){
   prepNext();
 }
 function prepFinish(){
-  if (!W.prep) return;
+  const p=W.prep; if (!p) return;
   $('#prep').hidden=true; W.prep=null; W.gate=true; stations.forEach(s=>s.readyAt=W.t); W.paused=false;
-  showBanner(MAPS[MAPK].clearText.replace(/^웨이브 클리어! /,''));
+  showBanner('정비 끝! '+MAPS[MAPK].clearText.replace(/^웨이브 클리어! /,''));
+  flashPrompt(p.got.length?`이번 정비에서 얻은 강화: ${p.got.join(' · ')}`:'이번 정비에서는 강화를 얻지 못했어요 · 틀린 문제는 나중에 다시 나와요',3.2);
   canvas.focus({preventScroll:true});
 }
 $('#prepGo').addEventListener('click',()=>{ if (performance.now()<UI_LOCK) return; const k=$('#prep').dataset.kind; if (k==='intro') prepNext(); else if (k==='done') prepFinish(); });
@@ -132,7 +135,18 @@ function bgReset(){ W.bg={st:null,next:0,until:0,last:null}; if (bgBeam) bgBeam.
 function bgBossSpawned(b){
   if (!NEWQ() || !b) return;
   b.shield=b.shieldMax=BOSS_SHIELD_NEW;
-  W.bg={st:null,next:W.t+BG_FIRST,until:0,last:null};
+  W.bg={st:null,next:W.t+BG_FIRST,until:0,last:null,ph:0,kind:0,asking:false};
+}
+/* 방패가 깨진 보스가 체력 구간(75·50·25%)에 닿으면 거기서 멈추고 방패를 다시 세워요: 한 방에 구간을 건너뛰지 않아요 */
+function bgPhaseCap(m,dmg){
+  const b=W.bg; if (!b || b.ph==null || b.ph>=BG_TH.length || m.shield>0) return dmg;
+  const floor=Math.ceil(m.max*BG_TH[b.ph]);
+  if (m.hp-dmg>floor) return dmg;
+  const d=Math.max(0,m.hp-floor); b.ph++;
+  m.shield=Math.max(1,m.shieldMax||1); m.groggy=0; m.stun=0; b.next=W.t+1.6;
+  fx.shock(m.x,m.z,6); fx.burst(m.x,3,m.z,0x5cc8f0,40,8); shake=.35; SFX.shield();
+  flashPrompt(`보스 체력 ${Math.round(BG_TH[b.ph-1]*100)}%! 지식 방패가 다시 생겼어요 · 곧 퀴즈가 나와요`,2.6);
+  return d;
 }
 function bgStart(){
   const cand=stations.filter(s=>s!==W.bg.last); const s=cand[Math.floor(Math.random()*cand.length)]||stations[0]; if (!s) return;
@@ -144,12 +158,18 @@ function bgTick(){
   if (!NEWQ() || !W.bg) return;
   const b=W.bg, boss=liveBoss();
   if (!boss){ if (b.st) bgEnd(); return; }
-  if (!b.st){ if (W.t>=b.next) duelAsk(boss); return; }   // 보스 퀴즈 결투: 보스가 직접 문제를 내요
+  if (!b.st){
+    // 방패가 있을 때만 문제가 나와요: 보스가 직접 내는 문제 ↔ 수정의 힘 끌어오기를 번갈아 (성벽 디펜스·수정이 하나뿐이면 결투만)
+    if (boss.shield>0 && !b.asking && W.t>=b.next){
+      const crystal=(b.kind%2===1) && MAPK!=='defense' && stations.length>=2;
+      b.kind++; if (crystal) bgStart(); else duelAsk(boss);
+    }
+    return;
+  }
   if (W.t>=b.until){
-    if (boss.shield<boss.shieldMax) boss.shield++;
     boss.hp=Math.min(boss.max,boss.hp+Math.round(boss.max*.06));
     fx.shock(boss.x,boss.z,5); fx.burst(boss.x,2.6,boss.z,0xc06bff,30,7); shake=.3; SFX.shield();
-    flashPrompt('늦었어요! 보스가 수정의 힘을 흡수했어요 · 보호막 +1 · 체력 회복',2.6);
+    flashPrompt('늦었어요! 보스가 수정의 힘을 흡수해 체력을 회복했어요 · 곧 다시 도전!',2.6);
     bgEnd();
   }
 }

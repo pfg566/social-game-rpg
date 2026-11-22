@@ -130,7 +130,7 @@ function applyZoneCfg(c){
   MAPS.zones.waves=def?'zones':'general';
 }
 const GOOD = [{k:'atk',label:'공격력 1.6배',mult:1.6,dur:20},{k:'spd',label:'이동속도 1.4배',mult:1.4,dur:20},{k:'heal',label:'체력 +25',amount:25}];
-const BAD  = [{k:'atk',label:'공격력 0.6배',mult:0.6,dur:15},{k:'spd',label:'이동속도 0.6배',mult:0.6,dur:15},{k:'dmg',label:'체력 -15',amount:15}];
+const BAD  = [{k:'atk',label:'공격력 0.6배',mult:0.6,dur:15},{k:'spd',label:'이동속도 0.6배',mult:0.6,dur:15}];   // 오답이라고 체력을 깎지는 않아요 (퀴즈를 겁내지 않게)
 const BOSS_BASE={hp:700, spd:2.3, dmg:22, color:0x4b5563, shield:4, slamEvery:6, slamWarn:1.2, slamR:5.5, slamDmg:15, summonEvery:14};
 const WAVESETS = {
  zones:[
@@ -169,9 +169,9 @@ const WAVESETS = {
   {name:'공성 해골 장군', n:0, hp:80, spd:2.3, dmg:10, color:0x8b5cf6, boss:{...BOSS_BASE, hp:800, spd:2.0, summonEvery:16}, groups:[{n:6,at:0},{n:4,at:16,runner:true},{n:5,at:28},{n:4,at:40,runner:true}]}]
 };
 let WAVES = WAVESETS.zones;
-const BOSS_RULE='<b>보스 결투:</b> 보스는 지식 방패 3개를 갖고 있어요. 보스가 직접 문제를 내거나, 보라색 빛줄기로 수정의 힘을 끌어와요(그 수정으로 달려가 퀴즈로 끊어요). 맞히면 방패가 깨지고 보스가 5초 휘청여요(이때 피해 1.5배). 틀리거나 늦으면 방패가 되살아나요';
-const AM_RULE='<b>⚔️ 정답 몬스터:</b> 45초쯤마다 보기 깃발(1~4번 · O/X)을 든 큰 몬스터들이 나타나요. 화면 위 문제를 읽고 30초 안에 정답 깃발 몬스터를 잡아요. 빨리 잡을수록 점수가 커요. 틀린 깃발을 잡으면 오답';
-const LV_RULE='<b>⭐ 레벨업 카드:</b> 몬스터를 잡으면 경험치가 쌓여요. 레벨업하면 카드 3장(⬜ 일반 O/X · 🟦 희귀 4지선다 · 🟨 전설 = 내가 틀렸던 문제) 중 하나를 골라 맞히면 강화를 받아요';
+const BOSS_RULE='<b>보스 결투:</b> 보스는 처음 나올 때와 체력이 75% · 50% · 25%가 될 때마다 지식 방패를 세워요. 그때마다 보스가 직접 문제를 내거나, 보라색 빛줄기로 수정의 힘을 끌어와요(그 수정으로 달려가 퀴즈로 끊어요). 맞히면 방패가 깨지고 보스가 5초 휘청여요(이때 피해 1.5배). 틀리거나 늦으면 보스가 체력을 조금 회복하고 다시 시도해요';
+const AM_RULE='<b>⚔️ 정답 몬스터:</b> 45초쯤마다 보기 깃발(1~4번 · O/X)을 든 큰 몬스터들이 나타나요. 나타날 때 3초 동안 다른 몬스터가 멈추니 문제를 먼저 읽어요. 30초 안에 정답 깃발 몬스터를 잡아요(2~3대면 쓰러져요). 빨리 잡을수록 점수가 커요. 틀린 깃발을 잡으면 오답';
+const LV_RULE='<b>⭐ 레벨업 카드:</b> 몬스터를 잡으면 경험치가 쌓여요. 레벨업하면 카드 3장(⬜ 일반 O/X · 🟦 희귀 4지선다 · 🟨 전설 = 내가 틀렸던 문제) 중 하나를 골라 맞히면 강화를 받아요. 카드는 쌓아 뒀다가 주변에 몬스터가 없을 때 열리고, F 키로 바로 열 수도 있어요';
 const QS_RULE='<b>🔥 연속 정답:</b> 어디서 맞히든 이어져요. 3연속 🥈 은빛, 5연속 🥇 금빛이 되면 경험치가 더 들어오고 지식 폭발이 커져요. 맞힌 문제는 지식 도감에 모여요';
 const END_RULE='정답은 강화, 오답은 약화 · 틀린 문제는 다시 나와요 · 체력 0이면 게임 오버';
 const MAPS = {

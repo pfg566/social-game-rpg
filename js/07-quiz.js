@@ -15,6 +15,15 @@ function pick(kinds,pool,filter){
 }
 
 /* ---------- 모달 퀴즈 (4지선다 · O/X · 분류) ---------- */
+/* 문제 시간: 문제와 보기 글자 수에 맞춰요 (짧은 O/X 8초 ~ 긴 4지선다 30초) */
+function quizTime(item,opts){
+  const q=String(item.q||'').length;
+  if (item.src==='sa') return Math.max(20,Math.min(30,Math.round(14+q*.12)));   // 단답형: 글자를 쳐야 하니 넉넉히
+  if (item.src==='ord'||item.src==='cmb'){ const m=q+(item.ord?item.ord.it.join('').length:0); return Math.max(22,Math.min(35,Math.round(12+m*.1))); }
+  const n=q+(item.kind==='mc'?(opts||[]).reduce((a,o)=>a+String(o).length,0):0);
+  if (item.kind==='mc') return Math.max(15,Math.min(30,Math.round(10+n*.12)));
+  if (item.kind==='ox') return Math.max(8,Math.min(15,Math.round(6+n*.1)));
+  return TIME_BY_KIND[item.kind]||15; }
 const Q={item:null,correctIdx:0,nOpts:4,start:0,dur:20,answered:true,source:null,resultOnly:false};
 function openQuiz(item,source){
   if (!item){ if (source.type==='timed') W.nextQuiz=W.t+timedEvery(); return; }
@@ -23,9 +32,9 @@ function openQuiz(item,source){
   if (item.kind==='mc'){ const order=item.o.map((_,i)=>i).sort(()=>Math.random()-.5); opts=order.map(i=>item.o[i]); correctIdx=order.indexOf(0); }
   else if (item.kind==='ox'){ opts=['O','X']; correctIdx=item.a?0:1; }
   else { opts=CLS_OPTS; correctIdx=item.a; }
-  Object.assign(Q,{item,correctIdx,nOpts:opts.length,start:performance.now(),dur:Math.round(TIME_BY_KIND[item.kind]*(MODE==='hero'&&source.type!=='revive'?HERO.quiz:1)*(MODE==='hero'?1:EASEF.quiz)),answered:false,source,resultOnly:false});
-  const tagName = source.type==='prep'?`정비 퀴즈 ${W.prep?W.prep.step+1:1}/${W.prep?W.prep.n:PREP_N}`:(source.type==='station'&&W.bg&&W.bg.st===source.station&&NEWQ())?'보스의 힘 끊기':source.type==='cap'?`점령 퀴즈 · ${CQ.pts[source.point].k} ${CQ.pts[source.point].name}`:source.type==='station'?(source.station.title||`${ZINFO[source.station.zone].name} 퀴즈`):source.type==='card'?(item.kind==='ox'?'지식 카드 · O/X':'지식 카드 · 분류'):source.type==='parcel'?'택배 퀴즈':'돌발 퀴즈';
-  const tagColor = source.type==='prep'?'#2fb36b':(source.type==='station'&&W.bg&&W.bg.st===source.station&&NEWQ())?'#7b2fd0':source.type==='cap'?'#2f6fed':source.type==='station'?(source.station.hex||ZINFO[source.station.zone].color):source.type==='card'?'#c28a00':source.type==='parcel'?'#b86b1f':'#18213a';
+  Object.assign(Q,{item,correctIdx,nOpts:opts.length,start:performance.now(),dur:Math.round(quizTime(item,opts)*(MODE==='hero'&&source.type!=='revive'?HERO.quiz:1)*(MODE==='hero'?1:EASEF.quiz)),answered:false,source,resultOnly:false});
+  const tagName = source.type==='review'?'📒 복습 찬스':source.type==='prep'?`정비 퀴즈 ${W.prep?W.prep.step+1:1}/${W.prep?W.prep.n:PREP_N}`:(source.type==='station'&&W.bg&&W.bg.st===source.station&&NEWQ())?'보스의 힘 끊기':source.type==='cap'?`점령 퀴즈 · ${CQ.pts[source.point].k} ${CQ.pts[source.point].name}`:source.type==='station'?(source.station.title||`${ZINFO[source.station.zone].name} 퀴즈`):source.type==='card'?(item.kind==='ox'?'지식 카드 · O/X':'지식 카드 · 분류'):source.type==='parcel'?'택배 퀴즈':'돌발 퀴즈';
+  const tagColor = source.type==='review'?'#2f6fed':source.type==='prep'?'#2fb36b':(source.type==='station'&&W.bg&&W.bg.st===source.station&&NEWQ())?'#7b2fd0':source.type==='cap'?'#2f6fed':source.type==='station'?(source.station.hex||ZINFO[source.station.zone].color):source.type==='card'?'#c28a00':source.type==='parcel'?'#b86b1f':'#18213a';
   $('#qtag').textContent=tagName; $('#qtag').style.background=tagColor;
   $('#qtext').textContent = item.kind==='cls' ? `“${item.q}” ${ZCFG.q}` : item.q;
   const box=$('#qopts'); box.innerHTML=''; box.className='opts'+(opts.length===2?' two':''); box.hidden=false;
@@ -102,6 +111,9 @@ function qxDone(ok,timeout,typed){
 /* 정답·오답 처리: 효과, 틀린 문제 기록, 보스 보호막, 웨이브 잠금 */
 function settle(ok,item,source){
   if (typeof petReact==='function') petReact(ok);
+  if (source && source.type==='review'){   // 복습 찬스: 다시 맞히면 '다시 맞힘'만 늘어요 (정답률 · 효과는 그대로)
+    const en=W.wrong.find(w=>w.item===item); if (en){ en.pending=false; if (ok) en.fixed=true; }
+    return {fx:{label: ok?'다시 맞혔어요! 다시 맞힘 +50점':'아쉬워요… 결과 화면에서 한 번 더 읽어 봐요'},extras:[]}; }
   W.asked++; if (ok){ W.correct++; (W.right||(W.right=new Set())).add(item.q); } W.lastFx=ok?'good':'bad';
   let entry=W.wrong.find(w=>w.item===item);
   if (entry){ entry.pending=false; if (ok) entry.fixed=true; }
@@ -117,7 +129,7 @@ function settle(ok,item,source){
   const prepQ=!!W.prep && source && (source.type==='prep'||source.type==='loc');
   const cardQ=NEWQ() && source && source.type==='card' && ok;
   const lvQ=source && source.type==='lv';
-  const fx=lvQ?lvFx(ok,source):prepQ?prepFx(ok):cardQ?cardFx(ok):jobFx((ok?GOOD:BAD)[parcelQ||PEACE_RUN?1:Math.floor(Math.random()*3)],ok);
+  const FXL=ok?GOOD:BAD, fx=lvQ?lvFx(ok,source):prepQ?prepFx(ok):cardQ?cardFx(ok):jobFx(FXL[parcelQ||PEACE_RUN?1:Math.floor(Math.random()*FXL.length)],ok);
   if (parcelQ) extras.push(ok?'급행 배송! 빨리 달려서 배달하세요.':'상자가 무거워졌어요… 그래도 배달은 할 수 있어요.');
   if (!prepQ && !cardQ && !lvQ) applyEffect(fx);
   if (cardQ && W.cardCoins) extras.push(`이번 판 카드 코인 ${W.cardCoins} (판이 끝나면 받아요)`);
@@ -147,15 +159,15 @@ function settle(ok,item,source){
   jobQuiz(ok,source,extras);
   return {fx,extras};
 }
-/* 빨리 맞힐수록 보너스 (최대 50점): 주어진 시간의 앞 1/4 안에 맞히면 50점, 시간이 끝날 때 0점 */
+/* 빨리 맞힐수록 보너스 (최대 50점): 주어진 시간의 절반 안에 맞히면 50점, 시간이 끝날 때 0점 */
 const SPEED_MAX=50;
-function speedPts(frac){ const k=Math.max(0,Math.min(1,frac/.75)); return Math.round(SPEED_MAX*k/5)*5; }
+function speedPts(frac){ const k=Math.max(0,Math.min(1,frac/.5)); return Math.round(SPEED_MAX*k/5)*5; }
 /* 정답률 보너스: 문제 5개 이상 풀었을 때, 정답 점수에 더해요 */
 function accBonusK(correct,asked){ if (asked<5) return 0; const r=correct/asked; return r>=.9?.5:r>=.8?.3:r>=.7?.15:0; }
 function showResult(ok,timeout,item){
   Q.ok=ok;
   let sp=0;
-  if (ok && Q.source && Q.source.type!=='revive'){
+  if (ok && Q.source && Q.source.type!=='revive' && Q.source.type!=='review'){
     const left = Q.source.type==='loc' ? (W.locLeftFrac||0) : Math.max(0,1-((performance.now()-Q.start)/1000-QUIZ_LOCK_MS/1000)/Math.max(1,Q.dur));
     sp=speedPts(left); W.speedPts=(W.speedPts||0)+sp; }
   const {fx,extras}=settle(ok,item,Q.source);
@@ -175,6 +187,7 @@ function closeQuiz(){
   $('#quiz').hidden=true;
   const s=Q.source;
   if (s && s.type==='revive'){ reviveNext(Q.ok); return; }
+  if (s && s.type==='review'){ reviewNext(); return; }
   if (s && (s.type==='lv'||s.type==='bossq') && funClose(s,Q.ok)) return;
   if (W.prep && s && (s.type==='prep'||s.type==='loc')){ if (W.lastFx){ fx.rise(P.x,P.z,W.lastFx==='good'?0xffd34d:0x8a8fa0,W.lastFx==='good'?26:12); W.lastFx=null; } prepAfter(Q.ok); return; }
   if (s && s.type==='station'){
@@ -189,6 +202,25 @@ function closeQuiz(){
 }
 $('#qnext').addEventListener('click',closeQuiz);
 $('#jobPick').addEventListener('click',e=>{ const b=e.target.closest('button'); if (!b) return; if (b.dataset.job) setJob(b.dataset.job); else if (b.dataset.elem) setJob(null,b.dataset.elem); });
+
+/* ---------- 복습 찬스: 판이 끝나면 결과 화면 전에, 이번 판에서 틀린 문제를 1~2개 다시 풀어요 ---------- */
+const REVIEW_MAPS=['zones','general','glacier','defense','island'];
+function reviewChance(win){
+  if (W.reviewDone || W.state!=='play' || PARTY.on || !REVIEW_MAPS.includes(MAPK)) return false;
+  W.reviewDone=true;
+  const items=W.wrong.filter(w=>!w.fixed && w.item.kind!=='loc').slice(-2).map(w=>w.item);
+  if (!items.length) return false;
+  W.review={items,step:0,win}; W.paused=true; for (const k in keys) keys[k]=false;
+  $('#reviewQ').innerHTML=`이번 판에서 틀린 문제 ${items.length}개를 다시 풀어 봐요.<br>맞히면 '다시 맞힘' +50점이에요.`;
+  ['#quiz','#prep','#lvUp','#amCard','#amRes','#locIntro'].forEach(s=>{ const e=$(s); if (e) e.hidden=true; });
+  $('#reviewIntro').hidden=false; blurAll(); UI_LOCK=performance.now()+QUIZ_LOCK_MS;
+  return true; }
+function reviewStart(){ if ($('#reviewIntro').hidden || performance.now()<UI_LOCK || !W.review) return; $('#reviewIntro').hidden=true; openQuiz(W.review.items[0],{type:'review'}); }
+function reviewNext(){ const R=W.review; if (!R) return; R.step++;
+  if (R.step<R.items.length){ openQuiz(R.items[R.step],{type:'review'}); return; }
+  W.review=null; endGame(R.win); }
+$('#reviewGo').addEventListener('click',reviewStart);
+$('#reviewSkip').addEventListener('click',()=>{ if (performance.now()<UI_LOCK || !W.review) return; const R=W.review; W.review=null; $('#reviewIntro').hidden=true; endGame(R.win); });
 
 /* ---------- 부활 퀴즈: 이번 판에서 틀린 문제 2개를 맞히면 부활 ---------- */
 function reviveItems(){
@@ -210,7 +242,7 @@ function tryRevive(){
 function reviveStart(){ if ($('#reviveIntro').hidden || performance.now()<UI_LOCK) return; $('#reviveIntro').hidden=true; openQuiz(W.revive.items[0],{type:'revive'}); }
 $('#reviveGo').addEventListener('click',reviveStart);
 function reviveNext(ok){
-  if (!ok){ W.revive=null; endGame(false); return; }
+  if (!ok){ W.revive=null; W.reviewDone=true; endGame(false); return; }   // 방금 부활 문제를 풀었으니 복습 찬스는 건너뛰어요
   W.revive.step++;
   if (W.revive.step<W.revive.items.length){ openQuiz(W.revive.items[W.revive.step],{type:'revive'}); return; }
   W.revive=null; P.hp=Math.max(P.hp,Math.round(P.max*.5)); W.invuln=W.t+3;
