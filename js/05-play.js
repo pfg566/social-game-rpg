@@ -51,7 +51,7 @@ function spawnMob(def,isBoss,at){
     slamMesh.rotation.x=-Math.PI/2; slamMesh.position.y=.07; slamMesh.visible=false; scene.add(slamMesh);
     shieldMesh=new THREE.Mesh(new THREE.SphereGeometry(3.1,40,24),new THREE.MeshStandardMaterial({color:0x7fd6ff,emissive:0x2a9fe0,emissiveIntensity:.9,transparent:true,opacity:.28,roughness:.1,metalness:.2,depthWrite:false}));
     shieldMesh.position.y=2.3; g.add(shieldMesh);
-    eyeLight=new THREE.PointLight(0x7fd6ff,1.4,10,2); eyeLight.position.y=4.2; g.add(eyeLight);
+    eyeLight=new THREE.PointLight(0x7fd6ff,1.4,10,2); eyeLight.position.y=4.2; eyeLight.visible=!!QUALITY[QCUR].points; g.add(eyeLight);   // 보스가 나올 때 불빛 개수가 바뀌면 모든 셰이더를 다시 만들어 멈칫해요 → 고화질에서만
   }
   let x,z,tries=0;
   if (MAPK==='glacier' && !at){

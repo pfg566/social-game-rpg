@@ -72,7 +72,7 @@ function gfCobbleTex(seed,rad){   // 둥근 돌 포장 (rad: 광장처럼 동심
     else { const rows=26, rh=S/rows; for (let r=0;r<rows;r++){ let x=(r%2)*14-20; while (x<S+20){ const w=23+Math.random()*15; vlWrapDraw(S,x+w/2,r*rh+rh/2,44,(X,Y)=>stone(X,Y,w-4,rh-5,(Math.random()-.5)*.12,.8+Math.random()*.3)); x+=w; } } }
     g.globalAlpha=.35; for (let i=0;i<70;i++){ const x=Math.random()*S, y=Math.random()*S, r=8+Math.random()*30, gr=g.createRadialGradient(x,y,0,x,y,r); gr.addColorStop(0,Math.random()<.5?'rgba(90,110,50,.5)':'rgba(70,52,34,.45)'); gr.addColorStop(1,'rgba(0,0,0,0)'); g.fillStyle=gr; g.fillRect(x-r,y-r,2*r,2*r); } g.globalAlpha=1;
     g.globalAlpha=.5; for (let i=0;i<2500;i++){ g.fillStyle=Math.random()<.5?'rgba(0,0,0,.18)':'rgba(255,255,255,.12)'; g.fillRect(Math.random()*S,Math.random()*S,1.5,1.5); } g.globalAlpha=1; });
-  const t=new THREE.CanvasTexture(cv); t.encoding=THREE.sRGBEncoding; t.anisotropy=8; if (!rad){ t.wrapS=t.wrapT=THREE.RepeatWrapping; } return t; }
+  const t=new THREE.CanvasTexture(cv); t.encoding=THREE.sRGBEncoding; t.anisotropy=ANISO; if (!rad){ t.wrapS=t.wrapT=THREE.RepeatWrapping; } return t; }
 
 /* ---------- 땅: 풀밭 · 흙길 · 밭 흙을 섞는 셰이더 (마을 땅 셰이더를 들판 마을 지도에 맞춰 썼어요) ---------- */
 function gfGround(R){
@@ -801,7 +801,7 @@ function gfTick(dt,real){
   GF_SEE.value=(W.state==='play'&&!(typeof SHOP!=='undefined'&&SHOP.open))?1:0;
   if (!GF.skyOff){ GF.skyOff=true; gfSkyVis(false); clouds.forEach(c=>c.visible=true); }   // 맵을 처음 볼 때 한 번 (불러오는 순서 때문에)
   camera.updateMatrixWorld(); GF_FR.setFromProjectionMatrix(GF_PM.multiplyMatrices(camera.projectionMatrix,camera.matrixWorldInverse));
-  for (const k in GF.secs){ const S=GF.secs[k], v=GF_FR.intersectsBox(S.box); S.ims.forEach(m=>{ m.visible=v; }); }
+  for (const k in GF.secs){ const S=GF.secs[k], v=GF_FR.intersectsBox(S.box); S.ims.forEach(m=>{ if (!m.userData.natc) m.visible=v; }); }   // 자연물 거르기에 들어간 묶음은 그쪽에서 나무 하나씩 걸러요
   NAT_U.uTime.value=real;
   NAT_U.uCam.value.copy(camera.position); NAT_U.uPlr.value.set(P.x,1.1,P.z);
   const fc=scene.fog.color;

@@ -218,7 +218,8 @@ function setMap(k){
   if (k!==MAPK){ clearWorld(); bolts.forEach(b=>scene.remove(b.mesh)); bolts=[]; }
   const prevK=MAPK; MAPK=k;
   ensureMap(k);
-  for (const g in mapGroups) mapGroups[g].visible=g===k;
+  // 안 쓰는 맵은 장면에서 떼어 둬요: three.js가 매 프레임 모든 물체의 위치를 다시 계산하는데, 숨은 맵(러너 · 섬 …)까지 계산하던 걸 줄여요
+  for (const g in mapGroups){ const G=mapGroups[g], on=g===k; G.visible=on; if (on&&G.parent!==scene) THREE.Object3D.prototype.add.call(scene,G); else if (!on&&G.parent) G.parent.remove(G); }
   bgGroup.visible=!['general','defense','island','glacier','runner','stage','teamwar','live','cafe','village'].includes(k); ground.visible=!['general','defense','island','glacier','runner','stage','teamwar','live','cafe','village'].includes(k);
   // 들판 마을 · 성벽 디펜스는 자기 하늘(구름) · 먼 산 · 분위기를 써요 (들판: 낮 · 황금빛 오후 / 성벽: + 해 질 녘)
   const OWN=['general','defense','island','runner'], ownSky=OWN.includes(k);
@@ -350,7 +351,9 @@ $('#fpsChk').addEventListener('change',e=>{ FPS.on=e.target.checked; $('#fpsBox'
 function fpsTick(now){
   if (!FPS.on) return; FPS.n++;
   if (now-FPS.t>=1000){ const f=Math.round(FPS.n*1000/(now-FPS.t)); FPS.n=0; FPS.t=now;
-    const box=$('#fpsBox'); box.textContent=`FPS ${f} · ${QUALITY[QCUR].label}`; box.style.background=f>=45?'rgba(31,122,76,.85)':f>=25?'rgba(160,110,0,.88)':'rgba(170,40,44,.88)'; }
+    const idle=W.state!=='play', box=$('#fpsBox');   // 로비 · 결과 화면은 일부러 초당 30번만 그려요
+    box.textContent=idle?`FPS ${f} · 로비는 30까지`:`FPS ${f} · ${QUALITY[QCUR].label}`+(QSET==='auto'&&DRS_S<.999?` · 해상도 ${Math.round(DRS_S*100)}%`:'');
+    box.style.background=(idle?f>=24:f>=45)?'rgba(31,122,76,.85)':f>=25?'rgba(160,110,0,.88)':'rgba(170,40,44,.88)'; }
 }
 function setPopOpen(on){ $('#setPop').hidden=!on; $('#gearBtn').setAttribute('aria-expanded',String(on)); }
 $('#gearBtn').addEventListener('click',e=>{ e.stopPropagation(); setPopOpen($('#setPop').hidden); });
@@ -450,7 +453,7 @@ $('#edZcfg').addEventListener('click',e=>{ const b=e.target.closest('[data-zpre]
 $('#edZcfg').addEventListener('change',e=>{ const el=e.target.closest('[data-zc]'); if (!el) return; const u=curU(), c=zcfgOf(u), f=el.dataset.zc, v=el.value.trim();
   if (f==='q') c.q=v||c.q; else if (v) c[f[0]][+f[1]]=v; u.zcfg=c; renderEditor(); });
 // 학교·학년 칸: 예전 index.html이 캐시에 남아 있어도 보이도록, 없으면 여기서 만들어 넣어요
-const ED_VER='20261120a';   // 문제 관리 화면에 보이는 버전 (업로드가 반영됐는지 확인용)
+const ED_VER='20261123p';   // 문제 관리 화면에 보이는 버전 (업로드가 반영됐는지 확인용)
 function ensureEdTarget(){ if (document.getElementById('edSch')) return; const m=$('#edMap'); if (!m) return; const lab=m.closest('label');
   const d=document.createElement('div'); d.className='ed-target';
   d.innerHTML='<label class="fld"><span>어느 학교 문제인가요?</span><select id="edSch"></select></label><label class="fld"><span>몇 학년 문제인가요?</span><select id="edGrade"><option value="0">모든 학년</option><option value="1">1학년</option><option value="2">2학년</option><option value="3">3학년</option></select></label>';

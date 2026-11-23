@@ -20,7 +20,7 @@ function vlTileNoise(S,cells,oct){   // 이어 붙여도 티 안 나는 값 노�
   let mn=1e9, mx=-1e9; for (let i=0;i<out.length;i++){ out[i]/=tot; if (out[i]<mn) mn=out[i]; if (out[i]>mx) mx=out[i]; }
   for (let i=0;i<out.length;i++) out[i]=(out[i]-mn)/(mx-mn||1);
   return out; }
-function vlTexRep(cv,lin){ const t=new THREE.CanvasTexture(cv); if (!lin) t.encoding=THREE.sRGBEncoding; t.wrapS=t.wrapT=THREE.RepeatWrapping; t.anisotropy=8; return t; }
+function vlTexRep(cv,lin){ const t=new THREE.CanvasTexture(cv); if (!lin) t.encoding=THREE.sRGBEncoding; t.wrapS=t.wrapT=THREE.RepeatWrapping; t.anisotropy=ANISO; return t; }
 function vlFromNoise(S,n,fn){ return vlCanvas(S,S,g=>{ const id=g.createImageData(S,S); for (let i=0;i<S*S;i++){ const c=fn(n[i],i); id.data[i*4]=c[0]; id.data[i*4+1]=c[1]; id.data[i*4+2]=c[2]; id.data[i*4+3]=255; } g.putImageData(id,0,0); }); }
 
 function vlNoiseTex(){ if (VLT.noise) return VLT.noise; const S=256, n=vlTileNoise(S,4,4); return VLT.noise=vlTexRep(vlFromNoise(S,n,v=>[v*255,v*255,v*255]),true); }
@@ -101,7 +101,7 @@ function vlDoorTex(){
       g.fillStyle='rgba(30,16,6,.6)'; g.fillRect(i*pw,0,3,H); }
     g.fillStyle='#2b2724'; for (const y of [H*.16,H*.8]){ g.fillRect(0,y,W*.7,16); g.beginPath(); g.arc(W*.7,y+8,10,0,7); g.fill(); for (let k=0;k<4;k++){ g.beginPath(); g.arc(18+k*40,y+8,3,0,7); g.fillStyle='#4a4440'; g.fill(); g.fillStyle='#2b2724'; } }
     g.strokeStyle='#2b2724'; g.lineWidth=6; g.beginPath(); g.arc(W*.8,H*.52,16,0,7); g.stroke(); });
-  const t=new THREE.CanvasTexture(cv); t.encoding=THREE.sRGBEncoding; t.anisotropy=8; return t; }
+  const t=new THREE.CanvasTexture(cv); t.encoding=THREE.sRGBEncoding; t.anisotropy=ANISO; return t; }
 function vlShutterTex(col){
   const W=128, H=256, c=new THREE.Color(col), cv=vlCanvas(W,H,g=>{ for (let i=0;i<3;i++){ const v=.84+Math.random()*.22; g.fillStyle=`rgb(${c.r*255*v|0},${c.g*255*v|0},${c.b*255*v|0})`; g.fillRect(i*W/3,0,W/3,H); g.fillStyle='rgba(0,0,0,.35)'; g.fillRect(i*W/3,0,2,H); }
     g.fillStyle='rgba(0,0,0,.22)'; g.fillRect(0,H*.14,W,10); g.fillRect(0,H*.8,W,10); g.save(); g.translate(W/2,H/2); g.rotate(-1.1); g.fillRect(-H*.34,-5,H*.68,10); g.restore(); });
@@ -574,7 +574,7 @@ function vlDungeon(par){
   const pt=vlTex(vlCanvas(256,256,g2=>{ const gr=g2.createRadialGradient(128,128,10,128,128,128); gr.addColorStop(0,'#fff0ff'); gr.addColorStop(.35,'#b36bff'); gr.addColorStop(.8,'#4a1a8a'); gr.addColorStop(1,'rgba(40,10,80,0)'); g2.fillStyle=gr; g2.fillRect(0,0,256,256);
     g2.strokeStyle='rgba(255,255,255,.35)'; g2.lineWidth=5; for (let i=0;i<5;i++){ g2.beginPath(); for (let t=0;t<6;t+=.1){ const r=t*18, a=t*1.6+i*1.26; g2.lineTo(128+Math.cos(a)*r,128+Math.sin(a)*r); } g2.stroke(); } }));
   const pm=new THREE.Mesh(new THREE.CircleGeometry(1.75,40),new THREE.MeshBasicMaterial({map:pt,transparent:true,depthWrite:false,toneMapped:false,side:THREE.DoubleSide})); pm.position.set(0,2.6,.02); pm.scale.y=1.35; pm.userData.keep=true; g.add(pm); VL.portal=pm;
-  const tl=new THREE.PointLight(0xb36bff,1.2,9); tl.position.set(0,2.6,1); g.add(tl);
+  const tl=ptLightQ(new THREE.PointLight(0xb36bff,1.2,9)); tl.position.set(0,2.6,1); g.add(tl);
   // 횃불 두 개 (불꽃은 매 프레임 흔들려요)
   const fA=new THREE.MeshBasicMaterial({color:0xff8a30,toneMapped:false}), fB=new THREE.MeshBasicMaterial({color:0xffe4a8,toneMapped:false});
   for (const s of [-1,1]){ const tx=s*3.1, tz=2.4;

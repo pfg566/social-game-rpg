@@ -109,7 +109,20 @@ function ensureMap(k){
   MAP_BUILT[k]=true;
   within(k,MAP_BUILD[k]);
   if (GRASS_OK[k]) within(k,()=>buildGrass(60000,GRASS_OK[k]));
+  try{ instancify(mapGroups[k],[pebbleGeo,bushGeo]); }catch(e){}
   applyQuality(QCUR);
+}
+/* 길가 자갈 · 둥근 덤불처럼 똑같은 작은 장식이 수십 개씩 따로 그려지던 것을 한 묶음(InstancedMesh)으로 모아요 (그리는 횟수가 크게 줄어요) */
+function instancify(root,geos){
+  const by=new Map();
+  root.traverse(o=>{ if (!o.isMesh||o.isInstancedMesh||o.isSkinnedMesh||o.children.length||!geos.includes(o.geometry)||Array.isArray(o.material)) return;
+    const key=o.geometry.uuid+'|'+o.material.uuid+'|'+o.castShadow+'|'+o.receiveShadow; if (!by.has(key)) by.set(key,[]); by.get(key).push(o); });
+  root.updateMatrixWorld(true);
+  const inv=new THREE.Matrix4().copy(root.matrixWorld).invert(), M=new THREE.Matrix4();
+  for (const list of by.values()){ if (list.length<6) continue; const a=list[0], im=new THREE.InstancedMesh(a.geometry,a.material,list.length);
+    list.forEach((o,i)=>{ M.multiplyMatrices(inv,o.matrixWorld); im.setMatrixAt(i,M); o.parent.remove(o); });
+    im.castShadow=a.castShadow; im.receiveShadow=a.receiveShadow; im.frustumCulled=false; root.add(im);
+    if (typeof natCullReg==='function') natCullReg(im,im.castShadow); }
 }
 function buildWorld(){
 

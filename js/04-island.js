@@ -46,7 +46,7 @@ function makeStation(zone,x,z,color,extra){
   ring.rotation.x=-Math.PI/2; ring.position.y=.07;
   const beam=new THREE.Mesh(new THREE.CylinderGeometry(.5,.85,8,24,1,true),new THREE.MeshBasicMaterial({color,transparent:true,opacity:.16,side:THREE.DoubleSide,depthWrite:false,blending:THREE.AdditiveBlending}));
   beam.position.y=4.6;
-  const light=new THREE.PointLight(color,.7,8,2); light.position.y=2.8;
+  const light=ptLightQ(new THREE.PointLight(color,.7,8,2)); light.position.y=2.8;
   g.add(base,col,top,gem,orbit,orbit2,ring,beam,light); g.position.set(x,0,z); scene.add(g);
   stations.push(Object.assign({zone,g,gem,gemMat,ring,color,readyAt:0,orbit,orbit2,beam,light},extra||{}));
 }

@@ -10,7 +10,7 @@ function ensureLobby(){
     const rim=cs(new THREE.Mesh(new THREE.TorusGeometry(2.1,.12,8,64),std(0x8d8577))); rim.rotation.x=Math.PI/2; rim.position.y=STAGE_Y; g.add(rim);
     const lawn=new THREE.Mesh(new THREE.CircleGeometry(16,48),toonMat({map:grassTex})); lawn.rotation.x=-Math.PI/2; lawn.position.y=.08; lawn.receiveShadow=true; g.add(lawn);
     for (let i=0;i<9;i++){ const a=i/9*Math.PI*2+.3, r=rnd(5.5,8); const t=GL.tree_single_A&&GL.tree_single_A.scene.clone(true); if (!t||Math.sin(a)>.35) continue; prepMesh(t); t.scale.setScalar(rnd(3,4)); t.position.set(Math.cos(a)*r,0,Math.sin(a)*r); g.add(t); }
-    const sp=new THREE.PointLight(0xfff1c8,.8,9,2); sp.position.set(0,4,2.5); g.add(sp); LOBBY.light=sp; }
+    const sp=ptLightQ(new THREE.PointLight(0xfff1c8,.8,9,2)); sp.position.set(0,4,2.5); g.add(sp); LOBBY.light=sp; }
   LOBBY_JOBS.forEach((j,i)=>{
     const c=makePlayerChar(j);
     c.root.position.x=(i-1)*1.85; g.add(c.root); c.anim.setBase('idle');

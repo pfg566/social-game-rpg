@@ -3,16 +3,20 @@
 /* ---------- UI ---------- */
 function showBanner(t){ const b=$('#banner'); b.textContent=t; b.classList.remove('show'); void b.offsetWidth; b.classList.add('show'); }
 let chipKey='', shieldKey='';
+/* 같은 값이면 HUD 글자 · 막대 · 숨김을 다시 쓰지 않아요 (매 프레임 다시 쓰면 브라우저가 화면 배치를 계속 다시 계산해요) */
+function setTxt(e,v){ if (!e) return; v=String(v); if (e.textContent!==v) e.textContent=v; }
+function setWid(e,pc){ if (!e) return; const v=(Math.round(pc*10)/10)+'%'; if (e.style.width!==v) e.style.width=v; }
+function setHid(e,h){ if (!e) return; h=!!h; if (e.hidden!==h) e.hidden=h; }
 function updateHUD(){
-  $('#hpTxt').textContent=`${Math.ceil(P.hp)} / ${P.max}`;
-  $('#hpBar').style.width=(P.hp/P.max*100)+'%';
-  $('#waveTxt').textContent=`${Math.max(1,W.wave+1)}/${WAVES.length}`;
-  $('#killTxt').textContent=W.kills;
-  $('#corTxt').textContent=`${W.correct}/${W.asked}`;
-  $('#nextCard').hidden=!!W.loc||!!W.prep||!!(FUN.am&&!FUN.am.done)||(NEWQ()&&(W.gate||!!liveBoss()));   // 새 방식: 웨이브 잠김 · 보스전에는 정답 몬스터가 안 나와요
-  const bgOn=NEWQ()&&W.bg&&W.bg.st; $('#bgCard').hidden=!bgOn; if (bgOn) $('#bgTxt').textContent=Math.max(0,Math.ceil(W.bg.until-W.t));
+  setTxt($('#hpTxt'),`${Math.ceil(P.hp)} / ${P.max}`);
+  setWid($('#hpBar'),P.hp/P.max*100);
+  setTxt($('#waveTxt'),`${Math.max(1,W.wave+1)}/${WAVES.length}`);
+  setTxt($('#killTxt'),W.kills);
+  setTxt($('#corTxt'),`${W.correct}/${W.asked}`);
+  setHid($('#nextCard'),!!W.loc||!!W.prep||!!(FUN.am&&!FUN.am.done)||(NEWQ()&&(W.gate||!!liveBoss())));   // 새 방식: 웨이브 잠김 · 보스전에는 정답 몬스터가 안 나와요
+  const bgOn=NEWQ()&&W.bg&&W.bg.st; setHid($('#bgCard'),!bgOn); if (bgOn) setTxt($('#bgTxt'),Math.max(0,Math.ceil(W.bg.until-W.t)));
   if (W.up && W.up.list.length) { /* 강화 목록은 칩으로 */ }
-  $('#nextTxt').textContent=Math.max(0,Math.ceil(W.nextQuiz-W.t));
+  setTxt($('#nextTxt'),Math.max(0,Math.ceil(W.nextQuiz-W.t)));
   const effs=W.effects.concat(MAPK==='defense'?TURRETS.filter(t=>W.t<t.until).map(t=>({label:t.title+(PEACE_RUN?' 정화 중':' 자동 공격'),until:t.until,good:true})):[]);
   if (W.up && W.up.list.length) effs.push({label:`강화 ${W.up.list.length}개`,good:true,noT:true});
   if (W.qshield>0) effs.push({label:`방어막 ${Math.ceil(W.qshield)}`,good:true,noT:true});
@@ -21,21 +25,21 @@ function updateHUD(){
   const ck=effs.map(e=>e.label+(e.noT?'':Math.ceil(e.until-W.t))).join('|');
   if (ck!==chipKey){ chipKey=ck; $('#chips').innerHTML=effs.map(e=>`<span class="chip ${e.good?'good':'bad'}">${e.label}${e.noT?'':` · ${Math.ceil(e.until-W.t)}초`}</span>`).join(''); }
   const boss=liveBoss();
-  $('#bossbar').hidden=!boss;
+  setHid($('#bossbar'),!boss);
   if (boss){
-    $('#bossHp').style.width=Math.max(0,boss.hp/boss.max*100)+'%';
+    setWid($('#bossHp'),Math.max(0,boss.hp/boss.max*100));
     const sk=boss.shield+'/'+boss.shieldMax+NEWQ();
     if (sk!==shieldKey){ shieldKey=sk; $('#shields').innerHTML=Array.from({length:boss.shieldMax},(_,i)=>`<i class="${i<boss.shield?'':'off'}"></i>`).join('');
-      $('#bossHelp').textContent=NEWQ()?(boss.shield>0?'지식 방패! 보스의 문제를 맞히거나, 보라색 빛줄기를 따라 수정에서 퀴즈를 맞히면 깨져요':'방패가 깨졌어요! 공격하세요 · 체력 75·50·25%가 되면 방패가 다시 생겨요'):boss.shield>0?'퀴즈를 맞히면 보호막이 깨지고, 틀리면 되살아나요. 붉은 원이 보이면 피하세요!':'보호막이 모두 깨졌어요. 지금 공격하세요! 오답이면 보호막이 되살아나요.'; }
+      setTxt($('#bossHelp'),NEWQ()?(boss.shield>0?'지식 방패! 보스의 문제를 맞히거나, 보라색 빛줄기를 따라 수정에서 퀴즈를 맞히면 깨져요':'방패가 깨졌어요! 공격하세요 · 체력 75·50·25%가 되면 방패가 다시 생겨요'):boss.shield>0?'퀴즈를 맞히면 보호막이 깨지고, 틀리면 되살아나요. 붉은 원이 보이면 피하세요!':'보호막이 모두 깨졌어요. 지금 공격하세요! 오답이면 보호막이 되살아나요.'); }
   }
-  $('#gateCard').hidden=!W.gate||!!W.prep;
-  if (MAPK==='island' && W.isl){ const S=W.isl, show=S.quota>0; $('#parcelRow').hidden=!show; if (show){ const cp=S.carry; $('#parcelTxt').textContent=`${S.done-0} / ${S.quota}`+(S.lost?` · 잃어버림 ${S.lost}`:'')+(PEACE_RUN&&S.stars?` · ★${S.stars}`:'')+(PEACE_RUN&&cp&&cp.due?(W.t<=cp.due?` · ⏱ ${Math.ceil(cp.due-W.t)}초`:' · ⏱ 늦었어요'):'')+(!PEACE_RUN&&cp&&cp.express&&cp.due?(W.t<=cp.due?` · ⚡ ${Math.ceil(cp.due-W.t)}초`:' · ⚡ 늦었어요'):'')+(S.tour&&S.tour.st==='follow'?' · 🧳 안내 중':''); $('#parcelBar').style.width=(S.done/S.quota*100)+'%'; } }
+  setHid($('#gateCard'),!W.gate||!!W.prep);
+  if (MAPK==='island' && W.isl){ const S=W.isl, show=S.quota>0; setHid($('#parcelRow'),!show); if (show){ const cp=S.carry; setTxt($('#parcelTxt'),`${S.done-0} / ${S.quota}`+(S.lost?` · 잃어버림 ${S.lost}`:'')+(PEACE_RUN&&S.stars?` · ★${S.stars}`:'')+(PEACE_RUN&&cp&&cp.due?(W.t<=cp.due?` · ⏱ ${Math.ceil(cp.due-W.t)}초`:' · ⏱ 늦었어요'):'')+(!PEACE_RUN&&cp&&cp.express&&cp.due?(W.t<=cp.due?` · ⚡ ${Math.ceil(cp.due-W.t)}초`:' · ⚡ 늦었어요'):'')+(S.tour&&S.tour.st==='follow'?' · 🧳 안내 중':'')); setWid($('#parcelBar'),S.done/S.quota*100); } }
   glHUD();
-  if (MAPK==='defense'){ const dk=Math.max(0,W.door); $('#doorTxt').textContent=`${Math.ceil(dk)} / ${W.doorMax}`; $('#doorBar').style.width=(dk/W.doorMax*100)+'%'; }
+  if (MAPK==='defense'){ const dk=Math.max(0,W.door); setTxt($('#doorTxt'),`${Math.ceil(dk)} / ${W.doorMax}`); setWid($('#doorBar'),dk/W.doorMax*100); }
   if (W.loc){
     const rem=W.loc.until-W.t;
-    $('#locTime').textContent=Math.max(0,Math.ceil(rem))+'초';
-    $('#locBar').style.width=Math.max(0,rem/LOC_TIME*100)+'%';
+    setTxt($('#locTime'),Math.max(0,Math.ceil(rem))+'초');
+    setWid($('#locBar'),Math.max(0,rem/LOC_TIME*100));
     $('#locCard').classList.toggle('hurry',rem<=8);
   }
 }

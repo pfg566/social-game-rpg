@@ -2,38 +2,42 @@
    파일은 01 → 13 순서로 불러와요. 모든 파일이 같은 전역 공간을 함께 써요. */
 /* ---------- three.js 기본 (판타지 RPG판) ---------- */
 const canvas = $('#c');
-const renderer = new THREE.WebGLRenderer({canvas, antialias:true, powerPreference:'high-performance'});
+const ANISO=4;   // 땅 무늬를 비스듬히 볼 때 또렷하게 하는 정도 (8은 학교 노트북 그래픽에 부담이 커서 4로)
+// 후처리(블룸 · 색보정)를 쓰면 장면은 따로 그린 그림(렌더 타깃)에 그려져서 화면의 계단 현상 줄이기(MSAA)가 장면에 닿지 않아요.
+// 효과는 없고 그래픽 카드 일만 늘어서, 후처리를 쓸 수 있으면 꺼요
+const USE_FX=!!(THREE.EffectComposer && THREE.UnrealBloomPass && THREE.GammaCorrectionShader);
+const renderer = new THREE.WebGLRenderer({canvas, antialias:!USE_FX, powerPreference:'high-performance'});
 renderer.setPixelRatio(Math.min(window.devicePixelRatio||1, 1.75));
 renderer.outputEncoding = THREE.sRGBEncoding;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 0.88;
 renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.shadowMap.type = THREE.PCFShadowMap;   // 부드러운 그림자(PCFSoft)는 그림자 한 점마다 4배로 읽어서 무거워요 (화질을 바꿀 때 셰이더를 다시 만들지 않게 모든 화질에서 같은 방식)
 const scene = new THREE.Scene();
 const HORIZON = 0xe6e0ec;
 scene.background = new THREE.Color(HORIZON);
 scene.fog = new THREE.Fog(HORIZON, 38, 135);
 const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 600);
 
-/* 후처리: 빛 번짐(블룸) + 감마 보정 */
-let composer=null, bloom=null, GRADE=null;
+/* 후처리: 빛 번짐(블룸) + 색보정 · 감마 보정 (한 번에) */
+let composer=null, bloom=null, GRADE=null, BLOOM_K=1;
 try{
-  if (THREE.EffectComposer && THREE.UnrealBloomPass && THREE.GammaCorrectionShader){
+  if (USE_FX){
     composer=new THREE.EffectComposer(renderer);
     composer.addPass(new THREE.RenderPass(scene,camera));
     bloom=new THREE.UnrealBloomPass(new THREE.Vector2(512,512),.55,.65,.8);
+    { const bs=bloom.setSize.bind(bloom); bloom.setSize=(w,h)=>bs(Math.max(64,Math.round(w*BLOOM_K)),Math.max(64,Math.round(h*BLOOM_K))); }   // 보통 화질: 빛 번짐을 절반 해상도로 (부드럽게 퍼지는 건 거의 같아요)
     composer.addPass(bloom);
     GRADE=new THREE.ShaderPass({uniforms:{tDiffuse:{value:null},uSat:{value:1.08},uTint:{value:new THREE.Vector3(1.03,1,.985)},uLift:{value:new THREE.Vector3(.012,.008,.03)},uCon:{value:1.03},uVig:{value:.42}},
       vertexShader:'varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }',
-      fragmentShader:'uniform sampler2D tDiffuse; uniform float uSat; uniform vec3 uTint; uniform vec3 uLift; uniform float uCon; uniform float uVig; varying vec2 vUv; void main(){ vec4 c=texture2D(tDiffuse,vUv); float l=dot(c.rgb,vec3(.2126,.7152,.0722)); c.rgb=mix(vec3(l),c.rgb,uSat); c.rgb+=uLift*(1.0-clamp(l*2.0,0.0,1.0)); c.rgb*=uTint; c.rgb=(c.rgb-0.18)*uCon+0.18; vec2 d=vUv-.5; c.rgb*=1.0-dot(d,d)*uVig; gl_FragColor=c; }'});
-    composer.addPass(GRADE);
-    composer.addPass(new THREE.ShaderPass(THREE.GammaCorrectionShader));
+      fragmentShader:'uniform sampler2D tDiffuse; uniform float uSat; uniform vec3 uTint; uniform vec3 uLift; uniform float uCon; uniform float uVig; varying vec2 vUv; void main(){ vec4 c=texture2D(tDiffuse,vUv); float l=dot(c.rgb,vec3(.2126,.7152,.0722)); c.rgb=mix(vec3(l),c.rgb,uSat); c.rgb+=uLift*(1.0-clamp(l*2.0,0.0,1.0)); c.rgb*=uTint; c.rgb=(c.rgb-0.18)*uCon+0.18; vec2 d=vUv-.5; c.rgb*=1.0-dot(d,d)*uVig; gl_FragColor=LinearTosRGB(c); }'});
+    composer.addPass(GRADE);   // 감마 보정도 이 단계에서 같이 해요 (화면 전체를 한 번 덜 그려요)
   }
 }catch(e){ composer=null; }
 function resize(){ const w=innerWidth,h=innerHeight; renderer.setSize(w,h,false); camera.aspect=w/h; camera.updateProjectionMatrix();
   if (composer){ composer.setPixelRatio(renderer.getPixelRatio()); composer.setSize(w,h); } }
 addEventListener('resize', resize); resize();
-function renderFrame(){ if (typeof petsTick==='function') petsTick(); if (typeof faceTick==='function') faceTick(); if (composer) composer.render(); else renderer.render(scene,camera); }
+function renderFrame(){ if (typeof natCullTick==='function') natCullTick(); if (typeof petsTick==='function') petsTick(); if (typeof faceTick==='function') faceTick(); if (composer) composer.render(); else renderer.render(scene,camera); }
 
 /* 하늘 */
 let SKY=null;
@@ -131,26 +135,58 @@ const GRASS_OK={
   defense:(x,z)=>(z>-13.1||z<-15.2)&&![[-15,-8.2],[0,-6.4],[15,-8.2]].some(([a,b])=>Math.hypot(x-a,z-b)<3.2)&&!nearSegs(DEF_SEGS,x,z,2.7)&&!inCol(x,z)
 };
 
-/* ---------- 화질 3단계 (자동으로 맞춰요) ---------- */
-const QUALITY={high:{label:'고화질',pr:1.5,shadow:2048,grass:1,bloom:true,motes:1},
-               medium:{label:'보통',pr:1.0,shadow:1024,grass:.6,bloom:true,motes:.6},
-               low:{label:'가벼움',pr:.8,shadow:0,grass:0,bloom:false,motes:.35}};
+/* ---------- 화질 3단계 (자동으로 맞춰요) ----------
+   points: 작은 불빛(수정 · 포탑 · 로비 조명) — 켜 두면 화면의 모든 점이 불빛마다 빛 계산을 한 번 더 해서, 고화질에서만 켜요
+   bloomK: 빛 번짐 해상도 · vlGrass: 노을 마을 풀잎 비율 · rays: 마을 빛줄기 */
+const QUALITY={high:{label:'고화질',pr:1.5,shadow:2048,points:true,grass:.85,vlGrass:.62,bloom:true,bloomK:1,motes:1,rays:true},
+               medium:{label:'보통',pr:1.0,shadow:1024,points:false,grass:.5,vlGrass:.4,bloom:true,bloomK:.5,motes:.6,rays:false},
+               low:{label:'가벼움',pr:.8,shadow:0,points:false,grass:0,vlGrass:.22,bloom:false,bloomK:.5,motes:.35,rays:false}};
 const QORDER=['low','medium','high'];
 let QSET='auto', QCUR='medium', qMon=null;
 try{ QSET=localStorage.getItem('gsd-q')||'auto'; }catch(e){}
 const autoQ=()=>{ try{ const v=localStorage.getItem('gsd-q-auto'); return QUALITY[v]?v:'medium'; }catch(e){ return 'medium'; } };
+/* 자동 화질이면 게임 중 화면 속도를 계속 보고, 느리면 렌더 해상도를 0.75배(가벼움은 0.8배)까지 낮춰요 (그래도 느리면 한 단계 아래 화질로) */
+let DRS_S=1;
+const DRS={t:0,n:0,last:0,slow:0,good:0,hold:0,ps:1,pf:0,stuck:false};
+const PT_LIGHTS=[];   // 작은 불빛: 화질에 따라 켜고 꺼요 (켜진 개수가 바뀌면 셰이더를 다시 만들어서, 게임 중에는 개수를 그대로 둬요)
+function ptLightQ(l){ PT_LIGHTS.push(l); l.visible=!!QUALITY[QCUR].points; return l; }
+const qPR=()=>Math.min(window.devicePixelRatio||1,QUALITY[QCUR].pr)*(QSET==='auto'?DRS_S:1);
 function applyQuality(q){
-  if (!QUALITY[q]) q='medium'; QCUR=q; const C=QUALITY[q];
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,C.pr));
+  if (!QUALITY[q]) q='medium'; if (q!==QCUR){ DRS_S=1; DRS.ps=1; DRS.pf=0; DRS.stuck=false; } QCUR=q; const C=QUALITY[q];
+  renderer.setPixelRatio(qPR());
   sun.castShadow=C.shadow>0;
   if (C.shadow && sun.shadow.mapSize.x!==C.shadow){ sun.shadow.mapSize.set(C.shadow,C.shadow); if (sun.shadow.map){ sun.shadow.map.dispose(); sun.shadow.map=null; } }
-  if (bloom) bloom.enabled=C.bloom;
-  GRASS.forEach(g=>{ g.geometry.instanceCount=Math.floor(g.userData.max*C.grass); g.visible=C.grass>0; });
+  if (bloom){ bloom.enabled=C.bloom; BLOOM_K=C.bloomK; }
+  PT_LIGHTS.forEach(l=>{ l.visible=!!C.points; });
+  GRASS.forEach(g=>{ bladeLOD(g,q!=='high'); g.geometry.instanceCount=Math.floor(g.userData.max*C.grass); g.visible=C.grass>0; });
   if (MOTES){ MOTES.geometry.setDrawRange(0,Math.floor(MOTES.userData.max*C.motes)); MOTES.material.uniforms.uPR.value=renderer.getPixelRatio(); }
   resize();
 }
+/* 풀잎 한 장(점 7개 · 삼각형 5개): 고화질이 아니면 가운데 마디를 빼고 삼각형 3개로 그려요 (멀리서는 거의 같아 보여요) */
+const BLADE3=new THREE.Uint16BufferAttribute([0,1,4, 1,5,4, 4,5,6],1);
+function bladeLOD(m,lite){ const g=m&&m.geometry; if (!g||!g.attributes.position||g.attributes.position.count!==7||!g.index) return; const u=g.userData; if (!u.i5) u.i5=g.index; const want=lite?BLADE3:u.i5; if (g.index!==want) g.setIndex(want); }
+function applyPR(){ renderer.setPixelRatio(qPR()); if (MOTES) MOTES.material.uniforms.uPR.value=renderer.getPixelRatio(); resize(); }
+function drsTick(now){
+  if (QSET!=='auto' || W.state!=='play' || W.paused || document.hidden){ DRS.t=0; return; }
+  if (!DRS.t || now-DRS.last>250){ DRS.t=now; DRS.n=0; DRS.last=now; return; }   // 퀴즈 창 · 로딩으로 멈췄다 다시 시작하면 새로 재요
+  DRS.last=now; DRS.n++;
+  const el=now-DRS.t; if (el<2000) return;
+  const fps=DRS.n*1000/el; DRS.t=now; DRS.n=0;
+  if (qMon) return;   // 처음 화질을 정하는 동안은 기다려요
+  const minS=QCUR==='low'?.8:.75;
+  // 방금 해상도를 낮췄는데 빨라지지 않았으면 그래픽 카드 탓이 아니에요 → 되돌리고 이번 화질에서는 더 낮추지 않아요 (괜히 흐려지지 않게)
+  if (DRS.pf && DRS.ps>DRS_S+1e-3 && fps<DRS.pf*1.06){ DRS_S=DRS.ps; DRS.pf=0; DRS.stuck=true; applyPR(); return; }
+  DRS.pf=0;
+  if (fps<46 && !DRS.stuck && DRS_S>minS+1e-3){ DRS.ps=DRS_S; DRS.pf=fps; DRS_S=Math.max(minS,DRS_S-(fps<34?.12:.06)); applyPR(); DRS.slow=0; DRS.good=0; DRS.hold=now+10000; return; }
+  if (fps<38){ if (++DRS.slow>=2){ DRS.slow=0; const i=QORDER.indexOf(QCUR); if (i>0){ applyQuality(QORDER[i-1]); try{ localStorage.setItem('gsd-q-auto',QCUR); }catch(e){} DRS.hold=now+10000; } } return; }
+  DRS.slow=0;
+  if (fps>57 && DRS_S<1 && now>DRS.hold){ if (++DRS.good>=2){ DRS.good=0; DRS.ps=DRS_S; DRS_S=Math.min(1,DRS_S+.05); applyPR(); } } else DRS.good=0;
+}
+const noUpRecently=()=>{ try{ return Date.now()-(+localStorage.getItem('gsd-q-noup')||0)<7*864e5; }catch(e){ return false; } };
 function startQualityMonitor(){ qMon = QSET==='auto' ? {frames:0,start:0,last:0,warm:performance.now()+1500} : null; }
 function qualityTick(now){
+  if (typeof fpsTick==='function') fpsTick(now);
+  drsTick(now);
   if (!qMon || W.state!=='play' || W.paused) return;
   if (now<qMon.warm || now-qMon.last>250){ qMon.start=now; qMon.frames=0; qMon.last=now; return; }
   qMon.last=now; qMon.frames++;
@@ -158,8 +194,8 @@ function qualityTick(now){
   const fps=qMon.frames*1000/el, i=QORDER.indexOf(QCUR);
   const save=v=>{ try{ localStorage.setItem('gsd-q-auto',v); }catch(e){} };
   if (fps<40 && i>0){ applyQuality(QORDER[i-1]); save(QCUR); qMon={frames:0,start:0,last:0,warm:now+1500,tried:qMon.tried}; }
-  else if (qMon.up && fps<48){ applyQuality(qMon.up); save(QCUR); qMon=null; }
-  else if (fps>57 && i<2 && !qMon.tried){ const prev=QCUR; applyQuality(QORDER[i+1]); qMon={frames:0,start:0,last:0,warm:now+1500,tried:true,up:prev}; }
+  else if (qMon.up && fps<48){ applyQuality(qMon.up); save(QCUR); qMon=null; try{ localStorage.setItem('gsd-q-noup',String(Date.now())); }catch(e){} }   // 올려 봤다가 느려서 되돌렸으면 일주일은 다시 올려 보지 않아요 (판마다 화질이 바뀌며 멈칫하지 않게)
+  else if (fps>57 && i<2 && !qMon.tried && !noUpRecently()){ const prev=QCUR; applyQuality(QORDER[i+1]); qMon={frames:0,start:0,last:0,warm:now+1500,tried:true,up:prev}; }
   else { save(QCUR); qMon=null; }
 }
 function updateDreamy(real){
@@ -172,7 +208,7 @@ const lam=std, toon=std;
 function cs(m,recv){ m.castShadow=true; m.receiveShadow=recv!==false; return m; }
 function canvasTex(w,h,draw,rx,ry){
   const cv=document.createElement('canvas'); cv.width=w; cv.height=h; draw(cv.getContext('2d'),w,h);
-  const t=new THREE.CanvasTexture(cv); t.wrapS=t.wrapT=THREE.RepeatWrapping; if (rx) t.repeat.set(rx,ry); t.anisotropy=8; t.encoding=THREE.sRGBEncoding; return t;
+  const t=new THREE.CanvasTexture(cv); t.wrapS=t.wrapT=THREE.RepeatWrapping; if (rx) t.repeat.set(rx,ry); t.anisotropy=ANISO; t.encoding=THREE.sRGBEncoding; return t;
 }
 function roundRect(g,x,y,w,h,r){ g.beginPath(); g.moveTo(x+r,y); g.arcTo(x+w,y,x+w,y+h,r); g.arcTo(x+w,y+h,x,y+h,r); g.arcTo(x,y+h,x,y,r); g.arcTo(x,y,x+w,y,r); g.closePath(); }
 const rnd=(a,b)=>a+Math.random()*(b-a);

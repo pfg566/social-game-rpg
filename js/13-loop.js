@@ -1,10 +1,12 @@
 /* 사회 게임 RPG · 매 프레임 루프
    파일은 01 → 13 순서로 불러와요. 모든 파일이 같은 전역 공간을 함께 써요. */
 /* ---------- 루프 ---------- */
-let last=performance.now(), hurtT=0;
+let last=performance.now(), hurtT=0, idleDrawn=0;
 const camOff=new THREE.Vector3(0,13.5,14.5);
 function frame(now){
   requestAnimationFrame(frame);
+  // 로비 · 결과 화면(게임 중이 아닐 때)은 초당 30번만 그려요: 기다리는 동안 노트북이 덜 뜨거워지고 게임 때 덜 느려져요
+  if (W.state!=='play'){ if (now-idleDrawn<31) return; idleDrawn=now; }
   let dt=Math.min(.05,(now-last)/1000); last=now;
   if (hitStop>0 && W.state==='play' && !W.paused){ hitStop-=dt; dt=0; }
   const real=now/1000;
@@ -249,7 +251,7 @@ function frame(now){
   // 배경 움직임
   for (const c of clouds){ c.position.x+=c.userData.v*dt; if (c.position.x>130) c.position.x=-130; }
   smokeT-=dt; if (smokeT<=0){ smokeT=.5; if (MAPK==='zones') fx.smoke(29.2,5.4,7.6); }
-  updateDefenseLook(real,dt); islandLook(real,dt); partyLook(real,dt); aimTick(real); fpsTick(now);
+  updateDefenseLook(real,dt); islandLook(real,dt); partyLook(real,dt); aimTick(real);
   if (MOUSE.held && JOB!=='archer' && W.state==='play' && !W.paused) attack();
   if (JOB==='archer' && kbAimDir() && W.state==='play' && !W.paused) attack();   // 방향키를 누르고 있으면 그쪽으로 연사
   fx.update(dt); updateCombatFx(dt); updateDreamy(real); qualityTick(now);
@@ -265,7 +267,7 @@ function frame(now){
   if (shake>0){ shake=Math.max(0,shake-dt); camera.position.x+=rnd(-1,1)*shake*.9; camera.position.y+=rnd(-1,1)*shake*.9; }
   gfTick(dt,real);
 
-  hurtT=Math.max(0,hurtT-dt); $('#hurt').style.opacity=hurtT>0?1:0;
+  hurtT=Math.max(0,hurtT-dt); { const hu=$('#hurt'), ho=hurtT>0?'1':'0'; if (hu.style.opacity!==ho) hu.style.opacity=ho; }
   if (W.state==='play'){
     limitTick(); if (W.state!=='play'){ renderFrame(); return; }
     updateHUD(); updateSkillHUD(); partyHUD();
@@ -273,7 +275,7 @@ function frame(now){
     let msg='';
     if (W.t<promptUntil) msg=promptMsg;
     else { for (const s of stations){ if (W.t<s.readyAt && s.readyAt<1e9 && stationOn(s) && Math.hypot(P.x-s.g.position.x,P.z-s.g.position.z)<3) msg=`충전 중 · ${Math.ceil(s.readyAt-W.t)}초 후 다시 풀 수 있어요`; } }
-    if (msg && !W.paused){ pr.hidden=false; pr.textContent=msg; } else pr.hidden=true;
+    if (msg && !W.paused){ setHid(pr,false); setTxt(pr,msg); } else setHid(pr,true);
   }
   renderFrame();
 }

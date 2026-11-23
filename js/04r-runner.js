@@ -183,9 +183,11 @@ function rnTreeSet(){ RN_TREES=rnPickN(['CommonTree_3','CommonTree_5','CommonTre
 function rnNatTo(par,list){
   if (!list||!list.length) return;
   if (!RN.natOK){ (par.rnNat=par.rnNat||[]).push(...list); return; }
-  const by={}; list.forEach(p=>(by[p.n]=by[p.n]||[]).push(p));
+  // 작은 풀 · 꽃은 보통 화질에서 60%, 가벼움에서 40%만 심어요 (나무 · 덤불은 그대로)
+  const keep=QCUR==='high'?1:QCUR==='medium'?.6:.4, by={}; let sm=0;
+  list.forEach(p=>{ if (keep<1&&/^(Flower|Clover|Fern|Plant|Grass_|Mushroom)/.test(p.n)&&((sm++*.618)%1)>=keep) return; (by[p.n]=by[p.n]||[]).push(p); });
   for (const key in by){ const P2=by[key], at=key.indexOf('@'), name=at<0?key:key.slice(0,at), col=at<0?null:VL_LIN(key.slice(at+1));
-    const ims=vlInst(name,P2,{shadow:/Tree|Pine/.test(name),col:col||undefined});
+    const ims=vlInst(name,P2,{shadow:/Tree|Pine/.test(name),col:col||undefined,cull:false});
     let cx=0, cy=0, cz=0; P2.forEach(p=>{ cx+=p.x; cy+=p.y||0; cz+=p.z; }); cx/=P2.length; cy/=P2.length; cz/=P2.length; let r=0; P2.forEach(p=>{ r=Math.max(r,Math.hypot(p.x-cx,p.z-cz)+8*(p.s||1)); });
     ims.forEach(im=>{ const g=new THREE.BufferGeometry(), s=im.geometry; for (const k in s.attributes) g.setAttribute(k,s.attributes[k]); if (s.index) g.setIndex(s.index); s.groups.forEach(q=>g.addGroup(q.start,q.count,q.materialIndex));
       g.boundingSphere=new THREE.Sphere(new THREE.Vector3(cx,cy+4,cz),r+3); im.geometry=g; im.frustumCulled=true; par.add(im); }); } }

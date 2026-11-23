@@ -39,7 +39,7 @@ const VL_DOORS=[
 
 /* ---------- 재질 · 텍스처 ---------- */
 function vlCanvas(w,h,fn){ const cv=document.createElement('canvas'); cv.width=w; cv.height=h; fn(cv.getContext('2d'),cv); return cv; }
-function vlTex(cv,rep){ const t=new THREE.CanvasTexture(cv); t.encoding=THREE.sRGBEncoding; t.anisotropy=8; if (rep){ t.wrapS=t.wrapT=THREE.RepeatWrapping; } return t; }
+function vlTex(cv,rep){ const t=new THREE.CanvasTexture(cv); t.encoding=THREE.sRGBEncoding; t.anisotropy=ANISO; if (rep){ t.wrapS=t.wrapT=THREE.RepeatWrapping; } return t; }
 const vlRnd=(a,b)=>a+Math.random()*(b-a);
 
 function buildVillage(){
@@ -111,7 +111,7 @@ function buildVillage(){
     mg.putImageData(out,0,0);
     VL.maskR=new Uint8Array(MS*MS); VL.maskS=MS; for (let i=0;i<MS*MS;i++) VL.maskR[i]=a[i*4]; }
   VL.maskCv=mcv; const maskT=new THREE.CanvasTexture(mcv); maskT.minFilter=THREE.LinearFilter; maskT.generateMipmaps=false;
-  U.uWash={value:.05}; U.uBSat={value:1}; U.uMask={value:maskT}; U.uGround={value:VL.macroTex}; U.uCenter={value:new THREE.Vector2()}; U.uR={value:24}; U.uMap={value:VL_MAP}; U.uDry={value:VL_LIN('#ad7f36')}; U.uGK={value:1.45};
+  U.uWash={value:.05}; U.uBSat={value:1}; U.uMask={value:maskT}; U.uGround={value:VL.macroTex}; U.uCenter={value:new THREE.Vector2()}; U.uR={value:20}; U.uMap={value:VL_MAP}; U.uDry={value:VL_LIN('#ad7f36')}; U.uGK={value:1.45};
   U.uLightK={value:new THREE.Color(1,1,1)}; U.uShadeK={value:1}; U.uSnow=VL_ENVU.uSnow; U.uWet=VL_ENVU.uWet; U.uPoolT=VL_ENVU.uPoolT; U.uPoolK=VL_ENVU.uPoolK;
   const GMAX=240000, geo=new THREE.InstancedBufferGeometry();
   geo.setAttribute('position',new THREE.Float32BufferAttribute([-1,0,0, 1,0,0, -.75,.4,0, .75,.4,0, -.4,.75,0, .4,.75,0, 0,1,0],3)); geo.setIndex([0,1,2, 1,3,2, 2,3,4, 3,5,4, 4,5,6]);
@@ -271,6 +271,9 @@ const VL_NAT=['CommonTree_1','CommonTree_2','CommonTree_3','CommonTree_4','Commo
 VL.nat={};
 // 모델마다 한 번만 불러와요 (들판 마을은 시작할 때 필요한 것만, 마을은 들어갈 때 나머지까지)
 const VL_NATP={}; let VL_NATL=null;
+// 가볍게 줄인 모델(_s): 나무 기둥 · 바위 · 디딤돌 · 버섯 · 꽃의 폴리곤을 절반 이하로 (잎 카드는 그대로라 모양은 같아요)
+const VL_NAT_S=new Set(['Bush_Common_Flowers','Clover_2','CommonTree_1','CommonTree_2','CommonTree_3','CommonTree_4','CommonTree_5','Flower_4_Group','Mushroom_Common',
+  'Pine_1','Pine_2','Pine_4','RockPath_Round_Small_1','RockPath_Round_Small_2','RockPath_Round_Small_3','Rock_Medium_1','Rock_Medium_3','TwistedTree_1','TwistedTree_3']);
 function vlLoadNat(list){ return Promise.all(list.map(vlNatOne)); }
 function vlLoadNature(){
   if (VL.natP) return VL.natP;
@@ -282,7 +285,7 @@ function vlNatOne(n){
   if (!VL_NATL) VL_NATL={L:new THREE.GLTFLoader(),TL:new THREE.TextureLoader(),white:{}};
   const L=VL_NATL.L, TL=VL_NATL.TL, white=VL_NATL.white;
   const whiteTex=n=>{ if (!white[n]){ const t=TL.load('env/nature/tex/'+n+'.png'); t.encoding=THREE.sRGBEncoding; t.flipY=false; t.anisotropy=4; white[n]=t; } return white[n]; };
-  return VL_NATP[n]=new Promise(res=>L.load('env/nature/'+n+'.gltf',g=>{ g.scene.updateMatrixWorld(true); const parts=[];
+  return VL_NATP[n]=new Promise(res=>L.load('env/nature/'+n+(VL_NAT_S.has(n)?'_s':'')+'.gltf',g=>{ g.scene.updateMatrixWorld(true); const parts=[];
     g.scene.traverse(o=>{ if (!o.isMesh) return; const m=o.material, leaf=/Leaves|Leaf_Pine|Grass|Flowers/.test(m.name);
       if (m.map) m.map.anisotropy=4;
       if (leaf){ m.alphaTest=.45; m.side=THREE.DoubleSide; m.transparent=false;
@@ -308,9 +311,49 @@ function vlInst(name,P,opt){
       if (pt.tint) im.setColorAt(i,p.c||new THREE.Color(1,1,1)); });
     const sh=!opt||opt.shadow!==false; im.castShadow=sh; im.receiveShadow=true; im.frustumCulled=false;
     if (pt.leaf&&sh) im.customDepthMaterial=new THREE.MeshDepthMaterial({depthPacking:THREE.RGBADepthPacking,map:pt.mat.map,alphaTest:.45,side:THREE.DoubleSide});
+    if (!opt||opt.cull!==false) natCullReg(im,sh);   // 화면 밖 나무·풀은 안 그려요 (러너는 본마다 따로 거르니 빼요)
     if (opt&&opt.lod){ (VL.lod=VL.lod||[]).push({im,n:P.length}); }
     scene.add(im); out.push(im); });
   return out;
+}
+/* ---------- 화면 밖 자연물 거르기 ----------
+   나무 · 풀 뭉치 · 꽃 · 바위를 한 묶음(InstancedMesh)으로 그리면 three.js는 묶음 전체를 늘 그려요 (맵 반대편 것까지).
+   매 프레임 카메라에 보이는 것(+ 그림자가 화면에 드리울 것)만 앞으로 모아 개수를 줄여요. 보이는 목록이 바뀔 때만 다시 올려요. */
+const NATC={list:[],fr:new THREE.Frustum(),pm:new THREE.Matrix4()};
+function natCullReg(im,cast){
+  const g=im.geometry; if (!g.boundingSphere) g.computeBoundingSphere();
+  const bs=g.boundingSphere, n=im.count, sph=new Float32Array(n*4), M=new THREE.Matrix4(), V=new THREE.Vector3();
+  for (let i=0;i<n;i++){ im.getMatrixAt(i,M); V.copy(bs.center).applyMatrix4(M); sph[i*4]=V.x; sph[i*4+1]=V.y; sph[i*4+2]=V.z; sph[i*4+3]=bs.radius*M.getMaxScaleOnAxis()+.6; }
+  const r={im,n,lim:n,full:im.instanceMatrix.array.slice(0,n*16),col:im.instanceColor?im.instanceColor.array.slice(0,n*3):null,sph,cast:!!cast,vis:new Uint8Array(n),last:-1,auto:true};
+  NATC.list.push(r); im.userData.natc=r; return r;
+}
+function natSeen(o){ for (let p=o.parent;p;p=p.parent){ if (!p.visible) return false; if (p===scene) return true; } return false; }
+function natCullTick(){
+  const L=NATC.list; if (!L.length) return;
+  camera.updateMatrixWorld(); camera.matrixWorldInverse.copy(camera.matrixWorld).invert();
+  NATC.pm.multiplyMatrices(camera.projectionMatrix,camera.matrixWorldInverse); NATC.fr.setFromProjectionMatrix(NATC.pm);
+  const pl=NATC.fr.planes, ax=pl[0].normal.x,ay=pl[0].normal.y,az=pl[0].normal.z,ad=pl[0].constant, bx=pl[1].normal.x,by=pl[1].normal.y,bz=pl[1].normal.z,bd=pl[1].constant,
+    cx=pl[2].normal.x,cy=pl[2].normal.y,cz=pl[2].normal.z,cd=pl[2].constant, dx=pl[3].normal.x,dy=pl[3].normal.y,dz=pl[3].normal.z,dd=pl[3].constant,
+    ex=pl[4].normal.x,ey=pl[4].normal.y,ez=pl[4].normal.z,ed=pl[4].constant, fx2=pl[5].normal.x,fy=pl[5].normal.y,fz2=pl[5].normal.z,fd=pl[5].constant;
+  const inF=(x,y,z,r)=>ax*x+ay*y+az*z+ad>-r&&bx*x+by*y+bz*z+bd>-r&&cx*x+cy*y+cz*z+cd>-r&&dx*x+dy*y+dz*z+dd>-r&&ex*x+ey*y+ez*z+ed>-r&&fx2*x+fy*y+fz2*z+fd>-r;
+  // 그림자: 키 h인 물체의 그림자는 땅 위 (해 반대쪽으로) h·(sx,sz)만큼 뻗어요 → 그 중간에 커진 구로 한 번 더 확인
+  const lx=sun.position.x-sun.target.position.x, ly=Math.max(.2,sun.position.y-sun.target.position.y), lz=sun.position.z-sun.target.position.z, sx=-lx/ly, sz=-lz/ly, sl=Math.hypot(sx,sz), shOn=sun.castShadow&&renderer.shadowMap.enabled;
+  for (const r of L){
+    const im=r.im; if (!natSeen(im)) continue;
+    const n=Math.min(r.n,r.lim), s=r.sph, vis=r.vis, e=im.matrixWorld.elements; let ch=n!==r.last;
+    const id=e[0]===1&&e[5]===1&&e[10]===1&&e[12]===0&&e[13]===0&&e[14]===0&&e[1]===0&&e[2]===0&&e[4]===0&&e[6]===0&&e[8]===0&&e[9]===0, sc=id?1:Math.hypot(e[0],e[1],e[2]);   // 묶음을 옮겨 둔 경우도 맞게
+    for (let i=0;i<n;i++){ const j=i*4; let x=s[j], y=s[j+1], z=s[j+2], rad=s[j+3];
+      if (!id){ const X=x,Y=y,Z=z; x=e[0]*X+e[4]*Y+e[8]*Z+e[12]; y=e[1]*X+e[5]*Y+e[9]*Z+e[13]; z=e[2]*X+e[6]*Y+e[10]*Z+e[14]; rad*=sc; }
+      let v=inF(x,y,z,rad); if (!v&&r.cast&&shOn){ const h=(y+rad)*.5; v=inF(x+sx*h,0,z+sz*h,rad+h*sl); }
+      const b=v?1:0; if (vis[i]!==b){ vis[i]=b; ch=true; } }
+    if (!ch) continue;
+    r.last=n; const A=im.instanceMatrix, dst=A.array, full=r.full, C=im.instanceColor, cdst=C&&r.col?C.array:null, cf=r.col; let k=0;
+    for (let i=0;i<n;i++){ if (!vis[i]) continue; dst.set(full.subarray(i*16,i*16+16),k*16);
+      if (cdst){ cdst[k*3]=cf[i*3]; cdst[k*3+1]=cf[i*3+1]; cdst[k*3+2]=cf[i*3+2]; } k++; }
+    im.count=k; im.visible=k>0;
+    A.updateRange.offset=0; A.updateRange.count=Math.max(16,k*16); A.needsUpdate=true;
+    if (cdst){ C.updateRange.offset=0; C.updateRange.count=Math.max(3,k*3); C.needsUpdate=true; }
+  }
 }
 const VL_TINT={au:['#e8572a','#f07a2c','#f39a34','#d9432a','#ee6a2a'],rd:['#e4502e','#d8432a','#ee6234'],yl:['#f2b13c','#f6c94e','#eba232'],gr:['#7cae46','#8fbd4f','#6a9e3c']};
 const vlTint=k=>VL_LIN(VL_TINT[k][(vlR()*VL_TINT[k].length)|0]).multiplyScalar(vlS(.9,1.08));
@@ -364,9 +407,9 @@ function villageReset(){
   // 캐릭터 키를 마을 크기(약 1.75)에 맞춰요
   pg.scale.setScalar(1); if (knight){ const b=new THREE.Box3().setFromObject(knight.root), h=b.max.y-b.min.y; VL.ks=h>.3?1.75/h:1; } pg.scale.setScalar(VL.ks);
   camera.fov=55; camera.updateProjectionMatrix();
-  vlSetSky(false); if (VL.rays) VL.rays.enabled=QCUR!=='low';
-  const C=QUALITY[QCUR]||QUALITY.medium; if (VL.grass) VL.grass.geometry.instanceCount=Math.floor(VL.grass.geometry.userData.max*Math.max(.25,C.grass));
-  (VL.lod||[]).forEach(L=>{ L.im.count=Math.floor(L.n*(QCUR==='high'?1:QCUR==='medium'?.6:.2)); });
+  vlSetSky(false); if (VL.rays) VL.rays.enabled=false;
+  const C=QUALITY[QCUR]||QUALITY.medium; if (VL.grass){ bladeLOD(VL.grass,QCUR!=='high'); VL.grass.geometry.instanceCount=Math.floor(VL.grass.geometry.userData.max*C.vlGrass); }
+  (VL.lod||[]).forEach(L=>{ const n=Math.floor(L.n*(QCUR==='high'?1:QCUR==='medium'?.6:.2)), r=L.im.userData.natc; if (r) r.lim=n; else L.im.count=n; });
   if (VL.skyU) VL.skyU.uCloud.value=QCUR==='low'?0:1; vlParticlesReset(); vlEnvClockInit(); vlEnvReset();
   document.body.classList.add('village'); $('#vlHud').hidden=false; $('#vlMini').hidden=false; $('#vlClock').hidden=false;
   VL.t0=performance.now();
@@ -421,7 +464,7 @@ function villageFrame(dt,real,now){
   { let dy=Math.atan2(P.fx,P.fz)-pg.rotation.y; dy=Math.atan2(Math.sin(dy),Math.cos(dy)); pg.rotation.y+=dy*Math.min(1,dt*12); }
   if (knight){ setBaseSynced(knight.anim,moving?'run':'idle',moving?(VL.run?1.25:.9)*(.45+.55*VL.slow):1); knight.mixer.update(W.paused?0:dt); }
   vlEnvTick(dt,real);
-  const U=VL.U; U.uTime.value=real; U.uPlayer.value.set(P.x,0,P.z); U.uCenter.value.set(P.x,P.z);
+  const U=VL.U; U.uTime.value=real; U.uPlayer.value.set(P.x,0,P.z); U.uCenter.value.set(P.x-Math.sin(VL.yaw)*5,P.z-Math.cos(VL.yaw)*5);   // 풀잎은 카메라가 보는 앞쪽에 모아 심어요 (등 뒤 안 보이는 곳 대신)
   U.uFog.value.copy(scene.fog.color); U.uFogN.value=scene.fog.near; U.uFogF.value=scene.fog.far; VL.skyU.uFog.value.copy(scene.fog.color);
   // 카메라: 캐릭터 뒤 · 마우스로 돌려요
   const ty=1.35, sy=Math.sin(VL.pitch), cyw=Math.cos(VL.pitch), want=VL.dist; let allow=want;
@@ -438,8 +481,11 @@ function villageFrame(dt,real,now){
   VL.pads.forEach((r,i)=>{ r.scale.setScalar(1+.08*Math.sin(real*4+i)); });
   VL_DOORS.forEach(d=>{ if (d.label) d.label.visible=Math.hypot(P.x-d.x,P.z-d.z)>7.5; });
   // 빛줄기
-  if (VL.rays&&VL.rays.enabled){ const sp=_vlV2.copy(camera.position).addScaledVector(VL_SUN,200).project(camera), fr=camera.getWorldDirection(new THREE.Vector3()).dot(VL_SUN);
-    VL.rays.uniforms.uSun.value.set((sp.x+1)/2,(sp.y+1)/2); VL.rays.uniforms.uStr.value=Math.max(0,Math.min(1,(fr-.1)*2.2))*(VL.raysK==null?1:VL.raysK); VL.rays.uniforms.uAsp.value=camera.aspect; }
+  // 빛줄기는 고화질에서, 해 쪽을 볼 때만 켜요 (안 보일 때도 화면 전체를 한 번 더 그리던 것을 줄여요)
+  if (VL.rays){ let on=!!(QUALITY[QCUR]&&QUALITY[QCUR].rays);
+    if (on){ const sp=_vlV2.copy(camera.position).addScaledVector(VL_SUN,200).project(camera), fr=camera.getWorldDirection(_vlV).dot(VL_SUN), st=Math.max(0,Math.min(1,(fr-.1)*2.2))*(VL.raysK==null?1:VL.raysK);
+      VL.rays.uniforms.uSun.value.set((sp.x+1)/2,(sp.y+1)/2); VL.rays.uniforms.uStr.value=st; VL.rays.uniforms.uAsp.value=camera.aspect; on=st>.002; }
+    VL.rays.enabled=on; }
   // 장소 발판
   let near=null; for (const d of VL_DOORS) if (Math.hypot(P.x-d.x,P.z-d.z)<1.5) near=d;
   if (near!==VL.door){ VL.door=near; const pe=$('#vlPrompt'); pe.hidden=!near; if (near){ const [a,b]=vlDoorText(near); pe.innerHTML=`<b>${a}</b><span>${esc(b)}</span><button class="btn small" id="vlGo">${near.id==='home'?'둘러보기':'들어가기'} (E)</button>`; $('#vlGo').onclick=vlEnterDoor; } }

@@ -8,7 +8,7 @@ const CF_CAM={x:.1,y:10,z:12.6};                         // 표지판이 바라�
 const CFA={};                                            // 한 번 만든 텍스처
 
 function cfaCv(w,h,fn){ const cv=document.createElement('canvas'); cv.width=w; cv.height=h; fn(cv.getContext('2d'),w,h); return cv; }
-function cfaTex(cv,rep){ const t=new THREE.CanvasTexture(cv); t.encoding=THREE.sRGBEncoding; t.anisotropy=8; if (rep) t.wrapS=t.wrapT=THREE.RepeatWrapping; return t; }
+function cfaTex(cv,rep){ const t=new THREE.CanvasTexture(cv); t.encoding=THREE.sRGBEncoding; t.anisotropy=ANISO; if (rep) t.wrapS=t.wrapT=THREE.RepeatWrapping; return t; }
 const cfaMat=o=>new THREE.MeshStandardMaterial(Object.assign({roughness:.85,metalness:0},o));
 function cfaShade(c,v){ const C=new THREE.Color(c); return `rgb(${Math.min(255,C.r*255*v)|0},${Math.min(255,C.g*255*v)|0},${Math.min(255,C.b*255*v)|0})`; }
 function cfaMix(a,b,t){ const A=new THREE.Color(a); A.lerp(new THREE.Color(b),t); return '#'+A.getHexString(); }

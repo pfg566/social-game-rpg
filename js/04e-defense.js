@@ -295,7 +295,7 @@ function dfTurret(R,kind,x,y,z){
   gem.position.y=gy; g.add(gem);
   const om=new THREE.MeshBasicMaterial({color:col,transparent:true,opacity:.9,toneMapped:false});
   const orbit=new THREE.Mesh(new THREE.TorusGeometry(.95,.035,6,48),om), orbit2=new THREE.Mesh(new THREE.TorusGeometry(1.15,.03,6,48),om); orbit.position.y=orbit2.position.y=gy; g.add(orbit,orbit2);
-  const light=new THREE.PointLight(col,0,13,2); light.position.y=gy; g.add(light);
+  const light=ptLightQ(new THREE.PointLight(col,0,13,2)); light.position.y=gy; g.add(light);
   const t={kind,x,y:y+gy,z,color:col,title:{ice:'얼음 포탑',fire:'불꽃 포탑',bolt:'번개 포탑'}[kind],until:0,cd:0,g,gem,gemMat,orbit,orbit2,light,gy,kick:0,extra,
     boltMat:new THREE.MeshBasicMaterial({color:kind==='ice'?0xc8f4ff:kind==='fire'?0xff8a2a:0xfff2a0,toneMapped:false})};
   TURRETS.push(t); return t; }
@@ -757,7 +757,7 @@ function updateDefenseLook(real,dt){
   GF_SEE.value=(play&&!(typeof SHOP!=='undefined'&&SHOP.open))?1:0;
   if (!DF.skyOff){ DF.skyOff=true; gfSkyVis(false); clouds.forEach(c=>c.visible=true); }
   camera.updateMatrixWorld(); DF_FR.setFromProjectionMatrix(DF_PM.multiplyMatrices(camera.projectionMatrix,camera.matrixWorldInverse));
-  for (const k in DF.secs){ const S=DF.secs[k], v=DF_FR.intersectsBox(S.box); S.ims.forEach(m=>{ m.visible=v; }); }
+  for (const k in DF.secs){ const S=DF.secs[k], v=DF_FR.intersectsBox(S.box); S.ims.forEach(m=>{ if (!m.userData.natc) m.visible=v; }); }
   NAT_U.uTime.value=real; NAT_U.uCam.value.copy(camera.position); NAT_U.uPlr.value.set(P.x,1.1,P.z);
   const fc=scene.fog.color, sunD=new THREE.Vector3().copy(sun.position).sub(sun.target.position).normalize();
   if (DF.skyU){ DF.skyU.uTime.value=real; DF.skyU.uFog.value.copy(fc); DF.sky.position.copy(camera.position); DF.skyU.uSun.value.copy(sunD); }
