@@ -455,8 +455,8 @@ function rangedAI(m,dt){
     if (m.aimT<=0){ fireBolt(m); m.shotCd=RANGED.cd; L.visible=false; }
   } else {
     let mv=0; if (d>RANGED.keep+1.5) mv=1; else if (d<RANGED.min && !door) mv=-.7;
-    const sp=m.spd*slowK(m)*(W.loc?.5:1);
-    m.x+=(dx/d*sp*mv+m.kbx)*dt; m.z+=(dz/d*sp*mv+m.kbz)*dt; m.moving=mv!==0;
+    const sp=m.spd*slowK(m)*(W.loc?.5:1), nv=mv>0?navDir(m,m.x+dx,m.z+dz):{x:dx/d,z:dz/d};   // 다가갈 때는 벽을 돌아가요
+    m.x+=(nv.x*sp*mv+m.kbx)*dt; m.z+=(nv.z*sp*mv+m.kbz)*dt; m.moving=mv!==0;
     m.g.rotation.y=Math.atan2(dx,dz);
     if (d<RANGED.keep+3.5 && m.shotCd<=0){ m.aimT=RANGED.aim*aimK(); m.aimX=tx; m.aimZ=tz; m.aimDoor=door; if (m.anim) m.anim.once('aim',1,true); }
   }

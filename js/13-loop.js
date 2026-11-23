@@ -93,12 +93,18 @@ function frame(now){
         m.slamCd-=dt;
         if (m.slamCd<=0 && ((!PEACE_RUN && pd<10) || atDoor)){ m.slamT=B.slamWarn; m.slamX=m.x; m.slamZ=m.z; flashPrompt(atDoor&&pd>=10?'해골 장군이 성문을 내려찍으려 해요!':'붉은 원 밖으로 피하세요!',B.slamWarn); }
       }
-      const slow=W.loc?.5:1, mv=atDoor?0:1;
-      m.x+=(dx/d*m.spd*slow*mv*slowK(m) + m.kbx)*dt; m.z+=(dz/d*m.spd*slow*mv*slowK(m) + m.kbz)*dt;
+      const slow=W.loc?.5:1, mv=atDoor?0:1, nv=navDir(m,m.x+dx,m.z+dz), nvx=nv.x, nvz=nv.z;   // 벽이 있으면 돌아가요
+      const ox0=m.x, oz0=m.z;
+      m.x+=(nvx*m.spd*slow*mv*slowK(m) + m.kbx)*dt; m.z+=(nvz*m.spd*slow*mv*slowK(m) + m.kbz)*dt;
       m.kbx*=Math.pow(.02,dt); m.kbz*=Math.pow(.02,dt);
       for (const o of mobs){ if (o===m||o.dying>=0) continue; const ox=m.x-o.x, oz=m.z-o.z, od=Math.hypot(ox,oz), min=m.r+o.r; if (od>0&&od<min){ m.x+=ox/od*(min-od)*.5; m.z+=oz/od*(min-od)*.5; } }
       resolve(m,m.r);
-      m.g.rotation.y=Math.atan2(dx,dz);
+      // 그래도 4초 넘게 제자리면(좁은 틈 · 몹끼리 끼임) 플레이어까지 걸어갈 수 있는 가까운 자리로 옮겨요
+      if (mv && d>3.5 && m.spd>0 && !m.boss){ const moved=Math.hypot(m.x-ox0,m.z-oz0); m.stuckT=moved<m.spd*slow*dt*.15?(m.stuckT||0)+dt:Math.max(0,(m.stuckT||0)-dt*2);
+        if (m.stuckT>4){ m.stuckT=0; const f=navField(MAPK==='defense'?m.x+dx:P.x,MAPK==='defense'?m.z+dz:P.z); if (f){ const N=NAV.N, ci=navCell(m.x), cj=navCell(m.z); let best=-1, bd=1e9;
+          for (let j=cj-6;j<=cj+6;j++) for (let i=ci-6;i<=ci+6;i++){ if (i<0||j<0||i>=N||j>=N) continue; const v=f[j*N+i]; if (v<0||!NAV.walk[j*N+i]) continue; const e=(i-ci)**2+(j-cj)**2; if (e>=4&&e<bd&&v<f[cj*N+ci]+999){ bd=e; best=j*N+i; } }
+          if (best>=0){ fx.burst(m.x,.6,m.z,0xcfd6e6,10,3); m.x=best%N-NAV.O; m.z=((best/N)|0)-NAV.O; fx.burst(m.x,.6,m.z,0xcfd6e6,10,3); } } } }
+      m.g.rotation.y=Math.atan2(nvx,nvz);
       m.atkCd=Math.max(0,m.atkCd-dt);
       if (!PEACE_RUN && pd<m.r+.75 && m.atkCd<=0 && W.t>W.invuln){ if (m.anim) m.anim.once('attack',1.6); hurtPlayer(m.dmg,{x:m.x,z:m.z,mob:m}); m.atkCd=1; }
       if (atDoor && MAPK==='glacier') glMobHit(m,dt);

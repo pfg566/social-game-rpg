@@ -514,7 +514,8 @@ function thiefAI(m,dt){
       flashPrompt('도둑 해골이 상자를 훔쳤어요! 바다에 닿기 전에 쓰러뜨리세요',2.6); SFX.wrong(); }
   }
   const dx=tx-m.x, dz=tz-m.z, d=Math.hypot(dx,dz)||1, sp=m.spd*(m.parcel?.85:1)*(W.loc?.5:1)*slowK(m);
-  m.x+=(dx/d*sp+m.kbx)*dt; m.z+=(dz/d*sp+m.kbz)*dt; m.kbx*=Math.pow(.02,dt); m.kbz*=Math.pow(.02,dt);
+  const nv=m.parcel?{x:dx/d,z:dz/d}:navDir(m,tx,tz);
+  m.x+=(nv.x*sp+m.kbx)*dt; m.z+=(nv.z*sp+m.kbz)*dt; m.kbx*=Math.pow(.02,dt); m.kbz*=Math.pow(.02,dt);
   if (!m.parcel) resolve(m,m.r);
   m.g.rotation.y=Math.atan2(dx,dz); m.flash=Math.max(0,m.flash-dt); m.mat.emissive.setHex(m.flash>0?0xffffff:0x000000);
   return true; }

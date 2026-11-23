@@ -23,6 +23,66 @@ function resolve(p,r){
   if (MAPK==='glacier'){ const d=Math.hypot(p.x,p.z); if (d>GL_R){ p.x*=GL_R/d; p.z*=GL_R/d; } }
 }
 
+/* ---------- 몬스터 길 찾기 ----------
+   몬스터는 원래 플레이어를 향해 곧장 걸어서, 사이에 벽 · 집 · 울타리가 있으면 그 앞에 붙어 못 나왔어요.
+   맵을 1m 칸으로 나눠 '목표까지 몇 칸인지'를 미리 세어 두고(목표 칸이 바뀔 때만 다시), 곧장 갈 수 없으면 숫자가 줄어드는 칸으로 돌아가요. */
+const NAV={key:'',N:69,O:34,walk:null,fields:new Map(),out:{x:0,z:0}};
+const NAV_PAD=.95;
+function navWalkAt(x,z){
+  if (Math.abs(x)>33.2||Math.abs(z)>33.2) return false;
+  if (MAPK==='island' && typeof islIn==='function' && !islIn(x,z,1.1)) return false;
+  if (MAPK==='glacier' && typeof GL_R!=='undefined' && Math.hypot(x,z)>GL_R-.4) return false;
+  for (const b of colliders){ if (x>b.x0-NAV_PAD&&x<b.x1+NAV_PAD&&z>b.z0-NAV_PAD&&z<b.z1+NAV_PAD) return false; }
+  return true;
+}
+function navGrid(){
+  const key=MAPK+'|'+colliders.length+'|'+(colliders[0]?colliders[0].x0+','+colliders[colliders.length-1].z1:'');
+  if (NAV.key===key && NAV.walk) return NAV;
+  const N=NAV.N, w=new Uint8Array(N*N);
+  for (let j=0;j<N;j++) for (let i=0;i<N;i++) w[j*N+i]=navWalkAt(i-NAV.O,j-NAV.O)?1:0;
+  NAV.walk=w; NAV.key=key; NAV.fields.clear(); return NAV;
+}
+const navCell=v=>Math.max(0,Math.min(NAV.N-1,Math.round(v+NAV.O)));
+function navField(tx,tz){
+  const G=navGrid(), N=G.N, w=G.walk; let ci=navCell(tx), cj=navCell(tz);
+  if (!w[cj*N+ci]){ let best=-1, bd=1e9; for (let r=1;r<=4&&best<0;r++) for (let j=cj-r;j<=cj+r;j++) for (let i=ci-r;i<=ci+r;i++){ if (i<0||j<0||i>=N||j>=N||!w[j*N+i]) continue; const d=(i-ci)**2+(j-cj)**2; if (d<bd){ bd=d; best=j*N+i; } } if (best<0) return null; ci=best%N; cj=(best/N)|0; }
+  const k=cj*N+ci; let f=G.fields.get(k); if (f){ G.fields.delete(k); G.fields.set(k,f); return f; }
+  f=new Int16Array(N*N).fill(-1); const q=new Int32Array(N*N); let h=0, t=0; f[k]=0; q[t++]=k;
+  while (h<t){ const c=q[h++], i=c%N, j=(c/N)|0, d=f[c]+1;
+    if (i>0&&w[c-1]&&f[c-1]<0){ f[c-1]=d; q[t++]=c-1; } if (i<N-1&&w[c+1]&&f[c+1]<0){ f[c+1]=d; q[t++]=c+1; }
+    if (j>0&&w[c-N]&&f[c-N]<0){ f[c-N]=d; q[t++]=c-N; } if (j<N-1&&w[c+N]&&f[c+N]<0){ f[c+N]=d; q[t++]=c+N; } }
+  G.fields.set(k,f); if (G.fields.size>10) G.fields.delete(G.fields.keys().next().value); return f;
+}
+// 두 점 사이에 벽(몬스터 몸 크기만큼 넓힌)이 없나요?
+function navClear(x0,z0,x1,z1,r){
+  const dx=x1-x0, dz=z1-z0;
+  for (const b of colliders){ const ax=b.x0-r, bx=b.x1+r, az=b.z0-r, bz=b.z1+r; let t0=0, t1=1;
+    if (Math.abs(dx)<1e-9){ if (x0<=ax||x0>=bx) continue; } else { let u=(ax-x0)/dx, v=(bx-x0)/dx; if (u>v){ const s=u; u=v; v=s; } t0=Math.max(t0,u); t1=Math.min(t1,v); if (t0>=t1) continue; }
+    if (Math.abs(dz)<1e-9){ if (z0<=az||z0>=bz) continue; } else { let u=(az-z0)/dz, v=(bz-z0)/dz; if (u>v){ const s=u; u=v; v=s; } t0=Math.max(t0,u); t1=Math.min(t1,v); if (t0>=t1) continue; }
+    return false; }
+  return true;
+}
+// 몬스터 m이 (tx,tz)로 갈 때 걸어갈 방향(길이 1). 곧장 갈 수 있으면 곧장, 아니면 칸 숫자를 따라 돌아가요
+function navDir(m,tx,tz){
+  const o=NAV.out, dx=tx-m.x, dz=tz-m.z, d=Math.hypot(dx,dz)||1;
+  o.x=dx/d; o.z=dz/d;
+  if (!colliders.length || d<1.5) return o;
+  if ((m.navT=(m.navT||0)-1)<=0){ m.navT=6+((Math.random()*4)|0); m.navLos=navClear(m.x,m.z,tx,tz,m.r*.9); }   // 6~9프레임마다 한 번 확인
+  if (m.navLos) return o;
+  const f=navField(tx,tz); if (!f) return o;
+  const N=NAV.N, w=NAV.walk, ci=navCell(m.x), cj=navCell(m.z);
+  let best=-1, bv=f[cj*N+ci]>=0?f[cj*N+ci]:32767;
+  for (let j=cj-1;j<=cj+1;j++) for (let i=ci-1;i<=ci+1;i++){ if (i<0||j<0||i>=N||j>=N||(i===ci&&j===cj)) continue; const c=j*N+i, v=f[c]; if (v<0) continue;
+    if (i!==ci&&j!==cj && !(w[cj*N+i]&&w[j*N+ci])) continue;   // 모서리를 비스듬히 끼어 가지 않게
+    if (v<bv){ bv=v; best=c; } }
+  if (best<0){ // 벽 쪽으로 밀려 칸 밖에 있으면 2칸 안의 가장 가까운 길로
+    for (let j=cj-2;j<=cj+2;j++) for (let i=ci-2;i<=ci+2;i++){ if (i<0||j<0||i>=N||j>=N) continue; const v=f[j*N+i]; if (v>=0&&v<bv){ bv=v; best=j*N+i; } }
+    if (best<0) return o; }
+  const nx=best%N-NAV.O-m.x, nz=((best/N)|0)-NAV.O-m.z, nd=Math.hypot(nx,nz)||1; o.x=nx/nd; o.z=nz/nd; return o;
+}
+// 플레이어(목표)까지 걸어서 갈 수 있는 자리인가요? (벽 안쪽 막힌 곳에서 생겨나지 않게)
+function navReach(x,z,tx,tz){ if (!colliders.length) return true; const f=navField(tx,tz); if (!f) return true; return f[navCell(z)*NAV.N+navCell(x)]>=0; }
+
 /* ---------- 몬스터 ---------- */
 function makeBar(w){
   const g=new THREE.Group();
@@ -59,7 +119,7 @@ function spawnMob(def,isBoss,at){
   } else if (MAPK==='defense' && !at){
     do { x=rnd(-26,26); z=rnd(21,32); tries++; } while (colliders.some(b=>x>b.x0-2&&x<b.x1+2&&z>b.z0-2&&z<b.z1+2) && tries<40);
   } else do { const a=Math.random()*Math.PI*2, r=at?3+Math.random()*2:14+Math.random()*16, cx=at?at.x:P.x, cz=at?at.z:P.z; x=cx+Math.cos(a)*r; z=cz+Math.sin(a)*r; tries++; }
-  while ((Math.abs(x)>32||Math.abs(z)>32||(MAPK==='island'&&!islIn(x,z,1.5))||colliders.some(b=>x>b.x0-2&&x<b.x1+2&&z>b.z0-2&&z<b.z1+2)) && tries<60);
+  while ((Math.abs(x)>32||Math.abs(z)>32||(MAPK==='island'&&!islIn(x,z,1.5))||colliders.some(b=>x>b.x0-2&&x<b.x1+2&&z>b.z0-2&&z<b.z1+2)||(tries<45&&!navReach(x,z,P.x,P.z))) && tries<60);   // 플레이어까지 걸어갈 수 없는 막힌 곳에는 안 생겨요
   x=Math.max(-32,Math.min(32,x)); z=Math.max(-32,Math.min(32,z));
   if (MAPK==='island'){ const q={x,z}; islClamp(q,1.5); x=q.x; z=q.z; }
   if (MAPK==='glacier'){ const dd=Math.hypot(x,z); if (dd>GL_R-1){ x*=(GL_R-1)/dd; z*=(GL_R-1)/dd; } }

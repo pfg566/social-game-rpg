@@ -398,8 +398,8 @@ function hostMobs(dt,players){
         m.g.rotation.y=Math.atan2(dx,dz); m.flash=Math.max(0,m.flash-dt); m.mat.emissive.setHex(0x661111); continue; }
       m.slamCd-=dt; if (m.slamCd<=0 && pl && pd<10){ m.slamT=B.slamWarn; m.slamX=m.x; m.slamZ=m.z; }
     }
-    const stay=!chase && d<.7, sp=m.spd*slowK(m)*(stay?0:1);
-    m.x+=(dx/d*sp+m.kbx)*dt; m.z+=(dz/d*sp+m.kbz)*dt; m.kbx*=Math.pow(.02,dt); m.kbz*=Math.pow(.02,dt);
+    const stay=!chase && d<.7, sp=m.spd*slowK(m)*(stay?0:1), nv=navDir(m,m.x+dx,m.z+dz);
+    m.x+=(nv.x*sp+m.kbx)*dt; m.z+=(nv.z*sp+m.kbz)*dt; m.kbx*=Math.pow(.02,dt); m.kbz*=Math.pow(.02,dt);
     for (const o of mobs){ if (o===m||o.dying>=0) continue; const ox=m.x-o.x, oz=m.z-o.z, od=Math.hypot(ox,oz), min=m.r+o.r; if (od>0&&od<min){ m.x+=ox/od*(min-od)*.5; m.z+=oz/od*(min-od)*.5; } }
     resolve(m,m.r); m.atDoor=stay;
     if (!stay) m.g.rotation.y=Math.atan2(dx,dz);
