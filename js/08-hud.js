@@ -58,7 +58,7 @@ function reset(){
   $('#locCard').hidden=true; $('#gateCard').hidden=true;
   TURRETS.forEach(t=>{ t.until=0; t.cd=0; }); bolts.forEach(b=>scene.remove(b.mesh)); bolts=[]; doorFlash=0;
   $('#doorRow').hidden=MAPK!=='defense';
-  $('#parcelRow').hidden=true; islReset(); glacierReset(); runnerReset(); cafeReset(); villageReset(); stageReset(); liveReset(); twReset(); raidReset(); funReset(); gfReset(); dfReset();
+  $('#parcelRow').hidden=true; islReset(); glacierReset(); runnerReset(); cafeReset(); villageReset(); stageReset(); liveReset(); twReset(); raidReset(); funReset(); BOSS_EYE.intensity=0; gfReset(); dfReset();
 }
 let NICK='', BAN='', CI=null;
 try{ NICK=localStorage.getItem('gsd-nick')||''; }catch(e){}
@@ -153,6 +153,7 @@ function startGame(){
   // 한 판 시간 제한: 선생님이 '게임 열기'에서 정한 분(퀴즈 푸는 시간 포함, 실제 시계 기준)
   { const g=!PARTY.on&&MAPK!=='stage'&&MAPK!=='teamwar'&&MAPK!=='raid'&&MAPK!=='live'&&MAPK!=='village'&&typeof activeGate==='function'?activeGate():null, lim=g&&g.lim>0?g.lim:0;
     W.lim=lim; W.limEnd=lim?performance.now()+lim*60000:0; W.limWarn=0; W.timeUp=false; $('#timeCard').hidden=!lim; $('#timeCard').classList.remove('hurry'); }
+  W.prewarm=1; $('#prepMsg').hidden=false;   // 다음 두 프레임 동안 셰이더를 미리 만들어요 (13-loop.js)
 }
 /* 남은 시간 (매 프레임, 퀴즈 중에도 흘러요) */
 function limitTick(){

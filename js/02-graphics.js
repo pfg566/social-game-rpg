@@ -144,20 +144,32 @@ const QUALITY={high:{label:'고화질',pr:1.5,shadow:2048,points:true,grass:.85,
 const QORDER=['low','medium','high'];
 let QSET='auto', QCUR='medium', qMon=null;
 try{ QSET=localStorage.getItem('gsd-q')||'auto'; }catch(e){}
-const autoQ=()=>{ try{ const v=localStorage.getItem('gsd-q-auto'); return QUALITY[v]?v:'medium'; }catch(e){ return 'medium'; } };
+const autoQ=()=>{ try{ return localStorage.getItem('gsd-q-auto')==='low'?'low':'medium'; }catch(e){ return 'medium'; } };   // 자동은 '가벼움'과 '보통' 사이에서만 골라요 (고화질은 설정에서 직접 고를 때만)
 /* 자동 화질이면 게임 중 화면 속도를 계속 보고, 느리면 렌더 해상도를 0.75배(가벼움은 0.8배)까지 낮춰요 (그래도 느리면 한 단계 아래 화질로) */
 let DRS_S=1;
 const DRS={t:0,n:0,last:0,slow:0,good:0,hold:0,ps:1,pf:0,stuck:false};
-const PT_LIGHTS=[];   // 작은 불빛: 화질에 따라 켜고 꺼요 (켜진 개수가 바뀌면 셰이더를 다시 만들어서, 게임 중에는 개수를 그대로 둬요)
-function ptLightQ(l){ PT_LIGHTS.push(l); l.visible=!!QUALITY[QCUR].points; return l; }
+const PT_LIGHTS=[];   // 작은 불빛: 화질에 따라 켜고 꺼요 (켜진 개수가 바뀌면 셰이더를 모두 다시 만들어 멈칫해서, 게임 중에는 그대로 두고 판이 시작될 때 바꿔요)
+let QPTS=false;
+function ptLightQ(l){ PT_LIGHTS.push(l); l.visible=QPTS; return l; }
+function qPointsSet(on){ on=!!on; if (QPTS===on) return; QPTS=on; PT_LIGHTS.forEach(l=>{ l.visible=on; }); }
+/* 보스 눈빛: 보스가 나올 때마다 불빛을 새로 만들면 불빛 개수가 바뀌어 멈칫해요 → 하나를 늘 두고 보스를 따라다니게 해요 (평소에는 세기 0) */
+const BOSS_EYE=ptLightQ(new THREE.PointLight(0x7fd6ff,0,10,2)); scene.add(BOSS_EYE);
+/* 그림자 쉬기: '가벼움'에서도 그림자 기능은 켜 둔 채(셰이더가 바뀌지 않게) 그림자 그리기만 멈춰요.
+   그림자 카메라를 멀리 치워 비운 그림자 지도를 한 번 만들어 두면 모든 곳이 밝게 나오고, 그 뒤로는 그림자를 다시 그리지 않아요. */
+let SH_PAUSED=false; const SH_KEEP={l:-34,r:34};
+function shadowPause(on){
+  on=!!on; if (on===SH_PAUSED) return; SH_PAUSED=on; const c=sun.shadow.camera;
+  if (on){ SH_KEEP.l=c.left; SH_KEEP.r=c.right; c.left=1e5; c.right=1e5+1; c.updateProjectionMatrix(); renderer.shadowMap.autoUpdate=false; renderer.shadowMap.needsUpdate=true; }
+  else { c.left=SH_KEEP.l; c.right=SH_KEEP.r; c.updateProjectionMatrix(); renderer.shadowMap.autoUpdate=true; }
+}
 const qPR=()=>Math.min(window.devicePixelRatio||1,QUALITY[QCUR].pr)*(QSET==='auto'?DRS_S:1);
 function applyQuality(q){
   if (!QUALITY[q]) q='medium'; if (q!==QCUR){ DRS_S=1; DRS.ps=1; DRS.pf=0; DRS.stuck=false; } QCUR=q; const C=QUALITY[q];
   renderer.setPixelRatio(qPR());
-  sun.castShadow=C.shadow>0;
   if (C.shadow && sun.shadow.mapSize.x!==C.shadow){ sun.shadow.mapSize.set(C.shadow,C.shadow); if (sun.shadow.map){ sun.shadow.map.dispose(); sun.shadow.map=null; } }
+  shadowPause(!C.shadow);   // 그림자 켜기·끄기는 셰이더를 다시 만들게 해서, 기능은 늘 켜 두고 그리기만 쉬어요
   if (bloom){ bloom.enabled=C.bloom; BLOOM_K=C.bloomK; }
-  PT_LIGHTS.forEach(l=>{ l.visible=!!C.points; });
+  if (W.state!=='play') qPointsSet(C.points);   // 게임 중에는 그대로 (다음 판 시작 때 맞춰요)
   GRASS.forEach(g=>{ bladeLOD(g,q!=='high'); g.geometry.instanceCount=Math.floor(g.userData.max*C.grass); g.visible=C.grass>0; });
   if (MOTES){ MOTES.geometry.setDrawRange(0,Math.floor(MOTES.userData.max*C.motes)); MOTES.material.uniforms.uPR.value=renderer.getPixelRatio(); }
   resize();
@@ -195,8 +207,22 @@ function qualityTick(now){
   const save=v=>{ try{ localStorage.setItem('gsd-q-auto',v); }catch(e){} };
   if (fps<40 && i>0){ applyQuality(QORDER[i-1]); save(QCUR); qMon={frames:0,start:0,last:0,warm:now+1500,tried:qMon.tried}; }
   else if (qMon.up && fps<48){ applyQuality(qMon.up); save(QCUR); qMon=null; try{ localStorage.setItem('gsd-q-noup',String(Date.now())); }catch(e){} }   // 올려 봤다가 느려서 되돌렸으면 일주일은 다시 올려 보지 않아요 (판마다 화질이 바뀌며 멈칫하지 않게)
-  else if (fps>57 && i<2 && !qMon.tried && !noUpRecently()){ const prev=QCUR; applyQuality(QORDER[i+1]); qMon={frames:0,start:0,last:0,warm:now+1500,tried:true,up:prev}; }
+  else if (fps>57 && QCUR==='low' && !qMon.tried && !noUpRecently()){ applyQuality('medium'); qMon={frames:0,start:0,last:0,warm:now+1500,tried:true,up:'low'}; }   // '가벼움'에서 빠르면 '보통'만 시험해요 (셰이더가 바뀌지 않아 멈칫하지 않아요)
   else { save(QCUR); qMon=null; }
+}
+/* 판을 시작할 때 '준비 중'을 띄운 채 셰이더를 미리 만들어요: 맵의 모든 재질(숨어 있는 것도) + 그림자 지도 + 빛 번짐.
+   이렇게 해 두면 게임 중에 처음 보는 물체 · 화질 변경 때 멈칫하는 일이 줄어요. */
+function qPrewarm(){
+  try{
+    qPointsSet(QUALITY[QCUR].points);
+    const pz=SH_PAUSED, bl=bloom?bloom.enabled:false;
+    if (pz) shadowPause(false);
+    if (bloom) bloom.enabled=true;
+    renderer.compile(scene,camera);
+    if (composer) composer.render(); else renderer.render(scene,camera);
+    if (bloom) bloom.enabled=bl;
+    if (pz) shadowPause(true);
+  }catch(e){ console.warn('prewarm',e); }
 }
 function updateDreamy(real){
   grassMat.uniforms.uTime.value=real; grassMat.uniforms.uPlayer.value.set(P.x,0,P.z);

@@ -337,7 +337,7 @@ function natCullTick(){
     ex=pl[4].normal.x,ey=pl[4].normal.y,ez=pl[4].normal.z,ed=pl[4].constant, fx2=pl[5].normal.x,fy=pl[5].normal.y,fz2=pl[5].normal.z,fd=pl[5].constant;
   const inF=(x,y,z,r)=>ax*x+ay*y+az*z+ad>-r&&bx*x+by*y+bz*z+bd>-r&&cx*x+cy*y+cz*z+cd>-r&&dx*x+dy*y+dz*z+dd>-r&&ex*x+ey*y+ez*z+ed>-r&&fx2*x+fy*y+fz2*z+fd>-r;
   // 그림자: 키 h인 물체의 그림자는 땅 위 (해 반대쪽으로) h·(sx,sz)만큼 뻗어요 → 그 중간에 커진 구로 한 번 더 확인
-  const lx=sun.position.x-sun.target.position.x, ly=Math.max(.2,sun.position.y-sun.target.position.y), lz=sun.position.z-sun.target.position.z, sx=-lx/ly, sz=-lz/ly, sl=Math.hypot(sx,sz), shOn=sun.castShadow&&renderer.shadowMap.enabled;
+  const lx=sun.position.x-sun.target.position.x, ly=Math.max(.2,sun.position.y-sun.target.position.y), lz=sun.position.z-sun.target.position.z, sx=-lx/ly, sz=-lz/ly, sl=Math.hypot(sx,sz), shOn=sun.castShadow&&renderer.shadowMap.enabled&&!SH_PAUSED;
   for (const r of L){
     const im=r.im; if (!natSeen(im)) continue;
     const n=Math.min(r.n,r.lim), s=r.sph, vis=r.vis, e=im.matrixWorld.elements; let ch=n!==r.last;

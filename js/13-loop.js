@@ -5,6 +5,12 @@ let last=performance.now(), hurtT=0, idleDrawn=0;
 const camOff=new THREE.Vector3(0,13.5,14.5);
 function frame(now){
   requestAnimationFrame(frame);
+  // 판이 막 시작됐으면: 한 번 쉬어 '준비 중'을 먼저 보여 주고 → 셰이더를 미리 만든 뒤 → 다음 번부터 게임을 그려요
+  if (W.prewarm){
+    if (W.prewarm===1){ W.prewarm=2; return; }
+    if (W.prewarm===2){ W.prewarm=3; qPrewarm(); last=performance.now(); return; }
+    W.prewarm=0; $('#prepMsg').hidden=true; startQualityMonitor(); last=performance.now();
+  }
   // 로비 · 결과 화면(게임 중이 아닐 때)은 초당 30번만 그려요: 기다리는 동안 노트북이 덜 뜨거워지고 게임 때 덜 느려져요
   if (W.state!=='play'){ if (now-idleDrawn<31) return; idleDrawn=now; }
   let dt=Math.min(.05,(now-last)/1000); last=now;
@@ -250,7 +256,7 @@ function frame(now){
     if (m.mixer) m.mixer.update(animDt);
     if (m.slamMesh){ const on=m.slamT>0&&m.dying<0; m.slamMesh.visible=on; if (on){ const B=m.def.boss; const k=1-m.slamT/B.slamWarn; m.slamMesh.position.set(m.slamX,.07,m.slamZ); m.slamMesh.material.opacity=.15+k*.45; m.slamMesh.scale.setScalar(.4+.6*Math.min(1,k*1.4)); } }
     if (m.shieldMesh){ m.shieldMesh.visible=m.shield>0&&m.dying<0; m.shieldMesh.material.opacity=.14+.16*m.shield/m.shieldMax+Math.sin(real*3)*.04; m.shieldMesh.rotation.y=real*.4; }
-    if (m.eyeLight) m.eyeLight.intensity=m.dying<0?(m.shield>0?1.4:.6):0;
+    if (m.eyeLight){ m.eyeLight.intensity=m.dying<0?(m.shield>0?1.4:.6):0; m.eyeLight.position.set(m.x,4.2,m.z); }
     const r=Math.max(0,m.hp/m.max); m.bar.fg.scale.x=Math.max(.001,r); m.bar.fg.position.x=-(1-r)*m.bar.w/2;
     m.bar.g.position.set(m.x,m.barY,m.z); m.bar.g.quaternion.copy(camera.quaternion); m.bar.g.visible=m.dying<0&&!(m.spawnT>0);
   }
