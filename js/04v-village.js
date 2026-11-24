@@ -490,8 +490,8 @@ function villageFrame(dt,real,now){
   let near=null; for (const d of VL_DOORS) if (Math.hypot(P.x-d.x,P.z-d.z)<1.5) near=d;
   if (near!==VL.door){ VL.door=near; const pe=$('#vlPrompt'); pe.hidden=!near; if (near){ const [a,b]=vlDoorText(near); pe.innerHTML=`<b>${a}</b><span>${esc(b)}</span><button class="btn small" id="vlGo">${near.id==='home'?'둘러보기':'들어가기'} (E)</button>`; $('#vlGo').onclick=vlEnterDoor; } }
   // 선생님이 연 수업 활동 알림
-  VL.callT-=dt; if (VL.callT<=0){ VL.callT=1; const k=typeof liveOpen==='function'&&liveOpen()?'live':typeof stgOpen==='function'&&stgOpen()?'stage':typeof twOpen==='function'&&twOpen()?'tw':'';
-    const e=$('#vlCall'); e.hidden=!k; if (k&&e.dataset.k!==k){ e.dataset.k=k; e.textContent=k==='live'?'🏫 선생님이 수업 모드를 열었어요 · 지금 가기':k==='stage'?'🟦 발판 서바이벌이 열렸어요 · 지금 가기':'⚔️ 조별 점령전이 열렸어요 · 지금 가기'; } if (!k) e.dataset.k=''; }
+  VL.callT-=dt; if (VL.callT<=0){ VL.callT=1; const k=typeof liveOpen==='function'&&liveOpen()?'live':typeof stgOpen==='function'&&stgOpen()?'stage':typeof twOpen==='function'&&twOpen()?'tw':typeof raidOpen==='function'&&raidOpen()?'raid':'';
+    const e=$('#vlCall'); e.hidden=!k; if (k&&e.dataset.k!==k){ e.dataset.k=k; e.textContent=k==='live'?'🏫 선생님이 수업 모드를 열었어요 · 지금 가기':k==='stage'?'🟦 발판 서바이벌이 열렸어요 · 지금 가기':k==='raid'?'🐉 보스 레이드가 열렸어요 · 지금 가기':'⚔️ 조별 점령전이 열렸어요 · 지금 가기'; } if (!k) e.dataset.k=''; }
   fx.update(dt); updateDreamy(real); qualityTick(now);
   renderFrame(); vlMini(real);
 }
@@ -539,6 +539,6 @@ try{ if (composer&&GRADE){ VL.rays=new THREE.ShaderPass({uniforms:{tDiffuse:{val
 /* 로비 버튼 · 화면 요소 */
 $('#vilBtn')&&$('#vilBtn').addEventListener('click',villageJoin);
 $('#vlLeave')&&$('#vlLeave').addEventListener('click',()=>villageLeave());
-$('#vlCall')&&$('#vlCall').addEventListener('click',()=>{ const k=$('#vlCall').dataset.k; villageLeave(()=>{ if (k==='live') liveJoin(); else if (k==='stage') stageJoin(); else if (k==='tw') twJoin(); }); });
+$('#vlCall')&&$('#vlCall').addEventListener('click',()=>{ const k=$('#vlCall').dataset.k; villageLeave(()=>{ if (k==='live') liveJoin(); else if (k==='stage') stageJoin(); else if (k==='tw') twJoin(); else if (k==='raid') raidJoin(); }); });
 $('#shopClose')&&$('#shopClose').addEventListener('click',()=>{ if (VL.backShop){ VL.backShop=false; setTimeout(villageJoin,60); } });
 setInterval(()=>{ const b=$('#vilBtn'); if (b) b.disabled=!assetsReady; },1000);

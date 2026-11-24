@@ -180,7 +180,7 @@ $('#lvCards').addEventListener('click',e=>{ const b=e.target.closest('[data-lv]'
 /* 쌓인 레벨업 카드 바로 열기: F 키 · 화면의 카드 버튼 */
 const lvAsk=()=>{ if (NEWQ() && W.state==='play' && FUN.lv.pend>0) FUN.lv.want=true; };
 $('#lvPend').addEventListener('click',()=>{ lvAsk(); canvas.focus({preventScroll:true}); });
-addEventListener('keydown',e=>{ if (e.code!=='KeyF' || e.repeat || (e.target.closest&&e.target.closest('input,textarea,select'))) return; if (!NEWQ()||W.state!=='play'||MAPK==='village'||MAPK==='teamwar') return; lvAsk(); });
+addEventListener('keydown',e=>{ if (e.code!=='KeyF' || e.repeat || (e.target.closest&&e.target.closest('input,textarea,select'))) return; if (!NEWQ()||W.state!=='play'||MAPK==='village'||MAPK==='teamwar'||MAPK==='raid') return; lvAsk(); });
 addEventListener('keydown',e=>{
   if ($('#lvUp').hidden) return; e.stopPropagation();
   const m=/^(Digit|Numpad)([1-3])$/.exec(e.code); if (m){ e.preventDefault(); lvChoose(+m[2]-1); }

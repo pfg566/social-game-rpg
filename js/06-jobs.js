@@ -82,7 +82,7 @@ addEventListener('pointermove',e=>{ if (e.pointerType!=='mouse') return; const m
   if (mv>2){ MOUSE.t=now; if (now-(MOUSE.accT||0)>1500){ MOUSE.acc=0; MOUSE.accT=now; } MOUSE.acc=(MOUSE.acc||0)+mv; if (MOUSE.acc>160) MOUSE.sticky=true; }
   MOUSE.x=e.clientX; MOUSE.y=e.clientY; MOUSE.on=true; });
 document.addEventListener('mouseout',e=>{ if (!e.relatedTarget) MOUSE.sticky=false; });
-canvas.addEventListener('pointerdown',e=>{ if (e.pointerType!=='mouse' || e.button!==0) return; MOUSE.x=e.clientX; MOUSE.y=e.clientY; MOUSE.on=true; if (W.state!=='play'||W.paused) return; MOUSE.held=true; MOUSE.sticky=true; MOUSE.t=performance.now(); if (MAPK!=='teamwar') attack(); });
+canvas.addEventListener('pointerdown',e=>{ if (e.pointerType!=='mouse' || e.button!==0) return; MOUSE.x=e.clientX; MOUSE.y=e.clientY; MOUSE.on=true; if (W.state!=='play'||W.paused) return; MOUSE.held=true; MOUSE.sticky=true; MOUSE.t=performance.now(); if (MAPK!=='teamwar'&&MAPK!=='raid') attack(); });
 addEventListener('pointerup',e=>{ if (e.button===0) MOUSE.held=false; });
 addEventListener('blur',()=>{ MOUSE.held=false; });
 canvas.addEventListener('contextmenu',e=>e.preventDefault());
@@ -95,7 +95,7 @@ const aimLine=new THREE.Mesh(new THREE.PlaneGeometry(1,1).translate(0,.5,0),new 
 aimLine.rotation.order='YXZ'; aimLine.visible=false; aimLine.renderOrder=4; scene.add(aimLine);
 function aimTick(real){
   aimMark.visible=false; aimLine.visible=false;
-  if (JOB!=='archer'){ if (W.state==='play' && !W.paused && !PEACE_RUN && !P.down && MAPK!=='teamwar' && mouseAiming()){ const d=mouseAimDir(); if (d && P.dodgeT<=0 && !(P.dashT>0) && !(P.spinT>0)){ P.fx=d.x; P.fz=d.z; } } return; }
+  if (JOB!=='archer'){ if (W.state==='play' && !W.paused && !PEACE_RUN && !P.down && MAPK!=='teamwar' && MAPK!=='raid' && mouseAiming()){ const d=mouseAimDir(); if (d && P.dodgeT<=0 && !(P.dashT>0) && !(P.spinT>0)){ P.fx=d.x; P.fz=d.z; } } return; }
   const on=W.state==='play' && !W.paused && !PEACE_RUN && !P.down; if (!on) return;
   const kb=kbAimDir(); if (kb) MOUSE.sticky=false;
   if (kb){ if (P.dodgeT<=0 && !(P.dashT>0)){ P.fx=kb.x; P.fz=kb.z; }

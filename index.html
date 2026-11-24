@@ -7,7 +7,7 @@
 <style>body{margin:0}[hidden]{display:none!important}img{max-width:100%}</style>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jua&family=IBM+Plex+Sans+KR:wght@400;600;700&display=swap">
-<link rel="stylesheet" href="style.css?v=20261123c">
+<link rel="stylesheet" href="style.css?v=20261124c">
 </head>
 <body>
 
@@ -92,6 +92,19 @@
 <div class="tw-me card" id="twMe" hidden><div class="tw-g"><div class="tw-gbar"><i id="twGauge"></i></div><span id="twGTxt">밀림 게이지 0%</span></div><div class="tw-slot" id="twItem"></div><div class="tw-slot" id="twSkill"></div><div class="tw-fx" id="twFx"></div></div>
 <div class="tw-feed" id="twFeed" hidden></div>
 <div class="run-res card tw-wait" id="twWait" hidden></div>
+<div class="rd-vig" id="rdVig"></div>
+<div class="rd-top" id="rdTop" hidden>
+  <div class="rd-name"><b>👑 망각의 해골 대왕</b><span class="rd-sub"><span id="rdPpl">👥 1명</span><span class="rd-time" id="rdTime">⏱ 5:00</span></span></div>
+  <div class="rd-bar"><em id="rdHpLag"></em><i id="rdHpI"></i><span id="rdHpT"></span></div>
+  <span class="rd-chip" id="rdChip" hidden></span>
+</div>
+<div class="rd-atk card" id="rdAtk" hidden><b id="rdAtkT"></b><div class="rd-atkbar"><i id="rdAtkI"></i><s id="rdAtkS"></s></div><span id="rdAtkN"></span></div>
+<div class="rd-me card" id="rdMe" hidden><div class="rd-slot" id="rdQ"></div><div class="rd-slot" id="rdSk"></div><div class="rd-stat"><b id="rdMyD">0</b><small>내 피해량</small></div><div class="rd-stat"><b id="rdMyC">0/0</b><small>맞힘 / 푼 문제</small></div><div class="rd-stat"><b id="rdMyS">-</b><small>연속 정답</small></div></div>
+<div class="rd-rank card" id="rdRank" hidden><h3>🏅 피해량 순위</h3><ol id="rdRankL"></ol><p id="rdRankMe"></p></div>
+<div class="tw-feed rd-feed" id="rdFeed" hidden></div>
+<div class="rd-toast" id="rdToast" hidden></div>
+<div class="run-res card tw-wait" id="rdWait" hidden></div>
+<div class="st-rank card rd-end" id="rdEnd" hidden><h2 id="rdEndT"></h2><p id="rdEndS"></p><h3>🏅 피해량 순위</h3><ol class="rd-endl" id="rdEndL"></ol><ul class="tw-mvp" id="rdEndM"></ul><p id="rdEndMe"></p><button class="btn" id="rdEndGo">내 결과 받기</button></div>
 <div class="st-rank card" id="twEnd" hidden><h2 id="twEndTitle"></h2><div class="tw-scores" id="twEndSc"></div><ul class="tw-mvp" id="twEndMvp"></ul><p id="twEndMe"></p><button class="btn" id="twEndGo">내 결과 받기</button></div>
 <div class="timetop" id="timeCard" hidden><small>남은 시간</small><b id="timeTxt">5:00</b></div>
 
@@ -250,6 +263,7 @@
       <button class="btn livebtn" id="liveBtn" hidden>🏫 수업 모드 · 교실에 들어가기</button>
       <button class="btn" id="startBtn">게임 시작</button>
       <button class="btn twbtn" id="twBtn" hidden>⚔️ 조별 점령전 · 입장하기</button>
+      <button class="btn raidbtn" id="raidBtn" hidden>🐉 보스 레이드 · 입장하기</button>
       <button class="btn stagebtn" id="stageBtn" hidden>🟦 발판 서바이벌 · 입장하기</button>
       <button class="btn ghost partybtn" id="partyBtn">👥 파티 모드<small>점령전 · 최대 5명</small></button>
       <p class="gatenote" id="gateNote" hidden></p>
@@ -494,9 +508,10 @@
 <script src="js/04r-runner.js?v=20261123p"></script>
 <script src="js/04s-stage.js?v=20261121a"></script>
 <script src="js/04t-teamwar.js?v=20261121a"></script>
+<script src="js/04b-raid.js?v=20261124c"></script>
 <script src="js/04L-live.js?v=20261121a"></script>
 <script src="js/04c-cafe.js?v=20261122d"></script>
-<script src="js/04v-village.js?v=20261123p"></script>
+<script src="js/04v-village.js?v=20261124c"></script>
 <script src="js/04w-village-art.js?v=20261123p"></script>
 <script src="js/04x-village-env.js?v=20261122a"></script>
 <script src="js/04f-field.js?v=20261123p"></script>
@@ -504,12 +519,12 @@
 <script src="js/04i-island.js?v=20261124a"></script>
 <script src="js/04d-cafe-art.js?v=20261123p"></script>
 <script src="js/05-play.js?v=20261124b"></script>
-<script src="js/06-jobs.js?v=20261124a"></script>
+<script src="js/06-jobs.js?v=20261124c"></script>
 <script src="js/06p-player.js?v=20261121a"></script>
-<script src="js/07-quiz.js?v=20261124b"></script>
+<script src="js/07-quiz.js?v=20261124c"></script>
 <script src="js/07b-prep.js?v=20261122r"></script>
-<script src="js/07c-fun.js?v=20261123b"></script>
-<script src="js/08-hud.js?v=20261124b"></script>
+<script src="js/07c-fun.js?v=20261124c"></script>
+<script src="js/08-hud.js?v=20261124c"></script>
 <script src="js/09-server.js?v=20261122s"></script>
 <script src="js/09k-kick.js?v=20261121a"></script>
 <script src="js/09o-online.js?v=20261121a"></script>
@@ -519,9 +534,9 @@
 <script src="js/10e-eggs.js?v=20261121a"></script>
 <script src="js/10f-face.js?v=20261121a"></script>
 <script src="js/10a-ach.js?v=20261121a"></script>
-<script src="js/11-gate-editor.js?v=20261124b"></script>
+<script src="js/11-gate-editor.js?v=20261124c"></script>
 <script src="js/12-lobby.js?v=20261123p"></script>
-<script src="js/13-loop.js?v=20261124a"></script>
+<script src="js/13-loop.js?v=20261124c"></script>
 <script src="js/14-party.js?v=20261124b"></script>
 <script src="js/15-board.js?v=20261121a"></script>
 <script src="js/16-notes.js?v=20261121a"></script>

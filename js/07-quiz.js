@@ -119,6 +119,7 @@ function settle(ok,item,source){
   if (entry){ entry.pending=false; if (ok) entry.fixed=true; }
   else if (!ok) W.wrong.push({item,fixed:false,pending:false});
   const extras=[];
+  if (source && (source.type==='raid'||source.type==='raidAtk')) return raidSettle(ok,item,source);   // 보스 레이드: 지식 폭발 · 폭풍 막기 (벌칙 없음)
   if (source && source.type==='revive'){
     const left=W.revive?W.revive.items.length-W.revive.step-1:0;
     if (entry && ok) entry.fixed=true;
@@ -186,6 +187,7 @@ function applyEffect(fx){
 function closeQuiz(){
   $('#quiz').hidden=true;
   const s=Q.source;
+  if (s && (s.type==='raid'||s.type==='raidAtk')){ raidQuizClosed(s,Q.ok); return; }
   if (s && s.type==='revive'){ reviveNext(Q.ok); return; }
   if (s && s.type==='review'){ reviewNext(); return; }
   if (s && (s.type==='lv'||s.type==='bossq') && funClose(s,Q.ok)) return;

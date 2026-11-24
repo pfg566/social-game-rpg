@@ -24,6 +24,7 @@ function frame(now){
   if (MAPK==='live' && W.state==='play' && !PARTY.on){ liveFrame(dt,real,now); return; }
   if (MAPK==='village' && W.state==='play' && !PARTY.on){ villageFrame(dt,real,now); return; }
   if (MAPK==='teamwar' && W.state==='play' && !PARTY.on){ twFrame(dt,real,now); return; }
+  if (MAPK==='raid' && W.state==='play' && !PARTY.on){ raidFrame(dt,real,now); return; }
   if (PARTY.on && W.state==='play' && W.paused){ W.t+=dt; W.effects=W.effects.filter(e=>e.until>W.t); partyTick(dt); }
   if (W.state==='play' && !W.paused){
     W.t+=dt;

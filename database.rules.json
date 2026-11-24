@@ -126,7 +126,7 @@
         "$num": {
           ".read": "auth != null && auth.token.email == ($cls + '-' + $num + '-' + root.child('roster').child($cls).child($num).child('code').val() + '@stu.sgame.kr')",
           ".write": "(auth != null && auth.token.email_verified == true && (auth.token.email.toLowerCase() == 'pfg566@gmail.com' || root.child('admins').child(auth.token.email.toLowerCase().replace('.', ',')).val() == true)) || (auth != null && auth.token.email == ($cls + '-' + $num + '-' + root.child('roster').child($cls).child($num).child('code').val() + '@stu.sgame.kr'))",
-          ".validate": "newData.hasChildren(['name', 'xp', 'coins', 'plays', 'updatedAt', 'createdAt']) && ((auth != null && auth.token.email_verified == true && (auth.token.email.toLowerCase() == 'pfg566@gmail.com' || root.child('admins').child(auth.token.email.toLowerCase().replace('.', ',')).val() == true)) || (newData.child('updatedAt').val() == now && ((!data.exists() && newData.child('xp').val() == 0 && newData.child('coins').val() == 0 && newData.child('plays').val() == 0) || (data.exists() && ((root.child('playgate').child($cls).child('until').exists() && root.child('playgate').child($cls).child('until').val() + 900000 > now) || (root.child('playgate').child('all').child('until').exists() && root.child('playgate').child('all').child('until').val() + 900000 > now) || (root.child('stage').child($cls).child('meta').child('t0').exists() && root.child('stage').child($cls).child('meta').child('t0').val() + 3600000 > now) || (root.child('tw').child($cls).child('meta').child('t0').exists() && root.child('tw').child($cls).child('meta').child('t0').val() + 3600000 > now) || (root.child('live').child($cls).child('meta').child('t0').exists() && root.child('live').child($cls).child('meta').child('t0').val() + 10800000 > now)) && now - data.child('updatedAt').val() >= 10000 && newData.child('xp').val() >= data.child('xp').val() && newData.child('xp').val() - data.child('xp').val() <= 2000 && newData.child('coins').val() - data.child('coins').val() <= 1000 && newData.child('plays').val() - data.child('plays').val() <= 1 && newData.child('name').val() == data.child('name').val() && newData.child('createdAt').val() == data.child('createdAt').val()))))",
+          ".validate": "newData.hasChildren(['name', 'xp', 'coins', 'plays', 'updatedAt', 'createdAt']) && ((auth != null && auth.token.email_verified == true && (auth.token.email.toLowerCase() == 'pfg566@gmail.com' || root.child('admins').child(auth.token.email.toLowerCase().replace('.', ',')).val() == true)) || (newData.child('updatedAt').val() == now && ((!data.exists() && newData.child('xp').val() == 0 && newData.child('coins').val() == 0 && newData.child('plays').val() == 0) || (data.exists() && ((root.child('playgate').child($cls).child('until').exists() && root.child('playgate').child($cls).child('until').val() + 900000 > now) || (root.child('playgate').child('all').child('until').exists() && root.child('playgate').child('all').child('until').val() + 900000 > now) || (root.child('stage').child($cls).child('meta').child('t0').exists() && root.child('stage').child($cls).child('meta').child('t0').val() + 3600000 > now) || (root.child('tw').child($cls).child('meta').child('t0').exists() && root.child('tw').child($cls).child('meta').child('t0').val() + 3600000 > now) || (root.child('raid').child($cls).child('meta').child('t0').exists() && root.child('raid').child($cls).child('meta').child('t0').val() + 3600000 > now) || (root.child('live').child($cls).child('meta').child('t0').exists() && root.child('live').child($cls).child('meta').child('t0').val() + 10800000 > now)) && now - data.child('updatedAt').val() >= 10000 && newData.child('xp').val() >= data.child('xp').val() && newData.child('xp').val() - data.child('xp').val() <= 2000 && newData.child('coins').val() - data.child('coins').val() <= 1000 && newData.child('plays').val() - data.child('plays').val() <= 1 && newData.child('name').val() == data.child('name').val() && newData.child('createdAt').val() == data.child('createdAt').val()))))",
           "name": {
             ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 12"
           },
@@ -532,6 +532,38 @@
         "stats": {
           "$uid": {
             ".write": "auth != null && auth.uid == $uid"
+          }
+        }
+      }
+    },
+    "raid": {
+      "$cid": {
+        ".read": "auth != null",
+        ".write": "auth != null && auth.token.email_verified == true && (auth.token.email.toLowerCase() == 'pfg566@gmail.com' || root.child('admins').child(auth.token.email.toLowerCase().replace('.', ',')).val() == true)",
+        "pi": {
+          "$uid": {
+            ".write": "auth != null && auth.uid == $uid",
+            ".validate": "!newData.exists() || (newData.hasChildren(['n']) && newData.child('n').isString() && newData.child('n').val().length <= 20)"
+          }
+        },
+        "pl": {
+          "$uid": {
+            ".write": "auth != null && auth.uid == $uid",
+            ".validate": "!newData.exists() || (newData.isString() && newData.val().length < 90)"
+          }
+        },
+        "dmg": {
+          "$uid": {
+            ".write": "auth != null && auth.uid == $uid",
+            ".validate": "newData.hasChildren(['k','d','c','a']) && newData.child('k').val() == root.child('raid').child($cid).child('meta').child('t0').val() && newData.child('d').isNumber() && newData.child('d').val() >= 0 && newData.child('d').val() <= 2000000 && newData.child('c').isNumber() && newData.child('a').isNumber() && newData.child('c').val() <= newData.child('a').val()"
+          }
+        },
+        "ans": {
+          "$k": {
+            "$uid": {
+              ".write": "auth != null && auth.uid == $uid && !data.exists()",
+              ".validate": "newData.isNumber() && (newData.val() == 0 || newData.val() == 1)"
+            }
           }
         }
       }

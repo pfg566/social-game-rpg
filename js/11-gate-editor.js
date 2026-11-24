@@ -86,13 +86,14 @@ function endGame(win){
   if (MAPK==='stage') stgEndUI();
   if (MAPK==='live') lvEndUI();
   if (MAPK==='teamwar') twEndUI();
+  if (MAPK==='raid') raidEndUI();
   W.state='end'; W.paused=true; W.loc=null; W.prep=null; $('#timeCard').hidden=true; $('#prep').hidden=true; $('#locIntro').hidden=true; $('#reviveIntro').hidden=true;
   $('#locCard').hidden=true; $('#gateCard').hidden=true; $('#bossbar').hidden=true; $('#prompt').hidden=true;
   const tu=!win&&!!W.timeUp, wc=tu?Math.max(0,W.wave+(W.gate||W.prep?1:0)):0;
-  $('#endEyebrow').textContent=win?'승리':tu?'시간 종료':'게임 오버';
+  $('#endEyebrow').textContent=win?'승리':tu||MAPK==='raid'?'시간 종료':'게임 오버';
   W.won=!!win;
-  $('#endTitle').textContent=win?(PEACE_RUN?PEACE_TXT[MAPK].winTitle:MAPS[MAPK].winTitle):tu?'시간이 다 됐어요!':(MAPK==='defense'&&W.door<=0?'성문이 무너졌어요':MAPK==='glacier'&&W.gl&&!glAlive().length?'빙하가 모두 녹았어요':MAPK==='runner'?'하트를 모두 잃었어요':MAPK==='stage'?'목숨을 모두 잃었어요':MAPK==='teamwar'?'아쉬운 패배':'체력이 모두 닳았어요');
-  $('#endMsg').textContent=win?(PEACE_RUN?PEACE_TXT[MAPK].winMsg:MAPS[MAPK].winMsg):tu?(MAPK==='runner'?`${RUN.n}문제 중 ${RUN.done}문제를 지나왔어요. 아래 틀린 문제를 복습해 보세요.`:`${WAVES.length}웨이브 중 ${wc}웨이브를 깼어요. 깬 웨이브는 모드 기록에 더해져요. 아래 틀린 문제를 복습해 보세요.`):MAPK==='runner'?'틀린 문제를 다시 읽어 보고 한 번 더 달려 봐요.':MAPK==='stage'?'틀린 문제를 다시 읽어 보고 다음 판에 도전해요.':MAPK==='teamwar'?'잘 싸웠어요! 다음 판에는 조원들과 작전을 짜 봐요.':'퀴즈를 맞히면 회복하거나 더 강해질 수 있어요. 아래 틀린 문제를 복습하고 다시 도전해 보세요.';
+  $('#endTitle').textContent=win?(PEACE_RUN?PEACE_TXT[MAPK].winTitle:MAPS[MAPK].winTitle):tu?'시간이 다 됐어요!':(MAPK==='defense'&&W.door<=0?'성문이 무너졌어요':MAPK==='glacier'&&W.gl&&!glAlive().length?'빙하가 모두 녹았어요':MAPK==='runner'?'하트를 모두 잃었어요':MAPK==='stage'?'목숨을 모두 잃었어요':MAPK==='teamwar'?'아쉬운 패배':MAPK==='raid'?'보스가 버텨 냈어요':'체력이 모두 닳았어요');
+  $('#endMsg').textContent=win?(PEACE_RUN?PEACE_TXT[MAPK].winMsg:MAPS[MAPK].winMsg):tu?(MAPK==='runner'?`${RUN.n}문제 중 ${RUN.done}문제를 지나왔어요. 아래 틀린 문제를 복습해 보세요.`:`${WAVES.length}웨이브 중 ${wc}웨이브를 깼어요. 깬 웨이브는 모드 기록에 더해져요. 아래 틀린 문제를 복습해 보세요.`):MAPK==='runner'?'틀린 문제를 다시 읽어 보고 한 번 더 달려 봐요.':MAPK==='stage'?'틀린 문제를 다시 읽어 보고 다음 판에 도전해요.':MAPK==='teamwar'?'잘 싸웠어요! 다음 판에는 조원들과 작전을 짜 봐요.':MAPK==='raid'?'반 전체가 조금만 더 맞혔으면 쓰러뜨릴 수 있었어요. 아래 틀린 문제를 다시 읽어 봐요.':'퀴즈를 맞히면 회복하거나 더 강해질 수 있어요. 아래 틀린 문제를 복습하고 다시 도전해 보세요.';
   $('#sKills').textContent=W.kills; $('#sCorrect').textContent=`${W.correct}/${W.asked}`;
   const s=Math.floor(W.t); $('#sTime').textContent=`${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;
   const rv=$('#review');
@@ -160,10 +161,11 @@ $('#copyBtn').addEventListener('click',()=>{
 });
 /* 다시 하기: 발판 서바이벌 · 조별 점령전은 선생님이 연 판에 '다시 참여'해요 (다른 모드가 켜지거나 판 수가 줄지 않게) */
 function againLabel(){ const b=$('#againBtn'); if (!b) return;
-  b.textContent=MAPK==='stage'?(typeof stgOpen==='function'&&stgOpen()?'다시 참여하기':'로비로 가기'):MAPK==='teamwar'?(typeof twOpen==='function'&&twOpen()?'다시 참여하기':'로비로 가기'):'다시 하기'; }
+  b.textContent=MAPK==='stage'?(typeof stgOpen==='function'&&stgOpen()?'다시 참여하기':'로비로 가기'):MAPK==='teamwar'?(typeof twOpen==='function'&&twOpen()?'다시 참여하기':'로비로 가기'):MAPK==='raid'?(typeof raidOpen==='function'&&raidOpen()?'다시 참여하기':'로비로 가기'):'다시 하기'; }
 $('#againBtn').addEventListener('click',()=>{
   if (MAPK==='stage'){ if (typeof stgOpen==='function'&&stgOpen()) stageJoin(); else $('#homeBtn').click(); return; }
   if (MAPK==='teamwar'){ if (typeof twOpen==='function'&&twOpen()) twJoin(); else $('#homeBtn').click(); return; }
+  if (MAPK==='raid'){ if (typeof raidOpen==='function'&&raidOpen()) raidJoin(); else $('#homeBtn').click(); return; }
   tryStart(); });
 
 /* ---------- 문제은행(단원별) 불러오기 · 문제 관리 ---------- */
@@ -220,7 +222,7 @@ function setMap(k){
   ensureMap(k);
   // 안 쓰는 맵은 장면에서 떼어 둬요: three.js가 매 프레임 모든 물체의 위치를 다시 계산하는데, 숨은 맵(러너 · 섬 …)까지 계산하던 걸 줄여요
   for (const g in mapGroups){ const G=mapGroups[g], on=g===k; G.visible=on; if (on&&G.parent!==scene) THREE.Object3D.prototype.add.call(scene,G); else if (!on&&G.parent) G.parent.remove(G); }
-  bgGroup.visible=!['general','defense','island','glacier','runner','stage','teamwar','live','cafe','village'].includes(k); ground.visible=!['general','defense','island','glacier','runner','stage','teamwar','live','cafe','village'].includes(k);
+  bgGroup.visible=!['general','defense','island','glacier','runner','stage','teamwar','raid','live','cafe','village'].includes(k); ground.visible=!['general','defense','island','glacier','runner','stage','teamwar','raid','live','cafe','village'].includes(k);
   // 들판 마을 · 성벽 디펜스는 자기 하늘(구름) · 먼 산 · 분위기를 써요 (들판: 낮 · 황금빛 오후 / 성벽: + 해 질 녘)
   const OWN=['general','defense','island','runner'], ownSky=OWN.includes(k);
   if (k==='general'){ gfSkyVis(false); applyMood(['day','golden'].includes(MOOD)?MOOD:gfPickMood()); }
@@ -260,10 +262,10 @@ const PLAY_MODES=[
  {id:'runner', map:'runner', peace:false,side:'peace', icon:'🏃',name:'정답 러너',   sub:'달리며 정답 문 통과'},
  {id:'cafe',   map:'cafe',   peace:false,side:'peace', icon:'🍰',name:'디저트 카페', sub:'주문 퀴즈로 디저트 만들기'},
 ];
-const MODE_EXTRA={party:{icon:'🎉',name:'파티'},'island-p':{icon:'📦',name:'택배 배달'},'defense-p':{icon:'🗼',name:'성 지휘관'},stage:{icon:'🟩',name:'발판 서바이벌'},teamwar:{icon:'🚩',name:'조별 점령전'}};
+const MODE_EXTRA={party:{icon:'🎉',name:'파티'},'island-p':{icon:'📦',name:'택배 배달'},'defense-p':{icon:'🗼',name:'성 지휘관'},stage:{icon:'🟩',name:'발판 서바이벌'},teamwar:{icon:'🚩',name:'조별 점령전'},raid:{icon:'🐉',name:'보스 레이드'}};
 const modeName=id=>(PLAY_MODES.find(x=>x.id===id)||MODE_EXTRA[id]||{name:(MAPS[id]&&MAPS[id].name)||id}).name;
 const modeIcon=id=>(PLAY_MODES.find(x=>x.id===id)||MODE_EXTRA[id]||{icon:'🎮'}).icon;
-function gameModeId(){ if (PARTY&&PARTY.on) return 'party'; if (MAPK==='stage'||MAPK==='teamwar'||MAPK==='live') return MAPK; return PEACE_RUN&&PEACE_MAPS.includes(MAPK)?MAPK+'-p':MAPK; }
+function gameModeId(){ if (PARTY&&PARTY.on) return 'party'; if (MAPK==='stage'||MAPK==='teamwar'||MAPK==='raid'||MAPK==='live') return MAPK; return PEACE_RUN&&PEACE_MAPS.includes(MAPK)?MAPK+'-p':MAPK; }
 /* 모드 탐험 보너스: 이번 주(월요일 시작)에 처음 해 보는 모드에서 문제를 5개 이상 풀면 코인 + */
 const EXPLORE_COINS=60, EXPLORE_MIN_Q=5;
 function weekKey(){ const t=new Date(); t.setHours(0,0,0,0); t.setDate(t.getDate()-((t.getDay()+6)%7)); return `${t.getFullYear()}${String(t.getMonth()+1).padStart(2,'0')}${String(t.getDate()).padStart(2,'0')}`; }
@@ -453,7 +455,7 @@ $('#edZcfg').addEventListener('click',e=>{ const b=e.target.closest('[data-zpre]
 $('#edZcfg').addEventListener('change',e=>{ const el=e.target.closest('[data-zc]'); if (!el) return; const u=curU(), c=zcfgOf(u), f=el.dataset.zc, v=el.value.trim();
   if (f==='q') c.q=v||c.q; else if (v) c[f[0]][+f[1]]=v; u.zcfg=c; renderEditor(); });
 // 학교·학년 칸: 예전 index.html이 캐시에 남아 있어도 보이도록, 없으면 여기서 만들어 넣어요
-const ED_VER='20261124b';   // 문제 관리 화면에 보이는 버전 (업로드가 반영됐는지 확인용)
+const ED_VER='20261124c';   // 문제 관리 화면에 보이는 버전 (업로드가 반영됐는지 확인용)
 function ensureEdTarget(){ if (document.getElementById('edSch')) return; const m=$('#edMap'); if (!m) return; const lab=m.closest('label');
   const d=document.createElement('div'); d.className='ed-target';
   d.innerHTML='<label class="fld"><span>어느 학교 문제인가요?</span><select id="edSch"></select></label><label class="fld"><span>몇 학년 문제인가요?</span><select id="edGrade"><option value="0">모든 학년</option><option value="1">1학년</option><option value="2">2학년</option><option value="3">3학년</option></select></label>';
@@ -621,7 +623,7 @@ $('#edSave').addEventListener('click',async()=>{
    오른쪽 아래 🚪 나가기 또는 Esc → 확인 창 → 지금까지 푼 문제로 '중간에 나옴' 결과를 저장하고 결과 화면으로 */
 const QUIT={wasPaused:false,solo:false};
 const canQuit=()=>!!isAdmin||AUTHMODE==='guest';   // 학생은 게임 중 나가기 버튼·Esc를 쓸 수 없어요 (실수로 누르지 않게)
-const isMultiMode=()=>!!(PARTY&&PARTY.on)||MAPK==='teamwar'||MAPK==='stage'||MAPK==='live';
+const isMultiMode=()=>!!(PARTY&&PARTY.on)||MAPK==='teamwar'||MAPK==='raid'||MAPK==='stage'||MAPK==='live';
 function quitOpen(){
   if (W.state!=='play' || !$('#quitPop').hidden || !canQuit()) return;
   if (MAPK==='live'){ liveLeave(); return; }   // 수업 모드: 묻지 않고 바로 로비로

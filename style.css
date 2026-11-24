@@ -671,6 +671,62 @@ body.twmode #hud, body.twmode #skillbar, body.twmode #hint, body.twmode #touch, 
 .tw-mvp li{display:grid;grid-template-columns:130px 1fr auto;gap:8px;padding:6px 10px;border-radius:10px}
 .tw-mvp li:nth-child(odd){background:rgba(0,0,0,.04)}
 #twEndSc{margin:8px 0}
+/* ---------- 🐉 보스 레이드 ---------- */
+.raidbtn{background:#6d28d9!important;color:#fff!important}
+body.raidmode #hud, body.raidmode #skillbar, body.raidmode #hint, body.raidmode #touch, body.raidmode #prompt{display:none!important}
+.rd-top{position:fixed;left:50%;top:10px;transform:translateX(-50%);z-index:12;width:min(720px,calc(100vw - 560px));min-width:340px;pointer-events:none;text-align:center;color:#fff}
+.rd-name{display:flex;justify-content:space-between;align-items:flex-end;gap:10px;margin-bottom:5px;font-family:var(--display);font-size:21px;line-height:1.1;text-shadow:0 2px 0 #18213a,0 0 6px rgba(0,0,0,.5)}
+.rd-name b{font-weight:400}
+.rd-sub{display:flex;gap:8px;align-items:center;font-family:var(--body);font-size:14px;font-weight:800;text-shadow:none}
+.rd-sub>span{background:rgba(18,22,34,.82);border-radius:9px;padding:3px 10px}
+.rd-time{font-size:19px!important;font-variant-numeric:tabular-nums}
+.rd-time.hurry{background:#e5484d!important;animation:twpulse .6s infinite alternate}
+.rd-bar{position:relative;height:28px;border:3px solid #18213a;border-radius:14px;background:#2a1d3f;overflow:hidden;box-shadow:0 3px 0 rgba(0,0,0,.35)}
+.rd-bar i,.rd-bar em{position:absolute;left:0;top:0;bottom:0;display:block;width:100%}
+.rd-bar em{background:#fff4c2;opacity:.75;transition:width .7s ease-out .3s}
+.rd-bar i{background:linear-gradient(90deg,#7c3aed,#c026d3 55%,#e11d48);transition:width .18s}
+.rd-bar span{position:relative;font-size:14px;font-weight:800;line-height:22px;text-shadow:0 1px 2px #000;font-variant-numeric:tabular-nums}
+.rd-chip{display:inline-block;margin-top:7px;padding:4px 14px;border-radius:999px;background:rgba(18,22,34,.8);font-size:14px;font-weight:700}
+.rd-chip.gro{background:#1d4ed8;animation:twpulse .5s infinite alternate}
+.rd-chip.rage{background:#b91c1c}
+.rd-atk{position:fixed;left:50%;top:84px;transform:translateX(-50%);z-index:13;width:min(560px,calc(100vw - 32px));padding:8px 16px 9px;text-align:center;background:#7f1d1d;color:#fff;pointer-events:none}
+.rd-atk b{font-family:var(--display);font-weight:400;font-size:21px;display:block;line-height:1.15}
+.rd-atk span{font-size:14px;font-weight:700}
+.rd-atk.ok{background:#1d4ed8}.rd-atk.bad{background:#3f0d12}
+.rd-atkbar{position:relative;height:14px;border-radius:7px;background:rgba(255,255,255,.2);margin:6px 0 4px;overflow:hidden}
+.rd-atkbar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#60a5fa,#a7f3d0);transition:width .25s}
+.rd-atkbar s{position:absolute;top:0;bottom:0;width:4px;margin-left:-2px;background:#fde047;box-shadow:0 0 6px #fde047}
+.rd-me{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);z-index:12;display:flex;gap:10px;align-items:center;padding:8px 14px}
+.rd-slot{display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:92px;min-height:52px;padding:4px 8px;border-radius:10px;background:rgba(0,0,0,.05)}
+.rd-slot b{font-size:21px;line-height:1.15;font-variant-numeric:tabular-nums}.rd-slot small{font-size:11px;white-space:nowrap}
+.rd-slot.ready{background:#fde68a;animation:twpulse .5s infinite alternate}
+.rd-slot.cd{opacity:.6}
+.rd-stat{display:flex;flex-direction:column;align-items:center;min-width:72px}
+.rd-stat b{font-size:20px;font-variant-numeric:tabular-nums;line-height:1.2}.rd-stat small{font-size:11px;color:#5d6782;white-space:nowrap}
+.rd-rank{position:fixed;right:14px;top:14px;z-index:12;width:236px;padding:10px 12px 8px;pointer-events:none}
+.rd-rank h3{margin:0 0 6px;font-size:14px}
+.rd-rank ol,.rd-endl{list-style:none;margin:0;padding:0}
+.rd-rank li,.rd-endl li{display:grid;grid-template-columns:22px 1fr auto;gap:6px;align-items:center;font-size:14px;padding:3px 6px;border-radius:7px}
+.rd-rank li b,.rd-endl li b{color:#6d28d9}
+.rd-rank li span,.rd-endl li span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rd-rank li em,.rd-endl li em{font-style:normal;font-weight:800;font-variant-numeric:tabular-nums}
+.rd-rank li.me,.rd-endl li.me{background:#fde68a}
+.rd-rank li.none{display:block;color:#5d6782;font-size:13px}
+.rd-rank p{margin:6px 0 0;padding-top:6px;border-top:1px dashed #c9cfdb;font-size:13px;font-weight:700}
+.rd-feed{left:16px;right:auto;top:96px;width:280px}
+.rd-toast{position:fixed;left:50%;top:30%;transform:translate(-50%,-50%);z-index:12;max-width:calc(100vw - 40px);font-family:var(--display);font-size:clamp(22px,3vw,32px);color:#fff;text-align:center;text-shadow:0 3px 0 #18213a,0 0 14px rgba(0,0,0,.55);pointer-events:none}
+.rd-toast.show{animation:rdpop .35s ease-out}
+@keyframes rdpop{from{transform:translate(-50%,-50%) scale(.7);opacity:0}to{transform:translate(-50%,-50%) scale(1);opacity:1}}
+.rd-vig{position:fixed;inset:0;z-index:5;pointer-events:none;opacity:0;transition:opacity .8s;background:radial-gradient(ellipse at center,rgba(0,0,0,0) 45%,rgba(88,28,135,.55) 100%)}
+body.rdstorm .rd-vig{opacity:1;animation:rdvig 1.2s ease-in-out infinite alternate}
+@keyframes rdvig{to{opacity:.6}}
+.rd-end{width:min(540px,calc(100vw - 32px))}
+.rd-end h3{margin:12px 0 6px;font-size:15px;text-align:left}
+.rd-end #rdEndS{margin:0;font-size:16px}
+.rd-end #rdEndMe{font-weight:800}
+/* 레이드 화면 요소는 퀴즈 창(z 10) 아래에 둬요: 문제를 풀 때 버튼 · 보기를 가리지 않게 */
+.rd-top,.rd-atk,.rd-me,.rd-rank,.rd-feed,.rd-toast,#rdWait{z-index:9}
+#rdWait{top:22%}
 
 /* 새 퀴즈 방식: 레벨 · 연속 정답 · 정답 몬스터 · 레벨업 카드 · 도감 */
 .lv-box{margin-top:6px}
