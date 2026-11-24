@@ -246,12 +246,12 @@ function reviveNext(ok){
   if (!ok){ W.revive=null; W.reviewDone=true; endGame(false); return; }   // 방금 부활 문제를 풀었으니 복습 찬스는 건너뛰어요
   W.revive.step++;
   if (W.revive.step<W.revive.items.length){ openQuiz(W.revive.items[W.revive.step],{type:'revive'}); return; }
-  W.revive=null; P.hp=Math.max(P.hp,Math.round(P.max*.5)); W.invuln=W.t+3;
+  W.revive=null; P.hp=Math.max(P.hp,Math.round(P.max*.5)); guardStart(3);   // 보호막 + 남은 초 표시
   const doorUp=MAPK==='defense'&&W.door<=0;
   if (doorUp){ W.door=Math.round(W.doorMax*.4); for (const m of mobs){ const dx=m.x-DOOR.x, dz=m.z-DOOR.z, d=Math.hypot(dx,dz)||1; if (d<8){ m.kbx=dx/d*14; m.kbz=dz/d*14; } } fx.shock(DOOR.x,DOOR.z,8); fx.rise(DOOR.x,DOOR.z+1,0xffd34d,40); }
   for (const m of mobs){ const dx=m.x-P.x, dz=m.z-P.z, d=Math.hypot(dx,dz)||1; if (d<7){ m.kbx=dx/d*14; m.kbz=dz/d*14; } }
   fx.shock(P.x,P.z,7); fx.rise(P.x,P.z,0xffd34d,40); shake=.3;
-  showBanner(doorUp?'성문 복구! 다시 지켜 내세요':'부활! 3초 동안 무적이에요');
+  showBanner(doorUp?'성문 복구! 다시 지켜 내세요 · 보호막 3초':'부활! 파란 보호막이 있는 3초 동안 무적이에요');
   W.paused=false; canvas.focus({preventScroll:true});
 }
 

@@ -602,7 +602,7 @@ function partyTick(dt){
   // 쓰러짐 · 다시 일어나기
   if (!P.down && P.hp<=0){ P.down=true; P.hp=0; P.downT=cqRespawn(); P.dx=P.x; P.dz=P.z; if (knight) knight.anim.die(); flashPrompt(`쓰러졌어요! ${cqRespawn()}초 뒤 캠프에서 다시 일어나요`,3); }
   if (P.down){ P.x=P.dx; P.z=P.dz; P.downT-=dt;
-    if (P.downT<=0){ P.down=false; P.hp=P.max; const k=PARTY.order.indexOf(PARTY.me); P.x=CQ.camp.x+(k-2)*1.4; P.z=CQ.camp.z-1; W.invuln=W.t+2.5; if (knight) knight.anim.revive(); W.snapCam=true; flashPrompt('다시 일어났어요! 거점으로 달려가요',2); } }
+    if (P.downT<=0){ P.down=false; P.hp=P.max; const k=PARTY.order.indexOf(PARTY.me); P.x=CQ.camp.x+(k-2)*1.4; P.z=CQ.camp.z-1; guardStart(2.5); if (knight) knight.anim.revive(); W.snapCam=true; flashPrompt('다시 일어났어요! 거점으로 달려가요',2); } }
   else {
     // 점령한 거점 안에서는 체력이 차요
     CQ.pts.forEach((p,i)=>{ if (PH.pts[i].own===1 && Math.hypot(P.x-p.x,P.z-p.z)<CQ.r) P.hp=Math.min(P.max,P.hp+cqRegen()*dt); });

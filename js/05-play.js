@@ -467,3 +467,35 @@ function spinHit(h){
   if (h.last) fx.shock(P.x,P.z,SPIN_R+.5);
   gfBrkHit(P.x,P.z,SPIN_R);
 }
+
+/* ---------- 부활 무적 보호막 ----------
+   부활 · 다시 일어서기 뒤 몇 초 동안 무적인데, 눈에 안 보여서 학생들이 언제 끝나는지 몰랐어요.
+   무적인 동안 캐릭터를 감싸는 빛 방울과 머리 위 남은 초(3·2·1)를 보여 주고, 끝나기 1초 전부터 깜빡여요. */
+const GUARD={g:null,mat:null,lab:null,tex:{},last:-1};
+function guardStart(sec){ W.guardUntil=W.t+sec; W.guardLen=sec; W.invuln=Math.max(W.invuln||0,W.t+sec); }
+function guardNumTex(n){ if (GUARD.tex[n]) return GUARD.tex[n];
+  const cv=document.createElement('canvas'); cv.width=cv.height=128; const g=cv.getContext('2d');
+  g.fillStyle='rgba(20,40,80,.55)'; g.beginPath(); g.arc(64,64,54,0,7); g.fill(); g.lineWidth=7; g.strokeStyle='#bfe9ff'; g.stroke();
+  g.fillStyle='#fff'; g.font='bold 76px Jua, "Malgun Gothic", sans-serif'; g.textAlign='center'; g.textBaseline='middle'; g.fillText(String(n),64,70);
+  const t=new THREE.CanvasTexture(cv); t.encoding=THREE.sRGBEncoding; return GUARD.tex[n]=t; }
+function guardBuild(){
+  GUARD.mat=new THREE.ShaderMaterial({uniforms:{uT:{value:0},uA:{value:1},uCol:{value:new THREE.Color(0x3aa6ff)}},transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,side:THREE.DoubleSide,toneMapped:false,
+    vertexShader:'varying vec3 vN; varying vec3 vV; varying float vY; void main(){ vec4 mv=modelViewMatrix*vec4(position,1.); vN=normalize(normalMatrix*normal); vV=normalize(-mv.xyz); vY=position.y; gl_Position=projectionMatrix*mv; }',
+    fragmentShader:'uniform float uT,uA; uniform vec3 uCol; varying vec3 vN; varying vec3 vV; varying float vY; void main(){ float f=pow(1.-abs(dot(vN,vV)),2.2); float band=.5+.5*sin(vY*9.-uT*5.); float a=(f*.7+.015+band*.03*f)*uA; gl_FragColor=vec4(uCol*(.45+f*.9),a); }'});
+  const s=new THREE.Mesh(new THREE.SphereGeometry(1,28,18),GUARD.mat); s.scale.set(1.05,1.2,1.05); s.position.y=1.05; s.renderOrder=5;
+  const ring=new THREE.Mesh(new THREE.RingGeometry(.95,1.2,40),new THREE.MeshBasicMaterial({color:0x5cc0ff,transparent:true,opacity:.55,depthWrite:false,blending:THREE.AdditiveBlending,toneMapped:false,side:THREE.DoubleSide}));
+  ring.rotation.x=-Math.PI/2; ring.position.y=.06;
+  const lab=new THREE.Sprite(new THREE.SpriteMaterial({map:guardNumTex(3),transparent:true,depthTest:false,toneMapped:false})); lab.scale.set(.95,.95,1); lab.position.y=3.15; lab.renderOrder=20;
+  const g=new THREE.Group(); g.add(s,ring,lab); g.visible=false; pg.add(g); GUARD.g=g; GUARD.lab=lab; GUARD.ring=ring;
+}
+function guardTick(){
+  const left=(W.state==='play'&&W.guardUntil)?W.guardUntil-W.t:0;
+  if (left<=0){ if (GUARD.g&&GUARD.g.visible){ GUARD.g.visible=false; if (W.guardUntil){ W.guardUntil=0; try{ fx.burst(P.x,1.2,P.z,0x8fdcff,14,4); }catch(e){} } } return; }
+  if (!GUARD.g) guardBuild();
+  const g=GUARD.g; g.visible=true; const t=performance.now()/1000;
+  const blink=left<1?(Math.sin(t*22)>0?1:.25):1, pop=Math.min(1,(W.guardLen-left)/.18);   // 끝나기 1초 전부터 깜빡
+  GUARD.mat.uniforms.uT.value=t; GUARD.mat.uniforms.uA.value=blink*(.6+.4*pop);
+  g.scale.setScalar(.6+.4*pop+Math.sin(t*4)*.02); GUARD.ring.rotation.z=t*1.5; GUARD.ring.material.opacity=.4*blink;
+  const n=Math.ceil(left); if (n!==GUARD.last){ GUARD.last=n; GUARD.lab.material.map=guardNumTex(n); GUARD.lab.material.needsUpdate=true; }
+  GUARD.lab.material.opacity=blink; g.rotation.y=-pg.rotation.y;   // 숫자는 캐릭터가 돌아도 그대로
+}
