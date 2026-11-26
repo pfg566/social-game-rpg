@@ -7,7 +7,7 @@
 <style>body{margin:0}[hidden]{display:none!important}img{max-width:100%}</style>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jua&family=IBM+Plex+Sans+KR:wght@400;600;700&display=swap">
-<link rel="stylesheet" href="style.css?v=20261124d">
+<link rel="stylesheet" href="style.css?v=20261126a">
 </head>
 <body>
 
@@ -100,12 +100,13 @@
   <span class="rd-chip" id="rdChip" hidden></span>
 </div>
 <div class="rd-atk card" id="rdAtk" hidden><b id="rdAtkT"></b><div class="rd-atkbar"><i id="rdAtkI"></i><s id="rdAtkS"></s></div><span id="rdAtkN"></span></div>
-<div class="rd-me card" id="rdMe" hidden><div class="rd-slot" id="rdQ"></div><div class="rd-slot" id="rdSk"></div><div class="rd-stat"><b id="rdMyD">0</b><small>내 피해량</small></div><div class="rd-stat"><b id="rdMyC">0/0</b><small>맞힘 / 푼 문제</small></div><div class="rd-stat"><b id="rdMyS">-</b><small>연속 정답</small></div></div>
-<div class="rd-rank card" id="rdRank" hidden><h3>🏅 피해량 순위</h3><ol id="rdRankL"></ol><p id="rdRankMe"></p></div>
+<div class="rd-me card" id="rdMe" hidden><div class="rd-hearts" id="rdHeart"></div><div class="rd-slot" id="rdQ"></div><div class="rd-slot" id="rdSk"></div><div class="rd-stat main"><b id="rdMyP">0</b><small>레이드 점수</small></div><div class="rd-stat"><b id="rdMyC">0/0</b><small>맞힘 / 푼 문제</small></div><div class="rd-stat"><b id="rdMyD">0</b><small>보스 피해</small></div></div>
+<div class="rd-help" id="rdHelp" hidden></div>
+<div class="rd-rank card" id="rdRank" hidden><h3>🏅 레이드 점수 순위</h3><ol id="rdRankL"></ol><p id="rdRankMe"></p></div>
 <div class="tw-feed rd-feed" id="rdFeed" hidden></div>
 <div class="rd-toast" id="rdToast" hidden></div>
 <div class="run-res card tw-wait" id="rdWait" hidden></div>
-<div class="st-rank card rd-end" id="rdEnd" hidden><h2 id="rdEndT"></h2><p id="rdEndS"></p><h3>🏅 피해량 순위</h3><ol class="rd-endl" id="rdEndL"></ol><ul class="tw-mvp" id="rdEndM"></ul><p id="rdEndMe"></p><button class="btn" id="rdEndGo">내 결과 받기</button></div>
+<div class="st-rank card rd-end" id="rdEnd" hidden><h2 id="rdEndT"></h2><p id="rdEndS"></p><h3>🏅 레이드 점수 순위</h3><ol class="rd-endl" id="rdEndL"></ol><ul class="tw-mvp" id="rdEndM"></ul><p id="rdEndMe"></p><p class="rd-note">레이드 점수 = 맞힌 문제 ×100 (+빨리 맞히면 최대 50) · 쓰러져서 맞힌 문제 ×50 · 보스 피해 30마다 1점</p><button class="btn" id="rdEndGo">내 결과 받기</button></div>
 <div class="st-rank card" id="twEnd" hidden><h2 id="twEndTitle"></h2><div class="tw-scores" id="twEndSc"></div><ul class="tw-mvp" id="twEndMvp"></ul><p id="twEndMe"></p><button class="btn" id="twEndGo">내 결과 받기</button></div>
 <div class="timetop" id="timeCard" hidden><small>남은 시간</small><b id="timeTxt">5:00</b></div>
 
@@ -509,7 +510,7 @@
 <script src="js/04r-runner.js?v=20261123p"></script>
 <script src="js/04s-stage.js?v=20261121a"></script>
 <script src="js/04t-teamwar.js?v=20261121a"></script>
-<script src="js/04b-raid.js?v=20261124c"></script>
+<script src="js/04b-raid.js?v=20261126a"></script>
 <script src="js/04L-live.js?v=20261121a"></script>
 <script src="js/04c-cafe.js?v=20261122d"></script>
 <script src="js/04v-village.js?v=20261124d"></script>
@@ -522,7 +523,7 @@
 <script src="js/05-play.js?v=20261124d"></script>
 <script src="js/06-jobs.js?v=20261124c"></script>
 <script src="js/06p-player.js?v=20261121a"></script>
-<script src="js/07-quiz.js?v=20261124c"></script>
+<script src="js/07-quiz.js?v=20261126a"></script>
 <script src="js/07b-prep.js?v=20261122r"></script>
 <script src="js/07c-fun.js?v=20261124c"></script>
 <script src="js/08-hud.js?v=20261124d"></script>
@@ -535,7 +536,7 @@
 <script src="js/10e-eggs.js?v=20261121a"></script>
 <script src="js/10f-face.js?v=20261121a"></script>
 <script src="js/10a-ach.js?v=20261121a"></script>
-<script src="js/11-gate-editor.js?v=20261124d"></script>
+<script src="js/11-gate-editor.js?v=20261126a"></script>
 <script src="js/12-lobby.js?v=20261123p"></script>
 <script src="js/13-loop.js?v=20261124d"></script>
 <script src="js/14-party.js?v=20261124b"></script>

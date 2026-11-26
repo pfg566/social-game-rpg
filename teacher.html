@@ -251,6 +251,7 @@ input.rename{border:2px solid var(--line);border-radius:6px;padding:2px 6px;widt
 .rdb-rank ol{list-style:none;margin:0;padding:0;display:grid;gap:6px}
 .rdb-rank li{position:relative;display:grid;grid-template-columns:34px 1fr auto;gap:8px;align-items:center;padding:6px 10px;border-radius:10px;font-size:clamp(16px,1.55vw,24px);overflow:hidden;background:rgba(255,255,255,.05)}
 .rdb-rank li i{position:absolute;left:0;top:0;bottom:0;background:rgba(192,132,252,.32);transition:width .4s}
+.rdb-rank li.ko{opacity:.6}
 .rdb-rank li>b,.rdb-rank li>span,.rdb-rank li>em{position:relative}
 .rdb-rank li>b{color:#fde047}
 .rdb-rank li>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -269,7 +270,7 @@ input.rename{border:2px solid var(--line);border-radius:6px;padding:2px 6px;widt
 .rdb-end{background:rgba(20,12,40,.97);border-color:#fde047;max-height:84vh;overflow:auto}
 .rdb-end h2{font-family:var(--display);font-weight:400;font-size:clamp(34px,4vw,64px);margin:0 0 6px}
 .rdb-end .sum{font-size:clamp(18px,1.8vw,28px);margin:0 0 14px;opacity:.92}
-.rdb-mvps{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:0 0 16px}
+.rdb-mvps{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:0 0 16px}
 .rdb-mvps div{background:rgba(255,255,255,.1);border-radius:16px;padding:12px}
 .rdb-mvps b{display:block;font-size:clamp(16px,1.5vw,22px);opacity:.85}
 .rdb-mvps span{display:block;font-family:var(--display);font-size:clamp(24px,2.6vw,40px);margin:4px 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -383,11 +384,11 @@ input.rename{border:2px solid var(--line);border-radius:6px;padding:2px 6px;widt
         <label class="f"><span>학급</span><select id="rdCls"></select></label>
         <label class="f"><span>단원</span><select id="rdUnit"></select></label>
         <label class="f"><span>제한 시간</span><select id="rdDur"><option value="180">3분</option><option value="300" selected>5분</option><option value="420">7분</option></select></label>
-        <label class="f"><span>보스 체력</span><select id="rdHpK"><option value="0.55">쉬움</option><option value="0.7" selected>보통</option><option value="0.85">어려움</option></select></label>
+        <label class="f"><span>난이도</span><select id="rdHpK"><option value="0.55">쉬움</option><option value="0.7" selected>보통</option><option value="0.85">어려움</option></select></label>
         <label class="f"><span>전체 공격 막기</span><select id="rdTh"><option value="50">반의 50% 이상 정답</option><option value="60" selected>반의 60% 이상 정답</option><option value="70">반의 70% 이상 정답</option></select></label>
       </div>
       <div class="aw-bar"><button class="btn" id="rdOpen">① 입장 열기</button><button class="btn primary" id="rdGo">② 시작</button><button class="btn" id="rdStop">끝내기</button><button class="btn" id="rdBigBtn">📺 크게 보기</button></div>
-      <p class="aw-help">① 입장 열기를 누르면 그 반 학생들 게임 화면에 '🐉 보스 레이드 · 입장하기' 버튼이 생겨요. 모두 들어오면 ② 시작을 눌러요 — 보스 체력은 그때 들어온 학생 수와 제한 시간에 맞춰 정해져요. 학생들은 큰 보스 둘레에서 함께 싸우고, 문제를 맞히면 <b>⚡ 지식 폭발</b>로 큰 피해를 줘요(빨리 · 연속으로 맞힐수록 세요). 틀려도 벌칙은 없어요. 1분쯤마다 보스가 <b>🌀 망각의 폭풍</b>을 모으면 모두 같은 문제를 풀어요: 정한 비율 이상 맞히면 막고 보스가 쓰러져 8초 동안 피해 2배, 못 막으면 남은 시간이 15초 줄어요. 보스를 쓰러뜨리면 반 전체가 코인 +30을 받아요. <b>진행하는 동안 이 화면(탭)을 열어 두세요</b> — 보스 체력 · 시간 · 전체 공격을 이 화면이 계산해요. 📺 크게 보기로 TV에 띄우면 좋아요.</p>
+      <p class="aw-help">① 입장 열기를 누르면 그 반 학생들 게임 화면에 '🐉 보스 레이드 · 입장하기' 버튼이 생겨요. 모두 들어오면 ② 시작을 눌러요 — 보스 체력은 그때 들어온 학생 수와 제한 시간에 맞춰 정해져요. 학생들은 큰 보스 둘레에서 함께 싸우고, 문제를 맞히면 <b>⚡ 지식 폭발</b>로 큰 피해를 줘요(빨리 · 연속으로 맞힐수록 세요). 틀려도 벌칙은 없어요. 학생마다 <b>❤️ 하트 3개</b> — 바닥 공격에 맞으면 하나씩 줄고, 다 잃으면 쓰러져요. 쓰러지면 <b>🩹 친구가 옆에 2초</b> 서 있거나(한 판에 1번 · 하트 2개, 난이도 '쉬움'은 3개) <b>📖 쓰러진 학생들이 함께 부활 문제</b>를 맞히면(1명 3문제 · 2명 6문제 · 3명 이상 10문제) 이 화면이 한 명을 골라 일으켜요(하트 3개). 순위는 <b>레이드 점수</b>(맞힌 문제 ×100 + 빠른 정답 최대 50 · 쓰러져서 맞힌 문제 ×50 · 보스 피해 30마다 1점)로 정해요. 1분쯤마다 보스가 <b>🌀 망각의 폭풍</b>을 모으면 모두 같은 문제를 풀어요: 정한 비율 이상 맞히면 막고 보스가 쓰러져 8초 동안 피해 2배, 못 막으면 남은 시간이 15초 줄어요. 보스를 쓰러뜨리면 반 전체가 코인 +30을 받아요. <b>진행하는 동안 이 화면(탭)을 열어 두세요</b> — 보스 체력 · 시간 · 전체 공격을 이 화면이 계산해요. 📺 크게 보기로 TV에 띄우면 좋아요.</p>
       <div id="rdStatus" class="miss-scope">학급을 고르세요.</div>
       <div class="rd-board" id="rdBoard"></div>
       <div class="tw-tfeed" id="rdTFeed"></div>
@@ -592,7 +593,7 @@ input.rename{border:2px solid var(--line);border-radius:6px;padding:2px 6px;widt
   <div class="rdb-mid">
     <div class="rdb-feed" id="rdbFeed"></div>
     <div class="rdb-boss sleep" id="rdbBoss"><div class="rdb-glow"></div><img src="img/raid-boss.png?v=1" alt="망각의 해골 대왕"><div class="rdb-orb"></div><div class="rdb-zz">💫</div></div>
-    <div class="rdb-rank"><h3>🏅 피해량 순위</h3><ol id="rdbRank"></ol></div>
+    <div class="rdb-rank"><h3>🏅 레이드 점수 순위</h3><ol id="rdbRank"></ol></div>
   </div>
   <p class="rdb-msg" id="rdbMsg"></p>
   <div class="rdb-atk" id="rdbAtk" hidden><b id="rdbAtkT"></b><h2 id="rdbAtkQ"></h2><div class="rdb-meter"><i id="rdbAtkI"></i><s id="rdbAtkS"></s></div><p id="rdbAtkN"></p><p class="rdb-ans" id="rdbAtkA" hidden></p></div>
@@ -1367,7 +1368,7 @@ function twRenderT(){
 const RD_INTRO=8, RD_ATK=20, RD_RES=5, RD_GRO=8, RD_PEN=15, RD_FIRST=45, RD_PER=60, RD_PER_MIN=1150;
 const RD_JOBN={knight:'🛡️ 기사',archer:'🏹 궁수',mage:'🔮 마법사'};
 const RDH={inited:false,cls:'',meta:null,pi:{},seen:{},dmg:{},ans:{},refs:[],timer:0,st:null,ready:false,lastStr:'',t0:0,qa:[],k:-1,pen:0,bonus:0,blocks:0,fails:0,
-  feed:[],prevC:{},rk:{},rkT:0,lastHp:-1,hitAt:0,tblKey:'',boardKey:''};
+  feed:[],prevC:{},rk:{},rkT:0,lastHp:-1,hitAt:0,tblKey:'',boardKey:'',pool:0,cdSeen:{},rvK:0,rvAt:{},kon:0,need:0};
 function rdInit(){
   const el=$('#rdCls'), cur=el.value||RDH.cls;
   el.innerHTML='<option value="">학급 선택</option>'+sortedSchools().map(sid=>{ const ks=sortedClasses(sid).filter(k=>!CLS[k].hidden); if (!ks.length) return '';
@@ -1393,7 +1394,7 @@ function rdFillUnits(byCls){
 const rdRef=p=>db.ref(`raid/${RDH.cls}${p?'/'+p:''}`);
 function rdWatchT(){
   RDH.refs.forEach(([r,ev,cb])=>r.off(ev,cb)); RDH.refs=[]; RDH.cls=$('#rdCls').value;
-  Object.assign(RDH,{meta:null,pi:{},seen:{},dmg:{},ans:{},st:null,ready:false,t0:0,feed:[],prevC:{},rk:{},lastHp:-1,tblKey:'',boardKey:''}); rdRender(); rdBigRender();
+  Object.assign(RDH,{meta:null,pi:{},seen:{},dmg:{},ans:{},st:null,ready:false,t0:0,feed:[],prevC:{},rk:{},lastHp:-1,tblKey:'',boardKey:'',pool:0,cdSeen:{},rvK:0,rvAt:{},kon:0,need:0}); rdRender(); rdBigRender();
   if (!RDH.cls) return;
   const L=(p,ev,cb)=>{ const r=rdRef(p); r.on(ev,cb); RDH.refs.push([r,ev,cb]); };
   L('meta','value',s=>{ const m=s.val(); RDH.meta=m; if (m&&m.t0&&m.t0!==RDH.t0){ RDH.t0=m.t0; rdHostInit(); } if (!m||!m.t0){ RDH.t0=0; RDH.st=null; }
@@ -1402,8 +1403,11 @@ function rdWatchT(){
   L('pi','child_added',s=>{ RDH.pi[s.key]=s.val()||{}; rdRender(); }); L('pi','child_changed',s=>{ RDH.pi[s.key]=s.val()||{}; }); L('pi','child_removed',s=>{ delete RDH.pi[s.key]; });
   const onPl=s=>{ RDH.seen[s.key]=Date.now(); };
   L('pl','child_added',onPl); L('pl','child_changed',onPl); L('pl','child_removed',s=>{ delete RDH.seen[s.key]; });
-  const onD=s=>{ const v=s.val(), u=s.key; if (!v) return; RDH.dmg[u]=v;
-    if (RDH.prevC[u]!==undefined && (v.c|0)>RDH.prevC[u] && RDH.meta&&RDH.meta.state==='run'&&+v.k===+RDH.t0) rdFeed(`⚡ ${v.n||'학생'} 정답! 지식 폭발`);
+  const onD=s=>{ const v=s.val(), u=s.key; if (!v) return; const o=RDH.dmg[u]; RDH.dmg[u]=v;
+    if (o && +o.k===+v.k && RDH.meta&&RDH.meta.state==='run'&&+v.k===+RDH.t0){ const nm=v.n||'학생';
+      if ((v.cd|0)>(o.cd|0)) rdFeed(`📖 ${nm} 부활 문제 정답`); else if ((v.c|0)>(o.c|0)) rdFeed(`⚡ ${nm} 정답! 지식 폭발`);
+      if (+v.ko===1 && +o.ko!==1) rdFeed(`💀 ${nm} 쓰러졌어요`);
+      if (v.sv && v.sv!==o.sv){ const r=RDH.pi[v.sv]||{}; rdFeed(`🩹 ${r.n||'친구'} → ${nm} 구조!`); } }
     RDH.prevC[u]=v.c|0; };
   L('dmg','child_added',onD); L('dmg','child_changed',onD); L('dmg','child_removed',s=>{ delete RDH.dmg[s.key]; delete RDH.prevC[s.key]; });
   const onA=s=>{ RDH.ans[s.key]=s.val()||{}; };
@@ -1414,9 +1418,15 @@ function rdFeed(m){ RDH.feed.unshift(m); RDH.feed.length=Math.min(RDH.feed.lengt
 const rdActive=()=>{ const n=Date.now(); return Object.keys(RDH.seen).filter(u=>n-RDH.seen[u]<10000).length; };
 const rdClock=s=>{ s=Math.max(0,Math.ceil(s||0)); return `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`; };
 const rdN=v=>Math.max(0,Math.round(+v||0)).toLocaleString('ko-KR');
-function rdList(){ const k0=+(RDH.meta&&RDH.meta.t0)||0;
-  return Object.entries(RDH.dmg).filter(([u,v])=>v&&+v.k===k0).map(([u,v])=>{ const p=RDH.pi[u]||{}; return {u,n:String(v.n||p.n||'학생'),num:+v.num||+p.num||0,d:Math.max(0,+v.d||0),c:v.c|0,a:v.a|0,t:+v.t||0,g:v.g|0}; })
-    .sort((a,b)=>b.d-a.d||b.c-a.c); }
+/* 레이드 점수 = 맞힌 문제 ×100 (+빠른 정답 최대 50) · 쓰러져서 맞힌 문제 ×50 · 보스 피해 30마다 1점 (학생 화면 raidScore와 같아요)
+   이상한 값이 와도 순위가 망가지지 않게: 빠른 정답은 문제당 50점까지 · 피해는 한 학생 상한까지만 세요 */
+function rdScore(v,cap){ const c=Math.max(0,v.c|0), cd=Math.min(c,Math.max(0,v.cd|0)), sp=Math.min(Math.max(0,v.sp|0),(c-cd)*50), d=Math.min(cap||Infinity,Math.max(0,+v.d||0));
+  return (c-cd)*100+sp+cd*50+Math.floor(d/30); }
+function rdList(){ const m=RDH.meta||{}, k0=+m.t0||0, cap=Math.max(5000,(m.hp||0)*.5), E=Object.entries(RDH.dmg).filter(([u,v])=>v&&+v.k===k0), sv={};
+  E.forEach(([u,v])=>{ if (v.sv&&v.sv!==u) sv[v.sv]=(sv[v.sv]||0)+1; });   // 🩹 누가 누구를 구했는지 (쓰러진 학생이 적어요)
+  return E.map(([u,v])=>{ const p=RDH.pi[u]||{}; return {u,n:String(v.n||p.n||'학생'),num:+v.num||+p.num||0,d:Math.max(0,+v.d||0),c:v.c|0,a:v.a|0,t:+v.t||0,g:v.g|0,
+      cd:v.cd|0,pd:v.pd|0,rv:sv[u]||0,h:v.h!=null?Math.max(0,v.h|0):3,ko:+v.ko===1,s:rdScore(v,cap)}; })
+    .sort((a,b)=>b.s-a.s||b.c-a.c||b.d-a.d); }
 async function rdOpenRoom(){
   if (!RDH.cls){ rdMsg('학급을 먼저 골라 주세요.',true); return; }
   try{ await db.ref(`raid/${RDH.cls}`).set({meta:{state:'wait',at:firebase.database.ServerValue.TIMESTAMP}}); RDH.feed=[]; $('#rdTFeed').innerHTML=''; rdRemember(true); }
@@ -1445,18 +1455,18 @@ async function rdStart(){
   const uid=$('#rdUnit').value, pk=rdPickQs(uid); if (!pk||!pk.qs.length){ rdMsg('이 단원에는 4지선다나 O/X 문제가 없어요. 다른 단원을 골라 주세요.',true); return; }
   const n=Math.max(4,Object.keys(RDH.pi).length), dur=+$('#rdDur').value||300, f=+$('#rdHpK').value||.7, th=+$('#rdTh').value||60;
   const hp=Math.max(3000,Math.round(n*RD_PER_MIN*(dur/60)*f/100)*100), un=(UNITS.find(u=>u.id===uid)||{}).name||'';
-  try{ await db.ref(`raid/${RDH.cls}`).update({qs:pk.qs,qa:pk.qa,st:null,dmg:null,ans:null,rk:null,meta:{state:'run',t0:firebase.database.ServerValue.TIMESTAMP,dur,hp,th,n,unit:un}}); rdRemember(true); }
+  try{ await db.ref(`raid/${RDH.cls}`).update({qs:pk.qs,qa:pk.qa,st:null,dmg:null,ans:null,rk:null,meta:{state:'run',t0:firebase.database.ServerValue.TIMESTAMP,dur,hp,th,n,unit:un,ez:f<.6?1:0}}); rdRemember(true); }
   catch(e){ rdMsg('시작하지 못했어요. 새 보안 규칙(database.rules.json)을 Firebase에 올렸는지 확인해 주세요.',true); }
 }
 function rdHostInit(){
   const m=RDH.meta||{};
-  Object.assign(RDH,{k:-1,pen:0,bonus:0,blocks:0,fails:0,lastStr:'',rk:{},rkT:0,lastHp:-1,ready:false,qa:[],
+  Object.assign(RDH,{k:-1,pen:0,bonus:0,blocks:0,fails:0,lastStr:'',rk:{},rkT:0,lastHp:-1,ready:false,qa:[],pool:0,cdSeen:{},rvK:0,rvAt:{},kon:0,need:0,
     st:{k0:m.t0,ph:'intro',hp:m.hp||1,mx:m.hp||1,left:m.dur||300,k:-1,top:[]}});
   const t0=m.t0;
   Promise.all([rdRef('qa').once('value'),rdRef('st').once('value')]).then(([a,b])=>{
     if (RDH.t0!==t0) return; RDH.qa=arrOf(a.val());
     const v=b.val();   // 이 화면을 새로 고침해도 판을 이어서 진행해요 (지난 폭풍 · 줄어든 시간 · 보너스)
-    if (v&&+v.k0===+t0){ Object.assign(RDH.st,v); RDH.k=v.k!=null?v.k|0:-1; RDH.pen=v.pen|0; RDH.bonus=v.bonus|0; RDH.blocks=v.blk|0; RDH.fails=v.fail|0; }
+    if (v&&+v.k0===+t0){ Object.assign(RDH.st,v); RDH.k=v.k!=null?v.k|0:-1; RDH.pen=v.pen|0; RDH.bonus=v.bonus|0; RDH.blocks=v.blk|0; RDH.fails=v.fail|0; RDH.pool=v.rp|0; RDH.rvK=v.rv&&v.rv.k|0||0; }
     RDH.ready=true; }).catch(()=>{ RDH.ready=true; });
 }
 function rdHostTick(){
@@ -1483,12 +1493,27 @@ function rdHostTick(){
         else { RDH.pen+=RD_PEN; RDH.fails++; rdFeed(`💥 못 막았어요… 정답 ${st.ac}/${st.np}명 · 남은 시간 −${RD_PEN}초`); }
         st.hp=Math.max(0,Math.round(m.hp-dealt-RDH.bonus)); st.left=Math.max(0,Math.ceil(m.dur-ft-RDH.pen)); }
     } else if (st.ph==='res'){ if (now>=st.ru) st.ph='fight'; }
+    rdRevivePool(st,now,k0);
     if (st.hp<=0){ rdEnd(false); return; }
     if (st.left<=0 && st.ph!=='atk' && st.ph!=='res'){ rdEnd(false); return; }
   }
-  const list=rdList(); st.top=list.slice(0,5).map(p=>[p.num,p.n,p.d]);
+  const list=rdList(); st.top=list.slice(0,5).map(p=>[p.num,p.n,p.s]);
   st.pen=RDH.pen; st.bonus=RDH.bonus; st.blk=RDH.blocks; st.fail=RDH.fails;
   rdWriteSt(); if (Date.now()-RDH.rkT>3000) rdRanks(list); rdRender(); rdBigRender();
+}
+/* 📖 함께 문제 풀기 부활: 쓰러진 학생들이 맞힌 부활 문제를 모두 더해요. 다 차면 쓰러진 학생 한 명을 골라 일으켜요
+   (1명 쓰러짐 3문제 · 2명 6문제 · 3명 이상 10문제) */
+function rdRevivePool(st,now,k0){
+  const t=Date.now(), ko=[];
+  for (const u in RDH.dmg){ const v=RDH.dmg[u]; if (!v||+v.k!==k0) continue;
+    const cd=v.cd|0, was=RDH.cdSeen[u]; if (was===undefined) RDH.cdSeen[u]=cd; else if (cd>was){ RDH.pool+=cd-was; RDH.cdSeen[u]=cd; }
+    if (+v.ko===1 && t-(RDH.seen[u]||0)<10000 && !(RDH.rvAt[u]&&t-RDH.rvAt[u]<5000)) ko.push(u); }
+  const need=ko.length>=3?10:ko.length*3; RDH.kon=ko.length; RDH.need=need;
+  if (!ko.length) RDH.pool=0;
+  else if (RDH.pool>=need){ const u=ko[Math.floor(Math.random()*ko.length)], v=RDH.dmg[u]||{}, nm=String(v.n||(RDH.pi[u]||{}).n||'학생');
+    RDH.pool-=need; RDH.rvK++; RDH.rvAt[u]=t; st.rv={u,k:RDH.rvK,at:now,n:nm}; rdFeed(`📖 다 같이 ${need}문제! ${nm} 다시 일어났어요`);
+    const left=ko.length-1, n2=left>=3?10:left*3; if (!left) RDH.pool=0; else RDH.pool=Math.min(RDH.pool,n2); }
+  st.rp=RDH.pool; st.rn=RDH.kon?(RDH.kon>=3?10:RDH.kon*3):0; st.kon=RDH.kon;
 }
 function rdWriteSt(){ const st=RDH.st; if (!st) return; const str=JSON.stringify(st); if (str===RDH.lastStr) return; RDH.lastStr=str; rdRef('st').set(JSON.parse(str)).catch(()=>{}); }
 /* 학생마다 자기 순위만 받아요 (rk/{uid}) · 바뀐 것만 보내요 */
@@ -1498,12 +1523,15 @@ async function rdEnd(manual){
   if (m.state!=='run'||!RDH.st){ if (manual&&m.state==='wait') await rdRef('meta/state').set('end').catch(()=>{}); return; }
   const st=RDH.st; if (st.end){ if (manual) await rdRef('meta/state').set('end').catch(()=>{}); return; }
   const list=rdList(), win=st.hp<=0, mvp={};
-  if (list[0]&&list[0].d>0) mvp.dmg=[list[0].n,rdN(list[0].d)];
+  const dm=list.slice().sort((a,b)=>b.d-a.d)[0]; if (dm&&dm.d>0) mvp.dmg=[dm.n,rdN(dm.d)];
   const c=list.slice().sort((a,b)=>b.c-a.c||b.d-a.d)[0]; if (c&&c.c>0) mvp.cor=[c.n,c.c+'문제'];
   const fs=list.filter(p=>p.c>=3).sort((a,b)=>a.t/a.c-b.t/b.c)[0]; if (fs) mvp.fast=[fs.n,`평균 ${(fs.t/fs.c/1000).toFixed(1)}초`];
   const g=list.slice().sort((a,b)=>b.g-a.g||b.c-a.c)[0]; if (g&&g.g>0) mvp.guard=[g.n,`폭풍 정답 ${g.g}번`];
-  st.end={win,hp:st.hp,mx:m.hp,top:list.slice(0,10).map(p=>[p.num,p.n,p.d]),mvp,blk:RDH.blocks,fail:RDH.fails,cor:list.reduce((a,p)=>a+p.c,0),n:list.length,dealt:list.reduce((a,p)=>a+p.d,0)};
-  st.ph='end'; st.top=list.slice(0,5).map(p=>[p.num,p.n,p.d]);
+  const sv=list.slice().sort((a,b)=>b.rv-a.rv||b.s-a.s)[0]; if (sv&&sv.rv>0) mvp.save=[sv.n,`친구 ${sv.rv}명 구함`];
+  const pd=list.slice().sort((a,b)=>b.pd-a.pd||b.s-a.s)[0]; if (pd&&pd.pd>0) mvp.dodge=[pd.n,`완벽 회피 ${pd.pd}번`];
+  st.end={win,hp:st.hp,mx:m.hp,top:list.slice(0,10).map(p=>[p.num,p.n,p.s]),mvp,blk:RDH.blocks,fail:RDH.fails,cor:list.reduce((a,p)=>a+p.c,0),n:list.length,dealt:list.reduce((a,p)=>a+p.d,0),
+    sv:list.reduce((a,p)=>a+p.rv,0)};
+  st.ph='end'; st.top=list.slice(0,5).map(p=>[p.num,p.n,p.s]); st.rp=0; st.rn=0; st.kon=0;
   RDH.lastStr=''; rdWriteSt(); rdRanks(list);
   await rdRef('meta/state').set('end').catch(()=>{});
   rdFeed(win?'🎉 보스 토벌 성공!':'⏰ 시간 종료 · 보스가 버텨 냈어요'); rdRender(); rdBigRender(); rdRemember(false);
@@ -1527,16 +1555,18 @@ function rdRender(){
   else if (ph==='end'){ const e=st&&st.end; rdMsg(e?`<b>끝났어요.</b> ${e.win?'🎉 보스 토벌 성공!':'⏰ 시간 종료 · 보스가 버텨 냈어요'} · 학생 화면에 결과가 떠요. 다시 하려면 ① 입장 열기부터 눌러요.`:'<b>끝났어요.</b> 다시 하려면 ① 입장 열기부터 눌러요.'); }
   else rdMsg(`<b>진행 중</b> · ${esc(m.unit||'')} · ${ph==='intro'?'곧 시작해요':ph==='atk'?'🌀 망각의 폭풍(전체 공격)을 막는 중':ph==='res'?(st&&st.ok?'🛡️ 막았어요!':'💥 못 막았어요'):'⚔️ 싸우는 중'} · <b>이 화면(탭)을 닫지 마세요</b> — 보스 체력 · 시간을 여기서 계산해요.`);
   const mx=(st&&st.mx)||(m&&m.hp)||0, hp=st?st.hp:mx;
-  const bk=[ph,hp,st&&st.left,act,piN,RDH.blocks,RDH.fails].join('|');
+  const kon=st&&st.kon|0, rp=st&&st.rp|0, rn=st&&st.rn|0;
+  const bk=[ph,hp,st&&st.left,act,piN,RDH.blocks,RDH.fails,kon,rp,rn].join('|');
   if (bk!==RDH.boardKey){ RDH.boardKey=bk;
     $('#rdBoard').innerHTML=m&&m.state!=='wait'&&mx?`<div class="rd-b-hp"><i style="width:${Math.max(0,Math.min(100,hp/mx*100))}%"></i><span>👑 보스 체력 ${rdN(hp)} / ${rdN(mx)}</span></div>
-      <div class="rd-b-row"><span>⏱ 남은 시간 ${rdClock(st?st.left:m.dur)}</span><span>👥 접속 ${act}명 · 들어온 학생 ${piN}명</span><span>🛡️ 막기 성공 ${RDH.blocks} · 💥 실패 ${RDH.fails}</span></div>`:''; }
+      <div class="rd-b-row"><span>⏱ 남은 시간 ${rdClock(st?st.left:m.dur)}</span><span>👥 접속 ${act}명 · 들어온 학생 ${piN}명</span><span>🛡️ 막기 성공 ${RDH.blocks} · 💥 실패 ${RDH.fails}</span>${kon?`<span>💀 쓰러짐 ${kon}명 · 📖 부활 게이지 ${Math.min(rp,rn)}/${rn}</span>`:''}${m&&+m.ez===1?'<span>난이도 쉬움 · 친구 구조도 하트 3개</span>':''}</div>`:''; }
   const list=rdList(), byU={}; list.forEach((p,i)=>{ byU[p.u]=Object.assign(p,{r:i+1}); });
-  const rows=Object.entries(RDH.pi).map(([u,p])=>{ const d=byU[u]||{n:p.n,num:p.num,d:0,c:0,a:0,t:0,g:0,r:0}; return {u,job:p.job,on:Date.now()-(RDH.seen[u]||0)<10000,...d,n:d.n||p.n||'학생',num:d.num||p.num||0}; })
-    .sort((a,b)=>(b.d-a.d)||((a.num|0)-(b.num|0)));
-  const tk=JSON.stringify(rows.map(r=>[r.u,r.d,r.c,r.a,r.g,r.on])); if (tk===RDH.tblKey) return; RDH.tblKey=tk;
-  $('#rdTbl').innerHTML=rows.length?'<thead><tr><th>순위</th><th>번호</th><th>이름</th><th>직업</th><th>피해량</th><th>맞힘 / 푼 문제</th><th>평균 답 속도</th><th>🌀 폭풍 정답</th><th>접속</th></tr></thead><tbody>'+
-    rows.map(r=>`<tr><td>${r.d>0?r.r:'-'}</td><td>${r.num|0}</td><td>${esc(String(r.n))}</td><td>${RD_JOBN[r.job]||'-'}</td><td>${rdN(r.d)}</td><td>${r.c} / ${r.a}</td><td>${r.c?(r.t/r.c/1000).toFixed(1)+'초':'-'}</td><td>${r.g}</td><td>${r.on?'🟢':'⚪'}</td></tr>`).join('')+'</tbody>'
+  const rows=Object.entries(RDH.pi).map(([u,p])=>{ const d=byU[u]||{n:p.n,num:p.num,d:0,c:0,a:0,t:0,g:0,r:0,s:0,cd:0,pd:0,rv:0,h:3,ko:false}; return {u,job:p.job,on:Date.now()-(RDH.seen[u]||0)<10000,...d,n:d.n||p.n||'학생',num:d.num||p.num||0}; })
+    .sort((a,b)=>(b.s-a.s)||((a.num|0)-(b.num|0)));
+  const tk=JSON.stringify(rows.map(r=>[r.u,r.s,r.d,r.c,r.a,r.g,r.cd,r.pd,r.rv,r.h,r.ko,r.on])); if (tk===RDH.tblKey) return; RDH.tblKey=tk;
+  const hearts=r=>r.ko?'💀 쓰러짐':'❤️'.repeat(Math.min(3,r.h))+'🤍'.repeat(Math.max(0,3-r.h));
+  $('#rdTbl').innerHTML=rows.length?'<thead><tr><th>순위</th><th>번호</th><th>이름</th><th>직업</th><th>레이드 점수</th><th>맞힘 / 푼 문제</th><th>쓰러져서 맞힘</th><th>보스 피해</th><th>하트</th><th>🩹 구조</th><th>🏃 완벽 회피</th><th>🌀 폭풍 정답</th><th>평균 답 속도</th><th>접속</th></tr></thead><tbody>'+
+    rows.map(r=>`<tr><td>${r.s>0?r.r:'-'}</td><td>${r.num|0}</td><td>${esc(String(r.n))}</td><td>${RD_JOBN[r.job]||'-'}</td><td><b>${rdN(r.s)}</b></td><td>${r.c} / ${r.a}</td><td>${r.cd|0}</td><td>${rdN(r.d)}</td><td>${hearts(r)}</td><td>${r.rv|0}</td><td>${r.pd|0}</td><td>${r.g}</td><td>${r.c?(r.t/r.c/1000).toFixed(1)+'초':'-'}</td><td>${r.on?'🟢':'⚪'}</td></tr>`).join('')+'</tbody>'
     :'<tbody><tr><td class="empty">아직 들어온 학생이 없어요.</td></tr></tbody>';
 }
 /* 📺 크게 보기: TV · 전자칠판에 띄우는 화면 */
@@ -1555,12 +1585,14 @@ function rdBigRender(){
   if (RDH.lastHp>=0 && hp<RDH.lastHp && ph!=='end' && Date.now()-RDH.hitAt>350){ RDH.hitAt=Date.now(); boss.classList.remove('hit'); void boss.offsetWidth; boss.classList.add('hit'); setTimeout(()=>boss.classList.remove('hit'),320); }
   RDH.lastHp=hp;
   // 순위 · 소식
-  const list=rdList(), top=list.slice(0,8), best=top[0]?top[0].d||1:1;
-  const rk=top.length?top.map((p,i)=>`<li><i style="width:${Math.round(p.d/best*100)}%"></i><b>${i+1}</b><span>${esc(p.n)}</span><em>${rdN(p.d)}</em></li>`).join(''):'<li class="none">문제를 맞히면 여기에 순위가 떠요</li>';
+  const list=rdList(), top=list.slice(0,8), best=top[0]?top[0].s||1:1;
+  const rk=top.length?top.map((p,i)=>`<li class="${p.ko?'ko':''}"><i style="width:${Math.round(p.s/best*100)}%"></i><b>${i+1}</b><span>${p.ko?'💀 ':''}${esc(p.n)}</span><em>${rdN(p.s)}</em></li>`).join(''):'<li class="none">문제를 맞히면 여기에 순위가 떠요</li>';
   if (rk!==RDH.rkHtml){ RDH.rkHtml=rk; $('#rdbRank').innerHTML=rk; }
   const fd=RDH.feed.slice(0,5).reverse().map(t=>`<div>${esc(t)}</div>`).join(''); if (fd!==RDH.fdHtml){ RDH.fdHtml=fd; $('#rdbFeed').innerHTML=fd; }
   $('#rdbMsg').textContent=ph==='wait'?'학생들은 게임 화면의 🐉 보스 레이드 버튼으로 들어와요':ph==='intro'?`곧 시작해요 · ${Math.max(1,Math.ceil(RD_INTRO-(now-m.t0)/1000))}`:
-    gro?`💫 보스가 쓰러졌어요! 지금 공격하면 피해 2배 · ${Math.ceil((st.gro-now)/1000)}초`:ph==='fight'?`👥 ${rdActive()}명이 함께 싸우는 중 · 문제를 맞히면 ⚡ 지식 폭발!`:'';
+    gro?`💫 보스가 쓰러졌어요! 지금 공격하면 피해 2배 · ${Math.ceil((st.gro-now)/1000)}초`:
+    st&&st.kon&&(ph==='fight'||ph==='res')?`💀 쓰러진 친구 ${st.kon}명 · 📖 다 같이 부활 문제 ${Math.min(st.rp|0,st.rn|0)}/${st.rn|0} · 🩹 옆에 2초 서 있으면 구할 수 있어요`:
+    ph==='fight'?`👥 ${rdActive()}명이 함께 싸우는 중 · 문제를 맞히면 ⚡ 지식 폭발!`:'';
   // 망각의 폭풍 (전체 공격)
   const ae=$('#rdbAtk');
   if (st&&(ph==='atk'||ph==='res')){ const q=RDH.qa[st.k]||{}, th=(m&&m.th)||60, np=Math.max(1,st.np|0), r=Math.round((st.ac|0)/np*100);
@@ -1575,8 +1607,8 @@ function rdBigRender(){
   const ee=$('#rdbEnd'), e=st&&st.end;
   if (ph==='end'&&e){ if (RDH.endKey!==JSON.stringify(e)){ RDH.endKey=JSON.stringify(e); const mv=e.mvp||{}, card=(k,ic,lab)=>mv[k]?`<div><b>${ic} ${lab}</b><span>${esc(String(mv[k][0]))}</span><em>${esc(String(mv[k][1]))}</em></div>`:'';
       ee.innerHTML=`<h2>${e.win?'🎉 망각의 해골 대왕 토벌 성공!':'⏰ 시간 종료 · 보스가 버텨 냈어요'}</h2>
-        <p class="sum">${e.win?'반 전체 승리! 모두 코인 +30':`보스 체력 ${Math.round((e.hp||0)/(e.mx||1)*100)}% 남음 · 참여 코인 +5`} · 함께 맞힌 문제 ${e.cor|0}개 · 폭풍 막기 ${e.blk|0}번${e.fail?` / 실패 ${e.fail}번`:''}</p>
-        <div class="rdb-mvps">${card('dmg','💥','최고 피해')+card('cor','✅','정답왕')+card('fast','⚡','번개 손')+card('guard','🛡️','수호자')}</div>
+        <p class="sum">${e.win?'반 전체 승리! 모두 코인 +30':`보스 체력 ${Math.round((e.hp||0)/(e.mx||1)*100)}% 남음 · 참여 코인 +5`} · 함께 맞힌 문제 ${e.cor|0}개 · 폭풍 막기 ${e.blk|0}번${e.fail?` / 실패 ${e.fail}번`:''}${e.sv?` · 🩹 친구 구조 ${e.sv}번`:''}</p>
+        <div class="rdb-mvps">${card('cor','✅','정답왕')+card('dmg','💥','최고 피해')+card('fast','⚡','번개 손')+card('guard','🛡️','수호자')+card('save','🩹','구조왕')+card('dodge','🏃','회피왕')}</div>
         <ol class="rdb-endl">${(e.top||[]).map((t,i)=>`<li><b>${i+1}</b><span>${esc(String(t[1]||''))}</span><em>${rdN(t[2])}</em></li>`).join('')}</ol>`; }
     ee.hidden=false; }
   else ee.hidden=true;
