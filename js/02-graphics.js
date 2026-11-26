@@ -37,7 +37,7 @@ try{
 function resize(){ const w=innerWidth,h=innerHeight; renderer.setSize(w,h,false); camera.aspect=w/h; camera.updateProjectionMatrix();
   if (composer){ composer.setPixelRatio(renderer.getPixelRatio()); composer.setSize(w,h); } }
 addEventListener('resize', resize); resize();
-function renderFrame(){ if (typeof natCullTick==='function') natCullTick(); if (typeof guardTick==='function') guardTick(); if (typeof petsTick==='function') petsTick(); if (typeof faceTick==='function') faceTick(); if (composer) composer.render(); else renderer.render(scene,camera); }
+function renderFrame(){ if (typeof natCullTick==='function') natCullTick(); if (typeof guardTick==='function') guardTick(); if (typeof myMarkTick==='function') myMarkTick(); if (typeof petsTick==='function') petsTick(); if (typeof faceTick==='function') faceTick(); if (composer) composer.render(); else renderer.render(scene,camera); }
 
 /* 하늘 */
 let SKY=null;
@@ -218,6 +218,7 @@ function qPrewarm(){
     const pz=SH_PAUSED, bl=bloom?bloom.enabled:false;
     if (pz) shadowPause(false);
     if (bloom) bloom.enabled=true;
+    if (typeof myMarkTick==='function') myMarkTick();   // 내 위치 화살표도 미리 만들어 둬요
     renderer.compile(scene,camera);
     if (composer) composer.render(); else renderer.render(scene,camera);
     if (bloom) bloom.enabled=bl;

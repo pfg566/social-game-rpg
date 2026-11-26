@@ -147,6 +147,19 @@ input.rename{border:2px solid var(--line);border-radius:6px;padding:2px 6px;widt
 .aw-b{background:#fffdf3;color:#18213a;transform:rotateY(180deg)}
 .aw-b .ic{font-size:44px}.aw-b .nm{font-size:40px;font-family:var(--display);line-height:1.15}.aw-b .aw{font-size:18px;font-weight:800;color:#b46b00}.aw-b small{font-size:15px;color:#5d6782;font-weight:700}
 .aw-act{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
+/* 카드 5장 (정답왕 3 + 특별상 2): 두 줄로 · 1등은 가운데에 조금 크게 */
+.aw-cards{flex-direction:column;align-items:center;gap:18px}
+.aw-row{display:flex;flex-wrap:wrap;gap:22px;justify-content:center;align-items:flex-end}
+.aw-sub{width:100%;text-align:center;margin:0 0 -8px;font-weight:800;opacity:.85;font-size:18px}
+.aw-row .aw-card{width:min(250px,28vw)}
+.aw-row .aw-in{height:clamp(180px,28vh,260px)}
+.aw-row .aw-card.r1{width:min(280px,31vw)}.aw-row .aw-card.r1 .aw-in{height:clamp(205px,32vh,290px)}
+.aw-stage{gap:clamp(12px,2.4vh,28px)}.aw-top h1{font-size:clamp(28px,min(5vw,6.5vh),60px)}
+.aw-row .aw-card.sp .aw-f{background:linear-gradient(160deg,#a5b4fc,#7c6cf0);color:#fff}
+.aw-row .aw-f .ic{font-size:clamp(46px,7vh,68px)}.aw-row .aw-f b{font-size:clamp(20px,3.2vh,28px)}
+.aw-row .aw-b .nm{font-size:clamp(26px,4.4vh,40px)}
+.aw-row .aw-b{gap:6px;padding:12px 14px}
+tr.aw-top3 td{background:#fff8dc}
 
 /* 복습 화면 */
 .rv-stage{justify-content:safe center}
@@ -445,7 +458,7 @@ input.rename{border:2px solid var(--line);border-radius:6px;padding:2px 6px;widt
         <label class="f"><span>게임 시간</span><select id="awSid"></select></label>
         <button class="btn primary" id="awShow" disabled>🎉 시상식 화면 열기</button>
       </div>
-      <p class="aw-help">'게임 열기' 한 번이 한 게임 시간이에요. 학생이 게임을 끝낼 때마다 아래 순위가 바로 바뀌어요. 시상식 화면에서는 최고점상과, 매번 무작위로 정해지는 특별상 2개를 카드로 하나씩 열어 발표할 수 있어요.</p>
+      <p class="aw-help">'게임 열기' 한 번이 한 게임 시간이에요. 학생이 게임을 끝낼 때마다 아래 순위가 바로 바뀌어요. 순위는 <b>맞힌 문제가 많은 순서</b>이고, 같으면 <b>빨리 푼 순서</b>(빠른 정답 점수), 그래도 같으면 정답률로 정해요. 시상식 화면에서는 <b>정답왕 1·2·3등</b>과, 매번 무작위로 정해지는 <b>특별상 2개</b>를 카드로 하나씩 열어 발표할 수 있어요.</p>
       <div class="tablewrap"><table id="awTbl"></table></div>
     </section>
     <section class="card panel" id="pStudents"><div class="tablewrap"><table id="tblStudents"></table></div></section>
@@ -893,7 +906,10 @@ function awWatch(){
   if (!AW.cls){ awRender(); return; }
   AW.ref=db.ref('board/'+AW.cls); AW.ref.on('value',s=>{ AW.all=s.val()||{}; awRender(); },()=>{ $('#awTbl').innerHTML='<tr><td class="empty">순위를 불러오지 못했어요. 새 보안 규칙을 올렸는지 확인해 주세요.</td></tr>'; });
 }
-function awList(){ return Object.entries(AW.all[AW.sid]||{}).map(([num,e])=>({num,...e,rate:e.a?Math.round(e.c/e.a*100):0})).sort((a,b)=>(b.s-a.s)||(b.rate-a.rate)); }
+/* 순위: 맞힌 문제가 많은 순서 → 같으면 빠른 정답 점수(빨리 푼 학생) → 같으면 정답률 (학생 화면 '이번 시간 순위'와 같아요) */
+function awList(){ return Object.entries(AW.all[AW.sid]||{}).map(([num,e])=>({num,...e,rate:e.a?Math.round(e.c/e.a*100):0}))
+  .sort((a,b)=>((b.c|0)-(a.c|0))||((b.sp|0)-(a.sp|0))||((b.rate|0)-(a.rate|0))||((b.s|0)-(a.s|0))); }
+const AW_MEDAL=['🥇','🥈','🥉'];
 function awRender(){
   const sids=Object.keys(AW.all).map(sid=>{ const es=Object.values(AW.all[sid]||{}); return {sid,n:es.length,t:Math.max(0,...es.map(e=>+e.t||0))}; }).sort((a,b)=>b.t-a.t);
   if (!AW.sid || !AW.all[AW.sid]) AW.sid=sids[0]?sids[0].sid:'';
@@ -901,22 +917,27 @@ function awRender(){
   $('#awSid').innerHTML=sids.length?sids.map(x=>`<option value="${esc(x.sid)}"${x.sid===AW.sid?' selected':''}>${fmt(x.t)} · ${x.n}명</option>`).join(''):'<option value="">아직 기록 없음</option>';
   const L=awList(); $('#awShow').disabled=!L.length;
   $('#awTbl').innerHTML=!AW.cls?'<tr><td class="empty">학급을 고르세요.</td></tr>':!L.length?'<tr><td class="empty">이 학급은 아직 기록이 없어요. 학생이 게임을 끝내면 여기에 바로 나와요.</td></tr>':
-    '<thead><tr><th>순위</th><th>번호</th><th>이름</th><th class="num">최고 점수</th><th class="num">정답률</th><th class="num">판</th><th class="num">승리</th><th class="num">처치</th><th class="num">피한 공격</th><th class="num">카드 코인</th></tr></thead><tbody>'+
-    L.map((e,i)=>`<tr><td>${i+1}</td><td>${esc(e.num)}번</td><td>${esc(e.n||'')}</td><td class="num"><b>${(e.s|0).toLocaleString('ko-KR')}</b></td><td class="num">${e.rate}% (${e.c|0}/${e.a|0})</td><td class="num">${e.g|0}</td><td class="num">${e.w|0}</td><td class="num">${e.k|0}</td><td class="num">${e.ev|0}</td><td class="num">${e.cc|0}</td></tr>`).join('')+'</tbody>';
+    '<thead><tr><th>순위</th><th>번호</th><th>이름</th><th class="num">맞힌 문제</th><th class="num">정답률</th><th class="num">⚡ 빠른 정답</th><th class="num">최고 점수</th><th class="num">판</th><th class="num">승리</th><th class="num">처치</th><th class="num">피한 공격</th><th class="num">카드 코인</th></tr></thead><tbody>'+
+    L.map((e,i)=>`<tr${i<3&&(e.c|0)>0?' class="aw-top3"':''}><td>${i<3&&(e.c|0)>0?AW_MEDAL[i]:i+1}</td><td>${esc(e.num)}번</td><td>${esc(e.n||'')}</td><td class="num"><b>${e.c|0}개</b></td><td class="num">${e.rate}% (${e.c|0}/${e.a|0})</td><td class="num">+${(e.sp|0).toLocaleString('ko-KR')}</td><td class="num">${(e.s|0).toLocaleString('ko-KR')}</td><td class="num">${e.g|0}</td><td class="num">${e.w|0}</td><td class="num">${e.k|0}</td><td class="num">${e.ev|0}</td><td class="num">${e.cc|0}</td></tr>`).join('')+'</tbody>';
 }
+/* 시상: 정답왕 1·2·3등(위 순위 그대로) + 특별상 2개(매번 무작위 · 정답왕과 겹치지 않게) */
 function awPick(){
-  const L=awList(); if (!L.length) return [];
-  const top=L[0], out=[{ic:'🏆',name:'최고점상',desc:'이번 시간 가장 높은 점수',e:top,why:`${(top.s|0).toLocaleString('ko-KR')}점 · 정답률 ${top.rate}%`}];
+  const L=awList(); if (!L.length) return {top:[],sp:[]};
+  const top=L.filter(e=>(e.c|0)>0).slice(0,3).map((e,i)=>({rank:i+1,ic:AW_MEDAL[i],name:`정답왕 ${i+1}등`,desc:'가장 많이 맞히고 빨리 푼 학생',e,
+    why:`맞힌 문제 ${e.c|0}개 · 정답률 ${e.rate}% · ⚡ 빠른 정답 +${(e.sp|0).toLocaleString('ko-KR')}`}));
   const rng=awRng(AW.sid+'#'+AW.roll), pool=AW_SPECIAL.map(a=>({a,r:rng()})).sort((x,y)=>x.r-y.r).map(x=>x.a);
-  const used=new Set([top.num]);
-  for (const a of pool){ if (out.length>=3) break; const w=a.pick(L.filter(e=>!used.has(e.num)),rng); if (!w) continue; used.add(w.num); out.push({ic:a.ic,name:a.name,desc:a.desc,e:w,why:a.why(w)}); }
-  return out;
+  const used=new Set(top.map(x=>x.e.num)), sp=[];
+  for (const a of pool){ if (sp.length>=2) break; const w=a.pick(L.filter(e=>!used.has(e.num)),rng); if (!w) continue; used.add(w.num); sp.push({ic:a.ic,name:a.name,desc:a.desc,e:w,why:a.why(w)}); }
+  return {top,sp};
 }
+function awCard(x,cls){ return `<button class="aw-card${cls?' '+cls:''}"><div class="aw-in"><div class="aw-f"><span class="ic">${x.ic}</span><b>${esc(x.name)}</b><small>${esc(x.desc)}</small></div>
+    <div class="aw-b"><span class="ic">${x.ic}</span><span class="aw">${esc(x.name)}</span><span class="nm">${esc(x.e.num)}번 ${esc(x.e.n||'')}</span><small>${esc(x.why)}</small></div></div></button>`; }
 function awStage(){
-  const A=awPick(); if (!A.length) return;
+  const A=awPick(); if (!A.top.length&&!A.sp.length) return;
   $('#awWho').textContent=`${cLabel(AW.cls)} · ${awList().length}명 참여 · 카드를 눌러 발표해요`;
-  $('#awCards').innerHTML=A.map(x=>`<button class="aw-card"><div class="aw-in"><div class="aw-f"><span class="ic">${x.ic}</span><b>${esc(x.name)}</b><small>${esc(x.desc)}</small></div>
-    <div class="aw-b"><span class="ic">${x.ic}</span><span class="aw">${esc(x.name)}</span><span class="nm">${esc(x.e.num)}번 ${esc(x.e.n||'')}</span><small>${esc(x.why)}</small></div></div></button>`).join('');
+  const pod=[A.top[1],A.top[0],A.top[2]].filter(Boolean);   // 시상대처럼: 2등 · 1등(가운데) · 3등
+  $('#awCards').innerHTML=(pod.length?`<div class="aw-row aw-pod">${pod.map(x=>awCard(x,'r'+x.rank)).join('')}</div>`:'')
+    +(A.sp.length?`<div class="aw-row aw-sp"><p class="aw-sub">🎲 특별상</p>${A.sp.map(x=>awCard(x,'sp')).join('')}</div>`:'');
   $('#awStage').hidden=false;
 }
 

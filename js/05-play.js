@@ -499,3 +499,21 @@ function guardTick(){
   const n=Math.ceil(left); if (n!==GUARD.last){ GUARD.last=n; GUARD.lab.material.map=guardNumTex(n); GUARD.lab.material.needsUpdate=true; }
   GUARD.lab.material.opacity=blink; g.rotation.y=-pg.rotation.y;   // 숫자는 캐릭터가 돌아도 그대로
 }
+/* ---------- 내 위치 화살표 ----------
+   여럿이 함께하는 판(보스 레이드 · 조별 점령전 · 발판 서바이벌 · 수업 모드 · 파티)에서는 친구 캐릭터가 많아서 내가 어디 있는지 헷갈려요.
+   내 머리 위에만 작은 노란 화살표를 띄워요 (나에게만 보여요). */
+const MYMARK=(()=>{
+  const cv=document.createElement('canvas'); cv.width=cv.height=64; const g=cv.getContext('2d');
+  g.beginPath(); g.moveTo(8,14); g.lineTo(56,14); g.lineTo(32,54); g.closePath();
+  g.lineJoin='round'; g.lineWidth=9; g.strokeStyle='#18213a'; g.stroke(); g.fillStyle='#ffd34d'; g.fill();
+  g.beginPath(); g.moveTo(19,20); g.lineTo(32,20); g.lineTo(26,31); g.closePath(); g.fillStyle='rgba(255,255,255,.7)'; g.fill();
+  const t=new THREE.CanvasTexture(cv); t.encoding=THREE.sRGBEncoding;
+  const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:t,transparent:true,depthTest:false,toneMapped:false}));
+  sp.scale.set(.62,.62,1); sp.renderOrder=21; sp.visible=false; pg.add(sp); return sp;
+})();
+function myMarkTick(){
+  const on=W.state==='play'&&typeof isMultiMode==='function'&&isMultiMode();
+  MYMARK.visible=on; if (!on) return;
+  const up=(GUARD.g&&GUARD.g.visible)||(typeof RAID!=='undefined'&&RAID.chainFx&&RAID.chainFx.visible);   // 보호막 숫자 · 사슬 표시가 있으면 그 위로
+  MYMARK.position.y=(up?4.6:3.2)+Math.sin(performance.now()/260)*.09;
+}
