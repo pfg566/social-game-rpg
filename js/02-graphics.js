@@ -175,9 +175,8 @@ function shadowPause(on){
 }
 /* 게임 중이 아닐 때(로그인 · 로비 · 결과 화면): 장면이 거의 그대로라 그림자는 0.5초마다 한 번만 다시 그려요 */
 const IDLE_SH={on:false,t:0};
-function idleShadow(now){ if (!IDLE_SH.on){ IDLE_SH.on=true; IDLE_SH.t=0; } if (SH_PAUSED) return; renderer.shadowMap.autoUpdate=false;
-  const iv=(typeof SHOP!=='undefined'&&SHOP.open)?0:500;   // 상점: 캐릭터를 돌려 보니 그림자도 바로바로 · 다른 대기 화면: 0.5초마다
-  if (now-IDLE_SH.t>iv){ IDLE_SH.t=now; renderer.shadowMap.needsUpdate=true; } }
+function idleShadow(now,iv){ if (!IDLE_SH.on){ IDLE_SH.on=true; IDLE_SH.t=0; } if (SH_PAUSED) return; renderer.shadowMap.autoUpdate=false;
+  if (now-IDLE_SH.t>=(iv==null?500:iv)){ IDLE_SH.t=now; renderer.shadowMap.needsUpdate=true; } }   // iv: 몇 ms마다 그림자를 다시 그릴지 (13-loop.js)
 function idleShadowOff(){ IDLE_SH.on=false; if (!SH_PAUSED) renderer.shadowMap.autoUpdate=true; }
 const qPR=()=>Math.min(window.devicePixelRatio||1,QUALITY[QCUR].pr)*(QSET==='auto'?DRS_S:1);
 function applyQuality(q){

@@ -1,7 +1,7 @@
 /* 사회 게임 RPG · 매 프레임 루프
    파일은 01 → 13 순서로 불러와요. 모든 파일이 같은 전역 공간을 함께 써요. */
 /* ---------- 루프 ---------- */
-let last=performance.now(), hurtT=0, idleDrawn=0;
+let last=performance.now(), hurtT=0, idleDrawn=0, idleNext=0;
 const camOff=new THREE.Vector3(0,13.5,14.5);
 function frame(now){
   requestAnimationFrame(frame);
@@ -12,9 +12,12 @@ function frame(now){
     if (W.prewarm===2){ W.prewarm=3; qPrewarm(); last=performance.now(); return; }
     W.prewarm=0; $('#prepMsg').hidden=true; startQualityMonitor(); last=performance.now();
   }
-  // 로그인 · 로비 · 결과 화면(게임 중이 아닐 때)은 초당 20번만 그려요 (상점 미리보기는 30번): 기다리는 동안 노트북이 덜 뜨거워지고 게임 때 덜 느려져요
-  // 그림자도 0.5초마다 한 번만 다시 그리고, 배터리로 하고 있으면 '충전기를 꽂아 주세요'를 띄워요
-  if (W.state!=='play'){ if (now-idleDrawn<(typeof SHOP!=='undefined'&&SHOP.open?31:45)) return; idleDrawn=now; idleShadow(now); battHint(); }
+  // 게임 중이 아닐 때: 로그인 · 로비는 초당 60번(부드럽게), 상점 미리보기는 30번, 결과 화면은 20번만 그려요 (기다리는 동안 노트북이 덜 뜨거워져요)
+  // 그림자: 캐릭터가 돌 때(상점 · 로비에서 끌거나 직업을 바꿀 때)는 바로바로, 로비는 0.1초마다, 결과 화면은 0.5초마다. 배터리로 하고 있으면 '충전기를 꽂아 주세요'
+  if (W.state!=='play'){ const shop=typeof SHOP!=='undefined'&&SHOP.open, lob=W.state==='title'&&!shop;
+    if (lob){ if (now<idleNext-2) return; idleNext+=1000/60; if (idleNext<now) idleNext=now+1000/60; }   // 120Hz 같은 빠른 화면에서도 60번 정도로
+    else if (now-idleDrawn<(shop?31:45)) return;
+    idleDrawn=now; idleShadow(now,shop||(lob&&(LOBBY.drag||LOBBY.popT<1))?0:lob?100:500); battHint(); }
   let dt=Math.min(.05,(now-last)/1000); last=now;
   if (hitStop>0 && W.state==='play' && !W.paused){ hitStop-=dt; dt=0; }
   const real=now/1000;
