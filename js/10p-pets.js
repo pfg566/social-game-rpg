@@ -20,7 +20,7 @@ const PET_TYPES={
   // 모델 파일(GLB) 펫: models/pets/{glb}.glb · h = 펫 크기(키)
   //  애니메이션 이름으로 찾아요: 가만히(Idle) · 걷기/달리기(Walk · Run) · 날기(Fly) · 앉기(Sit) · 잠자기(Sleep). 애니메이션이 없으면 몸 전체를 코드로 움직여요
   lbird:  {move:'fly',   size:1,   spd:1.1, glb:'lavender_bird', h:.7, flyH:1.6},
-  mfox:   {move:'walk',  size:1,   spd:1.1, glb:'maple_fox_a', h:.8}   // 단풍 여우 (Tripo · 애니메이션 Run · Sit · LieDown_Sleep, 가만히 애니메이션은 없어서 서 있는 기본 자세)
+  mfox:   {move:'walk',  size:1,   spd:1.1, glb:'maple_fox_v2', h:.8}   // 단풍 여우 v2 (Tripo · Run · Sit · LieDown_Sleep + 잘 때 덮는 눈꺼풀, 가만히 애니메이션은 없어서 서 있는 기본 자세)
 };
 const PET_SIZE=1.25;
 const PETS=[];
@@ -375,7 +375,7 @@ const PET_GLB={}, PET_GLB_V='20261122a';
 function petGlbLoad(key,cb){ let E=PET_GLB[key];
   if (!E){ E=PET_GLB[key]={g:null,cbs:[],err:false};
     new THREE.GLTFLoader().load('models/pets/'+key+'.glb?v='+PET_GLB_V,g=>{
-      g.scene.traverse(o=>{ if (o.isMesh){ o.castShadow=true; o.frustumCulled=false; o.userData.noFlash=true; const m=o.material; if (m&&!m.userData.petPrep){ m.userData.petPrep=true; addRim(m,.22,0xfff2dc); petNoGlow(m); } } });
+      g.scene.traverse(o=>{ if (o.isMesh){ o.castShadow=!(o.material&&o.material.transparent); o.frustumCulled=false; o.userData.noFlash=true; const m=o.material; if (m&&!m.userData.petPrep){ m.userData.petPrep=true; addRim(m,.22,0xfff2dc); petNoGlow(m); } } });
       g.userData.bb=new THREE.Box3().setFromObject(g.scene); g.userData.piv=petPaws(g.scene,g.userData.bb); E.g=g; const c=E.cbs; E.cbs=[]; c.forEach(f=>{ try{ f(g); }catch(e){} }); },
       undefined,()=>{ E.err=true; E.cbs=[]; }); }
   if (E.g) cb(E.g); else if (!E.err) E.cbs.push(cb); }
@@ -391,7 +391,8 @@ function makeGlbPet(type,T){
     const root=THREE.SkeletonUtils.clone(g.scene), bb=g.userData.bb, sc=T.h/Math.max(.01,bb.max.y-bb.min.y);
     root.scale.setScalar(sc); root.position.y=(T.move==='fly'?-(bb.min.y+bb.max.y)/2:-bb.min.y)*sc;   // 나는 펫은 몸 가운데, 걷는 펫은 발바닥이 기준
     root.traverse(o=>{ o.frustumCulled=false; o.userData.noFlash=true; });
-    R.body.add(root); R.model=root; R.bones={}; root.traverse(o=>{ if (o.isBone) R.bones[o.name]=o; });
+    R.body.add(root); R.model=root; R.bones={}; R.lids=[]; root.traverse(o=>{ if (o.isBone) R.bones[o.name]=o;
+      if (o.isMesh&&o.morphTargetInfluences&&o.material&&o.material.transparent){ R.lids.push(o); o.visible=false; } });   // 잘 때 덮는 눈꺼풀(따로 된 투명 덩어리): 감을 때만 보여요
     R.pivF=(g.userData.piv?g.userData.piv.f:0)*sc; R.pivR=(g.userData.piv?g.userData.piv.r:0)*sc;
     const clips=g.animations||[];
     if (!clips.length){ R.rigid=true; return; }   // 애니메이션이 없는 모델: petPoseRigid가 몸 전체를 움직여요
@@ -526,6 +527,7 @@ function petPoseGlb(p,dt,moving,sit,sleep,hop,sad){
   if (R.aMove) R.aMove.setEffectiveTimeScale(hop>0?1.7:fly?(moving?1+.3*mv:.6):Math.max(.6,Math.min(2.2,st.v/(R.aMove.getClip().duration<.8?3.4:2.3))));   // 걷는 빠르기에 맞춰 발을 굴러요 (짧은 달리기 동작은 조금 천천히)
   if (R.aIdle&&R.aIdle!==R.aMove) R.aIdle.setEffectiveTimeScale(sleep&&!R.aSleep?.35:1);
   R.mixer.update(dt);
+  for (const m of R.lids) m.visible=m.morphTargetInfluences[0]>.02;   // 눈을 뜨고 있을 때는 아예 숨겨요 (멀리서 눈 위로 비쳐 보이지 않게)
   const hd=R.bones.Head, nod=Math.max(sleep&&!R.aSleep?.55:0,sad*.45); R.nod=damp(R.nod||0,nod,6,dt);
   if (hd&&R.nod>.002) hd.quaternion.multiply(PQN.setFromAxisAngle(PXA,R.nod));
   // 꼬리 뼈가 있으면: 서 있거나 앉아 있을 때 살랑살랑, 잘 때는 아주 천천히 (달리기는 애니메이션 그대로)

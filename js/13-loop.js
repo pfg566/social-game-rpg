@@ -5,6 +5,7 @@ let last=performance.now(), hurtT=0, idleDrawn=0, idleNext=0;
 const camOff=new THREE.Vector3(0,13.5,14.5);
 function frame(now){
   requestAnimationFrame(frame);
+  if (typeof PARTY==='undefined') return;   // 마지막 파일(14-party.js)이 아직 도착하지 않았으면 기다려요 (느린 와이파이에서 오류가 줄줄이 나던 것)
   if (W.state==='play'){ if (IDLE_SH.on) idleShadowOff(); if (BATT_EL&&!BATT_EL.hidden) BATT_EL.hidden=true; }   // 게임 중: 그림자 늘 · 충전 안내 숨기기
   // 판이 막 시작됐으면: 한 번 쉬어 '준비 중'을 먼저 보여 주고 → 셰이더를 미리 만든 뒤 → 다음 번부터 게임을 그려요
   if (W.prewarm){
