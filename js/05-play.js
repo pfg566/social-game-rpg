@@ -91,6 +91,24 @@ function makeBar(w){
   fg.position.z=.01; g.add(bg,fg); scene.add(g); return {g,fg,w};
 }
 const MOB_MODEL={0xe0434a:'sk_minion',0x8b5cf6:'sk_rogue'};
+/* 셰이더 미리 만들기(qPrewarm)에 넣는 보이지 않는 몹 세트: 판이 시작될 때는 몹이 아직 없어서
+   첫 몹 · 첫 보스 · 첫 피해 숫자가 나올 때 셰이더를 만드느라 잠깐 멈칫했어요. 재질은 버리지 않고 둬요(셰이더를 계속 써요) */
+function prewarmKit(){
+  if (/^(raid|stage|live|teamwar|village|runner|cafe)$/.test(MAPK)) return null;   // 해골 몹이 안 나오는 판
+  const k=new THREE.Group(); k.visible=false; k.userData.mix=[];
+  const add=(key,sc,map,w)=>{ if (!GL[key]) return; const c=makeChar(key,sc,map);
+    if (w==='xbow'){ if (typeof armXbow==='function') armXbow(c); } else if (w) arm(c,w);
+    if (typeof glTintMob==='function') glTintMob(c); k.add(c.root); k.userData.mix.push(c.mixer); };
+  try{
+    add('sk_minion',1,SK_MAP,'blade'); add('sk_rogue',1,SKR_MAP,'xbow'); add('sk_warrior',2.05,BOSS_MAP,'axe');
+    const bar=makeBar(1.2); k.add(bar.g);   // 체력 막대 (파편 효과도 같은 셰이더)
+    k.add(new THREE.Mesh(new THREE.SphereGeometry(1,8,6),new THREE.MeshStandardMaterial({color:0x7fd6ff,emissive:0x2a9fe0,emissiveIntensity:.9,transparent:true,opacity:.28,roughness:.1,metalness:.2,depthWrite:false})));   // 보스 방패
+    const cv=document.createElement('canvas'); cv.width=cv.height=4; const t=new THREE.CanvasTexture(cv); t.encoding=THREE.sRGBEncoding;
+    k.add(new THREE.Sprite(new THREE.SpriteMaterial({map:t,transparent:true,depthTest:false,toneMapped:false})));   // 피해 숫자
+  }catch(e){}
+  return k;
+}
+function prewarmKitDrop(k){ scene.remove(k); k.children.forEach(c=>charDispose(c,null)); k.userData.mix.forEach(m=>{ try{ m.stopAllAction(); m.uncacheRoot(m.getRoot()); }catch(e){} }); }
 const SK_MAP={idle:'Idle_Combat',run:'Running_C',attack:'1H_Melee_Attack_Chop',hit:'Hit_A',death:'Death_A',spawn:'Spawn_Ground_Skeletons'};
 const BOSS_MAP={idle:'Idle_Combat',run:'Walking_A',slam:'2H_Melee_Attack_Chop',attack:'2H_Melee_Attack_Chop',hit:'Hit_B',death:'Death_A',taunt:'Taunt',summon:'Spellcast_Summon',spawn:'Spawn_Ground_Skeletons'};
 function arm(c,key,scale){ const hand=c.root.getObjectByName('handslotr')||c.root.getObjectByName('handslot.r'); if (!hand||!GL[key]) return;
@@ -154,7 +172,8 @@ function animMob(m,real,dt){
     m.anim.setBase(m.atDoor?'idle':'run',Math.max(.6,m.spd*(W.loc?.5:1)/RUN_SPEED.boss));
   } else m.anim.setBase(m.atDoor||m.stun>0||(m.ranged&&!m.moving)?'idle':'run',Math.max(.6,m.spd*(W.loc?.5:1)/RUN_SPEED.minion));
 }
-function removeMob(m){ if (m.leapRing) scene.remove(m.leapRing); if (m.aimLine) scene.remove(m.aimLine); scene.remove(m.g); scene.remove(m.bar.g); if (m.slamMesh) scene.remove(m.slamMesh); if (m.mixer) m.mixer.stopAllAction(); }
+function removeMob(m){ if (m.leapRing) scene.remove(m.leapRing); if (m.aimLine) scene.remove(m.aimLine); scene.remove(m.g); scene.remove(m.bar.g); if (m.slamMesh) scene.remove(m.slamMesh); if (m.mixer) m.mixer.stopAllAction();
+  charDispose(m.g,m.mixer); }   // 뼈 텍스처를 지워요 (안 지우면 판마다 쌓여요)
 function liveBoss(){ return mobs.find(m=>m.boss&&m.dying<0); }
 
 function startWave(i){

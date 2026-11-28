@@ -129,18 +129,18 @@ function twTag(text,col){
   g.fillStyle=col||'rgba(18,22,34,.8)'; roundRect(g,4,8,248,48,14); g.fill();
   g.fillStyle='#fff'; g.font='700 30px "Noto Sans KR","Malgun Gothic",sans-serif'; g.textAlign='center'; g.textBaseline='middle'; g.fillText(text,128,33);
   const t=new THREE.CanvasTexture(cv); t.encoding=THREE.sRGBEncoding;
-  const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:t,transparent:true,depthTest:false,toneMapped:false})); sp.scale.set(2.4,.6,1); sp.renderOrder=8; return sp;
+  const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:t,transparent:true,depthTest:false,toneMapped:false})); sp.scale.set(2.4,.6,1); sp.renderOrder=8; sp.userData.ownTex=true; return sp;
 }
 function twMakeRemote(u,info,st){
-  const job=JOBS[info.job]?info.job:'knight', ch=makePlayerChar(job), g=new THREE.Group(); g.add(ch.root); TWC.dyn.add(g);
+  const job=JOBS[info.job]?info.job:'knight', ch=makePlayerChar(job), g=new THREE.Group(); g.add(ch.root); TWC.dyn.add(g); remoteLite(ch,g);   // 친구는 동그란 그림자만
   dressP2(ch,{...DEFAULTS[job],...(info.look||{})}).catch(()=>{});
   const R={u,info,job,ch,g,tag:null,ring:null,st:null,x:st.x,z:st.z,f:st.f,vx:0,vz:0,netAt:0,tm:st.tm};
   R.ring=new THREE.Mesh(new THREE.RingGeometry(.55,.75,32),new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:.9,depthWrite:false})); R.ring.rotation.x=-Math.PI/2; R.ring.position.y=.06; g.add(R.ring);
   R.bub=new THREE.Mesh(new THREE.SphereGeometry(1.1,20,14),new THREE.MeshBasicMaterial({color:0x9fe6ff,transparent:true,opacity:.28,depthWrite:false})); R.bub.position.y=1; R.bub.visible=false; g.add(R.bub);
   twTagColor(R); ch.anim.setBase('idle'); return R;
 }
-function twTagColor(R){ if (R.tag) R.g.remove(R.tag); R.tag=twTag((R.info.n||'친구'),R.tm>=0?TW_COL[R.tm]:null); R.tag.position.y=3.05; R.g.add(R.tag); R.ring.material.color.set(R.tm>=0?TW_COL[R.tm]:'#ffffff'); }
-function twRemoveOne(u){ const R=TWC.rp[u]; if (R){ TWC.dyn.remove(R.g); R.ch.mixer.stopAllAction(); } delete TWC.rp[u]; }
+function twTagColor(R){ if (R.tag){ R.g.remove(R.tag); if (R.tag.material.map) R.tag.material.map.dispose(); } R.tag=twTag((R.info.n||'친구'),R.tm>=0?TW_COL[R.tm]:null); R.tag.position.y=3.05; R.g.add(R.tag); R.ring.material.color.set(R.tm>=0?TW_COL[R.tm]:'#ffffff'); }
+function twRemoveOne(u){ const R=TWC.rp[u]; if (R){ TWC.dyn.remove(R.g); charDispose(R.ch.root,R.ch.mixer,R.g); } delete TWC.rp[u]; }
 function twRemoveAll(){ for (const u in TWC.rp) twRemoveOne(u); TWC.rp={}; }
 function twRemoteFx(R,k){
   const dx=Math.sin(R.f), dz=Math.cos(R.f), J=TW_JOB[R.job]||TW_JOB.knight;

@@ -11,6 +11,44 @@ const ENV_FILES=['building_castle_blue','building_tower_A_blue','building_market
   'building_blacksmith_red','building_lumbermill_red','building_mine_red','building_windmill_red','wall_straight','fence_wood_straight',
   'trees_A_large','trees_B_medium','tree_single_A','tree_single_B','rock_single_A','rock_single_C','rock_single_E','mountain_A_grass_trees','mountain_B_grass_trees','hills_A_trees','hills_B_trees','cloud_big',
   'barrel','crate_A_big','crate_long_A','resource_lumber','resource_stone','wheelbarrow','flag_blue','flag_green','flag_red','tent','sack','weaponrack','target'];
+/* ---------- 그림(텍스처) 아끼기 ----------
+   ① 같은 그림 파일은 한 번만 받고 한 번만 그래픽 카드에 올려요 (건물 · 나무 모델 수십 개가 같은 그림 한 장을 써요)
+   ② 1024 이상인 큰 그림은 절반 크기로 줄여요 (단순한 색 그림이라 화면에서는 거의 같아요) → 그래픽 메모리 1/4
+   학교 노트북은 그래픽 카드가 램(8GB)을 나눠 써서, 그래픽 메모리를 아끼면 컴퓨터 전체가 덜 버벅여요. */
+const TEXQ={bmp:new Map(), half:new WeakMap(), canon:new WeakMap()};
+function texHalf(bmp){
+  let p=TEXQ.half.get(bmp); if (p) return p;
+  const w=bmp.width, h=bmp.height;
+  p=(w>=1024&&h>=512&&typeof createImageBitmap==='function')
+    ? createImageBitmap(bmp,{resizeWidth:w>>1,resizeHeight:h>>1,resizeQuality:'high',premultiplyAlpha:'none',colorSpaceConversion:'none'}).catch(()=>bmp)
+    : Promise.resolve(bmp);
+  TEXQ.half.set(bmp,p); return p;
+}
+(()=>{ const IB=THREE.ImageBitmapLoader&&THREE.ImageBitmapLoader.prototype; if (!IB) return; const ld=IB.load;
+  IB.load=function(url,onLoad,onProgress,onError){
+    if (typeof url!=='string'||/^(blob|data):/.test(url)) return ld.call(this,url,onLoad,onProgress,onError);
+    let p=TEXQ.bmp.get(url);
+    if (!p){ const big=!/leaf|leaves|grass|flower|pine/i.test(url);   // 잎 · 풀처럼 구멍(투명)이 있는 그림은 그대로
+      p=new Promise((res,rej)=>ld.call(this,url,res,undefined,rej)).then(b=>big?texHalf(b).then(s=>{ if (s!==b) try{ b.close(); }catch(e){} return s; }):b);
+      TEXQ.bmp.set(url,p); p.catch(()=>TEXQ.bmp.delete(url)); }
+    p.then(b=>{ if (onLoad) onLoad(b); },e=>{ if (onError) onError(e); });
+  }; })();
+/* 모델 하나를 다 받으면: 같은 그림을 쓰는 텍스처를 하나로 합치고, 모델 안에 든 큰 그림(캐릭터 · 펫)은 절반으로 줄여요 */
+async function texSlim(gltf){
+  const mats=new Set(), jobs=[]; gltf.scene.traverse(o=>{ if (o.material) (Array.isArray(o.material)?o.material:[o.material]).forEach(m=>mats.add(m)); });
+  for (const m of mats) for (const k of ['map','emissiveMap']){
+    const t=m[k]; if (!t||!t.image||typeof ImageBitmap==='undefined'||!(t.image instanceof ImageBitmap)) continue;
+    const src=t.__src0||t.image; t.__src0=src;
+    const key=[t.flipY,t.format,t.wrapS,t.wrapT,t.encoding,t.magFilter,t.minFilter].join('|');
+    let by=TEXQ.canon.get(src); if (!by){ by=new Map(); TEXQ.canon.set(src,by); }
+    const c=by.get(key); if (c===t) continue; if (c){ m[k]=c; continue; }
+    by.set(key,t);
+    if (!m.transparent&&!(m.alphaTest>0)&&src.width>=1024) jobs.push(texHalf(src).then(b=>{ if (b!==src){ t.image=b; t.needsUpdate=true; } }));
+  }
+  await Promise.all(jobs);
+}
+(()=>{ const G=THREE.GLTFLoader&&THREE.GLTFLoader.prototype; if (!G||G.__slim) return; G.__slim=true; const parse=G.parse;
+  G.parse=function(data,path,onLoad,onError){ return parse.call(this,data,path,g=>{ texSlim(g).catch(()=>{}).then(()=>onLoad(g)); },onError); }; })();
 const GL={}; let assetsReady=false;
 const loadMgr=new THREE.LoadingManager();
 loadMgr.onProgress=(url,done,total)=>{ const b=$('#startBtn'); if (!assetsReady && b){ b.textContent=`불러오는 중… ${Math.round(done/total*100)}%`; } };

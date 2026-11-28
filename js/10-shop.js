@@ -208,7 +208,11 @@ const loadW=w=>loadGLB('w2_'+w,`models/p2/${w}.glb`);
 const IMG={};
 function loadImg(n){ return IMG[n]||(IMG[n]=new Promise((res,rej)=>{ const i=new Image(); i.onload=()=>res(i); i.onerror=()=>{ delete IMG[n]; rej(new Error(n)); }; i.src=`models/p2/tex/${n}.png?v=2`; })); }
 const TEXC={};
-function plainTex(n){ if (TEXC[n]) return TEXC[n]; const t=new THREE.TextureLoader().load(`models/p2/tex/${n}.png?v=2`); t.flipY=false; t.encoding=THREE.sRGBEncoding; t.anisotropy=4; return TEXC[n]=t; }
+/* 1024 그림을 절반(512)으로: 단순한 색 그림이라 화면에서는 거의 같고, 그래픽 메모리는 1/4 (학교 노트북은 그래픽이 램을 나눠 써요) */
+function halfCanvas(img){ const w=img.width||img.naturalWidth, h=img.height||img.naturalHeight; if (!(w>=1024)) return img;
+  const c=document.createElement('canvas'); c.width=w>>1; c.height=h>>1; const g=c.getContext('2d'); g.imageSmoothingEnabled=true; g.imageSmoothingQuality='high'; g.drawImage(img,0,0,c.width,c.height); return c; }
+function plainTex(n){ if (TEXC[n]) return TEXC[n]; const t=new THREE.Texture(); t.flipY=false; t.encoding=THREE.sRGBEncoding; t.anisotropy=4;
+  loadImg(n).then(i=>{ t.image=halfCanvas(i); t.needsUpdate=true; }).catch(()=>{}); return TEXC[n]=t; }
 
 /* ---------- 텍스처 합치기: 옷 색은 옷 텍스처에서, 피부 · 머리는 그 직업 캐릭터 것으로 ----------
    KayKit 2.0 텍스처는 모두 같은 배치예요. 왼쪽 위 256×256 칸이 피부(왼쪽)와 머리카락(오른쪽 x128~255, y32~223)이에요 */
@@ -220,7 +224,7 @@ function compTex(src,rec,job,hair){
     g.drawImage(a,0,0,1024,1024);
     if (rec==='black') recolorBlack(g);
     if (b){ g.clearRect(0,0,256,256); g.drawImage(b,0,0,256,256,0,0,256,256); if (hair) dyeHair(g,hair); }
-    const t=new THREE.CanvasTexture(c); t.flipY=false; t.encoding=THREE.sRGBEncoding; t.anisotropy=4; return t;
+    const t=new THREE.CanvasTexture(halfCanvas(c)); t.flipY=false; t.encoding=THREE.sRGBEncoding; t.anisotropy=4; return t;   // 1024로 그린 뒤 512로 줄여 올려요
   });
 }
 function recolorBlack(g){
@@ -251,7 +255,7 @@ function bowTex(hex){
     for (let i=0;i<p.length;i+=4){ s+=p[i]*.3+p[i+1]*.59+p[i+2]*.11; n++; } const ref=s/n||1;
     for (let i=0;i<p.length;i+=4){ const k=Math.min(1.5,Math.max(.4,(p[i]*.3+p[i+1]*.59+p[i+2]*.11)/ref)); p[i]=Math.min(255,T.r*255*k); p[i+1]=Math.min(255,T.g*255*k); p[i+2]=Math.min(255,T.b*255*k); }
     g.putImageData(d,832,352);
-    const t=new THREE.CanvasTexture(c); t.flipY=false; t.encoding=THREE.sRGBEncoding; t.anisotropy=4; return t; });
+    const t=new THREE.CanvasTexture(halfCanvas(c)); t.flipY=false; t.encoding=THREE.sRGBEncoding; t.anisotropy=4; return t; });
 }
 /* ---------- 캐릭터 입히기 ---------- */
 function charMat(ch,tex){ ch.matCache=ch.matCache||new Map(); let m=ch.matCache.get(tex); if (!m){ m=toonMat({map:tex,rim:.5,skinning:true}); ch.matCache.set(tex,m); } return m; }
@@ -308,6 +312,8 @@ async function dressP2(ch,L){
     const w=GL['w2_'+it.w].scene.clone(true); if (it.ry) w.rotation.y=it.ry;
     w.traverse(x=>{ if (x.isMesh){ x.material=toonMat({map:heldTex[it.id],color:it.tint||0xffffff,rim:.4}); x.castShadow=true; } });
     bone.add(w); ch.wardParts.push(w); }
+  if (ch.noShadow) root.traverse(x=>{ if (x.isMesh) x.castShadow=false; });   // 여럿이 하는 판의 친구 캐릭터 (06p-player.js remoteLite)
+  if (typeof skShare==='function') skShare(root,ch.skel);   // 입힌 옷도 몸과 같은 뼈대 하나를 같이 써요 (04-island.js)
   // 맞았을 때 빨갛게 번쩍이는 재질 목록 다시 모으기
   const mats=new Set(); root.traverse(x=>{ if (x.isMesh && x.visible!==false && !x.userData.noFlash){ (Array.isArray(x.material)?x.material:[x.material]).forEach(m=>mats.add(m)); } });
   ch.mats=[...mats]; ch.doneTok=tok;

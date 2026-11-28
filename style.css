@@ -1091,3 +1091,7 @@ body.village #hud, body.village #skillbar, body.village #hint, body.village #tou
 @keyframes vlPulse{50%{box-shadow:0 0 0 6px rgba(21,128,61,.25)}}
 .vl-toast{position:fixed;left:50%;top:42%;transform:translateX(-50%);z-index:14;background:#3a2230;color:#fff;padding:9px 18px;border-radius:99px;font-weight:700;opacity:0;pointer-events:none}
 .vl-toast.show{animation:cfToast 2.8s ease}
+
+/* 배터리로 하고 있을 때 (게임 밖 화면) · 설정의 내 그래픽 이름 */
+.batt-hint{position:fixed;left:50%;bottom:12px;transform:translateX(-50%);z-index:40;max-width:calc(100vw - 24px);padding:7px 16px;border-radius:999px;background:rgba(18,22,34,.86);color:#fff;font-size:14px;font-weight:700;text-align:center;pointer-events:none;box-shadow:0 3px 0 rgba(0,0,0,.25)}
+.setpop-gpu{margin:2px 0 6px;font-size:12px;color:#5d6782;line-height:1.4;word-break:keep-all}

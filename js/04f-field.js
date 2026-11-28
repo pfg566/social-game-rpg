@@ -719,10 +719,12 @@ function gfForest(R){
   for (let x=-84;x<=84;x+=2.9) for (let z=-84;z<=88;z+=2.9){ const jx=x+rnd(-1.3,1.3), jz=z+rnd(-1.3,1.3); if (!band(jx,jz)) continue; if (jx>22&&jx<34&&jz>58) continue; pts.push([jx,jz]); }
   const mat=new THREE.MeshStandardMaterial({map:lt,roughness:.95,metalness:0}), D=new THREE.Object3D(), pal=['#4f7f2c','#5f8f34','#6a9a3a','#45722a','#73a040','#587f30'];
   const by={n:[],s:[],w:[],e:[]}; pts.forEach(p=>by[p[1]<-41?'n':p[1]>56?'s':p[0]<0?'w':'e'].push(p));
-  for (const k in by){ const L=by[k]; if (!L.length) continue; const im=new THREE.InstancedMesh(geo,mat,L.length);
+  for (const k in by){ const L=by[k]; if (!L.length) continue; for (let i=L.length-1;i>0;i--){ const j=(Math.random()*(i+1))|0, t=L[i]; L[i]=L[j]; L[j]=t; }   // 섞어 두면 '가벼움'에서 앞에서부터 줄여도 고르게 빠져요
+    const im=new THREE.InstancedMesh(geo,mat,L.length);
     L.forEach(([x,z],i)=>{ const d=Math.min(Math.abs(Math.abs(x)-41),Math.abs(z+41)), s=rnd(2.3,3.4)*(d<6?.85:1); D.position.set(x,s*1.05+rnd(2.4,4.6),z); D.rotation.set(rnd(0,.4),rnd(0,6.3),rnd(0,.4)); D.scale.set(s,s*rnd(.9,1.2),s); D.updateMatrix(); im.setMatrixAt(i,D.matrix);
       im.setColorAt(i,VL_LIN(pal[(Math.random()*pal.length)|0]).multiplyScalar(rnd(.85,1.08))); });
-    im.receiveShadow=true; im.frustumCulled=false; R.add(im); gfSector(k,[im],L.map(([x,z])=>({x,z}))); } }
+    im.receiveShadow=true; im.frustumCulled=false; R.add(im); gfSector(k,[im],L.map(([x,z])=>({x,z}))); NAT_QLIST.push({im,n:L.length,k:'forest'}); }
+  natQApply(); }
 /* 구역별 숲 묶음: 카메라 시야에 구역 상자가 걸릴 때만 그려요 (인스턴스 묶음은 three.js가 스스로 못 걸러서) */
 GF.secs={};
 function gfSector(k,ims,P,T){ T=T||GF; const S=T.secs[k]||(T.secs[k]={ims:[],box:new THREE.Box3()}); S.ims.push(...ims); P.forEach(p=>S.box.expandByPoint(new THREE.Vector3(p.x-6,0,p.z-6)).expandByPoint(new THREE.Vector3(p.x+6,16,p.z+6))); }

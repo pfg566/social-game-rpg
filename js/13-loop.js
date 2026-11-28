@@ -5,14 +5,16 @@ let last=performance.now(), hurtT=0, idleDrawn=0;
 const camOff=new THREE.Vector3(0,13.5,14.5);
 function frame(now){
   requestAnimationFrame(frame);
+  if (W.state==='play'){ if (IDLE_SH.on) idleShadowOff(); if (BATT_EL&&!BATT_EL.hidden) BATT_EL.hidden=true; }   // 게임 중: 그림자 늘 · 충전 안내 숨기기
   // 판이 막 시작됐으면: 한 번 쉬어 '준비 중'을 먼저 보여 주고 → 셰이더를 미리 만든 뒤 → 다음 번부터 게임을 그려요
   if (W.prewarm){
     if (W.prewarm===1){ W.prewarm=2; return; }
     if (W.prewarm===2){ W.prewarm=3; qPrewarm(); last=performance.now(); return; }
     W.prewarm=0; $('#prepMsg').hidden=true; startQualityMonitor(); last=performance.now();
   }
-  // 로비 · 결과 화면(게임 중이 아닐 때)은 초당 30번만 그려요: 기다리는 동안 노트북이 덜 뜨거워지고 게임 때 덜 느려져요
-  if (W.state!=='play'){ if (now-idleDrawn<31) return; idleDrawn=now; }
+  // 로그인 · 로비 · 결과 화면(게임 중이 아닐 때)은 초당 20번만 그려요 (상점 미리보기는 30번): 기다리는 동안 노트북이 덜 뜨거워지고 게임 때 덜 느려져요
+  // 그림자도 0.5초마다 한 번만 다시 그리고, 배터리로 하고 있으면 '충전기를 꽂아 주세요'를 띄워요
+  if (W.state!=='play'){ if (now-idleDrawn<(typeof SHOP!=='undefined'&&SHOP.open?31:45)) return; idleDrawn=now; idleShadow(now); battHint(); }
   let dt=Math.min(.05,(now-last)/1000); last=now;
   if (hitStop>0 && W.state==='play' && !W.paused){ hitStop-=dt; dt=0; }
   const real=now/1000;

@@ -221,12 +221,12 @@ function stgClearGhosts(){ for (const u in STG.av){ const A=STG.av[u]; A.rv=null
 function stgAvatar(u){
   let A=STG.av[u]; if (A) return A;
   const info=STG.names[u]; if (!info) return null;
-  const job=JOBS[info.job]?info.job:'knight', ch=makePlayerChar(job), g=new THREE.Group(); g.add(ch.root); scene.add(g);
+  const job=JOBS[info.job]?info.job:'knight', ch=makePlayerChar(job), g=new THREE.Group(); g.add(ch.root); scene.add(g); remoteLite(ch,g);   // 친구는 동그란 그림자만
   dressP2(ch,{...DEFAULTS[job],...(info.look||{})}).catch(()=>{});
   const tag=nameTag(info.n||'친구'); tag.position.y=3.05; g.add(tag); ch.anim.setBase('idle');
   A={u,g,ch,x:0,z:0,f:0,y:0,rv:null,seen:0}; STG.av[u]=A; return A;
 }
-function stgRemoveAvatars(){ for (const u in STG.av){ const A=STG.av[u]; scene.remove(A.g); A.ch.mixer.stopAllAction(); } STG.av={}; }
+function stgRemoveAvatars(){ for (const u in STG.av){ const A=STG.av[u]; scene.remove(A.g); charDispose(A.ch.root,A.ch.mixer,A.g); } STG.av={}; }
 function stgListenLive(){
   stgUnlisten(); const c=STG.cid, me=myUid(); const r=fbDb.ref(`stage/${c}/pos`);
   const cb=s=>{ if (s.key===me) return; const a=String(s.val()||'').split(','); if (a.length<3) return; STG.live[s.key]=netPush(STG.live[s.key],+a[0]/10,+a[1]/10,{f:+a[2]/100,d:a[3]==='1'}); };

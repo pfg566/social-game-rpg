@@ -20,9 +20,25 @@ function makePlayerChar(job){
   root.traverse(o=>{ if (o.isMesh){ o.castShadow=true; o.receiveShadow=true; o.frustumCulled=false;
     o.material=toToon(o.material,.5,0xfff2dc); mats.push(o.material); native.push(o);
     if (/_Head$/.test(o.name)) head=o; if (!skel && o.isSkinnedMesh) skel=o.skeleton; } });
+  skShare(root,skel);   // 조각들이 뼈대 하나를 같이 써요 (04-island.js)
   // 상점 차림(옷 · 모자 · 무기)은 10-shop.js의 dressP2가 입혀요. 원래 몸은 숨기고 머리만 남겨요
   const mixer=new THREE.AnimationMixer(root);
   return {root,mixer,mats,native,nativeHead:head,skel,host:head?head.parent:root,job,wardParts:[],anim:new Anim(mixer,GL.pclips.animations,D.map)};
+}
+/* ---------- 여럿이 하는 판의 친구 캐릭터: 진짜 그림자 대신 발밑 동그란 그림자 ----------
+   진짜 그림자는 그림자 지도에 캐릭터를 한 번 더 그려요 (친구 20명이면 조각 150개를 더). 동그란 그림자는 판 하나라 거의 공짜예요. */
+const BLOB={geo:null,mat:null};
+function blobShadow(r){
+  if (!BLOB.geo){ BLOB.geo=new THREE.CircleGeometry(1,28); BLOB.geo.rotateX(-Math.PI/2);
+    const cv=document.createElement('canvas'); cv.width=cv.height=64; const g=cv.getContext('2d'), gr=g.createRadialGradient(32,32,0,32,32,32);
+    // 화면은 밝기를 곡선으로 바꿔 보여 줘서(감마) 옅은 검정은 거의 안 보여요 → 진하게 칠하고 끝만 부드럽게
+    gr.addColorStop(0,'rgba(0,0,0,.66)'); gr.addColorStop(.5,'rgba(0,0,0,.58)'); gr.addColorStop(.78,'rgba(0,0,0,.3)'); gr.addColorStop(1,'rgba(0,0,0,0)'); g.fillStyle=gr; g.fillRect(0,0,64,64);
+    BLOB.mat=new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(cv),transparent:true,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2,toneMapped:false}); }
+  const m=new THREE.Mesh(BLOB.geo,BLOB.mat); m.scale.setScalar(r||.7); m.position.y=.03; m.renderOrder=1; m.castShadow=false; m.receiveShadow=false; m.userData.noFlash=true; return m;
+}
+function remoteLite(ch,g){
+  ch.noShadow=true; ch.root.traverse(o=>{ if (o.isMesh) o.castShadow=false; });   // 옷을 입힌 뒤(dressP2)에도 그림자 없이 (10-shop.js)
+  if (g&&!g.userData.blob){ const b=blobShadow(); g.add(b); g.userData.blob=b; }
 }
 /* 게임 속 주인공: 직업마다 하나씩 만들어 두고 고른 직업만 무대(pg)에 올려요 */
 const PCH={};

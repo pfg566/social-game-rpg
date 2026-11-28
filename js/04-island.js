@@ -3,11 +3,34 @@
    파일은 01 → 13 순서로 불러와요. 모든 파일이 같은 전역 공간을 함께 써요. */
 const clouds=[];
 
+/* ---------- 뼈대 하나로 같이 쓰기 ----------
+   캐릭터는 머리 · 몸 · 팔 · 다리 · 입힌 옷이 따로 된 조각이에요. 조각마다 뼈대(skeleton)가 따로면
+   매 프레임 똑같은 자세를 조각 수만큼 계산하고 그래픽 카드로 따로 보내요 (캐릭터 하나에 7~8번).
+   같은 뼈를 같은 순서로 쓰고 처음 자세(boneInverses)도 같은 조각은 뼈대 하나를 같이 쓰게 해요. */
+function skSame(a,b){ if (a===b) return true; const A=a.bones, B=b.bones; if (A.length!==B.length) return false;
+  for (let i=0;i<A.length;i++){ if (A[i]!==B[i]) return false; const x=a.boneInverses[i].elements, y=b.boneInverses[i].elements; for (let j=0;j<16;j++) if (Math.abs(x[j]-y[j])>1e-4) return false; }
+  return true; }
+function skShare(root,prefer){
+  if (!root) return null; const reps=prefer?[prefer]:[], old=new Set();
+  root.traverse(o=>{ if (!o.isSkinnedMesh||!o.skeleton) return; const s=o.skeleton; let r=null;
+    for (const q of reps) if (skSame(q,s)){ r=q; break; }
+    if (!r){ reps.push(s); return; }
+    if (r!==s){ o.skeleton=r; old.add(s); } });
+  if (old.size){ const used=new Set(); root.traverse(o=>{ if (o.isSkinnedMesh&&o.skeleton) used.add(o.skeleton); }); old.forEach(s=>{ if (!used.has(s)) s.dispose(); }); }   // 안 쓰게 된 뼈대의 뼈 텍스처를 치워요
+  return reps[0]||null;
+}
+/* 캐릭터를 장면에서 치울 때: 뼈대마다 그래픽 카드에 올린 뼈 텍스처를 지워요 (안 지우면 판마다 쌓여요). 재질 · 모양은 다른 캐릭터와 함께 쓰니 그대로 둬요 */
+function charDispose(root,mixer,g){
+  if (!root) return; const S=new Set(); root.traverse(o=>{ if (o.isSkinnedMesh&&o.skeleton) S.add(o.skeleton); }); S.forEach(s=>s.dispose());
+  if (mixer){ try{ mixer.stopAllAction(); mixer.uncacheRoot(mixer.getRoot()); }catch(e){} }
+  if (g) g.traverse(o=>{ if (o.isSprite&&o.userData.ownTex&&o.material.map) o.material.map.dispose(); });   // 친구 이름표 그림도
+}
 /* 애니메이션 캐릭터 */
 function makeChar(key,scale,map){
   const src=GL[key]; const root=THREE.SkeletonUtils.clone(src.scene); root.scale.setScalar(scale);
   const mats=[];
   root.traverse(o=>{ if (o.isMesh||o.isSkinnedMesh){ o.castShadow=true; o.receiveShadow=true; o.frustumCulled=false; o.material=toToon(o.material,.5,0xfff2dc); mats.push(o.material); } });
+  skShare(root);
   const mixer=new THREE.AnimationMixer(root);
   return {root,mixer,mats,anim:new Anim(mixer,src.animations,map)};
 }

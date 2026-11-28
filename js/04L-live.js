@@ -270,12 +270,12 @@ function lvSpotTick(){
 function lvAvatar(u){
   let A=LIVE.av[u]; if (A) return A;
   const info=LIVE.names[u]; if (!info) return null;
-  const job=JOBS[info.job]?info.job:'knight', ch=makePlayerChar(job), g=new THREE.Group(); g.add(ch.root); scene.add(g);
+  const job=JOBS[info.job]?info.job:'knight', ch=makePlayerChar(job), g=new THREE.Group(); g.add(ch.root); scene.add(g); remoteLite(ch,g);   // 친구는 동그란 그림자만
   dressP2(ch,{...DEFAULTS[job],...(info.look||{})}).catch(()=>{});
   const tag=nameTag(info.n||'친구'); tag.position.y=3.05; g.add(tag); ch.anim.setBase('idle');
   A={u,g,ch,x:0,z:0,f:0}; LIVE.av[u]=A; return A;
 }
-function lvRemoveAvatars(){ for (const u in LIVE.av){ const A=LIVE.av[u]; scene.remove(A.g); A.ch.mixer.stopAllAction(); } LIVE.av={}; }
+function lvRemoveAvatars(){ for (const u in LIVE.av){ const A=LIVE.av[u]; scene.remove(A.g); charDispose(A.ch.root,A.ch.mixer,A.g); } LIVE.av={}; }
 function lvListenLive(){
   lvUnlisten(); const c=LIVE.cid, me=myUid(); const r=fbDb.ref(`live/${c}/pos`);
   const cb=s=>{ if (s.key===me) return; const a=String(s.val()||'').split(','); if (a.length<3) return; LIVE.live[s.key]=netPush(LIVE.live[s.key],+a[0]/10,+a[1]/10,{f:+a[2]/100}); };

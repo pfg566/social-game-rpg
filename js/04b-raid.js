@@ -245,7 +245,7 @@ async function raidRemoteNet(u,v){
   R.st=st; R.netAt=performance.now();
 }
 function raidMakeRemote(u,info,st){
-  const job=JOBS[info.job]?info.job:'knight', ch=makePlayerChar(job), g=new THREE.Group(); g.add(ch.root); RAID.dyn.add(g);
+  const job=JOBS[info.job]?info.job:'knight', ch=makePlayerChar(job), g=new THREE.Group(); g.add(ch.root); RAID.dyn.add(g); remoteLite(ch,g);   // 친구는 동그란 그림자만
   dressP2(ch,{...DEFAULTS[job],...(info.look||{})}).catch(()=>{});
   const tag=twTag(info.n||'친구',null); tag.position.y=3.05; g.add(tag);
   const ring=new THREE.Mesh(RAID.ringGeo,new THREE.MeshBasicMaterial({color:0xc4b5fd,transparent:true,opacity:.7,depthWrite:false})); ring.rotation.x=-Math.PI/2; ring.position.y=.06; g.add(ring);
@@ -258,7 +258,7 @@ function raidMakeRemote(u,info,st){
   ch.anim.setBase('idle'); g.position.set(st.x,0,st.z);
   return {u,info,job,ch,g,tag,ring,book,mk,hr,pr,chn,bub,st:null,x:st.x,z:st.z,f:st.f,vx:0,vz:0,netAt:0};
 }
-function raidRemoveOne(u){ const R=RAID.rp[u]; if (R){ RAID.dyn.remove(R.g); R.ch.mixer.stopAllAction(); } delete RAID.rp[u]; }
+function raidRemoveOne(u){ const R=RAID.rp[u]; if (R){ RAID.dyn.remove(R.g); charDispose(R.ch.root,R.ch.mixer,R.g); } delete RAID.rp[u]; }
 function raidRemoveAll(){ for (const u in RAID.rp) raidRemoveOne(u); RAID.rp={}; }
 function raidRemoteFx(R,k,bd){
   const dx=Math.sin(R.f), dz=Math.cos(R.f), J=RD_JOB[R.job]||RD_JOB.knight, near=Math.hypot(R.x-P.x,R.z-P.z)<26&&RAID.proj.length<40;

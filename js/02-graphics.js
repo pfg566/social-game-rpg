@@ -13,6 +13,17 @@ renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 0.88;
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFShadowMap;   // 부드러운 그림자(PCFSoft)는 그림자 한 점마다 4배로 읽어서 무거워요 (화질을 바꿀 때 셰이더를 다시 만들지 않게 모든 화질에서 같은 방식)
+/* ---------- 내 노트북 알아보기 ----------
+   그래픽 이름이 'UHD Graphics'면 램이 한 개만 꽂혀(싱글 채널) 그래픽이 절반쯤 느린 경우가 많아요 → 처음부터 '가벼움'으로 시작해요.
+   배터리로 하면 노트북이 스스로 느려지고, 크롬 절전 모드는 화면을 1초에 30장으로 묶어요 → 게임 밖 화면에서 '충전기를 꽂아 주세요' 안내 */
+const GPU_NAME=(()=>{ try{ const gl=renderer.getContext(), e=gl.getExtension('WEBGL_debug_renderer_info'); return String((e?gl.getParameter(e.UNMASKED_RENDERER_WEBGL):gl.getParameter(gl.RENDERER))||''); }catch(err){ return ''; } })();
+const GPU_WEAK=/UHD Graphics|\bHD Graphics\b|SwiftShader|llvmpipe|Basic Render|Mali-|PowerVR|Adreno \(TM\) [1-5]\d\d\b/i.test(GPU_NAME)||(navigator.deviceMemory>0&&navigator.deviceMemory<4);
+const GPU_SHORT=((GPU_NAME.match(/(Intel\(R\)[^,(]*(?:\(R\)[^,(]*)?|Iris[^,(]*|AMD[^,(]*|Radeon[^,(]*|NVIDIA[^,(]*|GeForce[^,(]*|Apple[^,(]*|Mali[^,(]*|Adreno[^,(]*|SwiftShader)/i)||[GPU_NAME||'알 수 없음'])[0]).replace(/\((R|TM)\)/g,'').replace(/\s+/g,' ').trim().slice(0,42);
+{ const e=$('#gpuInfo'); if (e) e.textContent=`내 그래픽: ${GPU_SHORT}${GPU_WEAK?' · 느린 편이라 처음엔 가벼움으로 시작해요':''}`; }
+const BATT={known:false,charging:true};
+try{ if (navigator.getBattery) navigator.getBattery().then(b=>{ const up=()=>{ BATT.known=true; BATT.charging=!!b.charging; }; up(); b.addEventListener('chargingchange',up); }).catch(()=>{}); }catch(e){}
+let BATT_EL=null;
+function battHint(){ BATT_EL=BATT_EL||$('#battHint'); if (!BATT_EL) return; const on=BATT.known&&!BATT.charging; if (BATT_EL.hidden===on) BATT_EL.hidden=!on; }
 const scene = new THREE.Scene();
 const HORIZON = 0xe6e0ec;
 scene.background = new THREE.Color(HORIZON);
@@ -144,7 +155,7 @@ const QUALITY={high:{label:'고화질',pr:1.5,shadow:2048,points:true,grass:.85,
 const QORDER=['low','medium','high'];
 let QSET='auto', QCUR='medium', qMon=null;
 try{ QSET=localStorage.getItem('gsd-q')||'auto'; }catch(e){}
-const autoQ=()=>{ try{ return localStorage.getItem('gsd-q-auto')==='low'?'low':'medium'; }catch(e){ return 'medium'; } };   // 자동은 '가벼움'과 '보통' 사이에서만 골라요 (고화질은 설정에서 직접 고를 때만)
+const autoQ=()=>{ try{ const v=localStorage.getItem('gsd-q-auto'); if (v==='low'||v==='medium') return v; }catch(e){} return GPU_WEAK?'low':'medium'; };   // 자동은 '가벼움'과 '보통' 사이에서만 골라요 (고화질은 설정에서 직접 고를 때만) · 처음이면 그래픽 이름으로 정해요
 /* 자동 화질이면 게임 중 화면 속도를 계속 보고, 느리면 렌더 해상도를 0.75배(가벼움은 0.8배)까지 낮춰요 (그래도 느리면 한 단계 아래 화질로) */
 let DRS_S=1;
 const DRS={t:0,n:0,last:0,slow:0,good:0,hold:0,ps:1,pf:0,stuck:false};
@@ -160,8 +171,14 @@ let SH_PAUSED=false; const SH_KEEP={l:-34,r:34};
 function shadowPause(on){
   on=!!on; if (on===SH_PAUSED) return; SH_PAUSED=on; const c=sun.shadow.camera;
   if (on){ SH_KEEP.l=c.left; SH_KEEP.r=c.right; c.left=1e5; c.right=1e5+1; c.updateProjectionMatrix(); renderer.shadowMap.autoUpdate=false; renderer.shadowMap.needsUpdate=true; }
-  else { c.left=SH_KEEP.l; c.right=SH_KEEP.r; c.updateProjectionMatrix(); renderer.shadowMap.autoUpdate=true; }
+  else { c.left=SH_KEEP.l; c.right=SH_KEEP.r; c.updateProjectionMatrix(); renderer.shadowMap.autoUpdate=!IDLE_SH.on; renderer.shadowMap.needsUpdate=true; }
 }
+/* 게임 중이 아닐 때(로그인 · 로비 · 결과 화면): 장면이 거의 그대로라 그림자는 0.5초마다 한 번만 다시 그려요 */
+const IDLE_SH={on:false,t:0};
+function idleShadow(now){ if (!IDLE_SH.on){ IDLE_SH.on=true; IDLE_SH.t=0; } if (SH_PAUSED) return; renderer.shadowMap.autoUpdate=false;
+  const iv=(typeof SHOP!=='undefined'&&SHOP.open)?0:500;   // 상점: 캐릭터를 돌려 보니 그림자도 바로바로 · 다른 대기 화면: 0.5초마다
+  if (now-IDLE_SH.t>iv){ IDLE_SH.t=now; renderer.shadowMap.needsUpdate=true; } }
+function idleShadowOff(){ IDLE_SH.on=false; if (!SH_PAUSED) renderer.shadowMap.autoUpdate=true; }
 const qPR=()=>Math.min(window.devicePixelRatio||1,QUALITY[QCUR].pr)*(QSET==='auto'?DRS_S:1);
 function applyQuality(q){
   if (!QUALITY[q]) q='medium'; if (q!==QCUR){ DRS_S=1; DRS.ps=1; DRS.pf=0; DRS.stuck=false; } QCUR=q; const C=QUALITY[q];
@@ -172,6 +189,7 @@ function applyQuality(q){
   if (W.state!=='play') qPointsSet(C.points);   // 게임 중에는 그대로 (다음 판 시작 때 맞춰요)
   GRASS.forEach(g=>{ bladeLOD(g,q!=='high'); g.geometry.instanceCount=Math.floor(g.userData.max*C.grass); g.visible=C.grass>0; });
   if (MOTES){ MOTES.geometry.setDrawRange(0,Math.floor(MOTES.userData.max*C.motes)); MOTES.material.uniforms.uPR.value=renderer.getPixelRatio(); }
+  if (typeof natQApply==='function') natQApply();   // 작은 풀 · 꽃 · 먼 숲 솎기 (04v-village.js)
   resize();
 }
 /* 풀잎 한 장(점 7개 · 삼각형 5개): 고화질이 아니면 가운데 마디를 빼고 삼각형 3개로 그려요 (멀리서는 거의 같아 보여요) */
@@ -207,23 +225,30 @@ function qualityTick(now){
   const save=v=>{ try{ localStorage.setItem('gsd-q-auto',v); }catch(e){} };
   if (fps<40 && i>0){ applyQuality(QORDER[i-1]); save(QCUR); qMon={frames:0,start:0,last:0,warm:now+1500,tried:qMon.tried}; }
   else if (qMon.up && fps<48){ applyQuality(qMon.up); save(QCUR); qMon=null; try{ localStorage.setItem('gsd-q-noup',String(Date.now())); }catch(e){} }   // 올려 봤다가 느려서 되돌렸으면 일주일은 다시 올려 보지 않아요 (판마다 화질이 바뀌며 멈칫하지 않게)
-  else if (fps>57 && QCUR==='low' && !qMon.tried && !noUpRecently()){ applyQuality('medium'); qMon={frames:0,start:0,last:0,warm:now+1500,tried:true,up:'low'}; }   // '가벼움'에서 빠르면 '보통'만 시험해요 (셰이더가 바뀌지 않아 멈칫하지 않아요)
+  else if (fps>57 && QCUR==='low' && !qMon.tried && !noUpRecently() && !GPU_WEAK){ applyQuality('medium'); qMon={frames:0,start:0,last:0,warm:now+1500,tried:true,up:'low'}; }   // '가벼움'에서 빠르면 '보통'만 시험해요 (셰이더가 바뀌지 않아 멈칫하지 않아요)
   else { save(QCUR); qMon=null; }
 }
 /* 판을 시작할 때 '준비 중'을 띄운 채 셰이더를 미리 만들어요: 맵의 모든 재질(숨어 있는 것도) + 그림자 지도 + 빛 번짐.
    이렇게 해 두면 게임 중에 처음 보는 물체 · 화질 변경 때 멈칫하는 일이 줄어요. */
 function qPrewarm(){
+  let kit=null;
   try{
     qPointsSet(QUALITY[QCUR].points);
     const pz=SH_PAUSED, bl=bloom?bloom.enabled:false;
     if (pz) shadowPause(false);
     if (bloom) bloom.enabled=true;
     if (typeof myMarkTick==='function') myMarkTick();   // 내 위치 화살표도 미리 만들어 둬요
+    if (typeof prewarmKit==='function'){ kit=prewarmKit(); if (kit) scene.add(kit); }   // 아직 안 나온 몹 · 보스 · 피해 숫자도 (05-play.js)
+    // 진짜 화면은 composer 속 그림판(렌더 타깃)에 먼저 그려요. 같은 그림판을 대고 만들어야 진짜 화면이 쓰는 셰이더가 돼요
+    //  (안 그러면 화면 밖에 있던 물건 · 첫 몹이 처음 보일 때마다 셰이더를 새로 만들며 멈칫해요)
+    if (composer) renderer.setRenderTarget(composer.readBuffer);
     renderer.compile(scene,camera);
+    if (composer) renderer.setRenderTarget(null);
     if (composer) composer.render(); else renderer.render(scene,camera);
     if (bloom) bloom.enabled=bl;
     if (pz) shadowPause(true);
-  }catch(e){ console.warn('prewarm',e); }
+  }catch(e){ console.warn('prewarm',e); try{ renderer.setRenderTarget(null); }catch(e2){} }
+  if (kit&&typeof prewarmKitDrop==='function') prewarmKitDrop(kit);
 }
 function updateDreamy(real){
   grassMat.uniforms.uTime.value=real; grassMat.uniforms.uPlayer.value.set(P.x,0,P.z);

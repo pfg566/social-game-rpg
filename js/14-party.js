@@ -279,18 +279,18 @@ function nameTag(text){
   g.fillStyle='rgba(18,22,34,.78)'; roundRect(g,4,8,248,48,14); g.fill();
   g.fillStyle='#fff'; g.font='700 30px "Noto Sans KR","Malgun Gothic",sans-serif'; g.textAlign='center'; g.textBaseline='middle'; g.fillText(text,128,33);
   const t=new THREE.CanvasTexture(cv); t.encoding=THREE.sRGBEncoding;
-  const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:t,transparent:true,depthTest:false,toneMapped:false})); sp.scale.set(2.4,.6,1); sp.renderOrder=8; return sp;
+  const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:t,transparent:true,depthTest:false,toneMapped:false})); sp.scale.set(2.4,.6,1); sp.renderOrder=8; sp.userData.ownTex=true; return sp;
 }
 function makeRemote(u,m){
   const job=JOBS[m.job]?m.job:'knight';
-  const ch=makePlayerChar(job), g=new THREE.Group(); g.add(ch.root); scene.add(g);
+  const ch=makePlayerChar(job), g=new THREE.Group(); g.add(ch.root); scene.add(g); remoteLite(ch,g);   // 친구는 동그란 그림자만
   dressP2(ch,{...DEFAULTS[job],...(m.look||{})}).catch(()=>{});
   const tag=nameTag(m.name||'친구'); tag.position.y=3.05; g.add(tag);
   const bar=makeBar(1.3); bar.fg.material=bar.fg.material.clone(); bar.fg.material.color.setHex(0x3fbf6a);
   ch.anim.setBase('idle');
   PARTY.rp[u]={u,m,job,ch,g,tag,bar,st:null,seen:0,x:CQ.camp.x,z:CQ.camp.z,f:Math.PI,lastN:-1,down:false};
 }
-function removeRemotes(){ for (const u in PARTY.rp){ const R=PARTY.rp[u]; scene.remove(R.g); scene.remove(R.bar.g); R.ch.mixer.stopAllAction(); } PARTY.rp={}; }
+function removeRemotes(){ for (const u in PARTY.rp){ const R=PARTY.rp[u]; scene.remove(R.g); scene.remove(R.bar.g); charDispose(R.ch.root,R.ch.mixer,R.g); } PARTY.rp={}; }
 const RPROJ=[];
 /* 내 상태는 짧은 글자 하나로 보내요: t,x,z,f,hp,mx,dn,q,b,동작이름,동작속도,동작번호 */
 function encP(s){ const a=s.a||{}; return [s.t,s.x,s.z,s.f,s.hp,s.mx,s.dn,s.q,s.b,a.k||'',a.s||1,a.n|0].join(','); }

@@ -311,20 +311,43 @@ function vlInst(name,P,opt){
       if (pt.tint) im.setColorAt(i,p.c||new THREE.Color(1,1,1)); });
     const sh=!opt||opt.shadow!==false; im.castShadow=sh; im.receiveShadow=true; im.frustumCulled=false;
     if (pt.leaf&&sh) im.customDepthMaterial=new THREE.MeshDepthMaterial({depthPacking:THREE.RGBADepthPacking,map:pt.mat.map,alphaTest:.45,side:THREE.DoubleSide});
-    if (!opt||opt.cull!==false) natCullReg(im,sh);   // 화면 밖 나무·풀은 안 그려요 (러너는 본마다 따로 거르니 빼요)
+    if (!opt||opt.cull!==false){ const r=natCullReg(im,sh,natQKind(name,opt)); if (opt&&opt.lod) r.lodM=true; }   // 화면 밖 나무·풀은 안 그려요 (러너는 본마다 따로 거르니 빼요)
     if (opt&&opt.lod){ (VL.lod=VL.lod||[]).push({im,n:P.length}); }
     scene.add(im); out.push(im); });
+  natQApply();
   return out;
+}
+/* ---------- 화질에 따라 솎기 ----------
+   '가벼움'에서도 그림자만 빠지고 풀 · 꽃 · 나뭇잎이 그대로라 삼각형이 135만 개나 됐어요.
+   작은 풀 · 꽃 · 버섯 · 자갈은 보통 70% · 가벼움 30%, 그림자 없는 숲 가장자리 나무와 먼 숲 덩어리는 가벼움에서 60% · 55%만 그려요.
+   배치 순서를 미리 섞어 두어서 앞에서부터 줄여도 한쪽이 비지 않고 고르게 빠져요. */
+const NAT_QF={small:{high:1,medium:.7,low:.3},rim:{high:1,medium:1,low:.6},forest:{high:1,medium:1,low:.55}};
+const NAT_QLIST=[];   // 자연물 거르기에 안 들어가는 묶음 (먼 숲 덩어리): {im,n,k}
+function natQKind(name,opt){
+  if (/^(Grass_|Flower|Clover|Plant_|Fern|Mushroom|Pebble)/.test(name)) return 'small';
+  if (opt&&opt.shadow===false&&/^(CommonTree|Pine|TwistedTree|DeadTree|Birch)/.test(name)) return 'rim';
+  return null;
+}
+function natQApply(){
+  const q=NAT_QF.small[QCUR]!=null?QCUR:'medium';
+  for (const r of NATC.list){ if (!r.qk||r.lodM) continue; const n=Math.max(1,Math.round(r.n*NAT_QF[r.qk][q])); if (r.lim!==n) r.lim=n; }
+  for (const e of NAT_QLIST){ const n=Math.max(1,Math.round(e.n*NAT_QF[e.k][q])); if (e.im.count!==n) e.im.count=n; }
 }
 /* ---------- 화면 밖 자연물 거르기 ----------
    나무 · 풀 뭉치 · 꽃 · 바위를 한 묶음(InstancedMesh)으로 그리면 three.js는 묶음 전체를 늘 그려요 (맵 반대편 것까지).
    매 프레임 카메라에 보이는 것(+ 그림자가 화면에 드리울 것)만 앞으로 모아 개수를 줄여요. 보이는 목록이 바뀔 때만 다시 올려요. */
 const NATC={list:[],fr:new THREE.Frustum(),pm:new THREE.Matrix4()};
-function natCullReg(im,cast){
+function natCullReg(im,cast,qk){
   const g=im.geometry; if (!g.boundingSphere) g.computeBoundingSphere();
   const bs=g.boundingSphere, n=im.count, sph=new Float32Array(n*4), M=new THREE.Matrix4(), V=new THREE.Vector3();
-  for (let i=0;i<n;i++){ im.getMatrixAt(i,M); V.copy(bs.center).applyMatrix4(M); sph[i*4]=V.x; sph[i*4+1]=V.y; sph[i*4+2]=V.z; sph[i*4+3]=bs.radius*M.getMaxScaleOnAxis()+.6; }
-  const r={im,n,lim:n,full:im.instanceMatrix.array.slice(0,n*16),col:im.instanceColor?im.instanceColor.array.slice(0,n*3):null,sph,cast:!!cast,vis:new Uint8Array(n),last:-1,auto:true};
+  let full=im.instanceMatrix.array.slice(0,n*16), col=im.instanceColor?im.instanceColor.array.slice(0,n*3):null;
+  if (qk&&n>2){   // 순서 섞기 (화질로 앞에서부터 줄여도 고르게 빠지게)
+    const ord=[...Array(n).keys()]; let sd=(n*7919+13)%2147483647; const rr=()=>(sd=(sd*16807)%2147483647)/2147483647;
+    for (let i=n-1;i>0;i--){ const j=(rr()*(i+1))|0, t=ord[i]; ord[i]=ord[j]; ord[j]=t; }
+    const f2=new Float32Array(n*16), c2=col?new Float32Array(n*3):null;
+    ord.forEach((o,i)=>{ f2.set(full.subarray(o*16,o*16+16),i*16); if (c2) c2.set(col.subarray(o*3,o*3+3),i*3); }); full=f2; col=c2; }
+  for (let i=0;i<n;i++){ M.fromArray(full,i*16); V.copy(bs.center).applyMatrix4(M); sph[i*4]=V.x; sph[i*4+1]=V.y; sph[i*4+2]=V.z; sph[i*4+3]=bs.radius*M.getMaxScaleOnAxis()+.6; }
+  const r={im,n,lim:n,full,col,sph,cast:!!cast,vis:new Uint8Array(n),last:-1,auto:true,qk:qk||null};
   NATC.list.push(r); im.userData.natc=r; return r;
 }
 function natSeen(o){ for (let p=o.parent;p;p=p.parent){ if (!p.visible) return false; if (p===scene) return true; } return false; }

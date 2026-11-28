@@ -7,7 +7,7 @@
 <style>body{margin:0}[hidden]{display:none!important}img{max-width:100%}</style>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jua&family=IBM+Plex+Sans+KR:wght@400;600;700&display=swap">
-<link rel="stylesheet" href="style.css?v=20261126a">
+<link rel="stylesheet" href="style.css?v=20261128a">
 </head>
 <body>
 
@@ -92,6 +92,7 @@
 <div class="tw-me card" id="twMe" hidden><div class="tw-g"><div class="tw-gbar"><i id="twGauge"></i></div><span id="twGTxt">밀림 게이지 0%</span></div><div class="tw-slot" id="twItem"></div><div class="tw-slot" id="twSkill"></div><div class="tw-fx" id="twFx"></div></div>
 <div class="tw-feed" id="twFeed" hidden></div>
 <div class="run-res card tw-wait" id="twWait" hidden></div>
+<div class="batt-hint" id="battHint" hidden>🔌 배터리로 하고 있어요 · 충전기를 꽂으면 게임이 더 부드러워요</div>
 <div class="prep-msg" id="prepMsg" hidden>🎮 게임 준비 중…</div>
 <div class="rd-vig" id="rdVig"></div>
 <div class="rd-top" id="rdTop" hidden>
@@ -180,6 +181,7 @@
   <div class="setpop card" id="setPop" role="dialog" aria-label="설정" hidden>
     <p class="setpop-h">설정</p>
     <label class="unitpick" id="qPick"><span>화질</span><select id="qSel"><option value="auto">자동 (추천 · 컴퓨터에 맞춰 조절)</option><option value="high">고화질 (풀밭·빛 효과 모두)</option><option value="medium">보통</option><option value="low">가벼움 (느린 컴퓨터)</option></select></label>
+    <p class="setpop-gpu" id="gpuInfo"></p>
     <label class="unitpick"><span>조작</span><select id="ctrlSel"><option value="auto">자동 (마우스를 움직이면 마우스 조준)</option><option value="kb">키보드만 (마우스·터치패드 없이)</option><option value="mouse">마우스 조준 우선</option></select></label>
     <label class="fpsopt"><input type="checkbox" id="fpsChk"> 화면 속도(FPS) 보기</label>
     <button class="btn ghost" id="editBtn" hidden>문제 관리</button>
@@ -502,27 +504,27 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="firebase-config.js"></script>
 <script src="js/01-data.js?v=20261123c"></script>
-<script src="js/02-graphics.js?v=20261126b"></script>
+<script src="js/02-graphics.js?v=20261128a"></script>
 <script src="js/02m-mood.js?v=20261123c"></script>
-<script src="js/03-world.js?v=20261123p"></script>
-<script src="js/04-island.js?v=20261123p"></script>
+<script src="js/03-world.js?v=20261128a"></script>
+<script src="js/04-island.js?v=20261128a"></script>
 <script src="js/04g-glacier.js?v=20261121a"></script>
 <script src="js/04r-runner.js?v=20261123p"></script>
-<script src="js/04s-stage.js?v=20261121a"></script>
-<script src="js/04t-teamwar.js?v=20261121a"></script>
-<script src="js/04b-raid.js?v=20261126a"></script>
-<script src="js/04L-live.js?v=20261121a"></script>
+<script src="js/04s-stage.js?v=20261128a"></script>
+<script src="js/04t-teamwar.js?v=20261128a"></script>
+<script src="js/04b-raid.js?v=20261128a"></script>
+<script src="js/04L-live.js?v=20261128a"></script>
 <script src="js/04c-cafe.js?v=20261122d"></script>
-<script src="js/04v-village.js?v=20261124d"></script>
+<script src="js/04v-village.js?v=20261128a"></script>
 <script src="js/04w-village-art.js?v=20261123p"></script>
 <script src="js/04x-village-env.js?v=20261122a"></script>
-<script src="js/04f-field.js?v=20261123p"></script>
+<script src="js/04f-field.js?v=20261128a"></script>
 <script src="js/04e-defense.js?v=20261123p"></script>
 <script src="js/04i-island.js?v=20261124a"></script>
 <script src="js/04d-cafe-art.js?v=20261123p"></script>
-<script src="js/05-play.js?v=20261126b"></script>
+<script src="js/05-play.js?v=20261128a"></script>
 <script src="js/06-jobs.js?v=20261124c"></script>
-<script src="js/06p-player.js?v=20261121a"></script>
+<script src="js/06p-player.js?v=20261128a"></script>
 <script src="js/07-quiz.js?v=20261126a"></script>
 <script src="js/07b-prep.js?v=20261122r"></script>
 <script src="js/07c-fun.js?v=20261124c"></script>
@@ -530,7 +532,7 @@
 <script src="js/09-server.js?v=20261122s"></script>
 <script src="js/09k-kick.js?v=20261121a"></script>
 <script src="js/09o-online.js?v=20261121a"></script>
-<script src="js/10-shop.js?v=20261122a"></script>
+<script src="js/10-shop.js?v=20261128a"></script>
 <script src="js/10w-wings.js?v=20261121a"></script>
 <script src="js/10p-pets.js?v=20261122a"></script>
 <script src="js/10e-eggs.js?v=20261121a"></script>
@@ -538,8 +540,8 @@
 <script src="js/10a-ach.js?v=20261121a"></script>
 <script src="js/11-gate-editor.js?v=20261126a"></script>
 <script src="js/12-lobby.js?v=20261123p"></script>
-<script src="js/13-loop.js?v=20261124d"></script>
-<script src="js/14-party.js?v=20261124b"></script>
+<script src="js/13-loop.js?v=20261128a"></script>
+<script src="js/14-party.js?v=20261128a"></script>
 <script src="js/15-board.js?v=20261126b"></script>
 <script src="js/16-notes.js?v=20261121a"></script>
 </body>
