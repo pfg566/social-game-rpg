@@ -20,7 +20,7 @@ const PET_TYPES={
   // 모델 파일(GLB) 펫: models/pets/{glb}.glb · h = 펫 크기(키)
   //  애니메이션 이름으로 찾아요: 가만히(Idle) · 걷기/달리기(Walk · Run) · 날기(Fly) · 앉기(Sit) · 잠자기(Sleep). 애니메이션이 없으면 몸 전체를 코드로 움직여요
   lbird:  {move:'fly',   size:1,   spd:1.1, glb:'lavender_bird', h:.7, flyH:1.6},
-  mfox:   {move:'walk',  size:1,   spd:1.1, glb:'maple_fox_t', h:.8}   // 단풍 여우 (Tripo 모델 · 지금은 애니메이션 없음)
+  mfox:   {move:'walk',  size:1,   spd:1.1, glb:'maple_fox_a', h:.8}   // 단풍 여우 (Tripo · 애니메이션 Run · Sit · LieDown_Sleep, 가만히 애니메이션은 없어서 서 있는 기본 자세)
 };
 const PET_SIZE=1.25;
 const PETS=[];
@@ -396,15 +396,22 @@ function makeGlbPet(type,T){
     const clips=g.animations||[];
     if (!clips.length){ R.rigid=true; return; }   // 애니메이션이 없는 모델: petPoseRigid가 몸 전체를 움직여요
     const mx=R.mixer=new THREE.AnimationMixer(root);
-    const find=(...res)=>{ for (const re of res){ const c=clips.find(c=>re.test(c.name)); if (c) return mx.clipAction(c); } return null; };
-    R.aIdle=find(/idle|stand|breath|대기/i)||mx.clipAction(clips[0]);
-    R.aMove=(T.move==='fly'?find(/fly|날/i):find(/run|gallop|trot|달리/i,/walk|걷/i))||R.aIdle;
-    R.aSit=find(/sit|squat|앉/i); R.aSleep=find(/sleep|lie|rest|잠/i);
+    const find=(...res)=>{ for (const re of res){ const c=clips.find(c=>re.test(c.name)); if (c) return c; } return null; };
+    // 처음과 끝 자세가 다른 애니메이션(앉기 · 눕기)은 한 번 하고 끝 자세로 멈춰 있어요. 같으면(달리기 · 가만히) 계속 반복
+    const act=c=>{ if (!c) return null; const a=mx.clipAction(c); if (!petClipLoops(c)){ a.setLoop(THREE.LoopOnce,1); a.clampWhenFinished=true; a.once=true; } return a; };
+    const cIdle=find(/idle|stand|breath|대기/i), cMove=T.move==='fly'?find(/fly|날/i):find(/run|gallop|trot|달리/i,/walk|걷/i), cSit=find(/sit|squat|앉/i), cSleep=find(/sleep|lie|rest|잠/i);
+    R.aIdle=act(cIdle)||(!cMove&&!cSit&&!cSleep?act(clips[0]):null);   // 가만히 애니메이션이 없으면 뼈대 기본 자세(서 있기)
+    R.aMove=act(cMove)||R.aIdle; R.aSit=act(cSit); R.aSleep=act(cSleep);
     R.mw=T.move==='fly'?1:0; R.sw=0; R.zw=0;
     [R.aIdle,R.aMove,R.aSit,R.aSleep].forEach(a=>{ if (a&&!a.isRunning()){ a.play(); a.setEffectiveWeight(0); } });
-    R.aIdle.setEffectiveWeight(1-R.mw); if (R.aMove!==R.aIdle) R.aMove.setEffectiveWeight(R.mw);
+    if (R.aIdle) R.aIdle.setEffectiveWeight(1-R.mw); if (R.aMove&&R.aMove!==R.aIdle) R.aMove.setEffectiveWeight(R.mw);
+    R.tailBone=null; for (const k in R.bones) if (/^tail[_ .]?(0?1|base|root)$/i.test(k)){ R.tailBone=R.bones[k]; break; }
     mx.update(Math.random()*2); });
   return R; }
+function petClipLoops(c){ for (const tr of c.tracks){ const v=tr.values, n=tr.getValueSize(), L=v.length-n; if (L<=0) continue;
+    if (/quaternion$/.test(tr.name)){ const d=Math.abs(v[0]*v[L]+v[1]*v[L+1]+v[2]*v[L+2]+v[3]*v[L+3]); if (2*Math.acos(Math.min(1,d))>.06) return false; }
+    else { const lim=/position$/.test(tr.name)?.01:.05; for (let i=0;i<n;i++) if (Math.abs(v[i]-v[L+i])>lim) return false; } }
+  return true; }
 function petDispose(R){ R.dead=true; if (R.mixer) R.mixer.stopAllAction(); R.g.traverse(o=>{ if (o.isSkinnedMesh&&o.skeleton) o.skeleton.dispose(); }); }
 function makePet(type){
   const T0=PET_TYPES[type]; if (T0&&T0.glb) return makeGlbPet(type,T0);
@@ -499,22 +506,32 @@ function petUpdate(p,dt,now){
 const PQN=new THREE.Quaternion(), PXA=new THREE.Vector3(1,0,0);
 function petPoseGlb(p,dt,moving,sit,sleep,hop,sad){
   const {R,st,T}=p, mv=Math.min(1,st.v/3), t=st.t, fly=T.move==='fly';
-  R.z.visible=sleep; if (sleep){ const k=(t*.6)%1; R.z.position.set(.12+.08*k,(fly?T.h*.55:T.h)+.15+.25*k,0); R.z.material.opacity=Math.sin(k*Math.PI); }
+  R.z.visible=sleep; if (sleep){ const k=(t*.6)%1; R.z.position.set(.12+.08*k,(fly?T.h*.55:R.aSleep?T.h*.55:T.h)+.15+.25*k,0); R.z.material.opacity=Math.sin(k*Math.PI); }   // 엎드려 자면 💤도 낮게
   let bobY=hop, bodyX=0;
   if (fly){ bobY+=st.fy+(sleep?T.h*.5:Math.sin(t*2.2)*.05); bodyX=moving?.28*mv:0; }   // 졸면 땅에 내려앉아요
   R.bob.position.y=damp(R.bob.position.y,bobY,fly?20:30,dt); R.body.rotation.x=damp(R.body.rotation.x,bodyX,8,dt);
   if (!R.mixer) return;
   const want=fly?(sleep?0:1):(moving?1:0); R.mw=damp(R.mw,want,6,dt);
-  // 앉기 · 잠자기 애니메이션이 있으면 섞어요 (없으면 가만히 애니메이션을 느리게 + 고개 숙이기)
-  R.zw=damp(R.zw,R.aSleep&&sleep&&!moving?1:0,3,dt); R.sw=damp(R.sw,R.aSit&&sit&&!sleep&&!moving?1:0,4,dt);
+  // 앉기 · 잠자기 애니메이션이 있으면 섞어요: 들어갈 때 처음부터(앉는 모습 · 눕는 모습) 하고 끝 자세로 멈춰 있어요
+  //  (없으면 가만히 애니메이션을 느리게 + 고개 숙이기)
+  const zOn=!!R.aSleep&&sleep&&!moving, sOn=!!R.aSit&&sit&&!sleep&&!moving;
+  if (zOn&&!R.zOn&&R.aSleep.once&&R.zw<.05) R.aSleep.reset();
+  if (sOn&&!R.sOn&&R.aSit.once&&R.sw<.05) R.aSit.reset();
+  R.zOn=zOn; R.sOn=sOn;
+  R.zw=damp(R.zw,zOn?1:0,3,dt); R.sw=damp(R.sw,sOn?1:0,4,dt);
   const rest=(1-R.mw)*(1-R.zw)*(1-R.sw);
   if (R.aSleep) R.aSleep.setEffectiveWeight((1-R.mw)*R.zw); if (R.aSit) R.aSit.setEffectiveWeight((1-R.mw)*(1-R.zw)*R.sw);
-  if (R.aMove!==R.aIdle){ R.aMove.setEffectiveWeight(R.mw); R.aIdle.setEffectiveWeight(rest); } else R.aIdle.setEffectiveWeight(Math.max(R.mw,rest));
-  R.aMove.setEffectiveTimeScale(hop>0?1.7:fly?(moving?1+.3*mv:.6):Math.max(.6,Math.min(2.2,st.v/2.3)));   // 걷는 빠르기에 맞춰 발을 굴러요
-  R.aIdle.setEffectiveTimeScale(sleep&&!R.aSleep?.35:1);
+  if (R.aMove&&R.aMove!==R.aIdle) R.aMove.setEffectiveWeight(R.mw);
+  if (R.aIdle) R.aIdle.setEffectiveWeight(R.aMove===R.aIdle?Math.max(R.mw,rest):rest);
+  if (R.aMove) R.aMove.setEffectiveTimeScale(hop>0?1.7:fly?(moving?1+.3*mv:.6):Math.max(.6,Math.min(2.2,st.v/(R.aMove.getClip().duration<.8?3.4:2.3))));   // 걷는 빠르기에 맞춰 발을 굴러요 (짧은 달리기 동작은 조금 천천히)
+  if (R.aIdle&&R.aIdle!==R.aMove) R.aIdle.setEffectiveTimeScale(sleep&&!R.aSleep?.35:1);
   R.mixer.update(dt);
   const hd=R.bones.Head, nod=Math.max(sleep&&!R.aSleep?.55:0,sad*.45); R.nod=damp(R.nod||0,nod,6,dt);
   if (hd&&R.nod>.002) hd.quaternion.multiply(PQN.setFromAxisAngle(PXA,R.nod));
+  // 꼬리 뼈가 있으면: 서 있거나 앉아 있을 때 살랑살랑, 잘 때는 아주 천천히 (달리기는 애니메이션 그대로)
+  if (R.tailBone){ const k=1-R.mw; if (k>.02) R.tailBone.quaternion.multiply(PQN.setFromAxisAngle(PUP,(sleep?.05*Math.sin(t*.9):.16*Math.sin(t*2.6))*k*(sad?.3:1))); }
+  // 엎드려 자는 동안 숨쉬기 (잠자기 애니메이션 끝 자세가 멈춰 있어서)
+  if (R.aSleep&&R.zw>.02) R.body.scale.set(1,1+.02*Math.sin(t*1.4)*R.zw,1); else if (R.body.scale.y!==1) R.body.scale.set(1,1,1);
 }
 /* 애니메이션이 없는 모델 펫(뼈대 없음): 몸 전체를 움직여요
    달릴 때 총총 뛰기(뜨고 · 내려앉으며 앞뒤로 기울고 찌그러짐) · 가만히 숨쉬기 · 앉기(앞발을 축으로 뒤로 살짝) · 잠자기(납작 엎드려 💤) */

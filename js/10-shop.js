@@ -169,7 +169,7 @@ const CATALOG=[
   {id:'pdragon_egg',job:'all',slot:'pet',name:'아기 용',pet:'dragon',ico:'🐲',egg:true,was:'pdragon_p5000',desc:'작은 날개로 파닥파닥 날아다니는 아기 용'},
   /* 모델 파일 펫 (시험 중: 선생님 화면에서만 보이고 써 볼 수 있어요 · 알 확률표에 넣을 때 hidden을 빼요) */
   {id:'plbird_egg',hidden:true,job:'all',slot:'pet',name:'라벤더 새',pet:'lbird',ico:'🐦',egg:true,desc:'보랏빛 날개로 파닥파닥 · 머리 위 깃털이 살랑'},
-  {id:'pmfox_egg',hidden:true,job:'all',slot:'pet',name:'단풍 여우',pet:'mfox',ico:'🍁',egg:true,desc:'커다란 단풍잎 꼬리를 달고 총총 뛰어서 따라와요'},
+  {id:'pmfox_egg',hidden:true,job:'all',slot:'pet',name:'단풍 여우',pet:'mfox',ico:'🍁',egg:true,desc:'단풍잎 꼬리를 흔들며 총총 달려와요 · 멈추면 앉고 오래 쉬면 엎드려 자요'},
   {id:'eggpet',hidden:true,job:'none',slot:'pet',name:'키우는 알',pet:'egg'},
   {id:'xpgowl_p0',job:'all',slot:'pet',name:'황금 부엉이',pet:'gowl',ico:'✨',ach:'q500',desc:'업적 📖 지식 수집가 보상 · 반짝이가 맴돌아요'}
 ];
