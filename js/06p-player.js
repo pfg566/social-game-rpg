@@ -13,7 +13,7 @@ const P2={
   mage:{model:'p_mage',tex:'mage',
     map:{idle:'Idle',run:'Running_A',cast:'Ranged_Magic_Shoot',castBig:'Ranged_Magic_Raise',ult:'Ranged_Magic_Summon',
          dodge:'Dodge_Forward',dodgeB:'Dodge_Backward',hit:'Hit_A',death:'Death_A',cheer:'Cheer'}},
-  // 새 마법사 루미 (시험 · 선생님만): 모델 하나에 옷 · 머리 · 지팡이가 다 붙어 있고 동작도 모델 안에 있어요 (Mixamo 뼈대)
+  // 새 마법사 루미 (시험 · 선생님만): 몸 · 옷 · 머리 · 신발 · 허리띠 부품을 원래 루미 뼈대에 맞춰 붙인 모델 (Lumi2.glb · 동작은 원래 루미 것)
   //  own: 꾸미기(옷 갈아입기) 없음 · base: 싸우는 방법은 마법사 · h: 키(머리카락 꼭대기까지) · runRef: 빠르기 1일 때 발이 땅을 미는 빠르기
   //  구르기(dodge) · 만세(cheer) 동작은 없어요 → 순간이동은 원래 동작 없이 · 이기면 가만히 서 있어요
   lumi:{model:'p_lumi',own:true,base:'mage',h:2.15,runRef:2.4,runMax:2.3,
@@ -42,7 +42,7 @@ function makePlayerChar(job){
 const LUMI={loading:false,err:false};
 function lumiOn(){ return typeof lumiPicked==='function'&&lumiPicked()&&!(typeof SHOP!=='undefined'&&SHOP.open); }   // 상점에서는 꾸미기를 볼 수 있게 원래 마법사로
 function lumiLoad(){ if (GL.p_lumi||LUMI.loading||LUMI.err) return; LUMI.loading=true; if (typeof renderJobPick==='function') renderJobPick();
-  new THREE.GLTFLoader().load('models/p2/Lumi.glb?v=20261128',g=>{ GL.p_lumi=g; LUMI.loading=false;
+  new THREE.GLTFLoader().load('models/p2/Lumi2.glb?v=20261128',g=>{ GL.p_lumi=g; LUMI.loading=false;
     if (typeof lobbyAddLumi==='function') lobbyAddLumi();
     if (typeof renderJobPick==='function') renderJobPick();
     if (WORLD_READY && W.state!=='play') applyLook(); },
