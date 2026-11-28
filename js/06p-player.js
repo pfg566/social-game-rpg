@@ -12,19 +12,42 @@ const P2={
          dodge:'Dodge_Forward',dodgeB:'Dodge_Backward',hit:'Hit_A',death:'Death_A',cheer:'Cheer'}},
   mage:{model:'p_mage',tex:'mage',
     map:{idle:'Idle',run:'Running_A',cast:'Ranged_Magic_Shoot',castBig:'Ranged_Magic_Raise',ult:'Ranged_Magic_Summon',
-         dodge:'Dodge_Forward',dodgeB:'Dodge_Backward',hit:'Hit_A',death:'Death_A',cheer:'Cheer'}}
+         dodge:'Dodge_Forward',dodgeB:'Dodge_Backward',hit:'Hit_A',death:'Death_A',cheer:'Cheer'}},
+  // 새 마법사 루미 (시험 · 선생님만): 모델 하나에 옷 · 머리 · 지팡이가 다 붙어 있고 동작도 모델 안에 있어요 (Mixamo 뼈대)
+  //  own: 꾸미기(옷 갈아입기) 없음 · base: 싸우는 방법은 마법사 · h: 키(머리카락 꼭대기까지) · runRef: 빠르기 1일 때 발이 땅을 미는 빠르기
+  //  구르기(dodge) · 만세(cheer) 동작은 없어요 → 순간이동은 원래 동작 없이 · 이기면 가만히 서 있어요
+  lumi:{model:'p_lumi',own:true,base:'mage',h:2.15,runRef:2.4,runMax:2.3,
+    map:{idle:'Staff_Idle',walk:'Staff_Walk',run:'Staff_Run',cast:'Staff_Cast',castBig:'Staff_Cast',ult:'Staff_Cast',hit:'Staff_Hit',death:'Staff_LieDown'}}
 };
+/* 다른 모델의 동작이 원래 마법사 동작보다 길거나 짧으면, 같은 시간에 끝나도록 빠르기를 맞춰요 (너무 빠르거나 느리지 않게 0.35~2.2배) */
+function ownSpeeds(D,clips){ const M=P2[D.base||'mage'].map, out={};
+  for (const k in D.map){ if (k==='idle'||k==='run'||k==='walk') continue; const a=clips.find(c=>c.name===D.map[k]), b=M[k]&&GL.pclips.animations.find(c=>c.name===M[k]);
+    if (a&&b) out[k]=Math.max(.35,Math.min(2.2,a.duration/b.duration)); }
+  return out; }
 function makePlayerChar(job){
-  const D=P2[job], src=GL[D.model]; const root=THREE.SkeletonUtils.clone(src.scene);
+  const D=P2[job], src=GL[D.model]; let root=THREE.SkeletonUtils.clone(src.scene);
+  if (D.own){ const bb=src.userData.bb||(src.userData.bb=new THREE.Box3().setFromObject(src.scene)), inner=root;   // 키를 맞추는 크기는 안쪽에 (로비 등에서 root 크기를 바꿔도 그대로)
+    inner.scale.setScalar(D.h/Math.max(.01,bb.max.y-bb.min.y)); root=new THREE.Group(); root.add(inner); }
   const mats=[], native=[]; let head=null, skel=null;
   root.traverse(o=>{ if (o.isMesh){ o.castShadow=true; o.receiveShadow=true; o.frustumCulled=false;
     o.material=toToon(o.material,.5,0xfff2dc); mats.push(o.material); native.push(o);
     if (/_Head$/.test(o.name)) head=o; if (!skel && o.isSkinnedMesh) skel=o.skeleton; } });
   skShare(root,skel);   // 조각들이 뼈대 하나를 같이 써요 (04-island.js)
   // 상점 차림(옷 · 모자 · 무기)은 10-shop.js의 dressP2가 입혀요. 원래 몸은 숨기고 머리만 남겨요
-  const mixer=new THREE.AnimationMixer(root);
-  return {root,mixer,mats,native,nativeHead:head,skel,host:head?head.parent:root,job,wardParts:[],anim:new Anim(mixer,GL.pclips.animations,D.map)};
+  const mixer=new THREE.AnimationMixer(root), clips=D.own?src.animations:GL.pclips.animations;
+  return {root,mixer,mats,native,nativeHead:head,skel,host:head?head.parent:root,job:D.base||job,pkey:job,own:!!D.own,clips,wardParts:[],
+    anim:new Anim(mixer,clips,D.map,D.own?ownSpeeds(D,clips):null)};
 }
+/* 루미 모델은 선생님이 고를 때만 불러와요 (학생들은 내려받지 않아요) */
+const LUMI={loading:false,err:false};
+function lumiOn(){ return typeof lumiPicked==='function'&&lumiPicked()&&!(typeof SHOP!=='undefined'&&SHOP.open); }   // 상점에서는 꾸미기를 볼 수 있게 원래 마법사로
+function lumiLoad(){ if (GL.p_lumi||LUMI.loading||LUMI.err) return; LUMI.loading=true; if (typeof renderJobPick==='function') renderJobPick();
+  new THREE.GLTFLoader().load('models/p2/Lumi.glb?v=20261128',g=>{ GL.p_lumi=g; LUMI.loading=false;
+    if (typeof lobbyAddLumi==='function') lobbyAddLumi();
+    if (typeof renderJobPick==='function') renderJobPick();
+    if (WORLD_READY && W.state!=='play') applyLook(); },
+    undefined,()=>{ LUMI.loading=false; LUMI.err=true; if (typeof renderJobPick==='function') renderJobPick(); }); }
+function pkeyFor(job){ if (job==='mage'&&lumiOn()){ if (GL.p_lumi) return 'lumi'; lumiLoad(); } return job; }
 /* ---------- 여럿이 하는 판의 친구 캐릭터: 진짜 그림자 대신 발밑 동그란 그림자 ----------
    진짜 그림자는 그림자 지도에 캐릭터를 한 번 더 그려요 (친구 20명이면 조각 150개를 더). 동그란 그림자는 판 하나라 거의 공짜예요. */
 const BLOB={geo:null,mat:null};
@@ -42,7 +65,7 @@ function remoteLite(ch,g){
 }
 /* 게임 속 주인공: 직업마다 하나씩 만들어 두고 고른 직업만 무대(pg)에 올려요 */
 const PCH={};
-function playerFor(job){ if (!PCH[job]){ const c=makePlayerChar(job); setupKnightLayers(c); PCH[job]=c; } return PCH[job]; }
+function playerFor(job){ const k=pkeyFor(job); if (!PCH[k]){ const c=makePlayerChar(k); setupKnightLayers(c); PCH[k]=c; } return PCH[k]; }
 function usePlayer(job){
   if (!WORLD_READY) return null;
   const c=playerFor(job);

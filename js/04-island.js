@@ -34,16 +34,17 @@ function makeChar(key,scale,map){
   const mixer=new THREE.AnimationMixer(root);
   return {root,mixer,mats,anim:new Anim(mixer,src.animations,map)};
 }
-function Anim(mixer,clips,map){
-  this.mixer=mixer; this.actions={}; this.cur=null; this.baseKey=null; this.want='idle'; this.lock=false; this.dead=false;
+function Anim(mixer,clips,map,spd){
+  this.mixer=mixer; this.actions={}; this.cur=null; this.baseKey=null; this.want='idle'; this.lock=false; this.dead=false; this.spd=spd||null;   // spd: 동작마다 빠르기 배율 (다른 모델의 동작 길이를 원래 동작에 맞출 때)
   for (const k in map){ const c=clips.find(x=>x.name===map[k]); if (c) this.actions[k]=mixer.clipAction(c); }
   mixer.addEventListener('finished',e=>{ if (e.action!==this.cur || this.dead) return; this.lock=false; this.baseKey=null; this.setBase(this.want); });
 }
 Anim.prototype._to=function(a,t){ if (this.cur && this.cur!==a) this.cur.fadeOut(t); a.reset(); a.setEffectiveWeight(1); a.fadeIn(t); a.play(); this.cur=a; };
+Anim.prototype.mul=function(k){ return (this.spd&&this.spd[k])||1; };
 Anim.prototype.setBase=function(k,speed){ this.want=k; if (this.dead||this.lock) return; const a=this.actions[k]; if (!a) return;
-  if (speed) a.timeScale=speed; if (this.baseKey===k) return; this.baseKey=k; a.setLoop(THREE.LoopRepeat,Infinity); a.clampWhenFinished=false; this._to(a,.2); };
+  if (speed) a.timeScale=speed*this.mul(k); if (this.baseKey===k) return; this.baseKey=k; a.setLoop(THREE.LoopRepeat,Infinity); a.clampWhenFinished=false; this._to(a,.2); };
 Anim.prototype.once=function(k,speed,force){ if (this.dead) return false; if (this.lock && !force) return false; const a=this.actions[k]; if (!a) return false;
-  a.setLoop(THREE.LoopOnce,1); a.clampWhenFinished=true; a.timeScale=speed||1; this.lock=true; this.baseKey=null; this._to(a,.08); if (this.onAct) this.onAct(k,speed); return true; };
+  a.setLoop(THREE.LoopOnce,1); a.clampWhenFinished=true; a.timeScale=(speed||1)*this.mul(k); this.lock=true; this.baseKey=null; this._to(a,.08); if (this.onAct) this.onAct(k,speed); return true; };
 Anim.prototype.die=function(){ if (this.dead) return; this.once('death',1,true); this.dead=true; };
 Anim.prototype.revive=function(){ this.dead=false; this.lock=false; this.baseKey=null; this.mixer.stopAllAction(); this.cur=null; this.setBase('idle'); };
 function addNpc(key,x,z,ry){

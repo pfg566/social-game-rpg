@@ -240,7 +240,7 @@ function frame(now){
         if (key){ const t=A.cur.time, sp=A.cur.timeScale; A.cur.fadeOut(.1); A.cur=null; A.lock=false; A.baseKey=null; playUpper(key,sp,t); } }
       if (U.cur){ U.left-=animDt; if (U.left<=0){ U.cur.fadeOut(.15); U.cur=null; } }
       const spd=moved/Math.max(dt,1e-3);
-      knight.runScale+=(Math.min(2.6,Math.max(.7,spd/RUN_SPEED.knight))-knight.runScale)*Math.min(1,dt*12);
+      knight.runScale+=(Math.min(knight.runMax||2.6,Math.max(.7,spd/(knight.runRef||RUN_SPEED.knight)))-knight.runScale)*Math.min(1,dt*12);
       setBaseSynced(A, P.blockT>0?'blocking':walking?(U.cur?'runLow':'run'):(U.cur?'idleLow':'idle'), P.blockT>0?1:walking?knight.runScale:1);
       if (walking && P.dodgeT<=0 && !W.paused){ stepT-=dt*knight.runScale; if (stepT<=0){ stepT=.4; fx.burst(P.x-P.fx*.3,.08,P.z-P.fz*.3,0xcdbf9f,3,.9); } }
     } else if (W.state==='end' && !endPose){ endPose=true; if (!W.won) A.die(); else { A.once('cheer',1,true); A.want='idle'; } }

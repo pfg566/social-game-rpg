@@ -269,11 +269,15 @@ function flashPrompt(msg,sec){ promptMsg=msg; promptUntil=W.t+sec; }
 
 /* ---------- 걷기·공격 동작 다듬기: 발 미끄러짐 없애기, 움직이며 베면 하체는 달리고 상체만 베기 ---------- */
 const RUN_SPEED={knight:3.43, minion:2.42, boss:.72*2.05};   // 각 달리기 동작이 원래 내는 속도(발이 땅에 닿아 있는 동안)
-const UPPER_BONES=new Set(['spine','chest','upperarml','lowerarml','wristl','handl','handslotl','upperarmr','lowerarmr','wristr','handr','handslotr','head','elbowIKl','handIKl','elbowIKr','handIKr']);
+const UPPER_BONES=new Set(['spine','chest','upperarml','lowerarml','wristl','handl','handslotl','upperarmr','lowerarmr','wristr','handr','handslotr','head','elbowIKl','handIKl','elbowIKr','handIKr',
+  // Mixamo 뼈대(루미 등): 이름의 ':'는 three.js가 지워요
+  'mixamorigSpine','mixamorigSpine1','mixamorigSpine2','mixamorigNeck','mixamorigHead','mixamorigLeftShoulder','mixamorigLeftArm','mixamorigLeftForeArm','mixamorigLeftHand',
+  'mixamorigRightShoulder','mixamorigRightArm','mixamorigRightForeArm','mixamorigRightHand']);
 const ATK_KEYS=['slashH','slashD','chop','shoot','cast'];
 function partClip(clip,upper,name){ return new THREE.AnimationClip(name,clip.duration,clip.tracks.filter(t=>UPPER_BONES.has(t.name.split('.')[0])===upper)); }
 function setupKnightLayers(k){
-  const clips=GL.pclips.animations, A=k.anim, by=n=>clips.find(c=>c.name===n), M=P2[k.job||'knight'].map;
+  const D=P2[k.pkey||k.job||'knight'], clips=k.clips||GL.pclips.animations, A=k.anim, by=n=>clips.find(c=>c.name===n), M=D.map;
+  k.runRef=D.runRef||RUN_SPEED.knight; k.runMax=D.runMax||2.6;   // 달리기 동작마다 발 빠르기가 달라요
   if (by(M.run)) A.actions.runLow=k.mixer.clipAction(partClip(by(M.run),false,'runLow'));
   if (by(M.idle)) A.actions.idleLow=k.mixer.clipAction(partClip(by(M.idle),false,'idleLow'));
   const src={}; ATK_KEYS.forEach(key=>{ if (M[key]) src[key]=M[key]; });
@@ -284,9 +288,9 @@ function setupKnightLayers(k){
 function playUpper(key,speed,from){
   const U=knight.upper, a=U.acts[key]; if (!a) return;
   if (U.cur && U.cur!==a) U.cur.fadeOut(.06);
-  a.reset(); a.setLoop(THREE.LoopOnce,1); a.clampWhenFinished=true; a.timeScale=speed; a.setEffectiveWeight(1); a.fadeIn(from?.1:.05); a.play();
+  a.reset(); a.setLoop(THREE.LoopOnce,1); a.clampWhenFinished=true; a.timeScale=from?speed:speed*knight.anim.mul(key); a.setEffectiveWeight(1); a.fadeIn(from?.1:.05); a.play();
   if (from) a.time=from;
-  U.cur=a; U.left=(a.dur-(from||0))/speed;
+  U.cur=a; U.left=(a.dur-(from||0))/a.timeScale;
   if (!from && knight.anim.onAct) knight.anim.onAct(key,speed);
 }
 function knightAttackAnim(key,speed){

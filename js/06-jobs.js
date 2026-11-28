@@ -25,6 +25,11 @@ function ownedElems(){
   return ['fire'];
 }
 try{ const j=localStorage.getItem('gsd-job'); if (JOBS[j]) JOB=j; const e=localStorage.getItem('gsd-elem'); if (ELEM[e]) MELEM=e; }catch(e){}
+/* 새 마법사(루미) 시험: 선생님 화면에서만 직업 칸이 하나 더 보여요. 싸우는 방법은 마법사와 똑같고 모델 · 동작만 달라요 (06p-player.js) */
+let MAGE_SKIN=''; try{ MAGE_SKIN=localStorage.getItem('gsd-mskin')||''; }catch(e){}
+const lumiAllowed=()=>typeof isAdmin!=='undefined'&&!!isAdmin&&!(typeof STUDENT!=='undefined'&&STUDENT);
+const lumiPicked=()=>JOB==='mage'&&MAGE_SKIN==='lumi'&&lumiAllowed();
+function setMageSkin(s){ MAGE_SKIN=s==='lumi'?'lumi':''; try{ localStorage.setItem('gsd-mskin',MAGE_SKIN); }catch(e){} }
 const jobInfo=()=>JOBS[JOB];
 const ultLabel=()=>JOB==='mage'?ELEM[MELEM].ult:JOBS[JOB].ultName;
 const skillLabel=()=>JOB==='mage'?ELEM[MELEM].skill:JOBS[JOB].skillName;
@@ -386,14 +391,17 @@ function jobQuiz(ok,source,extras){
 /* 시작 화면: 직업 고르기 */
 function renderJobPick(){
   const box=$('#jobPick'); if (!box) return;
-  box.querySelectorAll('[data-job]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.job===JOB)));
+  box.querySelectorAll('[data-job]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.job===JOB&&(JOB!=='mage'||(b.dataset.skin||'')===(lumiPicked()?'lumi':'')))));
+  { const lb=$('#jobLumi'); if (lb){ const ok=lumiAllowed(); lb.hidden=!ok; lb.parentNode.classList.toggle('four',ok); } }
   $('#elemPick').hidden=JOB!=='mage';
   const own=ownedElems(); if (!own.includes(MELEM)) MELEM='fire';
   $('#elemPick').querySelectorAll('[data-elem]').forEach(b=>{ const ok=own.includes(b.dataset.elem); b.setAttribute('aria-pressed',String(b.dataset.elem===MELEM)); b.disabled=!ok; b.classList.toggle('locked',!ok);
     b.textContent=(ok?'':'🔒 ')+{fire:'🔥 불',ice:'❄️ 얼음',bolt:'⚡ 번개'}[b.dataset.elem]; b.title=ok?'':'레벨업할 때 각성하면 얻어요'; });
   $('#elemNote').textContent=own.length>=3?'모든 원소를 각성했어요!':`레벨업할 때마다 ${Math.round(AWAKE_CHANCE*100)}% 확률로 새 원소가 각성해요 · 3번 놓치면 다음 레벨업엔 확정`;
   const J=JOBS[JOB];
-  $('#jobDesc').textContent=JOB==='knight'?'보통 · 붙어서 싸워요 · 체력 150% · 막기와 반격 · 오답 너프 절반, 정답이면 방어막'
+  const LS=typeof LUMI!=='undefined'?LUMI:{};
+  $('#jobDesc').textContent=lumiPicked()?'시험 중(선생님만 보여요) · 새 마법사 루미 · 싸우는 방법은 마법사와 같아요 · 꾸미기는 아직 안 돼요'+(LS.loading?' · 모델 불러오는 중…':LS.err?' · 모델을 불러오지 못했어요':'')
+    :JOB==='knight'?'보통 · 붙어서 싸워요 · 체력 150% · 막기와 반격 · 오답 너프 절반, 정답이면 방어막'
     :JOB==='archer'?'어려움 · 방향키로 직접 조준하며 연사(마우스가 있으면 마우스로도) · 쏘는 동안 느려져요 · 체력 75% · 연속 정답마다 치명타'
     :`쉬움 · 구슬 3개가 가까운 적 3마리를 알아서 쫓아가요(한 발은 약해요) · 쏠 때 잠깐 멈춰요 · ${ELEM[MELEM].name} 구슬 · 체력 80% · 퀴즈 효과 1.5배`;
 }

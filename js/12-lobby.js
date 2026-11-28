@@ -21,8 +21,20 @@ function ensureLobby(){
     glow.rotation.x=-Math.PI/2; g.add(glow); c.glow=glow;
     LOBBY.chars[j]=c;
   });
+  lobbyAddLumi();
   dressLobby();
 }
+/* 새 마법사 루미(시험): 모델을 다 불러오면 로비 무대에도 세워요. 마법사를 고르고 루미 칸을 누르면 마법사 대신 보여요 */
+function lobbyAddLumi(){
+  if (!LOBBY.g || LOBBY.chars.lumi || !GL.p_lumi) return;
+  const c=makePlayerChar('lumi'); c.root.visible=false; LOBBY.g.add(c.root); c.anim.setBase('idle');
+  const ring=new THREE.Mesh(new THREE.RingGeometry(.62,.9,40),new THREE.MeshBasicMaterial({color:0xffc531,transparent:true,opacity:0,side:THREE.DoubleSide,depthWrite:false,toneMapped:false}));
+  ring.rotation.x=-Math.PI/2; LOBBY.g.add(ring); c.ring=ring;
+  const glow=new THREE.Mesh(new THREE.CircleGeometry(.62,32),new THREE.MeshBasicMaterial({color:0xffe9a0,transparent:true,opacity:0,depthWrite:false,toneMapped:false}));
+  glow.rotation.x=-Math.PI/2; LOBBY.g.add(glow); c.glow=glow;
+  LOBBY.chars.lumi=c;
+}
+const lobbyKey=()=>(JOB==='mage'&&typeof lumiOn==='function'&&lumiOn()&&LOBBY.chars.lumi)?'lumi':JOB;
 async function dressLobby(){
   if (!LOBBY.g) return; const t=++LOBBY.tok;
   // 직업마다 자기 차림으로 (10-shop.js · applyLook이 로비 캐릭터도 함께 입혀요)
@@ -53,11 +65,12 @@ function lobbyTick(real,dt){
   if (LOBBY.light && !login) LOBBY.light.intensity=.5;
   if (login) return loginTick(real,dt);
   // 고른 직업 캐릭터 하나만 가운데에. 바꾸면 '뿅' 하고 나타나며 만세해요
-  if (LOBBY.last!==JOB){ const c=LOBBY.chars[JOB]; if (c){ LOBBY.popT=0; c.root.scale.setScalar(.01); if (LOBBY.last){ c.anim.once('cheer',1.5,true); fx.burst(LX,1.5,LZ,0xffd34d,22,4); fx.rise(LX,LZ,0xffe9a0,16); } } LOBBY.last=JOB; }
+  const K=lobbyKey();
+  if (LOBBY.last!==K){ const c=LOBBY.chars[K]; if (c){ LOBBY.popT=0; c.root.scale.setScalar(.01); if (LOBBY.last){ c.anim.once('cheer',1.5,true); fx.burst(LX,1.5,LZ,0xffd34d,22,4); fx.rise(LX,LZ,0xffe9a0,16); } } LOBBY.last=K; }
   LOBBY.popT=Math.min(1,(LOBBY.popT??1)+dt*3.2);
   const t=LOBBY.popT, u=t-1, pop=t<1?1+2.70158*u*u*u+1.70158*u*u:1;
-  LOBBY_JOBS.forEach(j=>{
-    const c=LOBBY.chars[j], sel=j===JOB;
+  Object.keys(LOBBY.chars).forEach(j=>{
+    const c=LOBBY.chars[j], sel=j===K;
     c.root.visible=sel; c.ring.visible=c.glow.visible=sel;
     c.root.position.set(0,STAGE_Y,0); c.ring.position.set(0,STAGE_Y+.02,0); c.glow.position.set(0,STAGE_Y+.015,0);
     if (!sel) return;
@@ -82,6 +95,7 @@ function loginTick(real,dt){
   LOBBY_JOBS.forEach((j,i)=>{ const c=LOBBY.chars[j]; if (!c) return;
     c.root.visible=true; c.ring.visible=c.glow.visible=false; c.root.scale.setScalar(1.05);
     c.root.position.set((i-1)*1.55,STAGE_Y,i===1?.35:-.15); c.root.rotation.y=(i-1)*-.28+Math.sin(real*.5+i)*.06; c.mixer.update(dt); });
+  if (LOBBY.chars.lumi) LOBBY.chars.lumi.root.visible=false;   // 로그인 화면은 원래 세 직업만
   LOBBY.last=null;
   const W0=innerWidth, H0=innerHeight, tn=Math.tan(camera.fov*Math.PI/360), wide=W0>=900;
   const panel=document.querySelector('#title .panel'), pr=panel?panel.getBoundingClientRect():null;

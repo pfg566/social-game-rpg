@@ -268,6 +268,7 @@ function skelFor(ch,src){
   k=bones.every(Boolean)?new THREE.Skeleton(bones,src.boneInverses.map(m=>m.clone())):ch.skel; ch.skelCache.set(src,k); return k;
 }
 async function dressP2(ch,L){
+  if (ch.own) return dressOwn(ch,L);
   const tok=ch.dressTok=(ch.dressTok||0)+1, job=ch.job;
   const o=CAT[L.outfit], hat=CAT[L.hat], cape=CAT[L.cape], hairIt=CAT[L.hair];
   const hair=hairIt&&hairIt.hair||null;
@@ -319,6 +320,15 @@ async function dressP2(ch,L){
   ch.mats=[...mats]; ch.doneTok=tok;
 }
 
+/* 옷 · 머리 · 지팡이가 한 모델에 다 붙은 캐릭터(루미 등): 꾸미기는 안 바꾸고 펫만 붙여요 */
+function dressOwn(ch,L){
+  const tok=ch.dressTok=(ch.dressTok||0)+1;
+  (ch.wardParts||[]).forEach(m=>{ if (m.parent) m.parent.remove(m); }); ch.wardParts=[];
+  const petIt=CAT[L&&L.pet]; if (petIt && petIt.pet && typeof attachPet==='function'){ const pg2=attachPet(ch,petIt.pet); if (pg2) ch.wardParts.push(pg2); }
+  if (ch.noShadow) ch.root.traverse(x=>{ if (x.isMesh) x.castShadow=false; });
+  const mats=new Set(); ch.root.traverse(x=>{ if (x.isMesh && x.visible!==false && !x.userData.noFlash){ (Array.isArray(x.material)?x.material:[x.material]).forEach(m=>mats.add(m)); } });
+  ch.mats=[...mats]; ch.doneTok=tok;
+}
 /* ---------- 지금 차림 적용: 게임 · 로비 · 상점 미리보기 ---------- */
 let LOOK=null, lookToken=0, TRAIL=CAT.gold_p0, WARDROBE=null;
 function lookFor(job){ const L=SHOP.open&&job===SHOP.job&&SHOP.try ? SHOP.try : equippedLook(job); return typeof eggDecorate==='function'?eggDecorate(L):L; }
@@ -330,6 +340,7 @@ async function applyLook(){
     const first=SHOP.open?SHOP.job:JOB, order=[first,...JOB_LIST.filter(j=>j!==first)];
     for (const j of order){ const L=lookFor(j);
       await dressP2(playerFor(j),L); if (typeof LOBBY!=='undefined' && LOBBY.chars[j]) await dressP2(LOBBY.chars[j],L);
+      if (j==='mage' && typeof LOBBY!=='undefined' && LOBBY.chars.lumi) await dressP2(LOBBY.chars.lumi,L);   // 로비의 루미도 (펫만)
       if (t!==lookToken) return; }
   }catch(e){ if (t===lookToken && !$('#shop').hidden) shopMsg('꾸미기 파일을 불러오지 못했어요. 인터넷을 확인해 주세요.','err'); }
 }

@@ -204,7 +204,7 @@ function closeQuiz(){
   W.paused=false; canvas.focus({preventScroll:true});
 }
 $('#qnext').addEventListener('click',closeQuiz);
-$('#jobPick').addEventListener('click',e=>{ const b=e.target.closest('button'); if (!b) return; if (b.dataset.job) setJob(b.dataset.job); else if (b.dataset.elem) setJob(null,b.dataset.elem); });
+$('#jobPick').addEventListener('click',e=>{ const b=e.target.closest('button'); if (!b) return; if (b.dataset.job){ if (b.dataset.job==='mage') setMageSkin(b.dataset.skin||''); setJob(b.dataset.job); } else if (b.dataset.elem) setJob(null,b.dataset.elem); });
 
 /* ---------- 복습 찬스: 판이 끝나면 결과 화면 전에, 이번 판에서 틀린 문제를 1~2개 다시 풀어요 ---------- */
 const REVIEW_MAPS=['zones','general','glacier','defense','island','runner'];
